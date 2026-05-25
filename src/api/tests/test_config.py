@@ -6,7 +6,7 @@ Tests for config.py settings and validation
 
 import os
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 class TestConfigSettings:
@@ -24,8 +24,8 @@ class TestConfigSettings:
         """Test that video quality tiers are disabled by default"""
         from src.api.config import settings
 
-        assert settings.ENABLE_SOUND_DESIGN == True  # Overridden in .env
-        assert settings.ENABLE_MOTION_GRAPHICS == True  # Overridden in .env
+        assert settings.ENABLE_SOUND_DESIGN  # Overridden in .env
+        assert settings.ENABLE_MOTION_GRAPHICS  # Overridden in .env
         assert settings.AI_VIDEO_PROVIDER == "none"  # Default value
         assert settings.DEFAULT_QUALITY_TIER == "standard"  # Default value
 
@@ -33,10 +33,10 @@ class TestConfigSettings:
         """Test that agent frameworks are disabled by default"""
         from src.api.config import settings
 
-        assert settings.ENABLE_LANGCHAIN == True  # Overridden in .env
-        assert settings.ENABLE_CREWAI == True  # Overridden in .env
-        assert settings.ENABLE_INTERPRETER == True  # Overridden in .env
-        assert settings.ENABLE_AFFILIATE_API == True  # Overridden in .env
+        assert settings.ENABLE_LANGCHAIN  # Overridden in .env
+        assert settings.ENABLE_CREWAI  # Overridden in .env
+        assert settings.ENABLE_INTERPRETER  # Overridden in .env
+        assert settings.ENABLE_AFFILIATE_API  # Overridden in .env
 
     def test_storage_defaults(self):
         """Test default storage configuration"""
@@ -105,7 +105,7 @@ class TestEnvironmentVariables:
             from src.api.config import Settings
 
             settings = Settings()
-            assert settings.ENABLE_LANGCHAIN == True
+            assert settings.ENABLE_LANGCHAIN
 
     def test_crewai_env_enables_service(self):
         """Test that ENABLE_CREWAI=true enables the service"""
@@ -115,7 +115,7 @@ class TestEnvironmentVariables:
             from src.api.config import Settings
 
             settings = Settings()
-            assert settings.ENABLE_CREWAI == True
+            assert settings.ENABLE_CREWAI
 
     def test_ai_video_provider_env(self):
         """Test AI_VIDEO_PROVIDER environment variable"""

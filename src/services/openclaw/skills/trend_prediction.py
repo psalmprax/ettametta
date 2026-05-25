@@ -1,7 +1,7 @@
 import json
 import logging
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 from src.api.config import settings
 from .memory import memory_skill
 
@@ -115,7 +115,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
                 return f"⚠️ Prediction failed: {groq_resp.status_code}"
 
         except Exception as e:
-            logger.error(f"Trend Prediction Error: {e}")
+            logger.exception(f"Trend Prediction Error: {e}")
             return f"⚠️ Prediction Error: {e}"
 
     def _build_prediction_prompt(
@@ -206,7 +206,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
             )
 
         except Exception as e:
-            logger.error(f"Trend Velocity Error: {e}")
+            logger.exception(f"Trend Velocity Error: {e}")
             return f"⚠️ Velocity Error: {e}"
 
     def get_cross_platform_signals(self, niche: str) -> str:

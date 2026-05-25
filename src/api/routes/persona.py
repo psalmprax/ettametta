@@ -1,15 +1,12 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import PersonaDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 import uuid
 import os
-import requests
-from src.api.config import settings
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
@@ -21,8 +18,7 @@ class PersonaResponse(BaseModel):
     reference_image_uri: str | None = None
     voice_clone_id: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PersonaGenerateRequest(BaseModel):
@@ -110,7 +106,7 @@ async def generate_persona_video(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Persona animation failed: {e}")
+        logging.exception(f"Persona animation failed: {e}")
         raise HTTPException(status_code=503, detail="Persona service unavailable")
 
 

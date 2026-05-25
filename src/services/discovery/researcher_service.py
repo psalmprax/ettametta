@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from typing import Any, Dict
 from src.api.config import settings
 
@@ -80,7 +79,7 @@ class DiscoveryResearcherService:
             }
             
         except Exception as e:
-            logger.error(f"❌ [DiscoveryResearcher] Research failed: {e}")
+            logger.exception(f"❌ [DiscoveryResearcher] Research failed: {e}")
             return {"error": str(e), "status": "failed"}
 
 # Singleton instance

@@ -258,7 +258,7 @@ async def proxy_status(job_id: str):
                     resp = await client.get(f"{node}/status/{job_id}", headers=headers)
                     if resp.status_code == 200:
                         return resp.json()
-            except: continue
+            except Exception: continue
         raise HTTPException(status_code=404, detail="Job not found in cluster")
 
     async with httpx.AsyncClient(timeout=10.0) as client:

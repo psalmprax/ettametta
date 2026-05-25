@@ -4,7 +4,6 @@ import httpx
 import os
 import json
 import logging
-from typing import Any
 from src.api.config import settings
 from src.api.utils.json_cleaner import clean_json_response, repair_and_load_json
 
@@ -26,22 +25,20 @@ async def proxy_ollama(path: str, request: Request):
             if isinstance(body, str):
                 try:
                     body = json.loads(body)
-                except:
+                except Exception:
                     body = {"payload": body}
             else:
                 body = {"payload": body}
     except Exception as e:
-        logger.error(f"❌ [OllamaProxy] JSON parse failed: {e}")
+        logger.exception(f"❌ [OllamaProxy] JSON parse failed: {e}")
         body = {}
 
     ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434").rstrip("/")
     
     # Clean the path: Remove leading 'v1/' if present
     clean_path = path.lstrip("/")
-    force_sanitization = False
     if clean_path.startswith("v1/"):
         clean_path = clean_path[3:].lstrip("/")
-        force_sanitization = True
     
     # Protocol Mapping
     translate_to_openai = False
@@ -147,7 +144,7 @@ async def proxy_ollama(path: str, request: Request):
             except json.JSONDecodeError:
                 data = repair_and_load_json(raw_text)
                 if not data:
-                    logger.error(f"❌ [OllamaProxy] Parse failure on {target_url}. Raw: {raw_text[:200]}")
+                    logger.exception(f"❌ [OllamaProxy] Parse failure on {target_url}. Raw: {raw_text[:200]}")
                     raise HTTPException(status_code=502, detail="Upstream protocol error")
 
             if resp.status_code != 200:
@@ -194,7 +191,7 @@ async def proxy_ollama(path: str, request: Request):
             return data
             
         except Exception as e:
-            logger.error(f"❌ [OllamaProxy] Proxy critical failure: {str(e)}")
+            logger.exception(f"❌ [OllamaProxy] Proxy critical failure: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
 
 async def proxy_streaming(url: str, body: dict, translate: bool):

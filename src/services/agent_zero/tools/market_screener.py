@@ -42,7 +42,7 @@ class MarketScreenerTool:
             return json.loads(chat_completion.choices[0].message.content)
             
         except Exception as e:
-            logger.error(f"MarketScreenerTool Error: {e}")
+            logger.exception(f"MarketScreenerTool Error: {e}")
             return {"error": str(e)}
 
 market_screener_tool = MarketScreenerTool()

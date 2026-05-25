@@ -1,4 +1,3 @@
-import json
 import logging
 import requests
 from datetime import datetime
@@ -37,7 +36,7 @@ class NotificationSkill(OpenClawBaseSkill):
         priority: str = "normal",
         metadata: dict | None = None,
     ) -> str:
-        notification = {
+        {
             "channel": channel,
             "message": message,
             "priority": priority,
@@ -89,7 +88,7 @@ class NotificationSkill(OpenClawBaseSkill):
             )
 
             if resp.status_code == 200:
-                return f"✅ Telegram notification sent"
+                return "✅ Telegram notification sent"
             else:
                 return f"⚠️ Telegram failed: {resp.status_code}"
         except Exception as e:

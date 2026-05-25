@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import re
 from typing import Any
 from playwright.async_api import async_playwright, Browser, Page
 
@@ -184,7 +183,7 @@ class ContentEditorSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[ContentEditor] Content finding failed: {str(e)}")
+            logger.exception(f"[ContentEditor] Content finding failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e)}
 
@@ -467,7 +466,6 @@ class ContentEditorSkill(OpenClawBaseSkill):
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-            frames = []
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
@@ -669,7 +667,7 @@ class ContentEditorSkill(OpenClawBaseSkill):
                 "-t",
                 str(duration),
                 "-vf",
-                fr"scale=-2:min(ih,1920),crop=min(iw,1080):ih:ow-iw",
+                r"scale=-2:min(ih,1920),crop=min(iw,1080):ih:ow-iw",
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -741,17 +739,14 @@ class ContentEditorSkill(OpenClawBaseSkill):
                     {"start": 15, "end": 25, "reason": "content"},
                     {"start": 30, "end": 40, "reason": "punchline"},
                 ]
-                operations = ["cut", "merge", "crop", "captions"]
             elif style == "cinematic":
                 clips = [
                     {"start": 0, "end": 15, "reason": "intro"},
                     {"start": 20, "end": 45, "reason": "main"},
                     {"start": 50, "end": 60, "reason": "outro"},
                 ]
-                operations = ["cut", "merge", "zoom", "captions"]
             else:
                 clips = [{"start": 0, "end": 30, "reason": "full"}]
-                operations = ["crop"]
 
             return {
                 "status": "success",
@@ -762,7 +757,7 @@ class ContentEditorSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[ContentEditor] Viral edit creation failed: {str(e)}")
+            logger.exception(f"[ContentEditor] Viral edit creation failed: {str(e)}")
             return {"status": "failed", "error": str(e)}
 
     async def polish_with_remotion(

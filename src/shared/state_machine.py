@@ -25,6 +25,8 @@ class JobStateMachine:
     
     # Valid transitions: Current State -> List of Allowed Next States
     _TRANSITIONS = {
+        None: [JobState.FAILED, JobState.QUEUED, JobState.PENDING],
+        JobState.QUEUED: [JobState.PENDING, JobState.FAILED],
         JobState.PENDING: [JobState.DISCOVERING, JobState.INGRESSING, JobState.FAILED],
         JobState.DISCOVERING: [JobState.INGRESSING, JobState.FAILED],
         JobState.INGRESSING: [JobState.COGNITION, JobState.FAILED],
@@ -37,14 +39,18 @@ class JobStateMachine:
     }
 
     @classmethod
-    async def transition_to(cls, job_id: str, current_state: JobState, next_state: JobState, metadata: dict[str, Any] | None = None):
+    async def transition_to(cls, job_id: str, current_state: JobState | None, next_state: JobState, metadata: dict[str, Any] | None = None):
         """
         Validates and publishes a state transition event.
         """
         if next_state not in cls._TRANSITIONS.get(current_state, []):
-            logger.warning(f"⚠️ Illegal transition attempt for job {job_id}: {current_state} -> {next_state}")
-            # We still permit it in 'relaxed' hardening phase but log it
-        
+            logger.error(f"Illegal transition attempt for job {job_id}: {current_state} -> {next_state}")
+            raise ValueError(
+                f"Illegal state transition for job {job_id}: "
+                f"{current_state} -> {next_state}. "
+                f"Allowed: {cls._TRANSITIONS.get(current_state, [])}"
+            )
+
         event_payload = {
             "job_id": job_id,
             "previous_state": current_state,

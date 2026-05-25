@@ -1,16 +1,9 @@
 import torch
-from diffusers import (
-    StableDiffusionPipeline,
-    EulerDiscreteScheduler,
-    MotionAdapter,
-    LTXPipeline,
-    LTXImageToVideoPipeline,
-)
-from diffusers.utils import export_to_video
 import os
 import asyncio
 from pathlib import Path
 from typing import Any
+from src.engines.remote_ai_setup.p4000_config import generate_animatediff_laptop
 
 async def generate_p4000_video(
     prompt: str,
@@ -24,8 +17,7 @@ async def generate_p4000_video(
     Extremely aggressive memory optimizations for 8GB VRAM.
     """
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    torch_dtype = torch.float16 if device == "cuda" else torch.float32
+    "cuda" if torch.cuda.is_available() else "cpu"
 
     # P4000 limits - very conservative
     max_resolution = 384
@@ -44,13 +36,13 @@ async def generate_p4000_video(
             return await generate_animatediff_laptop(prompt, num_frames, height, width)
 
         elif model_type == "ltx_video":
-            return await generate_ltx_p4000(prompt, num_frames, height, width)
+            return await asyncio.to_thread(generate_ltx_p4000, prompt, num_frames, height, width)
 
         elif model_type == "zeroscope":
-            return await generate_zeroscope_p4000(prompt, num_frames, height, width)
+            return await asyncio.to_thread(generate_zeroscope_p4000, prompt, num_frames, height, width)
 
         elif model_type == "lite4k":
-            return await generate_lite4k_p4000(prompt, num_frames, height, width)
+            return await asyncio.to_thread(generate_lite4k_p4000, prompt, num_frames, height, width)
 
         else:
             return {"error": f"Model {model_type} not supported on P4000"}
@@ -70,11 +62,14 @@ async def generate_p4000_video(
         print(f"❌ P4000 generation failed: {e}")
         return {"error": str(e)}
 
-async def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> dict[str, Any]:
+def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> dict[str, Any]:
     """Ultra-aggressive LTX optimization for P4000"""
     try:
+        import importlib
+        diffusers = importlib.import_module("diffusers")
+        ltx_pipeline_class = diffusers.LTXPipeline
         # Use minimal settings for P4000
-        pipe = LTXPipeline.from_pretrained(
+        pipe = ltx_pipeline_class.from_pretrained(
             "Lightricks/LTX-Video",
             torch_dtype=torch.float16,
         )
@@ -108,12 +103,14 @@ async def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320
     except Exception as e:
         return {"error": f"LTX P4000 failed: {e}"}
 
-async def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> dict[str, Any]:
+def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> dict[str, Any]:
     """Ultra-aggressive ZeroScope optimization for P4000"""
     try:
-        from diffusers import VideoToVideoSDPipeline
+        import importlib
+        diffusers = importlib.import_module("diffusers")
+        v2v_pipeline_class = diffusers.VideoToVideoSDPipeline
 
-        pipe = VideoToVideoSDPipeline.from_pretrained(
+        pipe = v2v_pipeline_class.from_pretrained(
             "cerspense/zeroscope_v2_XL",
             torch_dtype=torch.float16,
         )
@@ -144,11 +141,14 @@ async def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int
     except Exception as e:
         return {"error": f"ZeroScope P4000 failed: {e}"}
 
-async def generate_lite4k_p4000(prompt: str, num_frames: int = 4, height: int = 256, width: int = 256) -> dict[str, Any]:
+def generate_lite4k_p4000(prompt: str, num_frames: int = 4, height: int = 256, width: int = 256) -> dict[str, Any]:
     """Ultra-aggressive Lite4K optimization for P4000"""
     try:
+        import importlib
+        diffusers = importlib.import_module("diffusers")
+        sd_pipeline_class = diffusers.StableDiffusionPipeline
         # Use a lightweight model
-        pipe = StableDiffusionPipeline.from_pretrained(
+        pipe = sd_pipeline_class.from_pretrained(
             "stabilityai/sd-turbo",
             torch_dtype=torch.float16,
         )
@@ -180,6 +180,9 @@ async def generate_lite4k_p4000(prompt: str, num_frames: int = 4, height: int = 
 
 def save_video_p4000(frames, model_name: str) -> str:
     """Save video with P4000-optimized settings"""
+    import importlib
+    diffusers_utils = importlib.import_module("diffusers.utils")
+    export_to_video = diffusers_utils.export_to_video
     output_dir = Path("outputs")
     output_dir.mkdir(exist_ok=True)
 
@@ -231,5 +234,4 @@ def get_p4000_available_models() -> dict[str, dict[str, Any]]:
             "estimated_time": "3-5 min",
             "reliability": "Medium"
         }
-    }</content>
-<parameter name="filePath">remote_ai_setup/p4000_multi_model_inference.py
+    }

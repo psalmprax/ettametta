@@ -2,9 +2,8 @@ import os
 import logging
 import asyncio
 import httpx
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from typing import Any, List, Dict
+from typing import Any, Dict
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)
@@ -47,10 +46,10 @@ class TranscriptionService:
             self._current_size = size
             return self._model
         except ImportError:
-            logger.error("[TranscriptionService] faster-whisper not installed. Local transcription disabled.")
+            logger.exception("[TranscriptionService] faster-whisper not installed. Local transcription disabled.")
             return None
         except Exception as e:
-            logger.error(f"[TranscriptionService] Failed to load model {size}: {e}")
+            logger.exception(f"[TranscriptionService] Failed to load model {size}: {e}")
             if size != "tiny":
                 logger.warning("[TranscriptionService] Attempting fallback to 'tiny' model...")
                 return self._get_model(force_size="tiny")
@@ -106,7 +105,7 @@ class TranscriptionService:
         
         try:
             # Run in a thread with a hard timeout to prevent job stalls
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             
             async def _do_transcribe():
                 return await loop.run_in_executor(
@@ -146,10 +145,10 @@ class TranscriptionService:
                 "words": words_data
             }
         except asyncio.TimeoutError:
-            logger.error(f"⏱️ [TranscriptionService] Transcription timed out for {audio_path}")
+            logger.exception(f"⏱️ [TranscriptionService] Transcription timed out for {audio_path}")
             raise
         except Exception as e:
-            logger.error(f"❌ [TranscriptionService] Local transcription failed: {e}")
+            logger.exception(f"❌ [TranscriptionService] Local transcription failed: {e}")
             raise
 
 # Singleton accessor

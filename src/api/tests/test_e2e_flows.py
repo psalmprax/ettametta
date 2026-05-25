@@ -64,7 +64,6 @@ class TestDiscoveryToCreationFlow:
 
     def test_select_niche(self, token):
         """Select a niche to monitor"""
-        niche = "Motivation"
         # Find or create monitored niche
         response = requests.get(
             f"{BASE_URL}/api/v1/discovery/niches",

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -99,7 +99,18 @@ const intelligenceItems = [
         ]
     },
     { name: "Knowledge Base", href: "/knowledge", icon: Brain },
-    { name: "Intel Core", href: "/analytics", icon: BarChart3 },
+    { 
+        name: "Intel Core", 
+        href: "/analytics", 
+        icon: BarChart3,
+        subItems: [
+            { name: "Intel Overview", href: "/analytics?engine=overview" },
+            { name: "Attention Decay", href: "/analytics?engine=retention" },
+            { name: "Neural Patterns", href: "/analytics?engine=patterns" },
+            { name: "Global Pulse", href: "/analytics?engine=propagation" },
+            { name: "Telemetry Logs", href: "/analytics?engine=logs" }
+        ]
+    },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
     { name: "Security Sentinel", href: "/security", icon: Lock },
     { name: "Agent Interface", href: "/agent", icon: Brain },
@@ -139,7 +150,19 @@ interface SidebarProps {
 
 export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = false, onToggle }) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const currentEngine = searchParams?.get("engine");
     const { logout, user } = useAuth();
+
+    const isSubActive = (subHref: string) => {
+        if (subHref.includes("?")) {
+            const [path, query] = subHref.split("?");
+            const params = new URLSearchParams(query);
+            const engineVal = params.get("engine");
+            return pathname === path && currentEngine === engineVal;
+        }
+        return pathname === subHref;
+    };
 
     return (
         <motion.div
@@ -198,7 +221,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                                 href={sub.href}
                                                 className={cn(
                                                     "block text-[10px] font-bold uppercase tracking-wider py-1.5 transition-colors",
-                                                    pathname === sub.href ? "text-cyan-400" : "text-zinc-600 hover:text-zinc-400"
+                                                    isSubActive(sub.href) ? "text-cyan-400" : "text-zinc-600 hover:text-zinc-400"
                                                 )}
                                             >
                                                 {sub.name}
@@ -235,7 +258,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                                 href={sub.href}
                                                 className={cn(
                                                     "block text-[10px] font-bold uppercase tracking-wider py-1.5 transition-colors",
-                                                    pathname === sub.href ? "text-violet-400" : "text-zinc-600 hover:text-zinc-400"
+                                                    isSubActive(sub.href) ? "text-violet-400" : "text-zinc-600 hover:text-zinc-400"
                                                 )}
                                             >
                                                 {sub.name}
@@ -272,7 +295,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                                 href={sub.href}
                                                 className={cn(
                                                     "block text-[10px] font-bold uppercase tracking-wider py-1.5 transition-colors",
-                                                    pathname === sub.href ? "text-rose-400" : "text-zinc-600 hover:text-zinc-400"
+                                                    isSubActive(sub.href) ? "text-rose-400" : "text-zinc-600 hover:text-zinc-400"
                                                 )}
                                             >
                                                 {sub.name}

@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Any
-import os
 from src.services.llm.intelligence_hub import base_intelligence_service
 
 logger = logging.getLogger("NarrativePlanner")
@@ -74,7 +73,7 @@ class NarrativePlanner:
             return blueprint
 
         except Exception as e:
-            logger.error(f"[NRM] Blueprint Generation Failed: {e}")
+            logger.exception(f"[NRM] Blueprint Generation Failed: {e}")
             return self._get_fallback_blueprint(topic)
 
     def _get_fallback_blueprint(self, topic: str) -> dict[str, Any]:

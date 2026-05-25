@@ -1,17 +1,15 @@
 import os
 import json
 import logging
-import asyncio
 import random
 from typing import Any
 from pathlib import Path
-from groq import AsyncGroq
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
 from src.services.base_agent import BaseEttamettaAgent
-from datetime import datetime
+from datetime import datetime, timezone
 
 class HermesSkillService(BaseEttamettaAgent):
     """
@@ -43,7 +41,7 @@ class HermesSkillService(BaseEttamettaAgent):
             with open(self.storage_path, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"[Hermes] Failed to load skills: {e}")
+            logger.exception(f"[Hermes] Failed to load skills: {e}")
             return {"global": [], "niches": {}}
 
     def _save_skills(self):
@@ -52,7 +50,7 @@ class HermesSkillService(BaseEttamettaAgent):
             with open(self.storage_path, 'w') as f:
                 json.dump(self.skills, f, indent=4)
         except Exception as e:
-            logger.error(f"[Hermes] Failed to save skills: {e}")
+            logger.exception(f"[Hermes] Failed to save skills: {e}")
 
     async def _trigger_recursive_spinoff(self, job_data: dict[str, Any], metrics: dict[str, Any], pattern_summary: str):
         """
@@ -145,7 +143,7 @@ class HermesSkillService(BaseEttamettaAgent):
             skill.update({
                 "job_id": job_id,
                 "niche": niche,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "performance": metrics
             })
             

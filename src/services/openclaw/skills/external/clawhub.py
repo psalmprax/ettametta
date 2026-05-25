@@ -1,8 +1,5 @@
 import requests
 import logging
-import os
-import json
-from typing import Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -32,7 +29,7 @@ class ClawHubSkillLoader:
                 return [item["name"] for item in contents if item["type"] == "dir"]
             return []
         except Exception as e:
-            logger.error(f"Error listing categories: {e}")
+            logger.exception(f"Error listing categories: {e}")
             return []
 
     def list_skills_in_category(self, category: str) -> list[dict]:
@@ -49,7 +46,7 @@ class ClawHubSkillLoader:
                 ]
             return []
         except Exception as e:
-            logger.error(f"Error listing skills in {category}: {e}")
+            logger.exception(f"Error listing skills in {category}: {e}")
             return []
 
     def get_skill_details(self, skill_path: str) -> dict | None:
@@ -72,7 +69,7 @@ class ClawHubSkillLoader:
                 return skill_info
             return None
         except Exception as e:
-            logger.error(f"Error getting skill details for {skill_path}: {e}")
+            logger.exception(f"Error getting skill details for {skill_path}: {e}")
             return None
 
     def search_skills(self, query: str, category: str | None = None) -> list[dict]:
@@ -95,7 +92,7 @@ class ClawHubSkillLoader:
             path = f"skills/{author}/{name}"
             return self.get_skill_details(path)
         except Exception as e:
-            logger.error(f"Error getting skill {author}/{name}: {e}")
+            logger.exception(f"Error getting skill {author}/{name}: {e}")
             return None
 
 

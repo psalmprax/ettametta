@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 class NexusStyle(Enum):
     CINEMATIC_DOC = "CINEMATIC_DOC"

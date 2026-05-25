@@ -1,4 +1,3 @@
-from typing import Any
 import asyncio
 import logging
 import socket
@@ -11,12 +10,10 @@ from src.api.config import settings
 from src.api.utils.database import get_db, async_session_factory
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
+from src.api.utils.auth import get_current_user
 from src.services.nexus_engine.orchestrator import base_nexus_service
 from pydantic import BaseModel, Field
 from src.api.utils.api_responses import success_response
-from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/nexus", tags=["Nexus Composition"])
 
@@ -28,6 +25,7 @@ class NexusComposeRequest(BaseModel):
     voiceover_paths: list[str] | None = None
     music_path: str | None = None
     script_segments: list[dict] | None = None
+    automation_mode: str = Field("manual", description="Automation level: manual, partial, or full")
     generate_thumbnail: bool = False
     cinema_mode: bool = False
     blueprint_id: str | None = Field("viral-reskin", description="The Nexus blueprint to execute.")
@@ -61,17 +59,38 @@ async def _update_job_progress(
             if job:
                 job.progress = progress
                 if status:
-                    job.status = status
+                    if isinstance(status, str):
+                        try:
+                            job.status = SystemJobStatus(status)
+                        except ValueError:
+                            try:
+                                job.status = SystemJobStatus[status.upper()]
+                            except KeyError:
+                                if status.upper() == "SYNTHESIS_ACTIVE":
+                                    job.status = SystemJobStatus.SYNTHESIS_ACTIVE
+                                elif status.upper() == "SYNTHESIZING":
+                                    job.status = SystemJobStatus.SYNTHESIZING
+                                else:
+                                    logging.exception(f"[Nexus] _update_job_progress: Invalid status '{status}' ignored.")
+                    else:
+                        job.status = status
                 if error:
                     job.error_log = error
                 if output_path:
                     job.output_path = output_path
                 await db.commit()
 
+            # Safely determine status string for WebSocket notification
+            ws_status = status
+            if job and hasattr(job.status, "value"):
+                ws_status = job.status.value
+            elif job:
+                ws_status = str(job.status)
+
             notify_nexus_job_update_sync(
                 {
                     "id": str(job_id),
-                    "status": status or (job.status if job else "UNKNOWN"),
+                    "status": ws_status or "UNKNOWN",
                     "progress": progress,
                     "niche": niche or (job.niche if job else ""),
                     **({} if error is None else {"error": error}),
@@ -113,7 +132,7 @@ async def _compose_core(
         blueprint = await get_blueprint_by_id(db, request.blueprint_id)
         if blueprint:
             nodes = blueprint.get("nodes", [])
-            total_nodes = len(nodes) if nodes else 4
+            len(nodes) if nodes else 4
 
             blueprint_inputs = {
                 "niche": request.niche,
@@ -256,7 +275,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     timeout=COMPOSE_TIMEOUT,
                 )
             except asyncio.TimeoutError:
-                logging.error(
+                logging.exception(
                     f"[Nexus] Job {job_id} timed out after {COMPOSE_TIMEOUT}s"
                 )
                 job.status = SystemJobStatus.FAILED
@@ -271,10 +290,11 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                         "error": f"Compose timed out after {COMPOSE_TIMEOUT}s",
                     }
                 )
+
         except Exception as e:
             import traceback
 
-            logging.error(
+            logging.exception(
                 f"[Nexus] Error in background task: {e}\n{traceback.format_exc()}"
             )
             try:
@@ -296,7 +316,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                         }
                     )
             except Exception as inner_e:
-                logging.error(f"[Nexus] Failed to update job error status: {inner_e}")
+                logging.exception(f"[Nexus] Failed to update job error status: {inner_e}")
 
 
 @router.post("/compose")
@@ -359,7 +379,6 @@ async def create_nexus_blueprint(
     """
     Creates a new custom Nexus blueprint.
     """
-    from src.api.utils.models import BlueprintDB
 
     # Check if ID exists
     stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint.id)
@@ -500,7 +519,6 @@ async def get_nexus_queue(
     """
     Returns current job queue status.
     """
-    from sqlalchemy import func
 
     # Get pending/processing jobs
     stmt = (
@@ -536,7 +554,7 @@ async def get_nexus_job(
     current_user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+    stmt = select(NexusJobDB).where(NexusJobDB.id == job_id, NexusJobDB.user_id == current_user.id)
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
 
@@ -595,7 +613,7 @@ async def get_nexus_telemetry(
     # 2. System Load (Real OS load avg)
     try:
         load_1, _, _ = os.getloadavg()
-    except:
+    except Exception:
         load_1 = 0.0  # Fallback for non-unix or restricted envs
 
     # 3. Dynamic Hardware Signals (Live Reports)

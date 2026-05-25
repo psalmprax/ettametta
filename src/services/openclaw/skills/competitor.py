@@ -1,7 +1,6 @@
 import json
 import logging
 import requests
-from datetime import datetime
 from src.api.config import settings
 from .memory import memory_skill
 from .base_skill import OpenClawBaseSkill
@@ -42,7 +41,7 @@ class CompetitorSkill(OpenClawBaseSkill):
             else:
                 return self._analyze_generic(channel_name, platform)
         except Exception as e:
-            logger.error(f"Intelligent workflow skill error: {e}")
+            logger.exception(f"Intelligent workflow skill error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def _analyze_youtube(self, channel_name: str) -> str:
@@ -54,7 +53,6 @@ class CompetitorSkill(OpenClawBaseSkill):
                 timeout=10,
             )
 
-            channel_data = {}
             videos = []
             if resp.status_code == 200:
                 results = resp.json()
@@ -63,7 +61,7 @@ class CompetitorSkill(OpenClawBaseSkill):
                 if isinstance(results, list):
                     videos = results
                     if results:
-                        channel_data = results[0].get("channel", {})
+                        results[0].get("channel", {})
 
             total_views = sum(
                 v.get("views", v.get("score", 0))
@@ -132,7 +130,7 @@ class CompetitorSkill(OpenClawBaseSkill):
 
     def _analyze_tiktok(self, username: str) -> str:
         try:
-            metrics_resp = requests.get(
+            requests.get(
                 f"https://www.tiktok.com/@{username}",
                 headers={"User-Agent": "Mozilla/5.0"},
                 timeout=10,

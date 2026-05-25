@@ -11,8 +11,6 @@ sys.path.append(PROJECT_DIR)
 os.environ["DEBUG"] = "true"
 os.environ["USE_OS_MODELS"] = "true"
 
-from src.services.nexus_engine.orchestrator import base_nexus_service
-from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("NexusNormalTest")
@@ -63,7 +61,7 @@ async def test_normal_fusion():
         if "fusion_details" in result:
              logger.info(f"📋 QC Report: {result['fusion_details'].get('qc_report')}")
     else:
-        logger.error(f"❌ Failed to generate output")
+        logger.error("❌ Failed to generate output")
 
 if __name__ == "__main__":
     asyncio.run(test_normal_fusion())

@@ -89,7 +89,6 @@ from src.api.routes import (
     internal,
     video_transform,
     content_editor,
-    publish,
     analytics,
     monetization,
     billing,
@@ -116,7 +115,9 @@ from src.api.routes import (
     tools,
     llm,
     reasoning,
+    notifications,
 )
+from src.api.routes.publish import router as publish_router
 
 from fastapi.staticfiles import StaticFiles
 
@@ -134,7 +135,7 @@ cors_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|[0-9\.]+)(\.sslip\.io)?(:[0-9]+)?",
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|0\.0\.0\.0)(\.sslip\.io)?(:[0-9]+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -163,7 +164,7 @@ async def seed_monitored_niches():
                     db.add(MonitoredNiche(niche=n, is_active=True))
                 await db.commit()
         except Exception as e:
-            logger.error(f"[Startup] Error seeding niches: {e}")
+            logger.exception(f"[Startup] Error seeding niches: {e}")
             await db.rollback()
 
 
@@ -207,7 +208,7 @@ v1_router.include_router(video_transform.router, tags=["Video Engine"])
 v1_router.include_router(video_generate.router, tags=["Video Engine"])
 v1_router.include_router(content_editor.router, tags=["Content Editor"])
 v1_router.include_router(video_jobs.router, tags=["Video Engine"])
-v1_router.include_router(publish.router, tags=["Publishing"])
+v1_router.include_router(publish_router, tags=["Publishing"])
 v1_router.include_router(analytics.router, tags=["Analytics"])
 v1_router.include_router(monetization.router, tags=["Monetization"])
 v1_router.include_router(billing.router, tags=["Billing"])
@@ -238,6 +239,7 @@ v1_router.include_router(autonomous_remix.router, tags=["Autonomous Remix"])
 v1_router.include_router(video_preview.router, tags=["Video Preview/Download"])
 v1_router.include_router(publishing.router, tags=["Publishing"])
 v1_router.include_router(monetization_dashboard.router, tags=["Monetization Dashboard"])
+v1_router.include_router(notifications.router, tags=["Notifications"])
 
 app.include_router(v1_router, prefix="/api")
 
@@ -262,17 +264,16 @@ async def report_frontend_error(request: Request):
             f"Component: {body.get('componentStack', 'N/A')[:200]}"
         )
     except Exception as e:
-        logger.error(f"Failed to parse frontend error report: {e}")
+        logger.exception(f"Failed to parse frontend error report: {e}")
     return {"status": "logged"}
 
 
+# Health endpoint is now in routes/health.py with DB/Redis dependency checks
+# Keep /health for Docker healthcheck compatibility
 @app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "version": "v1",
-        "services": {"ai_video": settings.AI_VIDEO_PROVIDER, "cache": "redis"},
-    }
+async def health_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/health")
 
 
 # Chaos Engineering endpoints (extracted to routes/chaos.py)

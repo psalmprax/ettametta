@@ -1,15 +1,11 @@
 import asyncio
 import logging
 import sys
-import os
 
 # Add src to path
 sys.path.append("/root/ettametta")
 
 from src.services.optimization.viral_loop import base_viral_loop
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import SystemSettings
-from sqlalchemy import select, update
 
 async def test_viral_loop(niche="Motivation"):
     logging.basicConfig(level=logging.INFO)

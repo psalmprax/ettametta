@@ -1,17 +1,16 @@
-from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 import os
 import logging
 from src.api.utils.api_responses import success_response
 import sys
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db, async_session_factory
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import NexusJobDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 
 sys.path.insert(
@@ -28,8 +27,7 @@ from src.services.openclaw.skills.external import (
     interpreter_service,
     blog_seo_service,
 )
-from src.services.openclaw.skills.research import ResearchSkill, research_skill
-from src.services.openclaw.skills.content import ContentSkill
+from src.services.openclaw.skills.research import research_skill
 from src.services.openclaw.skills.analytics import AnalyticsSkill
 from src.services.openclaw.skills.ingestion import data_ingestion_skill
 
@@ -254,7 +252,7 @@ async def run_crewai_crew(
                 await local_db.commit()
                 notify_nexus_job_update_sync({"id": str(job.id), "status": job.status, "progress": 100})
             except Exception as e:
-                logging.error(f"[Crew] Deployment failed: {e}")
+                logging.exception(f"[Crew] Deployment failed: {e}")
                 # Update job to failed
                 stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
                 res = await local_db.execute(stmt)

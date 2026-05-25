@@ -13,15 +13,11 @@ Used for product recommendations in video descriptions.
 
 import os
 import logging
-import asyncio
-import uuid
 import hashlib
 import json
 from typing import Any
-from datetime import datetime
-import aiohttp
+from datetime import datetime, timezone
 import httpx
-import time
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -30,33 +26,7 @@ from tenacity import (
 )
 
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
+from src.api.utils.resilience import CircuitBreaker
 
 
 logger = logging.getLogger(__name__)
@@ -157,7 +127,6 @@ class AffiliateService:
             self.logger.warning("Amazon PA-API circuit breaker is OPEN")
             return []
 
-        import uuid
         from botocore.auth import SigV4
         from botocore.awsrequest import AWSRequest
         from botocore.credentials import Credentials
@@ -374,7 +343,7 @@ class AffiliateService:
             # Requires API key, action, and optional parameters.
             # Authentication via x-ShareASale-Date and x-ShareASale-Authentication headers.
             base_url = "https://api.shareasale.com/x.cfm"
-            now = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+            now = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT")
 
             # Build signature: {API_KEY}:{ACTION}:{TIMESTAMP}
             # ACTION can be getProducts or getProductDetails

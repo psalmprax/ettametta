@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+export const dynamic = "force-dynamic";
+
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import {
     BarChart3,
     TrendingUp,
@@ -22,12 +24,13 @@ import {
     LineChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter, useSearchParams } from "next/navigation";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
@@ -35,7 +38,7 @@ import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { AreaChartCustom } from "@/components/ui/ChartComponents";
 
-const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
+const GlobalPulseGlobe = nextDynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
 
 interface AnalyticsMetrics {
     views: number;
@@ -47,9 +50,12 @@ interface AnalyticsMetrics {
     retentionData: { time: number; value: number }[];
 }
 
-export default function AnalyticsPage() {
+function AnalyticsContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const { agents, logs: systemLogs, status, pulse } = useTelemetry();
-    const [activeEngine, setActiveEngine] = useState("overview");
+    const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "overview");
+    const [pulseIntensityMultiplier, setPulseIntensityMultiplier] = useState(1.0);
     const [metrics, setMetrics] = useState<AnalyticsMetrics>({
         views: 0,
         retention: 0.82,
@@ -90,6 +96,11 @@ export default function AnalyticsPage() {
         fetchAnalytics();
     }, [fetchAnalytics]);
 
+    useEffect(() => {
+        const engine = searchParams.get("engine");
+        if (engine) setActiveEngine(engine);
+    }, [searchParams]);
+
     return (
         <CommandCenterLayout
             title="INTEL CORE"
@@ -105,7 +116,10 @@ export default function AnalyticsPage() {
                     ].map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveEngine(item.id)}
+                            onClick={() => {
+                                setActiveEngine(item.id);
+                                router.replace(`/analytics?engine=${item.id}`);
+                            }}
                             className={cn(
                                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                                 activeEngine === item.id ? "bg-violet-500/10 text-violet-400 border border-violet-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -287,11 +301,107 @@ export default function AnalyticsPage() {
                         )}
 
                         {activeEngine === "propagation" && (
-                            <div className="flex-1 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
-                                <GlobalPulseGlobe pulseIntensity={1} />
-                                <div className="absolute bottom-10 left-10 p-8 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-sm space-y-2">
-                                    <h4 className="text-white font-bold uppercase tracking-widest text-xs">Global Propagation Matrix</h4>
-                                    <p className="text-zinc-500 text-[10px] leading-relaxed italic">Mapping the trajectory of neural propagation across global platform clusters.</p>
+                            <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+                                {/* The Globe Viewport */}
+                                <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative min-h-[450px] flex items-center justify-center">
+                                    <GlobalPulseGlobe 
+                                        pulseIntensity={pulseIntensityMultiplier * (pulse?.metrics?.global_velocity ?? 1)} 
+                                        telemetry={pulse} 
+                                    />
+                                    
+                                    {/* Top-Left Floating HUD */}
+                                    <div className="absolute top-6 left-6 p-4 bg-black/60 backdrop-blur-xl border border-white/5 rounded-2xl space-y-1 select-none pointer-events-none">
+                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Network Orbit</span>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+                                            <span className="text-xs font-bold text-white font-mono">SYNCED_TO_MAIN_ORBIT</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom-Left Overlay */}
+                                    <div className="absolute bottom-6 left-6 p-6 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-xs space-y-3">
+                                        <h4 className="text-white font-black uppercase tracking-widest text-xs">Propagation Vector</h4>
+                                        <p className="text-zinc-500 text-[10px] leading-relaxed italic">
+                                            Analyzing real-time content dispersion velocity across decentralized client clusters.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Right Control & Status HUD Panel */}
+                                <div className="w-full lg:w-80 flex flex-col gap-4">
+                                    {/* Performance Stats */}
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Orbit Metrics</h3>
+                                        <div className="space-y-4">
+                                            {/* Velocity */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-[10px]">
+                                                    <span className="text-zinc-500 font-bold uppercase">Dispersion Rate</span>
+                                                    <span className="text-cyan-400 font-mono">{(pulse?.metrics?.global_velocity || 1.2).toFixed(2)}x</span>
+                                                </div>
+                                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-cyan-500" style={{ width: `${Math.min(100, (pulse?.metrics?.global_velocity || 1.2) * 50)}%` }} />
+                                                </div>
+                                            </div>
+                                            {/* Latency */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-[10px]">
+                                                    <span className="text-zinc-500 font-bold uppercase">Signal Integrity</span>
+                                                    <span className="text-violet-400 font-mono">{(pulse?.metrics?.signal_strength || 98.4).toFixed(1)}%</span>
+                                                </div>
+                                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-violet-500" style={{ width: `${pulse?.metrics?.signal_strength || 98.4}%` }} />
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Intensity Modulator */}
+                                            <div className="space-y-2 pt-2">
+                                                <div className="flex justify-between text-[10px]">
+                                                    <span className="text-zinc-500 font-bold uppercase">Pulse Multiplier</span>
+                                                    <span className="text-amber-400 font-mono">{pulseIntensityMultiplier.toFixed(1)}x</span>
+                                                </div>
+                                                <input 
+                                                    type="range" 
+                                                    min="0.2" 
+                                                    max="3.0" 
+                                                    step="0.1"
+                                                    value={pulseIntensityMultiplier}
+                                                    onChange={(e) => setPulseIntensityMultiplier(parseFloat(e.target.value))}
+                                                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500 outline-none"
+                                                />
+                                            </div>
+                                            
+                                            {/* Node Count */}
+                                            <div className="flex justify-between text-xs pt-4 border-t border-white/5">
+                                                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[9px]">Active Transmitters</span>
+                                                <span className="text-white font-bold font-mono">{pulse?.metrics?.active_nodes || 142} Nodes</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Active Hotspots HUD */}
+                                    <div className="flex-1 p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 flex flex-col min-h-0 space-y-4">
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Regional Hubs</h3>
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
+                                            {[
+                                                { name: "Americas", load: "74%", latency: "24ms", color: "border-cyan-500/20 text-cyan-400" },
+                                                { name: "Europe", load: "89%", latency: "18ms", color: "border-violet-500/20 text-violet-400" },
+                                                { name: "Asia-Pacific", load: "62%", latency: "42ms", color: "border-emerald-500/20 text-emerald-400" },
+                                                { name: "Africa", load: "45%", latency: "58ms", color: "border-amber-500/20 text-amber-500" }
+                                            ].map((hub, idx) => (
+                                                <div key={idx} className={cn("p-3 bg-white/2 border rounded-xl flex items-center justify-between transition-all hover:bg-white/5", hub.color)}>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-white">{hub.name}</p>
+                                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Latency: {hub.latency}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-xs font-bold font-mono">{hub.load}</span>
+                                                        <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">Load</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -366,5 +476,13 @@ export default function AnalyticsPage() {
                 </AnimatePresence>
             </div>
         </CommandCenterLayout>
+    );
+}
+
+export default function AnalyticsPage() {
+    return (
+        <Suspense fallback={null}>
+            <AnalyticsContent />
+        </Suspense>
     );
 }

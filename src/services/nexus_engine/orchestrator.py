@@ -1,9 +1,9 @@
 import os
 import logging
-import json
 import asyncio
 import time
 import random
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Dict
@@ -26,8 +26,6 @@ from tenacity import (
 from opentelemetry import trace
 from src.api.config import settings
 from src.api.utils.resilience import CircuitBreaker
-from src.services.video_engine.processor import base_video_processor
-from src.services.nexus_engine.audio_mixer import base_audio_mixer
 from src.services.nexus_engine.style_library import get_style
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
@@ -35,6 +33,25 @@ from src.shared.enums import NodeStatus
 
 logger = get_logger(__name__)
 tracer = trace.get_tracer(__name__)
+
+
+def _run_subprocess(
+    args: list[str],
+    *,
+    capture_output: bool = True,
+    text: bool = False,
+    check: bool = True,
+    cwd: str | None = None,
+) -> subprocess.CompletedProcess:  # type: ignore[type-arg]
+    """Run a subprocess command. Raises subprocess.CalledProcessError on non-zero exit."""
+    return subprocess.run(
+        args,
+        capture_output=capture_output,
+        text=text,
+        check=check,
+        cwd=cwd,
+    )
+
 
 class NexusOrchestrator:
     """
@@ -252,14 +269,17 @@ class NexusOrchestrator:
                         return 300  # Default for testing
                     if not os.path.exists(path):
                         return None
+                    cap = None
                     try:
                         cap = cv2.VideoCapture(path)
                         count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        cap.release()
                         return count if count > 0 else None
                     except Exception as e:
                         self.logger.warning(f"Failed to get frame count for {path}: {e}")
                         return None
+                    finally:
+                        if cap is not None:
+                            cap.release()
 
                 # Parallelize metadata extraction via threads to avoid blocking the event loop
                 counts = await asyncio.gather(
@@ -301,14 +321,17 @@ class NexusOrchestrator:
 
                         # Use CV2 to extract one frame
                         cap = cv2.VideoCapture(v_path)
-                        frame_idx = count // 2 if count else 0
-                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-                        ret, frame_img = cap.read()
-                        cap.release()
+                        try:
+                            clip_frames = clip.get("duration_in_frames", 0)
+                            frame_idx = clip_frames // 2 if clip_frames else 0
+                            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                            ret, frame_img = cap.read()
+                        finally:
+                            cap.release()
 
                         if ret:
-                            frame_path = f"temp/audit/frame_{job_id}_{i}.jpg"
-                            os.makedirs("temp/audit", exist_ok=True)
+                            frame_path = f"/tmp/ettametta/audit/frame_{job_id}_{i}.jpg"
+                            os.makedirs("/tmp/ettametta/audit", exist_ok=True)
                             cv2.imwrite(frame_path, frame_img)
                             
                             # Call Gemini Vision (Free Tier)
@@ -345,6 +368,15 @@ class NexusOrchestrator:
             
             # Fetch style config once for all downstream usage
             style_config = get_style(style)
+            
+            try:
+                from src.services.video_engine.stochastic_modulator import modulate_style
+                theme_preset = (job_metadata or {}).get("theme_preset")
+                style_config = modulate_style(style_config, seed=str(job_id), theme_preset=theme_preset)
+                self.logger.info(f"[Nexus] Stochastic modulation applied successfully for style: {style}")
+            except Exception as e:
+                self.logger.warning(f"[Nexus] Stochastic modulation failed: {e}")
+
             music_keywords = style_config.get("music_keywords", [])
             remotion_flags = style_config.get("remotion_flags", {})
 
@@ -378,12 +410,12 @@ class NexusOrchestrator:
                             self.logger.info(f"[Nexus] Auto-sourced music: {music_path}")
 
             # Concatenate all voiceovers into a single master file
-            master_voiceover = f"temp/voice/master_{job_id}.mp3"
-            os.makedirs("temp/voice", exist_ok=True)
+            master_voiceover = f"/tmp/ettametta/voice/master_{job_id}.mp3"
+            os.makedirs("/tmp/ettametta/voice", exist_ok=True)
             
             if len(voiceover_paths) > 1:
                 self.logger.info(f"[Nexus] Stitching {len(voiceover_paths)} voiceovers...")
-                list_path = f"temp/voice/list_{job_id}.txt"
+                list_path = f"/tmp/ettametta/voice/list_{job_id}.txt"
                 
                 def write_voiceover_list():
                     with open(list_path, "w") as f:
@@ -392,7 +424,7 @@ class NexusOrchestrator:
                 
                 await asyncio.to_thread(write_voiceover_list)
                 
-                await asyncio.to_thread(subprocess.run, ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover], capture_output=True)
+                await asyncio.to_thread(_run_subprocess, ["ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover])
                 audio_uri = master_voiceover
             else:
                 audio_uri = voiceover_paths[0] if voiceover_paths else music_path
@@ -402,7 +434,7 @@ class NexusOrchestrator:
             try:
                 probe_target = audio_uri if audio_uri and os.path.exists(audio_uri) else None
                 if probe_target:
-                    res = await asyncio.to_thread(subprocess.run, ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", probe_target], capture_output=True, text=True)
+                    res = await asyncio.to_thread(_run_subprocess, ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", probe_target], text=True)
                     total_duration_sec = float(res.stdout.strip())
                     # Add 2 seconds buffer for the Outtro to prevent sudden cutoff
                     total_frames = int((total_duration_sec + 2.0) * 30)
@@ -417,7 +449,7 @@ class NexusOrchestrator:
             word_timestamps = []
             if audio_uri and os.path.exists(audio_uri):
                 from src.services.audio.transcription_service import base_transcription_service
-                self.logger.info(f"[Nexus] Transcribing master audio for dynamic captions...")
+                self.logger.info("[Nexus] Transcribing master audio for dynamic captions...")
                 try:
                     # Transcribe to get word-level timing
                     transcript_data = await base_transcription_service.transcribe(audio_uri)
@@ -427,15 +459,15 @@ class NexusOrchestrator:
                     self.logger.error(f"[Nexus] Transcription failed: {e}")
 
             # 2.7 Thumbnail Extraction Node
-            thumbnail_path = f"temp/thumbnails/{job_id}.jpg"
-            os.makedirs("temp/thumbnails", exist_ok=True)
+            thumbnail_path = f"/tmp/ettametta/thumbnails/{job_id}.jpg"
+            os.makedirs("/tmp/ettametta/thumbnails", exist_ok=True)
             if visual_paths and os.path.exists(visual_paths[0]):
                 try:
-                    self.logger.info(f"[Nexus] Extracting thumbnail from first clip...")
-                    await asyncio.to_thread(subprocess.run, [
+                    self.logger.info("[Nexus] Extracting thumbnail from first clip...")
+                    await asyncio.to_thread(_run_subprocess, [
                         "ffmpeg", "-y", "-ss", "00:00:01.500", "-i", visual_paths[0],
                         "-frames:v", "1", "-q:v", "2", thumbnail_path
-                    ], capture_output=True)
+                    ])
                 except Exception as e:
                     self.logger.error(f"[Nexus] Thumbnail extraction failed: {e}")
 
@@ -488,7 +520,9 @@ class NexusOrchestrator:
                 await update_node(
                     "synthesis", NodeStatus.FAILED, 60, "Rendered file is invalid or empty"
                 )
-                raise RuntimeError("Rendered file is invalid")                await update_node("synthesis", NodeStatus.COMPLETED, 90)
+                raise RuntimeError("Rendered file is invalid")
+            
+            await update_node("synthesis", NodeStatus.COMPLETED, 90)
 
             # 4. Egress Node - Automated Publishing & Final Stats
             with tracer.start_as_current_span("Nexus.Node.Egress"):
@@ -498,11 +532,13 @@ class NexusOrchestrator:
                 # Extract final metadata for reporting
                 try:
                     cap = cv2.VideoCapture(rendered_path)
-                    final_fps = cap.get(cv2.CAP_PROP_FPS)
-                    final_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    final_duration = final_frames / final_fps if final_fps > 0 else 0
-                    cap.release()
-                    self.logger.info(f"[Nexus] Final video stats: {final_duration:.1f}s, {final_fps:.1f} fps")
+                    try:
+                        final_fps = cap.get(cv2.CAP_PROP_FPS)
+                        final_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                        final_duration = final_frames / final_fps if final_fps > 0 else 0
+                        self.logger.info(f"[Nexus] Final video stats: {final_duration:.1f}s, {final_fps:.1f} fps")
+                    finally:
+                        cap.release()
                 except Exception as e:
                     self.logger.warning(f"Failed to extract final video metadata: {e}")
                     final_duration = 0
@@ -533,8 +569,9 @@ class NexusOrchestrator:
 
                 # Temp Cleanup: Remove intermediate files
                 try:
-                    import shutil
-                    for temp_dir in ["temp/voice", "temp/audit", "temp/thumbnails"]:
+                    cwd = Path.cwd()
+                    for rel_dir in ["/tmp/ettametta/voice", "/tmp/ettametta/audit", "/tmp/ettametta/thumbnails"]:
+                        temp_dir = str(cwd / rel_dir)
                         if os.path.exists(temp_dir):
                             shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as e:

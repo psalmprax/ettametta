@@ -1,7 +1,5 @@
 import os
 import logging
-import asyncio
-import uuid
 import json
 from typing import Any
 from .perchance import perchance_skill

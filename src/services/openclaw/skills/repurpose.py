@@ -148,17 +148,17 @@ class RepurposeSkill(OpenClawBaseSkill):
                     results.append(f"❌ {platform}: Error - {e}")
 
             lines = [
-                f"🔄 **Content Repurposing**",
+                "🔄 **Content Repurposing**",
                 f"Source: `{source_job_id}` — {source_title}",
                 "",
             ]
             lines.extend(results)
             lines.append("")
-            lines.append(f"Use `/publish` on each job once rendering completes.")
+            lines.append("Use `/publish` on each job once rendering completes.")
             return "\n".join(lines)
 
         except Exception as e:
-            logger.error(f"Repurpose Skill Error: {e}")
+            logger.exception(f"Repurpose Skill Error: {e}")
             return f"⚠️ Repurpose Error: {e}"
 
     def generate_caption_variants(
@@ -172,7 +172,7 @@ class RepurposeSkill(OpenClawBaseSkill):
                         "content": (
                             f"You are a viral content expert. Generate {count} distinct caption variants "
                             f"for {platform}. Each should have a different angle: emotional, curiosity-driven, "
-                            f"data-backed, contrarian, and story-based. Keep them platform-optimized."
+                            "data-backed, contrarian, and story-based. Keep them platform-optimized."
                         ),
                     },
                     {
@@ -199,7 +199,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Caption generation failed: {resp.status_code}"
         except Exception as e:
-            logger.error(f"Caption Variant Error: {e}")
+            logger.exception(f"Caption Variant Error: {e}")
             return f"⚠️ Caption Error: {e}"
 
     def generate_hashtag_sets(
@@ -212,9 +212,9 @@ class RepurposeSkill(OpenClawBaseSkill):
                         "role": "system",
                         "content": (
                             f"Generate {count} distinct hashtag sets for {platform} content in the '{niche}' niche. "
-                            f"Each set should have 10-15 hashtags mixing: 3-5 broad (1M+ posts), "
-                            f"5-7 medium (100K-1M), and 2-3 niche-specific (<100K). "
-                            f"Format each set as a clean block of hashtags."
+                            "Each set should have 10-15 hashtags mixing: 3-5 broad (1M+ posts), "
+                            "5-7 medium (100K-1M), and 2-3 niche-specific (<100K). "
+                            "Format each set as a clean block of hashtags."
                         ),
                     },
                     {
@@ -241,7 +241,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Hashtag generation failed: {resp.status_code}"
         except Exception as e:
-            logger.error(f"Hashtag Generation Error: {e}")
+            logger.exception(f"Hashtag Generation Error: {e}")
             return f"⚠️ Hashtag Error: {e}"
 
     def repurpose_script_to_posts(self, script: str, platforms: list = None) -> str:
@@ -286,7 +286,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Script repurposing failed: {resp.status_code}"
         except Exception as e:
-            logger.error(f"Script Repurpose Error: {e}")
+            logger.exception(f"Script Repurpose Error: {e}")
             return f"⚠️ Repurpose Error: {e}"
 
 

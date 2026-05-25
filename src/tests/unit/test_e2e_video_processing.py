@@ -13,7 +13,6 @@ Complete workflow test from content discovery to video preview:
 import asyncio
 import sys
 import os
-import json
 from pathlib import Path
 from typing import Any
 
@@ -53,17 +52,19 @@ class MockFFmpeg:
         return type("result", (), {"returncode": 0, "stdout": b"", "stderr": b""})()
 
 
-# Apply mocks
-sys.modules["moviepy"] = MockMoviePy()
-sys.modules["moviepy.video.io.VideoFileClip"] = MockMoviePy.VideoFileClip
-sys.modules["moviepy.video.compositing.CompositeVideoClip"] = (
-    MockMoviePy.CompositeVideoClip
-)
-sys.modules["subprocess"] = type("subprocess", (), {"run": MockFFmpeg().run})()
+# Apply mocks (moved to function to avoid side effects on import)
+def apply_test_mocks():
+    sys.modules["moviepy"] = MockMoviePy()
+    sys.modules["moviepy.video.io.VideoFileClip"] = MockMoviePy.VideoFileClip
+    sys.modules["moviepy.video.compositing.CompositeVideoClip"] = (
+        MockMoviePy.CompositeVideoClip
+    )
+    sys.modules["subprocess"] = type("subprocess", (), {"run": MockFFmpeg().run})()
 
 
 async def run_e2e_video_processing_test():
     """Execute complete end-to-end video processing test"""
+    apply_test_mocks()
 
     print("🎬 ETTAMETTA VIDEO EDITOR - END-TO-END PROCESSING TEST")
     print("=" * 70)
@@ -93,7 +94,7 @@ async def run_e2e_video_processing_test():
     print("📋 TEST CONFIGURATION:")
     print(f"   • Niche: {test_niche}")
     print(f"   • Scenes: {len(test_scenes)}")
-    print(f"   • Target Duration: 50 seconds")
+    print("   • Target Duration: 50 seconds")
     print()
 
     # Phase 1: Content Discovery

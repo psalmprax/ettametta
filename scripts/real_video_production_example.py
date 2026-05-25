@@ -7,7 +7,6 @@ Shows how to produce actual videos once dependencies are installed.
 """
 
 import asyncio
-import os
 from pathlib import Path
 
 # Add project root

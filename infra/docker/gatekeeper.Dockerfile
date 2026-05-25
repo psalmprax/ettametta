@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir fastapi uvicorn httpx
 EXPOSE 8133
 
 # Create persistent state directory
-RUN mkdir -p /workspace
+RUN mkdir -p /workspace && useradd -m -r appuser && chown -R appuser:appuser /app /workspace
+USER appuser
 
 CMD ["python", "gateway.py"]

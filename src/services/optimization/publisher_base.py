@@ -211,7 +211,7 @@ class SocialPublisher(ABC):
                         continue
 
                 # For other errors, log and return immediately
-                logger.error(
+                logger.exception(
                     f"[{self.platform_name}] Non-retryable error: {last_error}"
                 )
                 return None, last_error
@@ -272,7 +272,7 @@ class SocialPublisher(ABC):
                 platform_id, user_id, account_id, headers
             )
         except Exception as e:
-            logger.error(f"[{self.platform_name}] Metrics fetch failed: {e}")
+            logger.exception(f"[{self.platform_name}] Metrics fetch failed: {e}")
             return {"error": str(e)}
 
     @abstractmethod

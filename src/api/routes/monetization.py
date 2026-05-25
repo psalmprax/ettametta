@@ -1,18 +1,16 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import AffiliateLinkDB, RevenueLogDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.api_responses import success_response
 from src.services.monetization.service import base_monetization_service
 from src.services.monetization.promo_generator import base_promo_service
 from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from pydantic import BaseModel
-from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/monetization", tags=["Monetization"])
 
@@ -125,10 +123,10 @@ async def get_empire_metrics(
 ):
     """Get empire metrics - returns basic stats for now."""
     import datetime
-    from sqlalchemy import select, func, desc
-    from src.api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
+    from sqlalchemy import select, func
+    from src.api.utils.models import PublishedContentDB, SocialAccount
 
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(timezone.utc)
     last_week = now - datetime.timedelta(days=7)
 
     # Total connected accounts
@@ -175,7 +173,6 @@ async def get_empire_activity(
     """
     Returns the recent activity logs for the empire timeline.
     """
-    import datetime
     from sqlalchemy import select, desc
     from src.api.utils.models import PublishedContentDB
 
@@ -216,7 +213,7 @@ async def get_winning_blueprints(
     current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """Get winning content blueprints from past publishes."""
-    from sqlalchemy import select, desc, func
+    from sqlalchemy import select, desc
     from src.api.utils.models import PublishedContentDB
 
     # Get top performing content
@@ -365,7 +362,7 @@ async def clone_strategy(
                 engine="cloud"
             )
         except Exception as e:
-            logging.error(f"[Monetization] Failed to launch automated video for clone: {e}")
+            logging.exception(f"[Monetization] Failed to launch automated video for clone: {e}")
 
     return success_response(
         data={
@@ -440,6 +437,125 @@ async def trigger_evolution(current_user=Depends(get_current_user)):
             "status": "initiated",
             "message": "Global Flywheel Evolution sequence activated.",
             "optimization_target": "70% pruning threshold",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
+
+
+# --- Affiliate Network Webhooks ---
+
+class AffiliatePostback(BaseModel):
+    """Postback/conversion data from affiliate networks."""
+    network: str  # amazon, impact, sharesale
+    transaction_id: str
+    affiliate_link_id: str | None = None
+    order_id: str | None = None
+    amount: float = 0.0
+    commission: float = 0.0
+    currency: str = "USD"
+    status: str = "approved"  # approved, pending, rejected
+    click_id: str | None = None
+    sub_id: str | None = None
+    timestamp: str | None = None
+
+
+@router.post("/webhook/affiliate")
+async def affiliate_webhook(
+    postback: AffiliatePostback,
+    db=Depends(get_db),
+):
+    """
+    Receives postback/conversion tracking from affiliate networks.
+    No authentication - networks call this directly with transaction data.
+    """
+    logging.info(
+        f"[Affiliate Webhook] {postback.network} conversion: "
+        f"tx={postback.transaction_id}, amount={postback.amount}, "
+        f"commission={postback.commission}"
+    )
+
+    # Log revenue
+    revenue_log = RevenueLogDB(
+        platform=f"affiliate_{postback.network}",
+        niche="affiliate",
+        amount=postback.commission,
+        view_count=1,
+    )
+    db.add(revenue_log)
+
+    # Update affiliate link stats if link_id provided
+    if postback.affiliate_link_id:
+        from sqlalchemy import update
+        stmt = (
+            update(AffiliateLinkDB)
+            .where(AffiliateLinkDB.id == postback.affiliate_link_id)
+            .values(
+                click_count=(AffiliateLinkDB.click_count or 0) + 1,
+                total_revenue=(AffiliateLinkDB.total_revenue or 0) + postback.commission,
+            )
+        )
+        await db.execute(stmt)
+
+    await db.commit()
+
+    return success_response(
+        data={
+            "status": "received",
+            "transaction_id": postback.transaction_id,
+            "network": postback.network,
+        }
+    )
+
+
+@router.post("/webhook/impact")
+async def impact_webhook(request: dict, db=Depends(get_db)):
+    """
+    Impact Radius specific webhook handler.
+    Impact sends different payload format.
+    """
+    logging.info(f"[Impact Webhook] Received: {request}")
+
+    # Extract Impact-specific fields
+    action_id = request.get("actionId", request.get("id"))
+    request.get("state", "approved").lower()
+    float(request.get("amount", 0))
+    commission = float(request.get("commission", 0))
+
+    if action_id:
+        revenue_log = RevenueLogDB(
+            platform="affiliate_impact",
+            niche="affiliate",
+            amount=commission,
+            view_count=1,
+        )
+        db.add(revenue_log)
+        await db.commit()
+
+    return success_response(data={"status": "received", "action_id": action_id})
+
+
+@router.post("/webhook/sharesale")
+async def sharesale_webhook(request: dict, db=Depends(get_db)):
+    """
+    ShareASale specific webhook handler.
+    ShareASale sends transaction data via server-to-server postback.
+    """
+    logging.info(f"[ShareASale Webhook] Received: {request}")
+
+    # Extract ShareASale-specific fields
+    trans_id = request.get("trans_id", request.get("transaction_id"))
+    float(request.get("amount", 0))
+    commission = float(request.get("commission", 0))
+    "approved" if request.get("status") == "approved" else "pending"
+
+    if trans_id:
+        revenue_log = RevenueLogDB(
+            platform="affiliate_sharesale",
+            niche="affiliate",
+            amount=commission,
+            view_count=1,
+        )
+        db.add(revenue_log)
+        await db.commit()
+
+    return success_response(data={"status": "received", "trans_id": trans_id})

@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from src.api.utils.database import get_db
 from src.api.utils.auth import (
     verify_password,
     get_password_hash,
     create_access_token,
-    decode_access_token,
     sign_oauth_state,
     verify_oauth_state,
+    get_current_user,
+    oauth2_scheme,
 )
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 from src.api.config import settings
 from src.api.utils.api_responses import (
     success_response,
@@ -24,15 +24,12 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from authlib.integrations.base_client import OAuthError
 import secrets
-import redis
 import redis.asyncio as redis_async
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def create_google_flow():
@@ -94,8 +91,7 @@ class UserResponse(BaseModel):
     role: str
     subscription: SubscriptionTier | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -103,9 +99,6 @@ class Token(BaseModel):
     token_type: str
 
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from src.api.utils.database import get_db
 
 
 @router.post("/register")
@@ -152,7 +145,7 @@ async def register(user: UserCreate, db=Depends(get_db)):
         await db.refresh(new_user)
     except Exception as e:
         await db.rollback()
-        logger.error(f"Registration failure: {e}")
+        logger.exception(f"Registration failure: {e}")
         raise APIError(message="Could not complete registration", status_code=500)
 
     return success_response(
@@ -161,19 +154,67 @@ async def register(user: UserCreate, db=Depends(get_db)):
     )
 
 
+class LoginRequest(BaseModel):
+    """Login request supporting both username and email."""
+    username: str | None = None
+    email: str | None = None
+    password: str
+
+
 @router.post("/login")
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    request: Request,
     db=Depends(get_db),
 ):
+    # Detect content type and parse accordingly
+    content_type = request.headers.get("content-type", "")
+    
+    if "application/json" in content_type:
+        # JSON request from frontend
+        try:
+            body = await request.json()
+            identifier = body.get("username") or body.get("email")
+            password = body.get("password")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON body"
+            )
+    else:
+        # Form-encoded request (OAuth2 standard)
+        form_data = await request.form()
+        identifier = form_data.get("username")
+        password = form_data.get("password")
+    
+    if not identifier or not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username/email and password are required"
+        )
+
     # Support login with either username OR email
     stmt = select(UserDB).where(
-        (UserDB.email == form_data.username) | (UserDB.username == form_data.username)
+        (UserDB.email == identifier) | (UserDB.username == identifier)
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user:
+        logger.warning(f"[LOGIN] User not found: {identifier}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username/email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    logger.info(f"[LOGIN] Verifying password for user: {user.email}")
+    try:
+        password_valid = verify_password(password, user.hashed_password)
+    except Exception as e:
+        logger.exception(f"[LOGIN] Password verification error: {type(e).__name__}: {e}")
+        raise
+    
+    if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username/email or password",
@@ -183,41 +224,6 @@ async def login(
     access_token = create_access_token(data={"sub": user.email})
 
     return success_response(data={"access_token": access_token, "token_type": "bearer"})
-
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), db=Depends(get_db)
-):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    payload = await decode_access_token(token)
-    if payload is None:
-        raise credentials_exception
-    email: str = payload.get("sub")
-    if email is None:
-        raise credentials_exception
-
-    stmt = select(UserDB).where(UserDB.email == email)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-
-    if user is None:
-        raise credentials_exception
-    return user
-
-
-def admin_required(current_user: UserDB = Depends(get_current_user)) -> UserDB:
-    from src.api.utils.user_models import UserRole
-
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrative privileges required for this operation.",
-        )
-    return current_user
 
 
 @router.get("/me")
@@ -242,7 +248,6 @@ async def google_auth():
 
 @router.post("/logout")
 async def logout(token: str = Depends(oauth2_scheme)):
-    import redis.asyncio as redis_async
 
     redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
     try:
@@ -349,7 +354,7 @@ async def get_users_with_bots(request: Request, db=Depends(get_db)):
 
     # Get all users with telegram_bot_token set
     result = await db.execute(
-        select(UserDB).where(UserDB.telegram_token != None, UserDB.telegram_token != "")
+        select(UserDB).where(UserDB.telegram_token is not None, UserDB.telegram_token != "")
     )
     users = result.scalars().all()
 

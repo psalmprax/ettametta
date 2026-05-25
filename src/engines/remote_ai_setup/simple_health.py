@@ -3,7 +3,6 @@
 Super minimal health server using only stdlib
 """
 
-import json
 import socket
 import threading
 
@@ -22,7 +21,7 @@ Content-Type: text/plain
 
 Not Found"""
         client_socket.send(response.encode())
-    except:
+    except Exception:
         pass
     finally:
         client_socket.close()

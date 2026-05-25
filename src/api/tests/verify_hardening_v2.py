@@ -1,7 +1,6 @@
 import sys
 import os
 import asyncio
-import logging
 from unittest.mock import MagicMock
 
 # Add current dir to path

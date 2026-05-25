@@ -146,7 +146,7 @@ class XPublisher(SocialPublisher):
                         logger.error(f"[XPublisher] Processing failed: {error}")
                         return None
 
-            logger.info(f"[XPublisher] FINALIZE ok, media ready")
+            logger.info("[XPublisher] FINALIZE ok, media ready")
 
             # Step 4: Create Tweet using v2 API
             tweet_url = "https://api.twitter.com/2/tweets"
@@ -228,4 +228,4 @@ class XPublisher(SocialPublisher):
         return await token_manager.get_token("x", user_id=user_id) is not None
 
 
-base_x_service = XPublisher()
+base_x_publisher_service = XPublisher()

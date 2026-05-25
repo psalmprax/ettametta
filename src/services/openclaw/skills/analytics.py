@@ -33,7 +33,7 @@ class AnalyticsSkill(OpenClawBaseSkill):
                 data = raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
                 
                 return (
-                    f"📊 **Empire Analytics Summary**:\n"
+                    "📊 **Empire Analytics Summary**:\n"
                     f"• Total Reach: `{data.get('total_reach', '0')}`\n"
                     f"• Active Trends: `{data.get('active_trends', 0)}`\n"
                     f"• Videos Processed: `{data.get('videos_processed', 0)}`\n"
@@ -46,7 +46,7 @@ class AnalyticsSkill(OpenClawBaseSkill):
                 return f"⚠️ **Analytics Error**: Status {response.status_code}"
                 
         except Exception as e:
-            logger.error(f"Analytics Skill Error: {e}")
+            logger.exception(f"Analytics Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
     def get_recent_posts(self, limit: int = 5) -> str:
@@ -90,7 +90,7 @@ class AnalyticsSkill(OpenClawBaseSkill):
                 logs = data.get('logs', [])
                 
                 return (
-                    f"💰 **Revenue Report**:\n"
+                    "💰 **Revenue Report**:\n"
                     f"• Total Generated: `${total:.2f}`\n"
                     f"• estimated EPM: `${epm:.2f}`\n"
                     f"• Total Transactions: `{len(logs)}`"

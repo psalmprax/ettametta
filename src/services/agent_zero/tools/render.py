@@ -31,7 +31,7 @@ class RenderTool:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
                 
         except Exception as e:
-            logger.error(f"RenderTool Error: {e}")
+            logger.exception(f"RenderTool Error: {e}")
             return {"error": str(e)}
 
 render_tool = RenderTool()

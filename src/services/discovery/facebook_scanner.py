@@ -100,9 +100,9 @@ class FacebookScanner:
                                     data = json.loads(json_str)
                                     videos = self._extract_videos_from_json(data)
                                     candidates.extend(videos)
-                                except:
+                                except Exception:
                                     pass
-                        except:
+                        except Exception:
                             pass
                 
                 # Alternative: Look for structured data
@@ -117,7 +117,7 @@ class FacebookScanner:
                         data = json.loads(sd_str)
                         videos = self._extract_videos_from_schema(data)
                         candidates.extend(videos)
-                    except:
+                    except Exception:
                         pass
                 
         except Exception as e:
@@ -164,9 +164,9 @@ class FacebookScanner:
                                     data = json.loads(json_str)
                                     videos = self._extract_videos_from_json(data)
                                     candidates.extend(videos)
-                                except:
+                                except Exception:
                                     pass
-                        except:
+                        except Exception:
                             pass
                 
         except Exception as e:
@@ -263,4 +263,4 @@ class FacebookScanner:
         return candidates
 
 
-base_facebook_service = FacebookScanner()
+base_facebook_scanner_service = FacebookScanner()

@@ -1,22 +1,18 @@
 from typing import Any
-from src.api.utils.database import async_session_factory
 from src.api.utils.credit_models import (
     UserCreditDB,
     CreditTransactionDB,
     CreditPackageDB,
     ReferralDB,
-    CreditUsageRuleDB,
-    SubscriptionCreditDB,
 )
-from src.api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.user_models import UserDB
 from src.api.utils.subscription import get_subscription_tier_value
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import uuid
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from src.api.utils.database import get_db
+from sqlalchemy import select
 
 from src.shared.enums import ReferralStatus
 
@@ -25,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def utc_now():
     """Get current UTC datetime (naive for PostgreSQL compatibility)"""
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 class CreditService:
@@ -80,7 +76,7 @@ class CreditService:
                 lifetime_spent=0,
             )
             db.add(user_credits)
-            await db.commit()
+            await db.flush()
             await db.refresh(user_credits)
 
         return user_credits
@@ -103,6 +99,7 @@ class CreditService:
         db: AsyncSession,
         reference_id: str | None = None,
         auto_commit: bool = True,
+        description: str | None = None,
     ) -> tuple[bool, str]:
         """
         Attempt to consume credits for an action.
@@ -139,7 +136,7 @@ class CreditService:
                 amount=-amount,
                 balance_after=user_credits.balance,
                 transaction_type="spent",
-                description=f"Action: {action}",
+                description=description or f"Action: {action}",
                 reference_id=reference_id,
             )
             db.add(transaction)
@@ -156,7 +153,7 @@ class CreditService:
 
         except Exception as e:
             await db.rollback()
-            logger.error(f"[CreditService] Error consuming credits: {e}")
+            logger.exception(f"[CreditService] Error consuming credits: {e}")
             return False, str(e)
 
     async def add_credits(
@@ -198,7 +195,7 @@ class CreditService:
             return True
         except Exception as e:
             await db.rollback()
-            logger.error(f"[CreditService] Error adding credits: {e}")
+            logger.exception(f"[CreditService] Error adding credits: {e}")
             return False
 
     async def get_transaction_history(
@@ -230,7 +227,7 @@ class CreditService:
         """Get available credit packages for purchase"""
         stmt = (
             select(CreditPackageDB)
-            .where(CreditPackageDB.is_active == True)
+            .where(CreditPackageDB.is_active)
             .order_by(CreditPackageDB.price_cents.asc())
         )
         result = await db.execute(stmt)
@@ -271,7 +268,7 @@ class CreditService:
             return code
         except Exception as e:
             await db.rollback()
-            logger.error(f"[CreditService] Error generating referral code: {e}")
+            logger.exception(f"[CreditService] Error generating referral code: {e}")
             raise
 
     async def get_referral_code(self, user_id: str, db: AsyncSession) -> str:
@@ -325,7 +322,7 @@ class CreditService:
 
         except Exception as e:
             await db.rollback()
-            logger.error(f"[CreditService] Error applying referral: {e}")
+            logger.exception(f"[CreditService] Error applying referral: {e}")
             return False, str(e)
 
     async def get_referrals(

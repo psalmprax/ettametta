@@ -70,7 +70,7 @@ class RhythmEngine:
             }
 
         except Exception as e:
-            logger.error(f"[Rhythm] Analysis failed: {e}")
+            logger.exception(f"[Rhythm] Analysis failed: {e}")
             return {"bpm": 0, "beats": [], "onsets": [], "error": str(e)}
 
     def find_nearest_beat(self, timestamp: float, beat_markers: list[float], tolerance: float = 0.5) -> float:
@@ -81,12 +81,12 @@ class RhythmEngine:
         if not beat_markers:
             return timestamp
 
-        # Find closest beat
-        diffs = [abs(b - timestamp) for b in beat_markers]
-        min_idx = np.argmin(diffs)
+        markers = np.asarray(beat_markers, dtype=float)
+        diffs = np.abs(markers - timestamp)
+        min_idx = int(np.argmin(diffs))
         
         if diffs[min_idx] <= tolerance:
-            return beat_markers[min_idx]
+            return float(beat_markers[min_idx])
         
         return timestamp
 

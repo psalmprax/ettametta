@@ -15,11 +15,8 @@ This test runs without human intervention to prove the system's capabilities.
 import asyncio
 import sys
 import os
-import json
-import tempfile
 from pathlib import Path
 from typing import Any
-import time
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -114,7 +111,6 @@ class AutomatedVideoEditorTest:
         """Test content-based video discovery capabilities"""
         try:
             # Import video lead scanner
-            from src.services.discovery.video_lead_scanner import video_lead_scanner
 
             print(f"🔍 Discovering videos for niche: '{self.test_data['niche']}'")
 
@@ -547,7 +543,7 @@ async def main():
 
     summary = results["test_summary"]
     print(f"📊 OVERALL RESULT: {summary['overall_result']}")
-    print(f"Success rate: {summary["success_rate"]:.1f}%")
+    print(f"Success rate: {summary['success_rate']:.1f}%")
     print(f"✅ Capabilities Demonstrated: {len(results['capabilities_demonstrated'])}")
 
     print("\n🏆 DEMONSTRATED CAPABILITIES:")

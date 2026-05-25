@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.engines.intelligent_video_workflow import discover_multi_platform
 from src.engines.real_video_fusion_engine import RealVideoFusionEngine
-from src.services.discovery.service import DiscoveryService
 
 # Configure logging to show the cinematic events clearly
 logging.basicConfig(
@@ -29,7 +28,6 @@ async def run_e2e_workflow():
     print("="*60)
 
     topic = "AI productivity tools 2026"
-    niche = "AI"
     duration = 30
     
     # Initialize Engine

@@ -1,9 +1,7 @@
 from fastapi import HTTPException, status, Depends
 from src.api.utils.database import get_db
-from src.api.utils.user_models import UserDB, UserRole, SubscriptionTier
-from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, SubscriptionTier
 from sqlalchemy.ext.asyncio import AsyncSession
-from functools import wraps
 from src.shared.enums import CreditAction
 
 
@@ -11,6 +9,7 @@ def subscription_required(required_tier: SubscriptionTier):
     """
     Dependency to enforce a minimum subscription tier.
     """
+    from src.api.utils.auth import get_current_user
 
     async def dependency(current_user: UserDB = Depends(get_current_user)):
         # Tier hierarchy check
@@ -40,7 +39,7 @@ async def check_daily_limit(current_user: UserDB, db_session: AsyncSession):
     Checks if the user has exceeded their daily video generation limit.
     """
     from src.api.utils.models import VideoJobDB
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     from sqlalchemy import select, func
 
     # Define limits (Daily for Free/Creator, Monthly for others)
@@ -57,9 +56,9 @@ async def check_daily_limit(current_user: UserDB, db_session: AsyncSession):
 
     # Calculate window start
     if config["window"] == "month":
-        lookback = datetime.utcnow() - timedelta(days=30)
+        lookback = datetime.now(timezone.utc) - timedelta(days=30)
     else:
-        lookback = datetime.utcnow() - timedelta(days=1)
+        lookback = datetime.now(timezone.utc) - timedelta(days=1)
 
     # Async-compatible count query
     result = await db_session.execute(
@@ -81,6 +80,7 @@ def daily_limit_reached():
     """
     FastAPI dependency to enforce daily limits.
     """
+    from src.api.utils.auth import get_current_user
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),
@@ -96,6 +96,7 @@ def engine_access_required(engine: str):
     """
     Dependency to check if a user has access to a specific AI engine.
     """
+    from src.api.utils.auth import get_current_user
 
     async def dependency(current_user: UserDB = Depends(get_current_user)):
         tier_values = {
@@ -161,6 +162,7 @@ def credits_required(action: CreditAction | str):
     Dependency to check and consume credits for an action.
     Accepts CreditAction enum or string for backward compatibility.
     """
+    from src.api.utils.auth import get_current_user
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),

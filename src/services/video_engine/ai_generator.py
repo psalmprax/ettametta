@@ -1,4 +1,3 @@
-from typing import Any
 """
 AI Video Generation Service - Any Tier 3 Enhancement
 
@@ -9,8 +8,6 @@ Disabled by default - enable via AI_VIDEO_PROVIDER=runway or AI_VIDEO_PROVIDER=p
 import os
 import logging
 import asyncio
-from pathlib import Path
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +99,7 @@ class AIVideoGeneratorService:
                 )
 
         except Exception as e:
-            logger.error(f"[AIGenerator] Generation failed: {e}")
+            logger.exception(f"[AIGenerator] Generation failed: {e}")
             return None
 
     async def _generate_runway(
@@ -151,7 +148,7 @@ class AIVideoGeneratorService:
                     return None
 
         except Exception as e:
-            logger.error(f"[AIGenerator] Runway request failed: {e}")
+            logger.exception(f"[AIGenerator] Runway request failed: {e}")
             return None
 
     async def _poll_runway_job(
@@ -242,7 +239,7 @@ class AIVideoGeneratorService:
                     return None
 
         except Exception as e:
-            logger.error(f"[AIGenerator] Pika request failed: {e}")
+            logger.exception(f"[AIGenerator] Pika request failed: {e}")
             return None
 
     async def _poll_pika_job(

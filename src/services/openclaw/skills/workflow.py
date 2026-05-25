@@ -129,7 +129,7 @@ class WorkflowSkill(OpenClawBaseSkill):
         except Exception as e:
             workflow["status"] = SystemJobStatus.FAILED
             workflow["error"] = str(e)
-            logger.error(f"Workflow '{name}' failed: {e}")
+            logger.exception(f"Workflow '{name}' failed: {e}")
 
     async def _execute_step(self, step: WorkflowStep) -> Any:
         """
@@ -159,13 +159,17 @@ class WorkflowSkill(OpenClawBaseSkill):
             return f"✅ Generated cinema package for {topic}: {result.get('job_id')}"
 
         elif action == "publish":
-            from src.services.distribution.publisher import base_publisher
             # Trigger multi-platform distribution
-            result = await base_publisher.publish_to_platform(
-                video_path=params.get("video_path"),
+            from src.services.publishing.service import base_publishing_service
+            result = await base_publishing_service.publish_to_platform(
+                user_id=params.get("user_id", "system"),
                 platform=params.get("platform", "youtube"),
-                caption=params.get("caption", "New viral drop! #ai"),
-                job_id=params.get("job_id")
+                video_path=params.get("video_path"),
+                metadata={
+                    "title": params.get("title", "New viral drop!"),
+                    "description": params.get("caption", "New viral drop! #ai"),
+                    "tags": []
+                }
             )
             return f"✅ Distribution result: {result.get('status')}"
 

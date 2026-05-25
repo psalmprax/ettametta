@@ -1,6 +1,5 @@
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
-import random
 import logging
 from src.api.config import settings
 from googleapiclient.discovery import build
@@ -120,7 +119,7 @@ class YouTubeLongScanner(DiscoveryScannerBase):
             velocity = views / max(hours_since, 1)
             score = int((velocity / 500) * (1 + engagement_score * 20))
             return min(max(score, 1), 99)
-        except:
+        except Exception:
             return 0
 
     def _parse_duration(self, duration_str: str) -> int:

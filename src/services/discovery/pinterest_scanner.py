@@ -91,12 +91,12 @@ class PinterestScanner:
                         data = json.loads(json_str)
                         pins = self._extract_pins_from_json(data)
                         candidates.extend(pins)
-                    except:
+                    except Exception:
                         pass
                 
                 # Try alternate data format
                 if not candidates:
-                    resource_matches = re.findall(
+                    re.findall(
                         r'<script[^>]*data-test-id="pin-grid-item"[^>]*>(.*?)</script>',
                         response.text,
                         re.DOTALL
@@ -145,13 +145,12 @@ class PinterestScanner:
             initial_data = page_props.get("initialData", {})
             
             # Look for board or pin data
-            boards_or_pins = []
             
             # Try various paths
             if "boards" in str(initial_data):
                 boards = initial_data.get("boards", {})
                 if boards:
-                    boards_or_pins = boards
+                    pass
             
             # Try resource response
             resource = page_props.get("resourceData", {})

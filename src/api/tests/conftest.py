@@ -7,21 +7,31 @@ Shared test fixtures for API integration tests
 import sys
 from unittest.mock import MagicMock
 
-# Mock version check for email-validator BEFORE any other imports
-mock_metadata = MagicMock()
-mock_metadata.version.return_value = "2.0.0"
-sys.modules["importlib.metadata"] = mock_metadata
+# Patch importlib.metadata.version to satisfy email-validator version check
+# WITHOUT replacing the entire module (which breaks OpenTelemetry on Python 3.10)
+import importlib.metadata as _real_metadata
+_original_version = _real_metadata.version
+def _patched_version(name):
+    if name == "email-validator":
+        return "2.0.0"
+    return _original_version(name)
+_real_metadata.version = _patched_version
 
 import pytest
 import os
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Mock heavy dependencies BEFORE any service imports to allow tests to run in light environments
 import types
 
 class MockModule(types.ModuleType):
+    def __init__(self, name):
+        super().__init__(name)
+        import importlib.machinery
+        self.__spec__ = importlib.machinery.ModuleSpec(name, None)
+
     def __getattr__(self, name):
         return MagicMock()
 
@@ -36,7 +46,17 @@ mock_names = [
     "moviepy.audio.AudioClip", "moviepy.audio.fx", "moviepy.audio.fx.all", "moviepy.afx",
     "moviepy.audio.AudioClip.CompositeAudioClip",
     "cv2", "numpy", "torch", "gtts", "easyocr", "PIL", "pil", "replicate", "fal_client", "remotion",
-    "langsmith", "langsmith.testing", "langsmith.client"
+    "langsmith", "langsmith.testing", "langsmith.client",
+    "opentelemetry", "opentelemetry.trace", "opentelemetry.context",
+    "opentelemetry.instrumentation", "opentelemetry.instrumentation.celery",
+    "opentelemetry.instrumentation.fastapi", "opentelemetry.instrumentation.asgi",
+    "opentelemetry.sdk", "opentelemetry.sdk.trace", "opentelemetry.sdk.trace.export",
+    "opentelemetry.sdk.resources",
+    "opentelemetry.exporter", "opentelemetry.exporter.otlp",
+    "opentelemetry.exporter.otlp.proto", "opentelemetry.exporter.otlp.proto.grpc",
+    "opentelemetry.exporter.otlp.proto.grpc.trace_exporter",
+    "opentelemetry.util", "opentelemetry.util.http",
+    "opentelemetry.semconv", "opentelemetry.semconv.trace",
 ]
 for name in mock_names:
     create_mock_module(name)
@@ -56,7 +76,6 @@ os.environ["GROQ_API_KEY"] = "test_groq_key"
 def test_db():
     """Create a test database."""
     from src.api.utils.database import Base, engine
-    from src.api.utils import models, user_models  # Ensure models are registered
     
     # Create tables
     Base.metadata.create_all(bind=engine)
@@ -71,7 +90,12 @@ def test_db():
 def client(test_db):
     """Create a test client for the FastAPI app."""
     from src.api.main import app
+    from src.api.utils.database import Base, engine
     
+    with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            conn.execute(table.delete())
+            
     with TestClient(app) as test_client:
         yield test_client
 
@@ -106,6 +130,17 @@ def mock_redis():
         mock_redis.exists.return_value = 0
         mock.return_value = mock_redis
         yield mock_redis
+
+
+@pytest.fixture(autouse=True)
+def mock_redis_async():
+    """Mock async Redis client methods used in auth/routes."""
+    from unittest.mock import AsyncMock
+    with patch("src.api.utils.auth.redis_async_client") as mock_client:
+        mock_client.sismember = AsyncMock(return_value=False)
+        mock_client.get = AsyncMock(return_value=None)
+        mock_client.set = AsyncMock(return_value=True)
+        yield mock_client
 
 
 @pytest.fixture
@@ -158,3 +193,20 @@ def test_video_job_data():
             "speed_ramp": True
         }
     }
+
+
+@pytest.fixture
+def auth_token(client):
+    """Get auth token for authenticated requests."""
+    client.post("/api/v1/auth/register", json={
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "Password123!",
+        "full_name": "Test User"
+    })
+    
+    response = client.post("/api/v1/auth/login", data={
+        "username": "testuser",
+        "password": "Password123!"
+    })
+    return response.json()["data"]["access_token"]

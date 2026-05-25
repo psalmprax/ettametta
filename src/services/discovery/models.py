@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timezone
 
 
 class ContentCandidate(BaseModel):
@@ -48,7 +47,7 @@ class ContentCandidate(BaseModel):
     analyzed_at: datetime | None = None
     # Misc
     external_id: str | None = None
-    discovery_date: datetime = Field(default_factory=datetime.utcnow)
+    discovery_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     # Use metadata_json to match DB field name, with 'metadata' as alias for convenience
     metadata_json: dict = Field(default_factory=dict, alias="metadata")
 

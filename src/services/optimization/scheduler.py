@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 from src.shared.enums import ContentPublishStatus
 
@@ -66,7 +66,7 @@ class SmartScheduler:
         """
         Calculates the optimal next posting window based on current trends and peak times.
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         base_time = last_post_time if last_post_time and last_post_time > now else now
 
         # Add random buffer to avoid bot detection patterns (30-90 mins)

@@ -26,7 +26,7 @@ class DiscoveryTool:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
                 
         except Exception as e:
-            logger.error(f"DiscoveryTool Error: {e}")
+            logger.exception(f"DiscoveryTool Error: {e}")
             return {"error": str(e)}
 
 discovery_tool = DiscoveryTool()

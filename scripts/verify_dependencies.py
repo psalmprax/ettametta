@@ -63,7 +63,7 @@ def main():
         else:
             failed_modules.append(module)
 
-    logger.info(f"\nVerification complete:")
+    logger.info("\nVerification complete:")
     logger.info(f"Successful imports: {len(successful_modules)}")
     logger.info(f"Failed imports: {len(failed_modules)}")
 

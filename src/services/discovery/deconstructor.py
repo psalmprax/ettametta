@@ -1,8 +1,7 @@
 import logging
 import os
-from .models import ContentCandidate, ViralPattern
+from .models import ViralPattern
 import json
-from src.api.utils.os_worker import ai_worker
 
 
 class PatternDeconstructor:
@@ -64,7 +63,7 @@ class PatternDeconstructor:
             )
         except Exception as e:
             logger = logging.getLogger(__name__)
-            logger.error(f"Groq analysis failed: {e}")
+            logger.exception(f"Groq analysis failed: {e}")
             return self._fallback_pattern(transcript)
 
     def _fallback_pattern(self, transcript: str) -> ViralPattern:

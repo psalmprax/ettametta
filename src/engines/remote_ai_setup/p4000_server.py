@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
-import asyncio
 from pathlib import Path
 
 # P4000-specific imports
@@ -157,5 +156,4 @@ if __name__ == "__main__":
     print(f"🧠 VRAM Usage: {config['animation']['estimated_vram_usage']}")
     print()
 
-    uvicorn.run(app, host="0.0.0.0", port=8122)</content>
-<parameter name="filePath">remote_ai_setup/update_windows_server.py
+    uvicorn.run(app, host="0.0.0.0", port=8122)

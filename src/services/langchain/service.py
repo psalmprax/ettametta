@@ -3,7 +3,6 @@ import logging
 import time
 import json
 from typing import Any
-from datetime import datetime
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -15,33 +14,7 @@ def _check_langchain_available():
     except ImportError:
         return False
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            logger.warning("[LangChain] Circuit opened due to failures")
+from src.api.utils.resilience import CircuitBreaker
 
 # Lazy import to avoid dependency issues when disabled
 _langchain_available = False
@@ -67,6 +40,7 @@ class LangChainService:
     """
     
     def __init__(self):
+        self.circuit_breaker = CircuitBreaker()
         self.hot_reload()
 
     def hot_reload(self):
@@ -102,7 +76,7 @@ class LangChainService:
             )
             logger.info("[LangChain] Service hot-reloaded successfully")
         except Exception as e:
-            logger.error(f"[LangChain] Failed to hot-reload: {e}")
+            logger.exception(f"[LangChain] Failed to hot-reload: {e}")
             self.enabled = False
     
     def is_enabled(self) -> bool:
@@ -141,7 +115,7 @@ class LangChainService:
             return data
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[LangChain] Vibe Analysis Failed: {e}")
+            logger.exception(f"[LangChain] Vibe Analysis Failed: {e}")
             return {}
     
     async def chain_prompt(
@@ -305,7 +279,7 @@ class LangChainService:
             
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[LangChain] Virality prediction failed: {e}")
+            logger.exception(f"[LangChain] Virality prediction failed: {e}")
             return {"error": str(e), "viral_score": 0}
         finally:
             logger.info(f"[LangChain] Virality prediction completed in {time.time() - start_time:.2f}s")

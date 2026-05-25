@@ -11,6 +11,7 @@ import asyncio
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -76,14 +77,16 @@ sys.modules["torch.nn"] = MockTorch.nn
 sys.modules["torch.optim"] = MockTorch.optim
 sys.modules["cv2"] = MockCV2()
 
-# Mock Database and Vault
-sys.modules["api.utils.vault"] = MagicMock()
-sys.modules["api.utils.db"] = MagicMock()
-sys.modules["sqlalchemy"] = MagicMock()
-sys.modules["sqlalchemy.ext.asyncio"] = MagicMock()
-sys.modules["psycopg2"] = MagicMock()
+# Mock Database and Vault if needed, but avoid mocking core sqlalchemy in general test suites
+# to prevent poisoning of other tests in the same session.
+# sys.modules["api.utils.vault"] = MagicMock()
+# sys.modules["api.utils.db"] = MagicMock()
+# sys.modules["sqlalchemy"] = MagicMock()
+# sys.modules["sqlalchemy.ext.asyncio"] = MagicMock()
+# sys.modules["psycopg2"] = MagicMock()
 
 
+@pytest.mark.asyncio
 async def test_video_editor_quality():
     """Comprehensive test of video editor capabilities"""
 
@@ -238,7 +241,7 @@ async def test_video_editor_quality():
 
         # Test skill actions
         result = await skill.execute({"action": "unknown"})
-        assert result["success"] == False
+        assert not result["success"]
         assert "available_actions" in result
 
         print("✅ VideoLeadSkill properly integrated")
@@ -287,7 +290,7 @@ async def test_video_editor_quality():
         ]
 
         # Test pattern analysis
-        patterns = scanner._analyze_video_patterns(mock_leads)
+        patterns = await scanner._analyze_video_patterns(mock_leads)
         assert isinstance(patterns, dict)
 
         # Test content type counting
@@ -315,7 +318,7 @@ async def test_video_editor_quality():
 
     for test_name, passed in results.items():
         status = "✅ PASSED" if passed else "❌ FAILED"
-        print("12")
+        print(f"  {status}: {test_name}")
 
     print(
         f"\n📊 OVERALL SCORE: {passed_tests}/{total_tests} ({passed_tests / total_tests * 100:.1f}%)"

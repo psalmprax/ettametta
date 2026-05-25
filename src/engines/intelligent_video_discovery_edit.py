@@ -11,7 +11,6 @@ WITH CONTENT TYPE DETECTION - Filters out talking head videos!
 import asyncio
 import os
 import sys
-import json
 import base64
 from pathlib import Path
 import httpx
@@ -88,7 +87,7 @@ class VideoContentAnalyzer:
     async def _extract_key_frames(self, video_source: str) -> list[str]:
         """Extract 5 key frames at 10%, 30%, 50%, 70%, 90% of video"""
 
-        frames_dir = Path("temp/video_frames")
+        frames_dir = Path("/tmp/ettametta/video_frames")
         frames_dir.mkdir(parents=True, exist_ok=True)
 
         # Get video duration
@@ -110,7 +109,7 @@ class VideoContentAnalyzer:
             stdout, _ = await proc.communicate()
             if proc.returncode == 0:
                 duration = float(stdout.decode().strip() or "60")
-        except:
+        except Exception:
             pass
 
         # Extract frames at key timestamps
@@ -366,7 +365,7 @@ Answer in JSON:
 
                 if response.status_code == 200:
                     return response.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return {"can_proceed": True, "coherence_score": 0.8}
@@ -539,7 +538,6 @@ Return as JSON array with these fields."""
             score_parts.append(f"Engagement: {engagement:.0%}")
 
             # Freshness
-            import datetime
 
             freshness = 0.7
             if video.get("published_at"):
@@ -551,7 +549,7 @@ Return as JSON array with these fields."""
                     )
                     age_days = (dt.datetime.now() - pub_date.replace(tzinfo=None)).days
                     freshness = max(0, 1 - (age_days / 365))  # Decay over 1 year
-                except:
+                except Exception:
                     pass
             total_score += freshness * criteria["freshness"] * 10
 
@@ -670,7 +668,7 @@ JSON format:
 
                 if response.status_code == 200:
                     return response.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return {
@@ -734,7 +732,7 @@ Give practical advice a professional editor would appreciate."""
 
                 if response.status_code == 200:
                     return response.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return {
@@ -1009,7 +1007,7 @@ class ProfessionalVideoEditor:
         production_notes = self._generate_production_notes(editing_plan, audio_script)
 
         # Save production file
-        timestamp = int(asyncio.get_event_loop().time())
+        timestamp = int(asyncio.get_running_loop().time())
         output_file = self.output_dir / f"professional_edit_{timestamp}.mp4"
 
         with open(output_file.with_suffix(".txt"), "w") as f:

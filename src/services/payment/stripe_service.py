@@ -80,7 +80,7 @@ class PaymentService:
                 "email": customer.email,
             }
         except stripe.error.StripeError as e:
-            logger.error(f"[PaymentService] Failed to create customer: {e}")
+            logger.exception(f"[PaymentService] Failed to create customer: {e}")
             raise
 
     async def create_subscription(
@@ -136,7 +136,7 @@ class PaymentService:
                 "url": session.url,
             }
         except stripe.error.StripeError as e:
-            logger.error(f"[PaymentService] Failed to create subscription: {e}")
+            logger.exception(f"[PaymentService] Failed to create subscription: {e}")
             raise
 
     async def get_subscription(self, subscription_id: str) -> dict[str, Any]:
@@ -150,7 +150,7 @@ class PaymentService:
                 "tier": sub.metadata.get("tier", "unknown"),
             }
         except stripe.error.StripeError as e:
-            logger.error(f"[PaymentService] Failed to get subscription: {e}")
+            logger.exception(f"[PaymentService] Failed to get subscription: {e}")
             raise
 
     async def cancel_subscription(self, subscription_id: str) -> dict[str, Any]:
@@ -164,7 +164,7 @@ class PaymentService:
                 "cancel_at": datetime.fromtimestamp(sub.cancel_at),
             }
         except stripe.error.StripeError as e:
-            logger.error(f"[PaymentService] Failed to cancel subscription: {e}")
+            logger.exception(f"[PaymentService] Failed to cancel subscription: {e}")
             raise
 
     async def handle_webhook(
@@ -175,10 +175,10 @@ class PaymentService:
             # construct_event is relatively fast but handles signature verification
             event = stripe.Webhook.construct_event(payload, signature, webhook_secret)
         except ValueError as e:
-            logger.error(f"[PaymentService] Invalid payload: {e}")
+            logger.exception(f"[PaymentService] Invalid payload: {e}")
             raise
         except stripe.error.SignatureVerificationError as e:
-            logger.error(f"[PaymentService] Invalid signature: {e}")
+            logger.exception(f"[PaymentService] Invalid signature: {e}")
             raise
 
         from src.api.utils.user_models import UserDB, SubscriptionTier

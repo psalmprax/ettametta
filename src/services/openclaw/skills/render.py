@@ -54,7 +54,7 @@ class RenderSkill(OpenClawBaseSkill):
                 return f"⚠️ **Render Failed**: server returned {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Render Skill Error: {e}")
+            logger.exception(f"Render Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
 

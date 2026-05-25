@@ -1,16 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Any
 import asyncio
 import logging
 import uuid
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
-from src.api.utils.limiter import limiter
 from src.api.utils.database import get_db
-from src.services.llm.service import UnifiedLLMService
 from src.services.llm.intelligence_hub import IntelligenceHub
-from src.services.video_engine.tasks import download_and_process_task
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Request
 
@@ -76,13 +73,13 @@ async def chat_with_agent(
     Unified agent chat endpoint with video generation intent detection.
     """
     try:
-        from src.services.openclaw.agent import openclaw_agent
+        from src.services.openclaw.agent import base_openclaw_agent_service
         
         # Determine user identifier (prefer username/id for skill tracking)
         identifier = current_user.username or str(current_user.id)
         
         # Use OpenClawAgent for full skill integration (PAPERCLIP, SCIENTIFIC, etc.)
-        response_text = await openclaw_agent.process_message(
+        response_text = await base_openclaw_agent_service.process_message(
             identifier=identifier,
             message=body.message
         )
@@ -98,7 +95,7 @@ async def chat_with_agent(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"[Agent] Chat failed: {type(e).__name__}: {e}")
+        logger.exception(f"[Agent] Chat failed: {type(e).__name__}: {e}")
         raise HTTPException(status_code=503, detail="AI agent service unavailable")
 
 
@@ -135,7 +132,7 @@ async def analyze_code(
             }
         )
     except Exception as e:
-        logger.error(f"[Agent] Code analysis failed: {e}")
+        logger.exception(f"[Agent] Code analysis failed: {e}")
         raise HTTPException(status_code=503, detail=str(e))
 
 
@@ -173,11 +170,11 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     Get available agent capabilities with real status.
     """
     from src.api.config import settings
-    from src.services.openclaw.agent import openclaw_agent
+    from src.services.openclaw.agent import base_openclaw_agent_service
 
-    report = openclaw_agent.get_dependency_report()
+    report = base_openclaw_agent_service.get_dependency_report()
     cb_status = (
-        openclaw_agent.circuit_breaker.state
+        base_openclaw_agent_service.circuit_breaker.state
     )  # Returns "CLOSED", "OPEN", or "HALF_OPEN"
 
     # Dynamic worker generation from skill registry
@@ -191,7 +188,7 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     OPS = ["SECURITY", "SYSTEM", "MEMORY", "NOTIFICATIONS", "SELF_IMPROVE", "SELF_HEALING", "BROWSER", "DOCUMENT", "ZERO", "PAPERCLIP", "SCIENTIFIC"]
     BUSINESS = ["REPUTATION", "CHAT_SALES", "SEO_AUDIT", "ACCOUNT_AUDIT", "OUTREACH"]
 
-    for key, skill in openclaw_agent.skill_registry.items():
+    for key, skill in base_openclaw_agent_service.skill_registry.items():
         # Extract metadata from skill instance if available, otherwise use defaults
         metadata = getattr(skill, "metadata", {})
         
@@ -251,8 +248,7 @@ async def list_agent_personas(
         reference_image_uri: str | None = None
         voice_clone_id: str | None = None
 
-        class Config:
-            from_attributes = True
+        model_config = ConfigDict(from_attributes=True)
     
     stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
     result = await db.execute(stmt)
@@ -301,7 +297,7 @@ async def account_audit(
             }
         )
     except Exception as e:
-        logger.error(f"Account audit failed: {e}")
+        logger.exception(f"Account audit failed: {e}")
         raise HTTPException(status_code=503, detail=f"Audit service failure: {str(e)}")
 
 
@@ -317,9 +313,9 @@ async def sandbox_execute(
     try:
         # Real-First: In a production environment, this would spawn a Docker container or Firecracker VM.
         # For this version, we use the OpenClaw agent to "simulate" the execution results or use Open Interpreter.
-        from src.services.openclaw.agent import openclaw_agent
+        from src.services.openclaw.agent import base_openclaw_agent_service
         
-        result = await openclaw_agent.process_message(
+        result = await base_openclaw_agent_service.process_message(
             identifier=str(current_user.id),
             message=f"Execute this code in the sandbox and return the logs: \n\n```javascript\n{code}\n```"
         )
@@ -336,5 +332,5 @@ async def sandbox_execute(
             }
         )
     except Exception as e:
-        logger.error(f"Sandbox execution failed: {e}")
+        logger.exception(f"Sandbox execution failed: {e}")
         raise HTTPException(status_code=503, detail="Sandbox engine failure")

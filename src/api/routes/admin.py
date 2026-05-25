@@ -13,8 +13,8 @@ except ImportError:
     load_dotenv = None
 
 from src.api.utils.database import get_db
-from src.api.utils.user_models import UserDB, UserRole
-from src.api.routes.auth import get_current_user, admin_required
+from src.api.utils.user_models import UserDB
+from src.api.utils.auth import admin_required
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response

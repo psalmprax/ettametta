@@ -1,7 +1,6 @@
 import torch
 import os
 import time
-from diffusers import HunyuanVideo15Pipeline
 from diffusers.utils import export_to_video
 from huggingface_hub import InferenceClient
 from hardware_manager import hardware_manager
@@ -38,7 +37,6 @@ def load_hunyuan_model(model_type: str = "480p", quantize: bool = True, force_re
         return _hunyuan_pipe
     
     from diffusers import DiffusionPipeline
-    import torch
     
     # Get model path from dictionary
     model_path = HUNYUAN_MODELS.get(model_type, HUNYUAN_MODELS["480p"])
@@ -203,7 +201,7 @@ def generate_hunyuan_gguf(prompt: str, output_dir: str = "/workspace/remote_ai_g
     
     # Note: GGUF video generation requires specific implementation
     # The jayn7/HunyuanVideo-1.5_T2V_720p-GGUF model may need custom processing
-    print(f"⚠️ GGUF video generation is model-specific. Model: jayn7/HunyuanVideo-1.5_T2V_720p-GGUF", flush=True)
+    print("⚠️ GGUF video generation is model-specific. Model: jayn7/HunyuanVideo-1.5_T2V_720p-GGUF", flush=True)
     
     elapsed = time.time() - start_time
     print(f"✅ GGUF generation initiated in {elapsed:.1f}s", flush=True)

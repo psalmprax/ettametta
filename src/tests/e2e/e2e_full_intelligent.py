@@ -13,7 +13,6 @@ import os
 import sys
 import json
 import subprocess
-import asyncio
 import shutil
 
 sys.path.insert(0, "/home/psalmprax/ALL_PROJECTS/ettametta")
@@ -93,7 +92,7 @@ def step4_vlm(video_path):
         print("  No API key")
         return {}
 
-    print(f"  Analyzing frame with OpenAI...")
+    print("  Analyzing frame with OpenAI...")
     try:
         resp = httpx.post(
             "https://api.openai.com/v1/chat/completions",
@@ -134,10 +133,9 @@ def step4_vlm(video_path):
 
 def step5_process(video_path):
     """Step 5: Process with Remotion titles"""
-    import shutil
 
     # Upload video first
-    print(f"  Uploading video to remote...")
+    print("  Uploading video to remote...")
     subprocess.run(
         [
             "rsync",
@@ -151,7 +149,7 @@ def step5_process(video_path):
     )
 
     # Render with Remotion on remote
-    print(f"  Rendering Remotion titles...")
+    print("  Rendering Remotion titles...")
 
     props = {"title": "AI Productivity Tools", "subtitle": "2026 Viral Trends"}
     props_file = os.path.join(OUTPUT_DIR, "props.json")
@@ -179,8 +177,8 @@ def step5_process(video_path):
             "StrictHostKeyChecking=no",
             REMOTE_HOST,
             "cd /home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio && "
-            f"npx remotion render src/index.ts CinematicMinimal "
-            f"/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out/e2e_output.mp4 "
+            "npx remotion render src/index.ts CinematicMinimal "
+            "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out/e2e_output.mp4 "
             f"--props {REMOTE_PATH}/props.json --quality 1",
         ],
         capture_output=True,
@@ -236,21 +234,21 @@ def main():
     # For full test, just render titles without video
     print("  Using local video processing fallback")
 
-    output = os.path.join(OUTPUT_DIR, "final_output.mp4")
+    os.path.join(OUTPUT_DIR, "final_output.mp4")
 
     # Use local Remotion if available, else ffmpeg
     result = subprocess.run(
         [
             "python3",
             "-c",
-            f"""
+            """
 import sys
 sys.path.insert(0, '/home/psalmprax/ALL_PROJECTS/ettametta')
 from src.services.video_engine.base_remotion_service import base_remotion_service
 import asyncio
 result = asyncio.run(base_remotion_service.render_video(
     'CinematicMinimal',
-    {{'title': 'AI Productivity 2026', 'subtitle': 'Viral Content'}},
+    {'title': 'AI Productivity 2026', 'subtitle': 'Viral Content'},
     'e2e_test.mp4'
 ))
 print(result)
@@ -264,7 +262,7 @@ print(result)
     if result.returncode == 0 and result.stdout.strip():
         print(f"  ✅ SUCCESS: {result.stdout.strip()}")
     else:
-        print(f"  Using ffmpeg fallback...")
+        print("  Using ffmpeg fallback...")
 
     # Copy output to downloads
     if os.path.exists(video):

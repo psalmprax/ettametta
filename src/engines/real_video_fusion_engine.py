@@ -5,7 +5,6 @@ import asyncio
 import logging
 import shutil
 import json
-import numpy as np
 from typing import Any
 from pathlib import Path
 import cv2
@@ -14,26 +13,14 @@ from uuid import uuid4
 
 # Ascension & Singularity Services
 from src.services.discovery.service import base_discovery_service
-from src.services.voiceover.service import base_voiceover_service
 from src.services.script_generator.service import base_script_service
-from src.engines.intelligent_video_workflow import discover_multi_platform, analyze_content_type
 from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
-from src.services.visual_generator.service import base_visual_generator_service
-from src.services.optimization.viral_critic import base_viral_critic
 from src.services.audio.rhythm_engine import base_rhythm_service
 from src.services.video_engine.neural_vision_analyzer import base_vision_service
-from src.services.analytics.bridge import base_bridge_service
 from src.services.optimization.oracle_predictor import base_oracle_service
-from src.services.distribution.publisher import base_publisher
-from src.services.analytics.training_pipeline import base_training_pipeline
-from src.services.analytics.ledger import base_ledger_service
-from src.services.video_engine.production_batch import base_batch_service
 from src.services.distribution.deployment_gateway import base_gateway_service
-from src.services.analytics.harvester import base_harvester_service
 from src.services.discovery.trend_scanner import base_trend_service
 from src.services.optimization.strategy_generator import base_viral_strategist
-from src.services.analytics.drift_monitor import base_monitor_service
-from src.services.analytics.stream_processor import base_stream_service
 from src.services.hermes.narrative_planner import base_narrative_planner_service
 from src.services.hermes.attention_simulator import base_attention_simulator_service
 from src.services.video_engine.synthesis_service import base_generative_service
@@ -320,7 +307,7 @@ class RealVideoFusionEngine:
             if not processed_clips: return {"success": False, "error": "Parallel Render Failure"}
 
         # 1. ELITE Visual Assembly with Transitions
-        ts = int(asyncio.get_event_loop().time())
+        ts = int(asyncio.get_running_loop().time())
         intermediate_video = self.output_dir / f"visual_elite_{ts}.mp4"
         success = base_ffmpeg_service.xfade_concatenate(processed_clips, str(intermediate_video), transition="random")
         if not success:
@@ -349,7 +336,7 @@ class RealVideoFusionEngine:
         }
         # In a full cycle, voiceover_path would be passed in. 
         # For standalone hardening, we mix BG Music if no VO is provided.
-        final_output = self.output_dir / f"neural_{int(asyncio.get_event_loop().time())}.mp4"
+        final_output = self.output_dir / f"neural_{int(asyncio.get_running_loop().time())}.mp4"
         
         if os.path.exists(bg_music_path):
             success = base_ffmpeg_service.add_background_music(
@@ -364,7 +351,7 @@ class RealVideoFusionEngine:
         package = await base_gateway_service.generate_production_package({
             "title": fusion_plan["title"],
             "video_path": str(final_output),
-            "variant_id": f"neural_{int(asyncio.get_event_loop().time())}"
+            "variant_id": f"neural_{int(asyncio.get_running_loop().time())}"
         })
         
         return {

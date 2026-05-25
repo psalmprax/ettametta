@@ -1,7 +1,5 @@
 import logging
-import asyncio
-import time
-from typing import Any, Dict, List, Protocol, Type
+from typing import Dict, Protocol, Type
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.models import BlueprintDB
@@ -41,6 +39,190 @@ class NodeHandlerRegistry:
         return handler_class()
 
 registry = NodeHandlerRegistry()
+
+
+# ═══════════════════════════════════════════
+# DAG-Powered Blueprint Execution
+# ═══════════════════════════════════════════
+
+async def dag_execute_blueprint(
+    blueprint: dict,
+    inputs: dict,
+    job_id: str,
+    segments: list[dict] | None = None,
+    automation_mode: str = "manual",
+) -> dict:
+    """
+    Execute a blueprint using the DAG video compiler.
+
+    Instead of running nodes sequentially, this compiles the blueprint's
+    nodes into a DAG execution plan and executes it with:
+    - Parallelism (independent nodes run concurrently)
+    - Caching (hash-based, skip recomputation when inputs haven't changed)
+    - Graceful fallback (failed nodes don't crash the graph)
+
+    Args:
+        blueprint: Blueprint config dict (nodes, composition_id, etc.)
+        inputs: Initial input params (topic, niche, scenes, etc.)
+        job_id: Unique job identifier
+        segments: Optional pre-generated script segments
+
+    Returns:
+        dict with status, results, and blueprint_id
+    """
+    from src.api.routes.ws import notify_nexus_job_update_sync
+    from src.services.video_engine.dag_executor import base_dag_compiler, base_dag_scheduler
+    from src.services.nexus_engine.dag_nodes import (
+        ParallelAssetSourceNode,
+        VisionAuditNode,
+        SceneRenderNode,
+    )
+
+    blueprint_id = blueprint.get("id", "unknown")
+    composition_id = blueprint.get("composition_id", "ViralClip")
+    niche = inputs.get("niche", "")
+    inputs.get("topic", "") or niche
+
+    # Get scenes (from segments param, cognition results, or generate)
+    scenes = segments or inputs.get("scenes", [])
+    if not scenes:
+        # Generate scenes via cognition handler
+        try:
+            handler = registry.get_handler("cognition", blueprint_id)
+            cognition_result = await handler.execute(inputs, {}, job_id)
+            scenes = cognition_result.get("scenes", [])
+        except Exception as e:
+            logger.warning("[DAG-Blueprint] Cognition fallback failed: %s", e)
+
+    if not scenes:
+        return {"status": "failed", "error": "No scenes available for DAG execution", "blueprint_id": blueprint_id}
+
+    # Build DAG nodes for each scene
+    all_dag_nodes = []
+    scene_index = 0
+
+    for seg_num, segment in enumerate(scenes):
+        visual_prompt = segment.get("visual_prompt", niche)
+        seg_id = f"seg_{seg_num}"
+
+        # --- Parallel Asset Source (runs stock + platform search concurrently) ---
+        asset_node = ParallelAssetSourceNode(
+            node_id=f"{seg_id}_sourcing",
+            params={
+                "keyword": visual_prompt,
+                "niche": niche,
+                "platform_urls": [],
+            },
+        )
+        all_dag_nodes.append(asset_node)
+
+        # --- Vision Audit (depends on asset sourcing completing) ---
+        if segment.get("visual_prompt"):
+            audit_node = VisionAuditNode(
+                node_id=f"{seg_id}_audit",
+                params={
+                    "prompt": visual_prompt,
+                    "job_id": job_id,
+                },
+                inputs=[asset_node.id],
+            )
+            all_dag_nodes.append(audit_node)
+
+        scene_index += 1
+
+    # --- Terminal: Scene Render Node (depends on ALL audit nodes) ---
+    audit_ids = [n.id for n in all_dag_nodes if "_audit" in n.id]
+    source_ids = [n.id for n in all_dag_nodes if "_sourcing" in n.id]
+
+    render_node = SceneRenderNode(
+        node_id="render",
+        params={
+            "job_id": job_id,
+            "niche": niche,
+            "style": inputs.get("style", "CINEMATIC_DOC"),
+            "blueprint": blueprint,
+            "composition_id": composition_id,
+            "job_metadata": inputs.get("job_metadata", {}),
+        },
+        inputs=audit_ids + source_ids,
+    )
+    all_dag_nodes.append(render_node)
+
+    # Notify start
+    notify_nexus_job_update_sync({
+        "id": str(job_id),
+        "status": "DAG_COMPILING",
+        "current_node": "dag_compiler",
+        "progress": 10,
+        "niche": niche,
+    })
+
+    try:
+        # Compile DAG
+        plan = base_dag_compiler.compile(all_dag_nodes)
+
+        logger.info(
+            "[DAG-Blueprint] Compiled %d nodes into %d parallel batches for job %s",
+            plan.total_nodes(),
+            plan.total_batches(),
+            job_id,
+        )
+
+        notify_nexus_job_update_sync({
+            "id": str(job_id),
+            "status": "DAG_EXECUTING",
+            "current_node": "dag_executor",
+            "progress": 20,
+            "niche": niche,
+            "metadata": {
+                "total_nodes": plan.total_nodes(),
+                "total_batches": plan.total_batches(),
+            },
+        })
+
+        # Execute DAG
+        context = await base_dag_scheduler.run(plan, inputs=inputs)
+
+        # Extract results
+        render_result = context.get("render", {})
+        output_path = render_result.get("output_path") if isinstance(render_result, dict) else render_result
+
+        logger.info("[DAG-Blueprint] Execution complete for job %s: %s", job_id, output_path)
+
+        notify_nexus_job_update_sync({
+            "id": str(job_id),
+            "status": "DAG_COMPLETED",
+            "current_node": "egress",
+            "progress": 100,
+            "niche": niche,
+            "output_path": output_path,
+        })
+
+        return {
+            "status": "success",
+            "results": {
+                "dag_context": {
+                    k: v for k, v in context.items()
+                    if not k.startswith("_")
+                },
+                "output_path": output_path,
+                "total_scenes": len(scenes),
+                "total_nodes": plan.total_nodes(),
+                "total_batches": plan.total_batches(),
+            },
+            "blueprint_id": blueprint_id,
+        }
+
+    except Exception as e:
+        logger.exception("[DAG-Blueprint] Execution failed for job %s: %s", job_id, e)
+        notify_nexus_job_update_sync({
+            "id": str(job_id),
+            "status": "DAG_FAILED",
+            "current_node": "dag_executor",
+            "progress": 0,
+            "error": str(e),
+        })
+        return {"status": "failed", "error": str(e), "blueprint_id": blueprint_id}
 
 # --- Specialized Handlers ---
 
@@ -194,7 +376,41 @@ async def get_blueprints(db: AsyncSession) -> list[dict]:
         return FALLBACK_BLUEPRINTS
     return [{"id": bp.id, "name": bp.name, "description": bp.description, "nodes": bp.nodes} for bp in blueprints]
 
-async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
+async def execute_blueprint(
+    blueprint: dict, inputs: dict, job_id: str,
+    use_dag: bool = False,
+    automation_mode: str = "manual",
+) -> dict:
+    """
+    Execute a blueprint with automation mode awareness.
+
+    Args:
+        blueprint: Blueprint config dict
+        inputs: Initial input params
+        job_id: Unique job identifier
+        use_dag: Use DAG engine (legacy flag, overridden by automation_mode)
+        automation_mode: "manual" | "partial" | "full"
+            - manual: Respects ``use_dag`` flag (legacy behavior)
+            - partial: Forces DAG + approval gate before execution
+            - full: Forces DAG + auto-execute
+    """
+    from src.services.video_engine.automation import AutomationMode, is_at_least
+
+    # Resolve effective DAG usage
+    mode = AutomationMode.from_str(automation_mode)
+    effective_dag = use_dag or is_at_least(mode, AutomationMode.PARTIAL)
+    if mode == AutomationMode.MANUAL:
+        effective_dag = use_dag
+
+    if effective_dag:
+        return await dag_execute_blueprint(
+            blueprint=blueprint,
+            inputs=inputs,
+            job_id=job_id,
+            segments=inputs.get("segments", []),
+            automation_mode=automation_mode,
+        )
+
     from src.api.routes.ws import notify_nexus_job_update_sync
     results = {}
     nodes = blueprint.get("nodes", [])
@@ -203,7 +419,7 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
     try:
         for i, node in enumerate(nodes):
             node_type = node.get("type", "unknown")
-            node_label = node.get("label", node_type)
+            node.get("label", node_type)
             progress = int(((i + 1) / len(nodes)) * 100)
 
             notify_nexus_job_update_sync({
@@ -239,7 +455,7 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
 
         return {"status": "success", "results": results, "blueprint_id": blueprint_id}
     except Exception as e:
-        logger.error(f"[Blueprint] Execution failed for job {job_id}: {e}")
+        logger.exception(f"[Blueprint] Execution failed for job {job_id}: {e}")
         return {"status": "failed", "error": str(e), "blueprint_id": blueprint_id}
 
 async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> dict | None:

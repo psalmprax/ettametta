@@ -1,6 +1,4 @@
 import pytest
-import uuid
-import httpx
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.services.monetization.auto_merch import AutoMerchService
 from src.services.affiliate.service import AffiliateService

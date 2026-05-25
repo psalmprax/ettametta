@@ -69,7 +69,10 @@ COPY src /app/src
 WORKDIR /app
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -fL http://localhost:8000/health || exit 1
+
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
 
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

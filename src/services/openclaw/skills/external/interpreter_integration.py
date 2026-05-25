@@ -3,7 +3,6 @@ import logging
 from typing import Any
 import subprocess
 import tempfile
-import shutil
 
 from src.api.config import settings
 
@@ -68,7 +67,7 @@ class OpenInterpreterService:
                     "execution_time": 0,
                 }
         except Exception as e:
-            logger.error(f"Code execution error: {e}")
+            logger.exception(f"Code execution error: {e}")
             return {
                 "success": False,
                 "output": "",
@@ -106,7 +105,7 @@ class OpenInterpreterService:
         finally:
             try:
                 os.unlink(temp_file)
-            except:
+            except Exception:
                 pass
 
     def _run_javascript(self, code: str, timeout: int) -> dict[str, Any]:
@@ -139,7 +138,7 @@ class OpenInterpreterService:
         finally:
             try:
                 os.unlink(temp_file)
-            except:
+            except Exception:
                 pass
 
     def generate_video_script(self, topic: str) -> dict[str, Any]:
@@ -150,17 +149,17 @@ import random
 # Generate a simple video processing script for: {topic}
 
 topic = "{topic}"
-print(f"Generating video script for: {{topic}}")
+print("Generating video script for: {{topic}}")
 
 # Sample script structure
 script = {{
-    "intro": f"Welcome! Today we're exploring {{topic}}",
+    "intro": "Welcome! Today we're exploring {{topic}}",
     "main_content": [
-        f"First, let's understand what {{topic}} is about",
-        f"Here are the key points you need to know",
-        f"Next, let's dive deeper into the details"
+        "First, let's understand what {{topic}} is about",
+        "Here are the key points you need to know",
+        "Next, let's dive deeper into the details"
     ],
-    "outro": f"That's all for {{topic}}. Like and subscribe!"
+    "outro": "That's all for {{topic}}. Like and subscribe!"
 }}
 
 print(script)
@@ -182,15 +181,15 @@ class CodeExecutor:
 import random
 topic = "{kwargs.get("topic", "video")}"
 colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"]
-print(f"Thumbnail for {{topic}}: Use color {{random.choice(colors)}}")
+print("Thumbnail for {{topic}}: Use color {{random.choice(colors)}}")
 '''
             )
         elif script_type == "seo_keywords":
             return OpenInterpreterService().execute_code(
                 f'''
 topic = "{kwargs.get("topic", "")}"
-keywords = [topic, f"{{topic}} tips", f"{{topic}} guide", f"best {{topic}}"]
-print(f"SEO Keywords for {{topic}}: {{', '.join(keywords)}}")
+keywords = [topic, "{{topic}} tips", "{{topic}} guide", "best {{topic}}"]
+print("SEO Keywords for {{topic}}: {{', '.join(keywords)}}")
 '''
             )
 

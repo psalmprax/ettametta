@@ -8,10 +8,9 @@ import torch
 import threading
 import time
 import subprocess
-from typing import Any
-from huggingface_hub import snapshot_download, hf_hub_download
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import traceback
 from hardware_manager import hardware_manager
+from diffusers import DiffusionPipeline
 
 # Model registry
 VIDEO_MODELS = {
@@ -63,7 +62,7 @@ class VideoModelManager:
             while True:
                 time.sleep(60)
                 if self.pipe and (time.time() - self.last_active_time > self.vram_ttl_seconds):
-                    print(f"⏰ [SmartVRAM] TTL Expired. Purging pipeline...", flush=True)
+                    print("⏰ [SmartVRAM] TTL Expired. Purging pipeline...", flush=True)
                     with self.lock:
                         self.unload_all()
         threading.Thread(target=monitor, daemon=True).start()
@@ -76,7 +75,7 @@ class VideoModelManager:
             for enc in ["h264_nvenc", "h264_amf", "h264_qsv", "h264_videotoolbox"]:
                 if enc in result.stdout: return enc
             return "libx264"
-        except: return "libx264"
+        except Exception: return "libx264"
 
     def unload_all(self):
         """Total eviction of all VRAM-occupying objects"""
@@ -117,7 +116,7 @@ class VideoModelManager:
             elif model_key == "wan_2_1_t2v":
                 # Assuming community support or recent diffusers addition
                 # Fallback to a placeholder link if not yet in main diffusers
-                print(f"⚠️ Wan 2.1 support in diffusers is experimental. Attempting load...", flush=True)
+                print("⚠️ Wan 2.1 support in diffusers is experimental. Attempting load...", flush=True)
                 self.pipe = DiffusionPipeline.from_pretrained(repo_id, torch_dtype=self.dtype).to(self.device_obj)
             
             # Common optimizations

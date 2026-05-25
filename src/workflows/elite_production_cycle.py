@@ -6,7 +6,6 @@ import shutil
 import uuid
 import json
 from pathlib import Path
-from typing import Any
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -253,9 +252,9 @@ async def run_elite_production_cycle(
     shutil.copy2(final_master_path, final_local_path)
 
     print("\n" + "=" * 80)
-    print(f"🎉 TIER 10 PRODUCTION COMPLETE!")
+    print("🎉 TIER 10 PRODUCTION COMPLETE!")
     print(f"📍 Final Video Location: {final_local_path}")
-    print(f"💰 Monetization status: Assets injected")
+    print("💰 Monetization status: Assets injected")
     final_score = audit_report.get("overall_score", 0) if audit_report else 0
     print(f"⭐️ Final Quality Score: {final_score}/10")
     print("=" * 80 + "\n")

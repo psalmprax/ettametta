@@ -2,14 +2,19 @@ import pytest
 import asyncio
 from sqlalchemy import select
 from src.api.utils.database import AsyncSessionLocal
-from src.api.utils.models import DriftHistoryDB, ExperimentCohortDB, StrategyRegistryDB
+from src.api.utils.models import DriftHistoryDB, ExperimentCohortDB
 from src.services.analytics.drift_detector import base_drift_service
 from src.services.distribution.experiment_batcher import base_experiment_service
-from src.services.analytics.success_model import SuccessModel
-from src.services.infrastructure.recovery_service import base_recovery_service
+
+@pytest.fixture(autouse=True)
+async def cleanup_db():
+    base_experiment_service.active_batches = []
+    yield
+    from src.api.utils.database import async_engine
+    await async_engine.dispose()
 
 @pytest.mark.asyncio
-async def test_drift_detector_persistence():
+async def test_drift_detector_persistence(test_db):
     """Verify that DriftDetector records are saved to the database."""
     # 0. Initial count
     async with AsyncSessionLocal() as db:
@@ -25,10 +30,10 @@ async def test_drift_detector_persistence():
         assert results[-1].delta == pytest.approx(0.05)
 
 @pytest.mark.asyncio
-async def test_experiment_batcher_persistence():
+async def test_experiment_batcher_persistence(test_db):
     """Verify that experiment cohorts are persisted and assigned correctly."""
     # 1. Create a cohort
-    strategy = f"test_strat_{asyncio.get_event_loop().time()}"
+    strategy = f"test_strat_{asyncio.get_running_loop().time()}"
     batch = await base_experiment_service.create_cohort_batch(strategy, size=2)
     batch_id = batch["batch_id"]
     
@@ -43,11 +48,12 @@ async def test_experiment_batcher_persistence():
     
     # 4. Check DB update
     async with AsyncSessionLocal() as db:
-        await db.refresh(db_batch)
+        db_batch = await db.get(ExperimentCohortDB, batch_id)
+        assert db_batch is not None
         assert "vid_101" in db_batch.participants
 
 @pytest.mark.asyncio
-async def test_recovery_service_logic():
+async def test_recovery_service_logic(test_db):
     """Verify that RecoveryService reconstructs in-memory memory from the DB."""
     # 1. Setup a fresh detector and clear history
     from src.services.analytics.drift_detector import DriftDetector

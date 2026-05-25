@@ -61,14 +61,14 @@ class TestLLMService:
             from src.services.llm.service import UnifiedLLMService, LLMProvider
 
             service = UnifiedLLMService()
-            assert service.is_available(LLMProvider.GROQ) == True
-            assert service.is_available(LLMProvider.OPENAI) == False
+            assert service.is_available(LLMProvider.GROQ)
+            assert not service.is_available(LLMProvider.OPENAI)
 
     @pytest.mark.asyncio
     async def test_complete_with_fallback(self):
         """Test LLM complete with fallback chain"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
-            from src.services.llm.service import UnifiedLLMService, LLMProvider
+            from src.services.llm.service import UnifiedLLMService
 
             service = UnifiedLLMService()
 
@@ -292,7 +292,6 @@ class TestPublisherBase:
     def test_social_publisher_validate_video(self):
         """Test video validation"""
         from src.services.optimization.publisher_base import SocialPublisher
-        from src.services.optimization.models import PostMetadata
 
         # Create a mock publisher
         class MockPublisher(SocialPublisher):
@@ -313,11 +312,11 @@ class TestPublisherBase:
 
         # Test empty path
         is_valid, msg = publisher._validate_video("")
-        assert is_valid == False
+        assert not is_valid
 
         # Test non-existent file
         is_valid, msg = publisher._validate_video("/nonexistent/file.mp4")
-        assert is_valid == False
+        assert not is_valid
 
     def test_calculate_delay(self):
         """Test exponential backoff calculation"""
@@ -359,7 +358,7 @@ class TestNexusOrchestrator:
         cb = CircuitBreaker(failure_threshold=3, recovery_timeout=1)
 
         # Initially closed
-        assert cb.is_open() == False
+        assert not cb.is_open()
         assert cb.state == "CLOSED"
 
         # Record failures
@@ -369,7 +368,7 @@ class TestNexusOrchestrator:
 
         # Should be open now
         assert cb.state == "OPEN"
-        assert cb.is_open() == True
+        assert cb.is_open()
 
         # Record success
         cb.record_success()
@@ -514,9 +513,9 @@ class TestAnalyticsService:
         """Test visual generator prompt enhancement"""
         from src.services.visual_generator.service import VisualGenerator
 
-        generator = VisualGenerator()
+        VisualGenerator()
         # Test prompt enhancement logic
-        enhanced = f"Professional cinematic high-impact visual for a viral social media video topic: test prompt. Dynamic lighting, 9:16 aspect ratio style, hyper-realistic."
+        enhanced = "Professional cinematic high-impact visual for a viral social media video topic: test prompt. Dynamic lighting, 9:16 aspect ratio style, hyper-realistic."
         assert "cinematic" in enhanced
         assert "9:16" in enhanced
 
@@ -536,7 +535,7 @@ class TestAnalyticsService:
                 )
             # Test that forbidden keywords are blocked
             result = await service.execute_code("import os; os.system('ls')")
-            assert result["success"] == False
+            assert not result["success"]
             assert (
                 "Forbidden keyword" in result["error"]
                 or "security violation" in result["error"].lower()
@@ -749,7 +748,7 @@ class TestAnalyticsService:
 
         # Test unknown action
         result = asyncio.run(skill.execute({"action": "unknown"}))
-        assert result["success"] == False
+        assert not result["success"]
         assert "available_actions" in result
 
     def test_youtube_duration_parsing(self):
@@ -810,7 +809,6 @@ class TestAnalyticsService:
     def test_service_import_robustness(self):
         """Test that services handle missing dependencies gracefully"""
         # Test that we can at least import the service modules without crashing
-        import sys
 
         services_to_test = [
             "services.video_engine.synthesis_service",

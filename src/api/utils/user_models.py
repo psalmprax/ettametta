@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, Boolean, JSON
+from sqlalchemy import Column, String, DateTime, Enum, Boolean, JSON
 from .database import Base
 from datetime import datetime, timezone
 import enum
@@ -38,9 +38,9 @@ class UserDB(Base):
     google_id = Column(String, nullable=True)
     api_keys = Column(JSON, nullable=True)
     system_settings = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     updated_at = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )

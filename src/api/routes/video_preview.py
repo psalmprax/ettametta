@@ -4,12 +4,11 @@ Video Preview and Download API Routes
 Endpoints for previewing and downloading generated videos.
 """
 
-import os
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.models import UserDB
 
 router = APIRouter(prefix="/video", tags=["Video Preview/Download"])

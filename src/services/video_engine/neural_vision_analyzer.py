@@ -12,8 +12,13 @@ import sqlite3
 import json
 from typing import Any
 import numpy as np
-import faiss
 from PIL import Image
+
+try:
+    import faiss
+    FAISS_AVAILABLE = True
+except ImportError:
+    FAISS_AVAILABLE = False
 
 try:
     import torch
@@ -77,23 +82,29 @@ class NeuralVisionAnalyzer:
 
         if not rows:
             # Create empty index
-            self.faiss_index = faiss.IndexFlatIP(512) # CLIP VIT-B/32 uses 512 dimensions
+            if FAISS_AVAILABLE:
+                self.faiss_index = faiss.IndexFlatIP(512) # CLIP VIT-B/32 uses 512 dimensions
+            else:
+                self.faiss_index = np.empty((0, 512), dtype='float32')
             return
 
         embeddings = []
         for i, row in enumerate(rows):
             clip_id, emb_json = row
-            emb = np.array(json.loads(emb_json)).astype('float32')
-            embeddings.append(emb)
+            embeddings.append(json.loads(emb_json))
             self.id_to_metadata[i] = clip_id
 
         # Normalize and build index
-        embeddings = np.array(embeddings)
-        faiss.normalize_L2(embeddings)
-        
-        self.faiss_index = faiss.IndexFlatIP(512) # Inner product on normalized vectors = Cosine sim
-        self.faiss_index.add(embeddings)
-        logger.info(f"[Vision] FAISS Index loaded with {len(rows)} vectors.")
+        embeddings = np.array(embeddings, dtype='float32')
+        if FAISS_AVAILABLE:
+            faiss.normalize_L2(embeddings)
+            self.faiss_index = faiss.IndexFlatIP(512) # Inner product on normalized vectors = Cosine sim
+            self.faiss_index.add(embeddings)
+        else:
+            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            self.faiss_index = embeddings / norms
+        logger.info(f"[Vision] FAISS Index loaded with {len(rows)} vectors (FAISS available: {FAISS_AVAILABLE}).")
 
     def _load_model(self):
         """Lazy load the CLIP model to save memory"""
@@ -104,7 +115,7 @@ class NeuralVisionAnalyzer:
                 self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
                 logger.info("[Vision] CLIP Model loaded successfully.")
             except Exception as e:
-                logger.error(f"[Vision] Failed to load CLIP model: {e}")
+                logger.exception(f"[Vision] Failed to load CLIP model: {e}")
 
     def get_text_embedding(self, text: str) -> np.ndarray | None:
         """Generates an embedding vector for a piece of text"""
@@ -124,7 +135,7 @@ class NeuralVisionAnalyzer:
                 embedding = np.array(text_features[0]).flatten()[:512].astype('float32')
             return embedding / np.linalg.norm(embedding)
         except Exception as e:
-            logger.error(f"[Vision] Text embedding failed: {e}")
+            logger.exception(f"[Vision] Text embedding failed: {e}")
             return None
 
     def analyze_scene(self, clip_path: str, thumbnail: Image.Image, timestamp: float = 0.0, motion_frame: Image.Image = None) -> dict[str, Any]:
@@ -173,29 +184,48 @@ class NeuralVisionAnalyzer:
             
             return {"id": clip_id, "embedding": embedding, "motion_score": motion_score}
         except Exception as e:
-            logger.error(f"[Vision] Scene analysis failed: {e}")
+            logger.exception(f"[Vision] Scene analysis failed: {e}")
             return {}
 
     def find_top_k_matches(self, query: str, k: int = 5, candidate_paths: list[str] = None) -> list[dict[str, Any]]:
         """
-        Finds the Top K matches in memory using FAISS.
+        Finds the Top K matches in memory using FAISS or NumPy.
         """
         query_embedding = self.get_text_embedding(query)
         if query_embedding is None or self.faiss_index is None: return []
 
-        # FAISS search
+        # FAISS or NumPy search
         query_vector = np.array([query_embedding]).astype('float32')
-        faiss.normalize_L2(query_vector)
         
         # Pull enough results to account for filtering if candidate_paths is provided
         search_k = k * 10 if candidate_paths else k
-        scores, indices = self.faiss_index.search(query_vector, search_k)
+        
+        if FAISS_AVAILABLE:
+            faiss.normalize_L2(query_vector)
+            scores, indices = self.faiss_index.search(query_vector, search_k)
+            scores = scores[0]
+            indices = indices[0]
+        else:
+            # Cosine similarity using NumPy
+            q_norm = np.linalg.norm(query_vector)
+            if q_norm > 0:
+                query_vector = query_vector / q_norm
+                
+            if len(self.faiss_index) == 0:
+                scores, indices = [], []
+            else:
+                sims = np.dot(self.faiss_index, query_vector[0])
+                indices = np.argsort(sims)[::-1]
+                scores = sims[indices]
+                
+                scores = scores[:search_k]
+                indices = indices[:search_k]
         
         results = []
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        for i, idx in enumerate(indices[0]):
+        for i, idx in enumerate(indices):
             if idx == -1: continue # No further results
             
             clip_id = self.id_to_metadata.get(idx)
@@ -214,7 +244,7 @@ class NeuralVisionAnalyzer:
             results.append({
                 "path": path,
                 "timestamp": ts,
-                "score": float(scores[0][i]),
+                "score": float(scores[i]),
                 "motion_score": motion
             })
             

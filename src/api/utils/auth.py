@@ -1,20 +1,22 @@
-from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from src.api.config import settings
-from authlib.integrations.base_client import OAuthError
 from authlib.integrations.httpx_client import AsyncOAuth2Client
-import redis
 import hmac
 import hashlib
 import base64
 import json
 import logging
 
-from src.api.utils.security import verify_password, get_password_hash, create_access_token, pwd_context, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi import HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import select
+
+from src.api.utils.security import SECRET_KEY, ALGORITHM
 
 
 import redis.asyncio as redis_async
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +35,10 @@ async def decode_access_token(token: str):
             logger.warning(f"JWT decode error for token {token[:10]}...: {str(e)}")
             return None
         except Exception as e:
-            logger.error(f"Internal error during JWT decode: {str(e)}")
+            logger.exception(f"Internal error during JWT decode: {str(e)}")
             return None
     except Exception as e:
-        logger.error(f"Redis error during token decode: {str(e)}")
+        logger.exception(f"Redis error during token decode: {str(e)}")
         return None
 
 
@@ -79,3 +81,57 @@ def verify_oauth_state(signed_state: str) -> str | None:
         return None
     except (ValueError, KeyError):
         return None
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), db=None
+):
+    from src.api.utils.database import AsyncSessionLocal
+    from src.api.utils.user_models import UserDB
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = await decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+    email: str = payload.get("sub")
+    if email is None:
+        raise credentials_exception
+
+    if db is not None:
+        stmt = select(UserDB).where(UserDB.email == email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+    else:
+        async with AsyncSessionLocal() as session:
+            stmt = select(UserDB).where(UserDB.email == email)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+def admin_required(current_user=None):
+    from src.api.utils.user_models import UserDB, UserRole
+
+    async def _admin_dep(current_user: UserDB = Depends(get_current_user)) -> UserDB:
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrative privileges required for this operation.",
+            )
+        return current_user
+
+    if current_user is not None:
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrative privileges required for this operation.",
+            )
+        return current_user
+    return _admin_dep

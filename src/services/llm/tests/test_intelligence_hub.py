@@ -4,7 +4,7 @@ Tests circuit breaker initialization, complexity routing, and failover behavior.
 """
 import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import patch
 from src.services.llm.intelligence_hub import IntelligenceHub
 from src.api.utils.resilience import CircuitBreaker
 
@@ -176,7 +176,7 @@ class TestIntelligenceHubChat:
         with patch.object(intelligence_hub, '_call_provider') as mock_call:
             mock_call.return_value = {'response': 'Test'}
             
-            result = await intelligence_hub.chat(
+            await intelligence_hub.chat(
                 prompt="test",
                 provider="groq"
             )

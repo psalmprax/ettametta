@@ -34,7 +34,7 @@ class TrainingPipeline:
         with open(self.data_path, "a") as f:
             f.write(json.dumps(sample) + "\n")
             
-        logger.info(f"💾 [Pipeline] New training sample recorded. Total samples check...")
+        logger.info("💾 [Pipeline] New training sample recorded. Total samples check...")
         
         # Check if we should retrain
         self._check_and_trigger_retraining()
@@ -53,7 +53,7 @@ class TrainingPipeline:
                 # Move samples to archive or clear (for simple loop)
                 # os.remove(self.data_path) 
         except Exception as e:
-            logger.error(f"Training check failed: {e}")
+            logger.exception(f"Training check failed: {e}")
 
 # Singleton Instance
 base_training_pipeline = TrainingPipeline()

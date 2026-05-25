@@ -154,9 +154,9 @@ export default function EnvManager() {
         }
     };
 
-    const filteredKeys = envData?.keys.filter(k => 
+    const filteredKeys = (envData?.keys || []).filter(k => 
         k.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
+    );
 
     return (
         <section className="relative card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl overflow-hidden">

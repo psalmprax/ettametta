@@ -1,6 +1,5 @@
 import logging
 import requests
-from typing import Any
 from .base_skill import OpenClawBaseSkill
 from src.api.config import settings
 
@@ -45,9 +44,9 @@ class PersonaSkill(OpenClawBaseSkill):
                 video_uri = data.get("video_uri", "No URL returned")
                 return f"👤 **Persona Animated!**\nVideo generated successfully.\nLink: {video_uri}"
             else:
-                return f"⚠️ Persona generation failed. Ensure your Persona is registered in the Dashboard."
+                return "⚠️ Persona generation failed. Ensure your Persona is registered in the Dashboard."
         except Exception as e:
-            logger.error(f"Persona Skill Error: {e}")
+            logger.exception(f"Persona Skill Error: {e}")
             return f"⚠️ Persona System Error: {str(e)}"
 
 

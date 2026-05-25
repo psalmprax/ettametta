@@ -19,14 +19,11 @@ except ImportError:
     cv2 = None
 
 import numpy as np
-from .transcription import TranscriptionService
-from .ocr_service import check_easyocr_available
 from .stock_service import StockService
 from .ffmpeg_utils import FFmpegTransformer
 from src.api.config import settings
 
-# Backward compatibility aliases
-base_transcription_service = TranscriptionService()
+# Import canonical singletons from their authoritative modules
 base_stock_service = StockService()
 base_ffmpeg_service = FFmpegTransformer()
 
@@ -154,7 +151,7 @@ class VideoProcessor:
                     "[VideoProcessor] FFmpeg check failed. Video processing may be unstable."
                 )
         except FileNotFoundError:
-            logger.error(
+            logger.exception(
                 "[VideoProcessor] FFmpeg NOT FOUND. Video processing will FAIL."
             )
 
@@ -280,7 +277,7 @@ class VideoProcessor:
                 asyncio.to_thread(VideoFileClip, input_path),
                 timeout=self.video_load_timeout,
             )
-            logging.info(f"[VideoProcessor] Video loaded successfully via MoviePy")
+            logging.info("[VideoProcessor] Video loaded successfully via MoviePy")
 
             # Pre-iterate frames to ensure video is readable (handles ARM64 issues)
             try:
@@ -351,10 +348,10 @@ class VideoProcessor:
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path), timeout=60
             )
-            logging.info(f"[VideoProcessor] Video loaded successfully on retry")
+            logging.info("[VideoProcessor] Video loaded successfully on retry")
             return clip
         except Exception as e:
-            logging.error(f"[VideoProcessor] Final video load attempt failed: {e}")
+            logging.exception(f"[VideoProcessor] Final video load attempt failed: {e}")
             raise
 
     def _process_video_opencv(
@@ -682,14 +679,13 @@ class VideoProcessor:
 
             return b_roll_clip
         except Exception as e:
-            logging.error(f"[VideoProcessor] Error in B-roll injection: {e}")
+            logging.exception(f"[VideoProcessor] Error in B-roll injection: {e}")
             return None
 
     async def upscale_video(
         self, video_path: str, target_resolution: str = "4K"
     ) -> str:
         """Upscale video to higher resolution using FFmpeg"""
-        import os
 
         upscale_path = video_path.replace(".mp4", "_upscaled.mp4")
 
@@ -731,12 +727,11 @@ class VideoProcessor:
                 logging.error(f"Upscaling failed: {await result.stderr.read()}")
                 return video_path  # Return original if upscale fails
         except Exception as e:
-            logging.error(f"Upscale error: {e}")
+            logging.exception(f"Upscale error: {e}")
             return video_path
 
     async def interpolate_frames(self, video_path: str, target_fps: int = 60) -> str:
         """Apply frame interpolation for smoother motion using FFmpeg"""
-        import os
 
         interp_path = video_path.replace(".mp4", "_interp.mp4")
 
@@ -772,7 +767,7 @@ class VideoProcessor:
                 logging.error(f"Interpolation failed: {await result.stderr.read()}")
                 return video_path
         except Exception as e:
-            logging.error(f"Interpolation error: {e}")
+            logging.exception(f"Interpolation error: {e}")
             return video_path
 
     async def apply_pro_workflow(
@@ -824,8 +819,8 @@ class VideoProcessor:
         )
 
         # 1. Download base image
-        temp_image = os.path.join("temp", f"lite4k_base_{uuid.uuid4()}.jpg")
-        os.makedirs("temp", exist_ok=True)
+        temp_image = os.path.join("/tmp/ettametta", f"lite4k_base_{uuid.uuid4()}.jpg")
+        os.makedirs("/tmp/ettametta", exist_ok=True)
         async with httpx.AsyncClient() as client:
             resp = await client.get(image_uri, follow_redirects=True)
             with open(temp_image, "wb") as f:
@@ -879,7 +874,7 @@ class VideoProcessor:
 
         processing_scenes = []
         temp_files = []
-        os.makedirs("temp", exist_ok=True)
+        os.makedirs("/tmp/ettametta", exist_ok=True)
 
         async def _download_media(url: str, ext: str) -> str:
             if not url:
@@ -959,14 +954,14 @@ class VideoProcessor:
 
             return output_path
         except Exception as e:
-            logging.error(f"[VideoProcessor] Error assembling clips: {e}")
+            logging.exception(f"[VideoProcessor] Error assembling clips: {e}")
             raise
         finally:
             for f in temp_files:
                 if os.path.exists(f):
                     try:
                         os.remove(f)
-                    except:
+                    except Exception:
                         pass
 
     async def process_full_pipeline(
@@ -1015,7 +1010,7 @@ class VideoProcessor:
             raise Exception("Remotion rendering failed to produce an output")
 
         except Exception as e:
-            logging.error(
+            logging.exception(
                 f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to high-quality FFmpeg transformation."
             )
             
@@ -1044,7 +1039,7 @@ class VideoProcessor:
                 if os.path.exists(fallback_path):
                     return fallback_path
             except Exception as fallback_err:
-                logging.error(f"[VideoProcessor] FFmpeg fallback failed: {fallback_err}")
+                logging.exception(f"[VideoProcessor] FFmpeg fallback failed: {fallback_err}")
                 
             return input_path
 

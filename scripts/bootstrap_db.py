@@ -1,4 +1,3 @@
-import asyncio
 import sys
 import os
 
@@ -11,7 +10,6 @@ from api.utils.user_models import *
 from api.utils.credit_models import *
 from api.utils.auth import get_password_hash
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 import uuid
 from datetime import datetime, timezone
 

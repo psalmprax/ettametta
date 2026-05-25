@@ -60,7 +60,7 @@ class SceneBasedVideoOrchestrator:
                 ["ffmpeg", "-version"], capture_output=True, text=True
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     async def produce_scene_based_video(
@@ -191,7 +191,7 @@ class SceneBasedVideoOrchestrator:
     ) -> dict[str, Any]:
         """Execute the actual video fusion based on the production plan with narrative awareness"""
         from .processor import VideoProcessor
-        processor = VideoProcessor(output_dir=str(self.output_dir))
+        VideoProcessor(output_dir=str(self.output_dir))
         try:
             if not self.can_process_video:
                 return {
@@ -248,7 +248,7 @@ class SceneBasedVideoOrchestrator:
                     stock_urls = await base_stock_service.fetch_b_roll(search_query, count=1)
                     if stock_urls:
                         stock_path = await base_stock_service.download_stock_video(
-                            stock_urls[0], output_dir=f"temp/stock_scene_{idx}"
+                            stock_urls[0], output_dir=f"/tmp/ettametta/stock_scene_{idx}"
                         )
                         if stock_path and Path(stock_path).exists():
                             logger.info(f"[Scene {idx+1}] Pexels stock acquired: {stock_path}")
@@ -262,13 +262,13 @@ class SceneBasedVideoOrchestrator:
                     fallback_urls = await base_stock_service.fetch_b_roll(f"{niche_keyword} video", count=1)
                     if fallback_urls:
                         fallback_path = await base_stock_service.download_stock_video(
-                            fallback_urls[0], output_dir=f"temp/stock_fallback_{idx}"
+                            fallback_urls[0], output_dir=f"/tmp/ettametta/stock_fallback_{idx}"
                         )
                         if fallback_path and Path(fallback_path).exists():
                             logger.info(f"[Scene {idx+1}] Last resort stock acquired: {fallback_path}")
                             return (fallback_path, segment)
                 except Exception as e:
-                    logger.error(f"[Scene {idx+1}] All asset sources exhausted: {e}")
+                    logger.exception(f"[Scene {idx+1}] All asset sources exhausted: {e}")
                 
                 logger.error(f"[Scene {idx+1}] CRITICAL: No video asset could be acquired")
                 return None
@@ -287,7 +287,7 @@ class SceneBasedVideoOrchestrator:
 
             # 2. Production Assembly (MoviePy 2.x)
             try:
-                from moviepy import VideoFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
+                from moviepy import VideoFileClip, CompositeVideoClip
 
                 normalized_clips = []
                 target_w, target_h = 1080, 1920 # Default vertical
@@ -335,7 +335,7 @@ class SceneBasedVideoOrchestrator:
                             font_size = 32
                             try:
                                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
-                            except:
+                            except Exception:
                                 font = ImageFont.load_default()
                             
                             # Measure text
@@ -364,7 +364,7 @@ class SceneBasedVideoOrchestrator:
                         
                         normalized_clips.append(clip)
                     except Exception as clip_err:
-                        logger.error(f"Error processing clip {video_path}: {clip_err}")
+                        logger.exception(f"Error processing clip {video_path}: {clip_err}")
 
                 if normalized_clips:
                     # 3. Add Engagement CTA (Like/Follow)
@@ -384,7 +384,7 @@ class SceneBasedVideoOrchestrator:
                     concat_success = transformer.concatenate_videos(norm_paths, temp_output)
                     
                     if concat_success:
-                        logger.info(f"✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
+                        logger.info("✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
                         
                         # Use audio_plan or defaults
                         audio_plan = fusion_plan.get("audio_plan", {})
@@ -419,7 +419,7 @@ class SceneBasedVideoOrchestrator:
                     }
 
             except Exception as e:
-                logger.error(f"Real video fusion failed: {e}")
+                logger.exception(f"Real video fusion failed: {e}")
                 raise e
 
             # Fallback: Create placeholder if no videos or processing failed
@@ -427,7 +427,7 @@ class SceneBasedVideoOrchestrator:
 
             # Create a text file describing what would be created
             with open(output_path.with_suffix(".txt"), "w") as f:
-                f.write(f"SCENE-BASED VIDEO FUSION PLAN\\n")
+                f.write("SCENE-BASED VIDEO FUSION PLAN\\n")
                 f.write(f"Segments: {len(segments)}\\n")
                 f.write(f"Total Duration: {fusion_plan.get('total_duration', 0)}s\\n")
                 f.write(f"Video Files Used: {len(video_files)}\\n")
@@ -447,7 +447,7 @@ class SceneBasedVideoOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Video fusion failed: {e}")
+            logger.exception(f"Video fusion failed: {e}")
             return {"success": False, "error": str(e)}
 
     async def _add_audio_overlay(
@@ -502,7 +502,7 @@ class SceneBasedVideoOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Audio overlay failed: {e}")
+            logger.exception(f"Audio overlay failed: {e}")
             return {"success": False, "error": str(e), "video_path": video_path}
 
     async def _finalize_for_upload(
@@ -527,7 +527,7 @@ class SceneBasedVideoOrchestrator:
             await asyncio.sleep(1)
 
             # Get file size (placeholder)
-            file_size = len(f"MOCK_FINAL_VIDEO_CONTENT") * 1024 * 1024  # Simulate ~1MB
+            file_size = len("MOCK_FINAL_VIDEO_CONTENT") * 1024 * 1024  # Simulate ~1MB
 
             # Copy/create final file
             import shutil
@@ -558,7 +558,7 @@ class SceneBasedVideoOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Upload finalization failed: {e}")
+            logger.exception(f"Upload finalization failed: {e}")
             return {"success": False, "error": str(e)}
 
     async def _generate_monetization_plan(
@@ -596,7 +596,7 @@ class SceneBasedVideoOrchestrator:
             return monetization_plan
 
         except Exception as e:
-            logger.error(f"Monetization plan generation failed: {e}")
+            logger.exception(f"Monetization plan generation failed: {e}")
             return {"error": str(e)}
 
 
@@ -626,7 +626,7 @@ class SceneBasedVideoOrchestrator:
                 # Try to load a bold font
                 font_size = h // 25
                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
-            except:
+            except Exception:
                 font = ImageFont.load_default()
 
             cta_lines = [
@@ -655,7 +655,7 @@ class SceneBasedVideoOrchestrator:
             
             return clips
         except Exception as e:
-            logger.error(f"Failed to inject CTA: {e}")
+            logger.exception(f"Failed to inject CTA: {e}")
             return clips
 
     async def _generate_video_thumbnail(self, video_path: str) -> str:
@@ -698,7 +698,7 @@ class SceneBasedVideoOrchestrator:
                 logger.error(f"FFmpeg failed to create thumbnail. Stderr: {result.stderr}")
                 return None
         except Exception as e:
-            logger.error(f"Thumbnail generation failed: {e}")
+            logger.exception(f"Thumbnail generation failed: {e}")
             return None
 
 # Global instance

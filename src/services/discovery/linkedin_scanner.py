@@ -90,7 +90,7 @@ class LinkedInScanner:
                         data = json.loads(json_str)
                         posts = self._extract_posts_from_json(data)
                         candidates.extend(posts)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:
@@ -129,7 +129,7 @@ class LinkedInScanner:
                         data = json.loads(json_str)
                         posts = self._extract_posts_from_json(data)
                         candidates.extend(posts)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:
@@ -272,4 +272,4 @@ class LinkedInScanner:
         return None
 
 
-base_linkedin_service = LinkedInScanner()
+base_linkedin_scanner_service = LinkedInScanner()

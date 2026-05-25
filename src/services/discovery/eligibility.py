@@ -37,7 +37,7 @@ async def check_content_freshness(url: str, min_days: int = 1, max_days: int = 3
             }
             
     except Exception as e:
-        logger.error(f"[Eligibility] Freshness check failed for {url}: {e}")
+        logger.exception(f"[Eligibility] Freshness check failed for {url}: {e}")
         
     return {"age_days": -1, "within_range": True, "status": "UNKNOWN"}
 

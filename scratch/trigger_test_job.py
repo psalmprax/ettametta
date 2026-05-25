@@ -2,7 +2,6 @@
 import asyncio
 from src.services.video_engine.tasks import generate_video_task
 from src.shared.enums import SystemJobStatus
-from src.api.utils.database import get_db
 from src.api.utils.models import VideoJobDB
 import uuid
 

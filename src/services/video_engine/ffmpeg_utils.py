@@ -55,11 +55,11 @@ class FFmpegTransformer:
 
     def _run_cmd(self, cmd: list) -> bool:
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
             return True
         except subprocess.CalledProcessError as e:
-            logging.error(f"[FFmpeg] Command Failed: {' '.join(cmd)}")
-            logging.error(f"[FFmpeg] Error: {e.stderr}")
+            logging.exception(f"[FFmpeg] Command Failed: {' '.join(cmd)}")
+            logging.exception(f"[FFmpeg] Error: {e.stderr}")
             return False
 
     def apply_originality(self, input_path: str, output_path: str, mirror: bool = False, zoom: float = 1.05, contrast: float = 1.05, brightness: float = 0.0, start_offset: float = 0.0, duration: float = None, lut_path: str = None, quality_mode: str = "ELITE") -> bool:
@@ -90,15 +90,15 @@ class FFmpegTransformer:
         elif lut_path:
             filters.append("curves=preset=vintage")
             
-        filter_str = ",".join(filters) if filters else "copy"
+        ",".join(filters) if filters else "copy"
         
         # Check for audio presence to prevent mapping errors
         has_audio = self._has_audio(input_path)
         
         if has_audio:
-            audio_filter = f"[0:a][1:a]amix=inputs=2:duration=first[a]"
+            audio_filter = "[0:a][1:a]amix=inputs=2:duration=first[a]"
         else:
-            audio_filter = f"[1:a]volume=1.0[a]"
+            audio_filter = "[1:a]volume=1.0[a]"
 
         # Quality mode: We use passed quality_mode unless resource-constrained
         if self.preset == "ultrafast": quality_mode = "FAST"
@@ -112,7 +112,7 @@ class FFmpegTransformer:
             cmd.extend(["-t", str(duration)])
         cmd.extend([
             "-i", input_path,
-            "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", # Safety Audio
+            "-", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", # Safety Audio
             "-filter_complex", f"[0:v]{','.join(filters)}[v];{audio_filter}",
             "-map", "[v]", "-map", "[a]",
             "-pix_fmt", "yuv420p",
@@ -155,7 +155,7 @@ class FFmpegTransformer:
                 f.write(f"file '{Path(path).absolute()}'\n")
         
         cmd = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "ffmpeg", "-y", "-", "concat", "-safe", "0",
             "-i", "concat_list.txt", "-c", "copy", output_path
         ]
         
@@ -194,7 +194,7 @@ class FFmpegTransformer:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True)
             return "audio" in result.stdout
-        except:
+        except Exception:
             return False
 
     def mix_production_audio_with_ducking(self, video_path: str, voiceover_path: str, music_path: str, output_path: str, music_volume: float = 0.25) -> bool:
@@ -250,7 +250,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 # Signature style for the first segment or segments marked as HOOK
                 style = "Signature" if i == 0 or seg.get("role") == "HOOK" else "Default"
                 # Add Fade-in/Fade-out for elite feel
-                text = f"{{\\fad(300,300)}}" + seg["text"].replace("\n", "\\N")
+                text = "{{\\fad(300,300)}}" + seg["text"].replace("\n", "\\N")
                 f.write(f"Dialogue: 0,{start},{end},{style},,0,0,0,,{text}\n")
                 current_time += seg["duration"]
 
@@ -405,7 +405,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 current_offset += durations[i] - trans_duration
 
         # Build audio filtergraph (acrossfade)
-        current_a_offset = durations[0] - trans_duration
+        durations[0] - trans_duration
         a_inputs = "[0:a][1:a]"
         for i in range(1, len(video_paths)):
             filter_complex += f"{a_inputs}acrossfade=d={trans_duration}[a{i}];"
@@ -450,12 +450,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             stdout, _ = await proc.communicate()
             if b"drawtext" in stdout:
                 drawtext_available = True
-        except:
+        except Exception:
             pass
 
         if drawtext_available:
             filter_complex = (
-                f"vignette=angle=0.5, hqdn3d, unsharp, "
+                "vignette=angle=0.5, hqdn3d, unsharp, "
                 f"drawtext=fontfile='{font_path}':text='{title}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=60:box=1:boxcolor=black@0.5:boxborderw=10, "
                 f"drawtext=fontfile='{font_path}':text='{subtitle}':fontcolor=yellow:fontsize=32:x=(w-text_w)/2:y=h-100:box=1:boxcolor=black@0.5:boxborderw=10"
             )

@@ -1,7 +1,6 @@
 import os
 import asyncio
 import json
-import logging
 import time
 import httpx
 from typing import Any
@@ -210,7 +209,7 @@ class IntelligenceHub:
                 elif self.provider_health[p]["errors"] >= 3:
                     self.provider_health[p]["status"] = "degraded"
 
-                logger.error(
+                logger.exception(
                     json.dumps(
                         {
                             "event": "provider_error",
@@ -288,7 +287,6 @@ class IntelligenceHub:
     async def _call_ollama(
         self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
-        url = self.ollama_url
         
         # Standard: RAG Context Injection
         effective_prompt = prompt
@@ -317,16 +315,17 @@ class IntelligenceHub:
                 headers = {"X-Request-ID": rid}
                 return await client.post(url, json=payload, headers=headers)
 
+        current_url = self.ollama_url
         try:
-            logger.info(f"[{rid}] Calling Ollama at {self.ollama_url} with model {settings.OLLAMA_MODEL}")
+            logger.info(f"[{rid}] Calling Ollama at {current_url} with model {settings.OLLAMA_MODEL}")
             start = time.time()
-            resp = await _try_post(self.ollama_url)
+            resp = await _try_post(current_url)
         except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
-            if self.ollama_url != self.fallback_ollama_url:
+            if current_url != self.fallback_ollama_url:
                 logger.warning(f"Ollama primary failed ({str(e)}), trying fallback: {self.fallback_ollama_url}")
-                self.ollama_url = self.fallback_ollama_url
+                current_url = self.fallback_ollama_url
                 start = time.time()
-                resp = await _try_post(self.ollama_url)
+                resp = await _try_post(current_url)
             else:
                 raise
 
@@ -388,7 +387,7 @@ class IntelligenceHub:
             if resp.status_code != 200:
                 if resp.status_code == 429:
                     raise RuntimeError(
-                        f"OpenAI error 429: Insufficient Quota or Rate Limit"
+                        "OpenAI error 429: Insufficient Quota or Rate Limit"
                     )
                 raise RuntimeError(f"OpenAI error {resp.status_code}: {resp.text}")
 
@@ -489,7 +488,7 @@ class IntelligenceHub:
             data = resp.json()
             try:
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError) as e:
+            except (KeyError, IndexError):
                 raise RuntimeError(f"Gemini invalid response format: {data}")
 
             return {
@@ -583,7 +582,7 @@ class IntelligenceHub:
                 "message_id": response.get("id")
             }
         except Exception as e:
-            logger.error(f"Dify provider call failed: {e}")
+            logger.exception(f"Dify provider call failed: {e}")
             raise
 
 

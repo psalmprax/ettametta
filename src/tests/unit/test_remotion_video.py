@@ -72,7 +72,7 @@ def test_video_overlay():
         print(f"\n✅ SUCCESS: {output_path} ({size:.2f} MB)")
         return output_path
     else:
-        print(f"\n❌ FAILED")
+        print("\n❌ FAILED")
         return None
 
 

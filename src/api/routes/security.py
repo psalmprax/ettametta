@@ -3,8 +3,7 @@ from pydantic import BaseModel
 from src.api.utils.api_responses import success_response
 import logging
 import datetime
-from src.api.routes.auth import get_current_user, admin_required
-from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.auth import get_current_user, admin_required
 from src.services.security.service import base_security_service
 
 router = APIRouter(prefix="/security", tags=["Security"])
@@ -36,7 +35,7 @@ async def report_error(
             logger.debug(f"   Component Stack: {error.component_stack[:200]}...")
 
         return success_response(data={"status": "error_logged"})
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=503, detail="Logging service unavailable")
 
 
@@ -48,7 +47,7 @@ async def get_security_status(current_user=Depends(get_current_user)):
     """
     try:
         return success_response(data=base_security_service.get_security_status())
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=503, detail="Security service unavailable")
 
 
@@ -61,7 +60,7 @@ async def trigger_security_audit(current_user=Depends(admin_required)):
     try:
         report = base_security_service.audit_system_integrity()
         return success_response(data={"status": "Audit Complete", "report": report})
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=503, detail="Audit service unavailable")
 
 
@@ -90,5 +89,5 @@ async def trigger_bias_scan(current_user=Depends(get_current_user)):
             "scan_results": results,
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
         })
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=503, detail="Bias scan engine unavailable")

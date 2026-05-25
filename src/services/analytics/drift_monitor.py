@@ -7,11 +7,8 @@ self-correction cycles for the Neural Oracle.
 """
 
 import logging
-import json
-import numpy as np
 from typing import Any
 from src.services.analytics.ledger import base_ledger_service
-from src.services.optimization.forecaster_pipeline import base_forecaster_service
 
 logger = logging.getLogger(__name__)
 

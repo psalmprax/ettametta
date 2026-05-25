@@ -1,113 +1,67 @@
 import asyncio
 import logging
-from .base_skill import OpenClawBaseSkill
 import os
-from playwright.async_api import async_playwright, Browser, Page
-from typing import Any
-import uuid
+
+from .playwright_video_skill import PlaywrightVideoSkill
 
 logger = logging.getLogger(__name__)
 
 
-class HaiperSkill(OpenClawBaseSkill):
+class HaiperSkill(PlaywrightVideoSkill):
     """
     Haiper AI browser automation skill - Tier 1 easiest target
     Clean UI, no login required for demo generation, very predictable selectors
     """
 
-    def __init__(self):
-        super().__init__()
-        self.base_url = "https://haiper.ai"
+    engine_name = "haiper"
+    base_url = "https://haiper.ai"
+    wait_timeout_ms = 120000
+    button_names = ["Generate"]
 
-    async def execute(self, action: str = "generate", prompt: str = "", aspect_ratio: str = "9:16", **kwargs) -> str:
-        """
-        Polymorphic entry point for OpenClaw agent.
-        """
-        p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
-        if not p:
-            return f"⚠️ {self.__class__.__name__} failed: Missing prompt"
-            
-        res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
-        if res.get("status") == "success":
-            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_uri')}"
-        return f"⚠️ {self.__class__.__name__} failed: {res.get('error')}"
+    async def _enter_prompt(self, prompt: str):
+        prompt_area = self.page.get_by_role("textbox", name="Describe your video")
+        await prompt_area.click()
+        await prompt_area.type(prompt, delay=40 + (30 * os.urandom(1)[0] / 255))
 
-    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
-        """
-        Generate video from prompt using Haiper AI
-        """
-
+    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict:
         try:
-            playwright = await async_playwright().start()
-
-            # Launch stealth browser
-            browser = await playwright.chromium.launch(
-                headless=True,
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--window-size=1920,1080",
-                ],
-            )
-
-            context = await browser.new_context(
-                viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            )
-
-            page = await context.new_page()
-            page.set_default_timeout(120000)
-
+            await self.initialize()
             logger.info(f"[Haiper] Generating video: {prompt[:50]}...")
 
-            await page.goto(f"{self.base_url}/create")
-            await page.wait_for_load_state("networkidle")
-
-            # Random human delay
+            await self.page.goto(f"{self.base_url}/create")
+            await self.page.wait_for_load_state("networkidle")
             await asyncio.sleep(1.5 + (2 * os.urandom(1)[0] / 255))
 
-            # Fill prompt
-            prompt_area = page.get_by_role("textbox", name="Describe your video")
-            await prompt_area.click()
-            await prompt_area.type(prompt, delay=40 + (30 * os.urandom(1)[0] / 255))
-
+            await self._enter_prompt(prompt)
             await asyncio.sleep(1)
 
             # Select aspect ratio
             if aspect_ratio == "9:16":
-                await page.get_by_role("button", name="Vertical").click()
+                await self.page.get_by_role("button", name="Vertical").click()
             else:
-                await page.get_by_role("button", name="Horizontal").click()
-
+                await self.page.get_by_role("button", name="Horizontal").click()
             await asyncio.sleep(0.8)
 
-            # Click generate
-            await page.get_by_role("button", name="Generate").click()
-
+            await self._click_generate()
             logger.info("[Haiper] Generation submitted, waiting for render...")
 
-            # Wait for video element
-            await page.wait_for_selector("video[src]", timeout=120000)
+            await self.page.wait_for_selector("video[src]", timeout=120000)
+            video_element = await self.page.query_selector("video[src]")
+            video_uri = await video_element.get_attribute("src") if video_element else None
 
-            video_element = await page.query_selector("video[src]")
-            video_uri = await video_element.get_attribute("src")
-
-            logger.info(f"[Haiper] Video generated successfully")
-
-            await browser.close()
-            await playwright.stop()
+            logger.info(f"[Haiper] Video generated: {video_uri[:80] if video_uri else 'N/A'}...")
+            await self.cleanup()
 
             return {
-                "status": "success",
-                "video_uri": video_uri,
-                "engine": "haiper",
+                "status": "success" if video_uri else "processing",
+                "video_uri": video_uri or "",
+                "engine": self.engine_name,
                 "prompt": prompt,
             }
-
         except Exception as e:
-            logger.error(f"[Haiper] Generation failed: {str(e)}")
-            return {"status": "failed", "error": str(e), "engine": "haiper"}
+            logger.exception(f"[Haiper] Generation failed: {str(e)}")
+            await self.cleanup()
+            return {"status": "failed", "error": str(e), "engine": self.engine_name}
 
 
 haiper_skill = HaiperSkill()

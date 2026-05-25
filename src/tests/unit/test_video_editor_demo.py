@@ -53,7 +53,7 @@ async def demonstrate_video_editor_capabilities():
         print("✅ Viral score calculations:")
         for views, engagement in scores:
             score = scanner._calculate_viral_score(views, engagement)
-            print(".1f"
+            print(f"   • Views: {views}, Engagement: {engagement} → Viral Score: {score:.1f}")
         # Demonstrate content classification
         test_titles = [
             "How to code Python tutorial for beginners",
@@ -78,13 +78,6 @@ async def demonstrate_video_editor_capabilities():
 
     try:
         # Simulate content analysis (normally uses AI)
-        mock_video_data = {
-            "title": "Top 10 AI Productivity Tools",
-            "views": 150000,
-            "likes": 8500,
-            "comments": 1200,
-            "description": "Complete guide to AI tools that boost productivity"
-        }
 
         # Mock analysis results
         analysis = {
@@ -158,7 +151,7 @@ async def demonstrate_video_editor_capabilities():
         print("✅ Upload format optimization:")
         print(f"   • Original size: {optimization_results['original_size']}MB")
         print(f"   • Optimized size: {optimization_results['file_size']}MB")
-        print(".1f"        print(f"   • Format: {optimization_results['format']}")
+        print(f"   • Format: {optimization_results['format']}")
         print(f"   • Platforms: {', '.join(optimization_results['platform_optimized'])}")
         print(f"   • Upload ready: {'✅' if optimization_results['upload_ready'] else '❌'}")
 
@@ -194,11 +187,11 @@ async def demonstrate_video_editor_capabilities():
         }
 
         print("✅ Automated quality measurement:")
-        print(".1f"        print(f"   • Technical quality: {quality_metrics['technical_score']}/10")
+        print(f"   • Technical quality: {quality_metrics['technical_score']}/10")
         print(f"   • Content quality: {quality_metrics['content_score']}/10")
         print(f"   • Engagement potential: {quality_metrics['engagement_score']}/10")
         print(f"   • Quality grade: {quality_metrics['quality_grade']}")
-        print("   • Recommendations provided: ✅"
+        print("   • Recommendations provided: ✅")
 
         capabilities_demonstrated.append("Automated quality assessment")
         quality_scores["quality_measurement"] = 9.3
@@ -213,7 +206,7 @@ async def demonstrate_video_editor_capabilities():
     try:
         from src.services.monetization.service import MonetizationEngine
 
-        engine = MonetizationEngine()
+        MonetizationEngine()
 
         # Demonstrate monetization planning
         monetization_plan = {
@@ -257,7 +250,7 @@ async def demonstrate_video_editor_capabilities():
     print("\n📈 QUALITY SCORES BY COMPONENT:")
     for component, score in quality_scores.items():
         component_name = component.replace('_', ' ').title()
-        print(".1f"
+        print(f"   • {component_name}: {score:.1f}/10")
     print("\n💡 KEY STRENGTHS:")
     print("   • Intelligent content discovery and analysis")
     print("   • Automated video fusion and optimization")

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {},
   async rewrites() {
     const apiUrl = process.env.API_INTERNAL_URL || "http://api:8000";

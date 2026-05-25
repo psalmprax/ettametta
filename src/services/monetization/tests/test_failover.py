@@ -1,6 +1,5 @@
 import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock
 from src.services.monetization.orchestrator import MonetizationOrchestrator
 from src.services.monetization.strategies.base import BaseMonetizationStrategy
 

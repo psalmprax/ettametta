@@ -1,48 +1,9 @@
 import logging
 import json
-import time
 from typing import Any
-from groq import AsyncGroq
 from src.api.config import settings
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
 
 from .orchestrator import base_monetization_orchestrator_service
-
-
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-
-
 from src.services.llm.intelligence_hub import base_intelligence_service
 
 class MonetizationEngine:
@@ -156,7 +117,7 @@ class MonetizationEngine:
             }
 
         except Exception as e:
-            logging.error(f"[Monetization] Auto-insert failed: {e}")
+            logging.exception(f"[Monetization] Auto-insert failed: {e}")
             return {
                 "status": "error", 
                 "message": str(e),
@@ -249,7 +210,7 @@ class MonetizationEngine:
                     if insertion["timing"] != "end":
                         try:
                             start_time = float(insertion["timing"].split("-")[0])
-                        except:
+                        except Exception:
                             pass
                     else:
                         start_time = 55.0 # Fallback for end of a 60s video

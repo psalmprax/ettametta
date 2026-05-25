@@ -1,7 +1,6 @@
 import logging
-import random
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ class AlgorithmSentinel(BaseEttamettaAgent):
         """
         # Check cache
         if self._status_cache and self._last_cache_time:
-            elapsed = (datetime.utcnow() - self._last_cache_time).total_seconds()
+            elapsed = (datetime.now(timezone.utc) - self._last_cache_time).total_seconds()
             if elapsed < self._cache_ttl:
                 return self._status_cache
 
@@ -67,14 +66,14 @@ class AlgorithmSentinel(BaseEttamettaAgent):
                 # 10/10 UX Stabilization: Only log if it's not a known exhaustion/empty state
                 is_exhausted = not response_content or "exhausted" in str(response_content).lower()
                 if not is_exhausted:
-                    await self._log(f"Structural recovery triggered for platform shift analysis", "INFO")
+                    await self._log("Structural recovery triggered for platform shift analysis", "INFO")
                     logger.warning(f"[SENTINEL] JSON Parse failed: {parse_err}. Content: {response_content[:100]}")
                 data = {}
 
             result = {
                 "score": data.get("score", 72), # Slightly dynamic default
                 "status": data.get("status", "NOMINAL"),
-                "last_shift_detected": datetime.utcnow().isoformat(),
+                "last_shift_detected": datetime.now(timezone.utc).isoformat(),
                 "recommendations": data.get("recommendations", [
                     "Increase hook contrast",
                     "Optimize for 15s retention",
@@ -83,7 +82,7 @@ class AlgorithmSentinel(BaseEttamettaAgent):
             }
             # Update cache
             self._status_cache = result
-            self._last_cache_time = datetime.utcnow()
+            self._last_cache_time = datetime.now(timezone.utc)
             return result
         except Exception as e:
             await self._log(f"Failed to fetch dynamic sentinel data: {e}. Using fallback.", "ERROR")
@@ -92,7 +91,7 @@ class AlgorithmSentinel(BaseEttamettaAgent):
         return {
             "score": 0,
             "status": "UNKNOWN",
-            "last_shift_detected": datetime.utcnow().isoformat(),
+            "last_shift_detected": datetime.now(timezone.utc).isoformat(),
             "recommendations": [],
         }
 

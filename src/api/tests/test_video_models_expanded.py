@@ -1,5 +1,4 @@
 import pytest
-import requests
 import importlib
 from unittest.mock import patch, MagicMock
 import src.services.video_engine.models.wan_inference as wan_mod

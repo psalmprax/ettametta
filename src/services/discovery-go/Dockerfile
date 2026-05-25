@@ -9,8 +9,11 @@ COPY . .
 RUN go build -o main .
 
 FROM alpine:latest
-WORKDIR /root/
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+WORKDIR /app
 COPY --from=builder /app/main .
+RUN chown appuser:appgroup /app/main
 
+USER appuser
 EXPOSE 8080
 CMD ["./main"]

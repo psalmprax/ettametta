@@ -1,11 +1,9 @@
 import time
 import requests
-import json
 import os
 import subprocess
 import sys
 import base64
-from pathlib import Path
 
 # ==========================================
 # CONFIGURATION
@@ -59,7 +57,7 @@ def fetch_likeness_image(character_name):
         r = requests.get(img_url, timeout=10)
         if r.status_code == 200:
             return base64.b64encode(r.content).decode('utf-8')
-    except: pass
+    except Exception: pass
     return ""
 
 def generate_shot(scene_data):
@@ -91,7 +89,7 @@ def poll_and_download(job_id, output_path):
             time.sleep(15)
             sys.stdout.write(".")
             sys.stdout.flush()
-        except: time.sleep(15)
+        except Exception: time.sleep(15)
 
 def assemble_master(video_files, final_output):
     print(f"\n🎞️ Assembling {len(video_files)} sequential shots into Master Sequence...")
@@ -99,11 +97,11 @@ def assemble_master(video_files, final_output):
     with open(list_file, "w") as f:
         for vf in video_files: f.write(f"file '{os.path.abspath(vf)}'\n")
     
-    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", final_output]
+    cmd = ["ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_file, "-c", "copy", final_output]
     try:
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         print(f"🌟 Master Sequence Completed Successfully: {final_output}")
-    except: print("❌ Error during multi-shot assembly.")
+    except Exception: print("❌ Error during multi-shot assembly.")
 
 def main():
     print("============== ETTAMETTA: STORYBOARD COMPOSER (BYPASS) ==============")

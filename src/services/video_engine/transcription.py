@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class TranscriptionService:
-    def __init__(self, temp_dir: str = "temp/audio"):
+    def __init__(self, temp_dir: str = "/tmp/audio"):
         self.use_os = os.getenv("USE_OS_MODELS", "true") == "true"
         self.temp_dir = temp_dir
         os.makedirs(temp_dir, exist_ok=True)
@@ -43,9 +43,9 @@ class TranscriptionService:
             if os.path.exists(audio_path):
                 try:
                     os.remove(audio_path)
-                except:
+                except Exception:
                     pass
             return []
 
 
-base_transcription_service = TranscriptionService()
+base_video_transcription_service = TranscriptionService()

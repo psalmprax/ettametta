@@ -2,8 +2,7 @@ import pytest
 import httpx
 from httpx import AsyncClient, ASGITransport
 from src.api.main import app
-from unittest.mock import patch, MagicMock
-import json
+from unittest.mock import patch
 
 @pytest.mark.asyncio
 async def test_get_blueprints():
@@ -54,7 +53,6 @@ async def test_discovery_deep_scan_route():
 
 @pytest.mark.asyncio
 async def test_autocreator_fallback_logic():
-    from src.services.nexus_engine.auto_creator import base_creator_service
     from src.services.monetization.auto_merch import base_auto_merch_service
     
     # Hardened Reality: Should raise ValueError if no keys are set

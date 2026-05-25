@@ -4,7 +4,6 @@ Celery tasks for automated posting and video cleanup
 """
 
 from src.api.utils.celery import celery_app
-from src.api.utils.database import async_session_factory
 from src.api.utils.models import ScheduledPostDB, PublishedContentDB
 from src.services.optimization.models import PostMetadata
 from src.services.optimization.auth import token_manager
@@ -13,8 +12,7 @@ import datetime
 import logging
 import asyncio
 import os
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +22,9 @@ PLATFORM_PUBLISHERS = {
     "youtube_shorts": "services.optimization.youtube_publisher.base_youtube_service",
     "tiktok": "services.optimization.tiktok_publisher.base_tiktok_service",
     "instagram": "services.optimization.instagram_publisher.base_instagram_service",
-    "facebook": "services.optimization.facebook_publisher.base_facebook_service",
-    "linkedin": "services.optimization.linkedin_publisher.base_linkedin_service",
-    "x": "services.optimization.x_publisher.base_x_service",
+    "facebook": "services.optimization.facebook_publisher.base_facebook_publisher_service",
+    "linkedin": "services.optimization.linkedin_publisher.base_linkedin_publisher_service",
+    "x": "services.optimization.x_publisher.base_x_publisher_service",
 }
 
 
@@ -46,7 +44,7 @@ def _get_publisher(platform: str):
         module = import_module(module_path)
         return getattr(module, publisher_name)
     except Exception as e:
-        logger.error(f"[Scheduler] Failed to load publisher {publisher_path}: {e}")
+        logger.exception(f"[Scheduler] Failed to load publisher {publisher_path}: {e}")
         return None
 
 
@@ -107,9 +105,8 @@ async def _check_and_post_scheduled_internal(task_self):
                         continue
 
                     # Adjust to nearest peak window
-                    import asyncio
 
-                    peak_windows = await task_self._get_peak_windows_from_db(post.user_id)
+                    await task_self._get_peak_windows_from_db(post.user_id)
 
                     url = await publisher.upload_video(
                         post.video_path,
@@ -128,7 +125,7 @@ async def _check_and_post_scheduled_internal(task_self):
                             title=metadata.title,
                             platform=post.platform,
                             status=ContentPublishStatus.PUBLISHED,
-                            url=url,
+                            source_uri=url,
                             account_id=post.account_id,
                             user_id=post.user_id,
                             niche=getattr(metadata, "niche", None),
@@ -145,7 +142,7 @@ async def _check_and_post_scheduled_internal(task_self):
                         failed += 1
 
                 except Exception as e:
-                    logger.error(f"[Scheduler] Post {post.id} failed: {e}")
+                    logger.exception(f"[Scheduler] Post {post.id} failed: {e}")
                     post.status = ContentPublishStatus.FAILED
                     post.error_message = str(e)[:500]
                     failed += 1
@@ -162,7 +159,7 @@ async def _check_and_post_scheduled_internal(task_self):
                 "status": SystemJobStatus.COMPLETED,
             }
         except Exception as e:
-            logger.error(f"[Scheduler] Critical error: {e}")
+            logger.exception(f"[Scheduler] Critical error: {e}")
             return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
@@ -210,7 +207,7 @@ async def _retry_failed_posts_internal():
 
             return {"retried": retried, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
-            logger.error(f"[Scheduler] Retry internal error: {e}")
+            logger.exception(f"[Scheduler] Retry internal error: {e}")
             return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
@@ -292,7 +289,7 @@ async def _retry_missed_schedules_internal():
 
             return {"retried": retried, "skipped": skipped, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
-            logger.error(f"[Scheduler] Retry missed internal error: {e}")
+            logger.exception(f"[Scheduler] Retry missed internal error: {e}")
             return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
@@ -339,7 +336,7 @@ async def _cleanup_pending_videos_internal():
                                     os.remove(video_path)
                                     logger.info(f"[Cleanup] Deleted file: {video_path}")
                                 except Exception as e:
-                                    logger.error(
+                                    logger.exception(
                                         f"[Cleanup] Failed to delete file: {e}"
                                     )
 
@@ -350,14 +347,14 @@ async def _cleanup_pending_videos_internal():
 
                             deleted_count += 1
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"[Cleanup] Error processing video {video.id}: {e}"
                         )
 
             await db.commit()
             return {"deleted": deleted_count, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
-            logger.error(f"[Cleanup] Critical internal error: {e}")
+            logger.exception(f"[Cleanup] Critical internal error: {e}")
             return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
@@ -394,7 +391,7 @@ async def _cleanup_old_scheduled_internal():
             await db.commit()
             return {"deleted": deleted, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
-            logger.error(f"[Cleanup] Old scheduled internal error: {e}")
+            logger.exception(f"[Cleanup] Old scheduled internal error: {e}")
             return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 

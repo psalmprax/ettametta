@@ -1,8 +1,6 @@
 import torch
 from diffusers import AnimateDiffPipeline, DDIMScheduler
 from diffusers.utils import export_to_video
-import os
-import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -117,5 +115,4 @@ def get_p4000_recommendations() -> dict[str, Any]:
             "Limit to 12 frames maximum",
             "Restart PC if VRAM issues persist"
         ]
-    }</content>
-<parameter name="filePath">remote_ai_setup/animatediff_laptop_inference.py
+    }

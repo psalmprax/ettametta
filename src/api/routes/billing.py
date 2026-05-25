@@ -5,10 +5,9 @@ Billing API Routes for ettametta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from src.api.utils.user_models import UserDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.database import get_db
 from src.api.utils.subscription import get_subscription_tier_value
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.config import settings
 from src.api.utils.api_responses import success_response, handle_exception
@@ -112,7 +111,7 @@ async def get_subscription(
                         "stripe_subscription_id": user.stripe_subscription_id,
                     }
                 )
-            except Exception as e:
+            except Exception:
                 # If Stripe call fails, return DB status
                 pass
 

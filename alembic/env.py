@@ -24,15 +24,6 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from src.api.utils.models import Base
-from src.api.utils.user_models import UserDB
-from src.api.utils.credit_models import (
-    UserCreditDB,
-    CreditTransactionDB,
-    CreditPackageDB,
-    ReferralDB,
-    CreditUsageRuleDB,
-    SubscriptionCreditDB,
-)
 from src.api.config import settings
 
 target_metadata = Base.metadata

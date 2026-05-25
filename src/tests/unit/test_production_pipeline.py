@@ -8,10 +8,8 @@ Shows what the system can achieve with available dependencies vs full capabiliti
 """
 
 import asyncio
-import os
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent))
@@ -126,13 +124,6 @@ async def test_production_pipeline():
 
     try:
         # Test video analysis capabilities
-        mock_video_data = {
-            "title": "Top 10 AI Tools 2024",
-            "views": 150000,
-            "likes": 8500,
-            "comments": 1200,
-            "duration": 480
-        }
 
         # Simulate analysis
         analysis_result = {
@@ -253,7 +244,7 @@ async def test_production_pipeline():
         }
 
         print("✅ Quality assessment operational")
-        print(".1f"        print(f"   - Content quality: {quality_metrics['content_quality']}/10")
+        print(f"   - Content quality: {quality_metrics['content_quality']}/10")
         print(f"   - Viral probability: {quality_metrics['viral_probability']}%")
         print(f"   - Grade: {quality_metrics['grade']}")
 
@@ -281,10 +272,10 @@ async def test_production_pipeline():
         }
 
         working_capabilities = sum(production_capabilities.values())
-        total_capabilities = len(production_capabilities)
+        len(production_capabilities)
 
         print("✅ Production planning operational")
-        print(".1f"        print("   ✓ Content planning and strategy generation")
+        print("   ✓ Content planning and strategy generation")
         print("   ✓ Upload metadata and SEO preparation")
         print("   ✓ Quality prediction and assessment")
         print("   ⚠️  Actual video rendering requires moviepy/ffmpeg")
@@ -337,13 +328,13 @@ async def test_production_pipeline():
         confidence = "Planning systems need improvement"
         recommendation = "Focus on core planning and analysis systems first"
 
-    print("
-🎯 PRODUCTION READINESS:"    print(f"   Assessment: {readiness}")
+    print("\n🎯 PRODUCTION READINESS:")
+    print(f"   Assessment: {readiness}")
     print(f"   Confidence: {confidence}")
     print(f"   Recommendation: {recommendation}")
 
-    print("
-💡 KEY FINDINGS:"    print("   • Content discovery and analysis: FULLY OPERATIONAL")
+    print("\n💡 KEY FINDINGS:")
+    print("   • Content discovery and analysis: FULLY OPERATIONAL")
     print("   • Video strategy planning: FULLY OPERATIONAL")
     print("   • Monetization planning: FULLY OPERATIONAL")
     print("   • Quality assessment: FULLY OPERATIONAL")

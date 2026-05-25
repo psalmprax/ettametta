@@ -1,8 +1,6 @@
 import os
 import logging
-import asyncio
-from typing import Any, Dict, List
-from src.services.llm.intelligence_hub import base_intelligence_service
+from typing import Any, Dict
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)
@@ -40,7 +38,7 @@ class BrowserAgentService:
             llm = self._get_agent_llm()
             
             task = f"Go to {target_platform}.com and find the top 3 trending videos about '{topic}'. " \
-                   f"Extract the video titles, view counts, and a brief description of the 'hook' used."
+                   "Extract the video titles, view counts, and a brief description of the 'hook' used."
             
             agent = Agent(
                 task=task,
@@ -61,10 +59,10 @@ class BrowserAgentService:
             }
             
         except ImportError:
-            logger.error("[BrowserAgentService] browser-use or langchain-openai not installed.")
+            logger.exception("[BrowserAgentService] browser-use or langchain-openai not installed.")
             return {"error": "Dependencies missing"}
         except Exception as e:
-            logger.error(f"[BrowserAgentService] Research task failed: {e}")
+            logger.exception(f"[BrowserAgentService] Research task failed: {e}")
             return {"error": str(e)}
 
     def _get_agent_llm(self):

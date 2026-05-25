@@ -6,19 +6,17 @@ Endpoints for users to connect/manage their opencli-rs platform sessions.
 Each user provides their own Chrome cookies via the opencli Chrome extension.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Any
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.models import OpenCLISessionDB
 from src.shared.enums import SessionStatus
 from src.api.config import settings
 from src.services.opencli.service import opencli_service
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,7 +82,7 @@ async def get_my_sessions(
                 OpenCLISessionDB.platform == session_info["platform"],
             )
             result = await db.execute(stmt)
-            db_session = result.scalar_one_or_none()
+            result.scalar_one_or_none()
     finally:
         pass
 
@@ -143,8 +141,8 @@ async def connect_platform(
         db_session.status = verification["status"]
         db_session.capabilities = verification.get("capabilities", [])
         db_session.error_message = verification.get("message")
-        db_session.last_verified = datetime.utcnow()
-        db_session.updated_at = datetime.utcnow()
+        db_session.last_verified = datetime.now(timezone.utc)
+        db_session.updated_at = datetime.now(timezone.utc)
         await db.commit()
     finally:
         pass
@@ -180,7 +178,7 @@ async def disconnect_platform(
         db_session = result.scalar_one_or_none()
         if db_session:
             db_session.status = SessionStatus.DISCONNECTED
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -211,9 +209,9 @@ async def verify_platform_session(
         db_session = result.scalar_one_or_none()
         if db_session:
             db_session.status = verification["status"]
-            db_session.last_verified = datetime.utcnow()
+            db_session.last_verified = datetime.now(timezone.utc)
             db_session.error_message = verification.get("message")
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -248,7 +246,7 @@ async def search_platform(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.last_used = datetime.utcnow()
+            db_session.last_used = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -285,7 +283,7 @@ async def get_platform_feed(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.last_used = datetime.utcnow()
+            db_session.last_used = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -335,7 +333,7 @@ async def post_to_platform(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.last_used = datetime.utcnow()
+            db_session.last_used = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass

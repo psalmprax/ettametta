@@ -1,7 +1,6 @@
-from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -112,7 +111,7 @@ def api_error_response(
         "error": {
             "code": error.code,
             "message": error.message,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         }
     }
 
@@ -151,7 +150,7 @@ def handle_exception(exc: Exception) -> JSONResponse:
             "error": {
                 "code": "INTERNAL_ERROR",
                 "message": "An unexpected error occurred. Please try again later.",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         },
     )
@@ -221,7 +220,7 @@ def success_response(
     data: Any = None, message: str | None = None, meta: dict | None = None
 ) -> dict[str, Any]:
     """Standard success response format."""
-    response = {"success": True, "timestamp": datetime.utcnow().isoformat() + "Z"}
+    response = {"success": True, "timestamp": datetime.now(timezone.utc).isoformat() + "Z"}
 
     if message:
         response["message"] = message
@@ -245,7 +244,7 @@ def error_response(
             "error": {
                 "code": code,
                 "message": message,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "details": details or {},
             }
         },

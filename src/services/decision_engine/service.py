@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Any, Optional
-from src.api.config import settings
 from src.api.utils.vault import get_secret
 from pydantic import BaseModel
 
@@ -66,7 +65,7 @@ class StrategyService:
             except Exception as e:
                 logging.warning(f"[StrategyService] CrewAI failed, falling back to Groq: {e}")
 
-        system_prompt = f"You are an elite AI Screenwriter for ettametta. Break down narrative prompts into structured scenes. Output JSON."
+        system_prompt = "You are an elite AI Screenwriter for ettametta. Break down narrative prompts into structured scenes. Output JSON."
         user_prompt = f"""
         NARRATIVE IDEA: {prompt}
         STYLE OVERLAY: {style}
@@ -139,7 +138,7 @@ class StrategyService:
             data = json.loads(response.choices[0].message.content)
             return StoryScript(**data)
         except Exception as e:
-            logging.error(f"[StrategyService] Screenplay Error: {e}")
+            logging.exception(f"[StrategyService] Screenplay Error: {e}")
             raise
 
     async def generate_visual_strategy(
@@ -231,7 +230,7 @@ VIRAL PATTERN ANALYSIS:
             data = json.loads(response.choices[0].message.content)
             return VideoStrategy(**data)
         except Exception as e:
-            logging.error(f"[StrategyService] Error: {e}")
+            logging.exception(f"[StrategyService] Error: {e}")
             return VideoStrategy()
 
 

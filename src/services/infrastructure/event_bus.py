@@ -75,7 +75,7 @@ class DistributedEventBus:
                             # Acknowledge completion (XACK)
                             await self._redis.xack(self.stream_name, self.group_name, message_id)
                         except Exception as e:
-                            logger.error(f"[Bus] Worker failed to process event {message_id}: {e}")
+                            logger.exception(f"[Bus] Worker failed to process event {message_id}: {e}")
                             
                             # 10/10 Resilience: Retries & DLQ
                             payload = json.loads(data.get("payload", "{}"))
@@ -86,14 +86,14 @@ class DistributedEventBus:
                                 payload["_retries"] = retries + 1
                                 await self.emit(topic, payload)
                             else:
-                                logger.error(f"[Bus] Event {message_id} exceeded max retries. Moving to DLQ.")
+                                logger.exception(f"[Bus] Event {message_id} exceeded max retries. Moving to DLQ.")
                                 await self._move_to_dlq(topic, payload, str(e))
                             
                             # Ack the failed one so it doesn't stay in PEL
                             await self._redis.xack(self.stream_name, self.group_name, message_id)
                             
             except Exception as e:
-                logger.error(f"[Bus] Subscription loop error: {e}")
+                logger.exception(f"[Bus] Subscription loop error: {e}")
                 await asyncio.sleep(2)
 
     async def _move_to_dlq(self, topic: str, payload: dict[str, Any], error: str):
@@ -112,7 +112,7 @@ class DistributedEventBus:
         await self.connect()
         try:
             return await self._redis.xlen(self.dlq_name)
-        except:
+        except Exception:
             return 0
 
     async def claim_stale_messages(self, min_idle_time: int = 60000):
@@ -135,6 +135,6 @@ class DistributedEventBus:
                         self.stream_name, self.group_name, self.consumer_name, min_idle_time, [msg_id]
                     )
         except Exception as e:
-            logger.error(f"[Bus] Fail-over check failed: {e}")
+            logger.exception(f"[Bus] Fail-over check failed: {e}")
 
 base_event_service = DistributedEventBus()

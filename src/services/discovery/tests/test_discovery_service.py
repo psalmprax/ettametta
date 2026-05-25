@@ -3,7 +3,6 @@ Unit tests for DiscoveryService - Content discovery and trending analysis.
 Tests scanner orchestration, caching, and fallback behavior.
 """
 import pytest
-import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch
 from src.services.discovery.service import DiscoveryService
 from src.services.discovery.models import ContentCandidate
@@ -114,7 +113,7 @@ class TestDiscoveryServiceFindTrendingContent:
         
         with patch('src.engines.intelligent_video_workflow.discover_multi_platform', new_callable=AsyncMock) as mock_discover:
             mock_discover.return_value = []
-            result = await discovery_service.find_trending_content(
+            await discovery_service.find_trending_content(
                 niche='tech',
                 horizon='30d',
                 deep_scan=True  # Should skip cache
@@ -167,7 +166,7 @@ class TestDiscoveryServiceFindTrendingContent:
         discovery_service.video_lead_scanner = mock_lead
         
         with patch.object(discovery_service, '_log'):
-            result = await discovery_service.find_trending_content(
+            await discovery_service.find_trending_content(
                 niche='tech',
                 horizon='30d'
             )
@@ -218,7 +217,7 @@ class TestDiscoveryServiceMonetizationFiltering:
     @pytest.mark.asyncio
     async def test_selective_mode_filters_by_viral_score(self, discovery_service):
         """Test selective monetization mode filters low viral score content."""
-        candidates = [
+        [
             ContentCandidate(
                 id='test_1',
                 platform='youtube',

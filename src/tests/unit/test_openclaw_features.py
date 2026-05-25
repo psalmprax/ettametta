@@ -6,10 +6,20 @@ Test script to verify OpenCLAW skills are working:
 - Content editor skills
 """
 
+import pytest
+import socket
 import requests
-import json
 import sys
 import os
+
+
+# Skip if not running in Docker environment (API host won't resolve)
+_HAS_DOCKER_API = False
+try:
+    socket.getaddrinfo("api", 8000)
+    _HAS_DOCKER_API = True
+except (socket.gaierror, OSError):
+    pass
 
 API_URL = os.getenv("API_URL", "http://api:8000")
 TOKEN = os.getenv("AUTH_TOKEN", "")
@@ -21,6 +31,7 @@ def print_header(title):
     print(f"{'=' * 60}")
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
 def test_discovery_trends():
     """Test discovery /trends endpoint"""
     print_header("Testing /discovery/trends")
@@ -39,15 +50,13 @@ def test_discovery_trends():
                 print(
                     f"  {i + 1}. {item.get('title', 'N/A')[:50]}... ({item.get('platform', 'N/A')})"
                 )
-            return True
         else:
-            print(f"❌ Error: {response.status_code} - {response.text[:100]}")
-            return False
+            assert False, f"Error: {response.status_code} - {response.text[:100]}"
     except Exception as e:
-        print(f"❌ Connection error: {e}")
-        return False
+        assert False, f"Connection error: {e}"
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
 def test_discovery_niches():
     """Test discovery niches endpoint"""
     print_header("Testing /discovery/niches")
@@ -62,15 +71,13 @@ def test_discovery_niches():
             niches = response.json()
             print(f"✅ Found {len(niches)} niches")
             print(f"  Sample: {niches[:5]}")
-            return True
         else:
-            print(f"❌ Error: {response.status_code}")
-            return False
+            assert False, f"Error: {response.status_code}"
     except Exception as e:
-        print(f"❌ Connection error: {e}")
-        return False
+        assert False, f"Connection error: {e}"
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
 def test_discovery_niche_trends():
     """Test niche-trends endpoint"""
     print_header("Testing /discovery/niche-trends/motivation")
@@ -83,17 +90,15 @@ def test_discovery_niche_trends():
         )
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Niche trends retrieved")
+            print("✅ Niche trends retrieved")
             print(f"  Keywords: {data.get('top_keywords', [])[:5]}")
-            return True
         else:
-            print(f"❌ Error: {response.status_code}")
-            return False
+            assert False, f"Error: {response.status_code}"
     except Exception as e:
-        print(f"❌ Connection error: {e}")
-        return False
+        assert False, f"Connection error: {e}"
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
 def test_content_editor_providers():
     """Test content-editor providers endpoint"""
     print_header("Testing /content-editor/providers")
@@ -108,7 +113,7 @@ def test_content_editor_providers():
             data = response.json()
             providers = data.get("providers", {})
 
-            print(f"✅ Providers retrieved:")
+            print("✅ Providers retrieved:")
             print(f"  Generation: {len(providers.get('generation', []))} providers")
             for p in providers.get("generation", [])[:5]:
                 print(f"    - {p.get('id')}: {p.get('name')} (free={p.get('free')})")
@@ -117,15 +122,13 @@ def test_content_editor_providers():
                 f"  Content Editor: {len(providers.get('content_editor', []))} providers"
             )
             print(f"  Remotion: {len(providers.get('remotion', []))} templates")
-            return True
         else:
-            print(f"❌ Error: {response.status_code}")
-            return False
+            assert False, f"Error: {response.status_code}"
     except Exception as e:
-        print(f"❌ Connection error: {e}")
-        return False
+        assert False, f"Connection error: {e}"
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
 def test_content_editor_find():
     """Test content-editor find endpoint"""
     print_header("Testing /content-editor/find")
@@ -149,13 +152,10 @@ def test_content_editor_find():
             print(f"✅ Content found: {data.get('status')}")
             videos = data.get("videos", [])
             print(f"  Found {len(videos)} videos")
-            return True
         else:
-            print(f"❌ Error: {response.status_code} - {response.text[:100]}")
-            return False
+            assert False, f"Error: {response.status_code} - {response.text[:100]}"
     except Exception as e:
-        print(f"❌ Connection error: {e}")
-        return False
+        assert False, f"Connection error: {e}"
 
 
 def test_video_providers_free():
@@ -177,13 +177,11 @@ def test_video_providers_free():
                 print(
                     f"  - {name}: {config.get('free_credits', 'N/A')} free credits/day"
                 )
-            return True
         else:
-            print(f"❌ Not found at /free-video/providers")
-            return False
-    except Exception as e:
-        print(f"❌ /free-video/providers not available (this is optional)")
-        return True  # This endpoint might not exist yet
+            assert False, "Not found at /free-video/providers"
+    except Exception:
+        print("❌ /free-video/providers not available (this is optional)")
+        # This endpoint might not exist yet — treat as non-fatal
 
 
 def main():

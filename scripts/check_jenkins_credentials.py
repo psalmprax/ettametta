@@ -51,7 +51,7 @@ try:
         credentials = root.findall('.//{http://jenkinsci.org/}credentials')
         print(f"Number of credentials: {len(credentials)}")
     except ET.ParseError as e:
-        print(f"\n--- XML Parse Error ---")
+        print("\n--- XML Parse Error ---")
         print(str(e))
     
     client.close()

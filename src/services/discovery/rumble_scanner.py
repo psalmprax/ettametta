@@ -91,12 +91,12 @@ class RumbleScanner:
                         data = json.loads(json_str)
                         videos = self._extract_videos_from_json(data)
                         candidates.extend(videos)
-                    except:
+                    except Exception:
                         pass
                 
                 # Try alternate pattern - video items in HTML
                 if not candidates:
-                    video_items = re.findall(
+                    re.findall(
                         r'<a[^>]*href="(/[^"]+)"[^>]*class="[^"]*video[^"]*"[^>]*>(.*?)</a>',
                         response.text,
                         re.DOTALL
@@ -138,7 +138,7 @@ class RumbleScanner:
                         data = json.loads(json_str)
                         videos = self._extract_videos_from_json(data)
                         candidates.extend(videos)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:
@@ -289,7 +289,7 @@ class RumbleScanner:
                 return int(float(count_str.replace("m", "")) * 1000000)
             else:
                 return int(count_str.replace(",", ""))
-        except:
+        except Exception:
             return 0
     
     def _parse_duration(self, duration_str: str) -> int:
@@ -307,7 +307,7 @@ class RumbleScanner:
             
             # Try just seconds
             return int(duration_str)
-        except:
+        except Exception:
             return 0
 
 

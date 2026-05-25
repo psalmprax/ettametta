@@ -4,7 +4,7 @@ Provides credit management, packages, purchases, and referral system
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
 from src.api.utils.subscription import get_subscription_tier_value
@@ -147,7 +147,7 @@ async def purchase_credits(
     try:
         payment_service = get_payment_service()
     except ValueError as e:
-        logger.error(f"[Credits] Stripe not configured: {e}")
+        logger.exception(f"[Credits] Stripe not configured: {e}")
         raise HTTPException(
             status_code=503,
             detail="Payment service unavailable. Please contact support.",
@@ -219,7 +219,7 @@ async def purchase_credits(
             }
         )
     except stripe.error.StripeError as e:
-        logger.error(f"[Credits] Stripe error: {e}")
+        logger.exception(f"[Credits] Stripe error: {e}")
         raise HTTPException(
             status_code=502, detail=f"Payment processing error: {str(e)}"
         )

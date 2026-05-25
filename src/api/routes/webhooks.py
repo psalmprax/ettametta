@@ -5,14 +5,13 @@ Handles callbacks from YouTube, TikTok, and other platforms with proper security
 
 from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from pydantic import BaseModel, field_validator
-from typing import Any
 from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from src.api.utils.models import PublishedContentDB, WebhookEventDB
 from src.shared.enums import ContentPublishStatus
-from src.api.routes.auth import admin_required
-from datetime import datetime
+from src.api.utils.auth import admin_required
+from datetime import datetime, timezone
 import hashlib
 import hmac
 import logging
@@ -54,7 +53,7 @@ def _record_event(
         external_id=external_id,
         platform=platform,
         payload_json=json.dumps(payload),
-        processed_at=datetime.utcnow(),
+        processed_at=datetime.now(timezone.utc),
     )
     db.add(event)
 
@@ -128,7 +127,7 @@ async def youtube_upload_status(
 
             if payload.status == "ready":
                 content.status = ContentPublishStatus.PUBLISHED
-                content.published_at = datetime.utcnow()
+                content.published_at = datetime.now(timezone.utc)
             elif payload.status == "failed":
                 content.status = ContentPublishStatus.FAILED
 
@@ -167,7 +166,7 @@ async def youtube_upload_status(
 
     except Exception as e:
         await db.rollback()
-        logger.error(f"[Webhooks] Generic platform webhook error: {e}")
+        logger.exception(f"[Webhooks] Generic platform webhook error: {e}")
         raise HTTPException(status_code=503, detail="Webhook processing failed")
 
 
@@ -240,5 +239,5 @@ async def get_webhook_events(
             "offset": offset,
         }
     except Exception as e:
-        logger.error(f"Failed to fetch events: {e}")
+        logger.exception(f"Failed to fetch events: {e}")
         raise HTTPException(status_code=503, detail="Webhook processing failed")

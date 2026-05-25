@@ -7,8 +7,6 @@ from src.services.monetization.service import base_monetization_service
 import json
 import logging
 import random
-import asyncio
-import time
 import redis
 from typing import Any
 from sqlalchemy import select
@@ -21,33 +19,7 @@ from tenacity import (
 from src.services.monetization.auto_merch import base_auto_merch_service
 
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
+from src.api.utils.resilience import CircuitBreaker
 
 
 class OptimizationService:
@@ -310,7 +282,7 @@ class OptimizationService:
                 platform=platform,
             )
         except Exception as e:
-            logging.error(f"Optimization Job Error: {e}")
+            logging.exception(f"Optimization Job Error: {e}")
             return self._get_fallback_package(niche, platform)
 
     def _get_fallback_package(self, niche, platform, product=None):
@@ -415,7 +387,7 @@ class OptimizationService:
     ) -> dict[str, Any]:
         """Fallback basic SEO optimization when AI is unavailable"""
         # Basic keyword insertion
-        niche_keywords = niche.lower().split()
+        niche.lower().split()
         optimized_title = f"{title} - {niche.title()} Tips"
 
         # Basic hashtags

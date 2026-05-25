@@ -6,6 +6,31 @@ import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
 
+@pytest.fixture(autouse=True)
+def patch_asyncio_to_thread():
+    """
+    Replace asyncio.to_thread with a synchronous executor that runs the
+    function directly in the current event loop.
+
+    This prevents "Event loop is closed" / "different loop" errors caused
+    when threads created by ``asyncio.to_thread`` try to access the
+    test-scoped event loop (e.g., via ``cv2.VideoCapture`` or
+    ``subprocess.run`` callbacks).
+
+    We use ``new=`` (not ``side_effect`` on a MagicMock) because MagicMock
+    doesn't properly support ``await`` — ``await MagicMock()`` returns
+    another MagicMock instead of executing the side_effect.
+    """
+    async def _fake_to_thread(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    with patch(
+        "src.services.nexus_engine.orchestrator.asyncio.to_thread",
+        new=_fake_to_thread,
+    ):
+        yield
+
+
 @pytest.fixture
 def mock_notify():
     """Fixture to mock notify_nexus_job_update_sync at its source module."""
@@ -21,7 +46,7 @@ class TestOrchestratorInit:
         from src.services.nexus_engine.orchestrator import NexusOrchestrator
 
         test_dir = str(tmp_path / "nexus_test")
-        orchestrator = NexusOrchestrator(output_dir=test_dir)
+        NexusOrchestrator(output_dir=test_dir)
         assert os.path.exists(test_dir)
         os.rmdir(test_dir)
 
@@ -290,7 +315,7 @@ class TestAssembleVideoCognition:
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
              patch("src.services.langchain.service.langchain_service") as mock_lc, \
-             patch("src.services.llm.service.unified_llm_service") as mock_llm, \
+             patch("src.services.llm.service.unified_llm_service"), \
              patch("src.services.nexus_engine.orchestrator.os.path.exists") as mock_exists:
 
             mock_session = AsyncMock()
@@ -600,7 +625,7 @@ class TestAssembleVideoVisionAudit:
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
              patch("src.services.audio.transcription_service.base_transcription_service") as mock_ts, \
              patch("src.services.nexus_engine.orchestrator.os.path.exists") as mock_exists, \
-             patch("src.services.nexus_engine.orchestrator.os.makedirs") as mock_mkdir, \
+             patch("src.services.nexus_engine.orchestrator.os.makedirs"), \
              patch("shutil.rmtree"):
 
             mock_session = AsyncMock()
@@ -616,7 +641,7 @@ class TestAssembleVideoVisionAudit:
             # Mock cv2.VideoCapture for both cognition frame counting and vision audit
             with patch("src.services.nexus_engine.orchestrator.os.path.getsize") as mock_getsize, \
                  patch("src.services.nexus_engine.orchestrator.cv2.VideoCapture") as mock_cap, \
-                 patch("src.services.nexus_engine.orchestrator.cv2.imwrite") as mock_imwrite:
+                 patch("src.services.nexus_engine.orchestrator.cv2.imwrite"):
 
                 mock_getsize.return_value = 2048
                 mock_instance = MagicMock()

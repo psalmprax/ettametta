@@ -1,15 +1,12 @@
 import asyncio
 import sys
-import os
 import traceback
 
 sys.path.insert(0, "/app")
 
-from playwright.async_api import async_playwright
-
-
 async def test():
     try:
+        from playwright.async_api import async_playwright
         playwright = await async_playwright().start()
         browser = await playwright.chromium.launch(
             headless=True,
@@ -78,4 +75,5 @@ async def test():
         traceback.print_exc()
 
 
-asyncio.run(test())
+if __name__ == "__main__":
+    asyncio.run(test())

@@ -1,5 +1,4 @@
 import logging
-import requests
 from typing import Any, Optional
 from src.api.config import settings
 

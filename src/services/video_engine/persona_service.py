@@ -39,7 +39,7 @@ class PersonaService:
                 audio_uri = data.get("audio_uri") or data.get("path")
                 if audio_uri:
                     logger.info(
-                        f"[PersonaService] TTS generated via voiceover microservice"
+                        "[PersonaService] TTS generated via voiceover microservice"
                     )
                     return audio_uri
         except Exception as e:
@@ -86,7 +86,10 @@ class PersonaService:
 
             if response.status_code == 200:
                 data = response.json()
-                return f"{self.render_node_url}/download/{data.get('job_id')}"
+                job_id = data.get("job_id")
+                if not job_id:
+                    raise RuntimeError("Render node response missing job_id")
+                return f"{self.render_node_url}/download/{job_id}"
             else:
                 logger.error(f"Render node failed: {response.text}")
                 raise RuntimeError(
@@ -94,7 +97,7 @@ class PersonaService:
                 )
 
         except Exception as e:
-            logger.error(f"Error connecting to render node for persona: {e}")
+            logger.exception(f"Error connecting to render node for persona: {e}")
             raise RuntimeError(f"Failed to connect to render node: {e}")
 
 

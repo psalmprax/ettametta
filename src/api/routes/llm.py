@@ -5,11 +5,8 @@ LLM Routes - Unified Multi-Provider LLM API
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Any
-from src.api.routes.auth import get_current_user
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.services.llm.intelligence_hub import base_intelligence_service
-from src.api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/llm", tags=["LLM Services"])
 
@@ -75,7 +72,7 @@ async def complete(
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
+                detail="Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
             )
 
     try:
@@ -97,7 +94,7 @@ async def complete(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"LLM completion failed: {e}")
+        logging.exception(f"LLM completion failed: {e}")
         raise HTTPException(status_code=503, detail="LLM service unavailable")
 
 
@@ -115,7 +112,7 @@ async def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
+                detail="Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
             )
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -137,7 +134,7 @@ async def chat(request: ChatRequest, current_user=Depends(get_current_user)):
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"LLM chat failed: {e}")
+        logging.exception(f"LLM chat failed: {e}")
         raise HTTPException(status_code=503, detail="LLM service unavailable")
 
 
@@ -212,5 +209,5 @@ async def create_embedding(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"LLM embed failed: {e}")
+        logging.exception(f"LLM embed failed: {e}")
         raise HTTPException(status_code=503, detail="LLM service unavailable")

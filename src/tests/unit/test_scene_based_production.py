@@ -11,7 +11,6 @@ Comprehensive test demonstrating the enhanced video editor capabilities:
 """
 
 import asyncio
-import json
 from pathlib import Path
 
 # Add project root
@@ -68,7 +67,7 @@ async def test_scene_based_video_production():
     print("📋 TEST PARAMETERS:")
     print(f"   • Niche: {test_niche}")
     print(f"   • Scenes: {len(test_scenes)}")
-    print(f"   • Target Duration: 60 seconds")
+    print("   • Target Duration: 60 seconds")
     print(f"   • Audio Script: {len(test_audio_script.split())} words")
     print()
 
@@ -166,7 +165,7 @@ async def test_scene_based_video_production():
             # Create mock production result
             production_result = {
                 "success": True,
-                "video_path": f"outputs/scene_based_videos/scene_video_{int(asyncio.get_event_loop().time())}.mp4",
+                "video_path": f"outputs/scene_based_videos/scene_video_{int(asyncio.get_running_loop().time())}.mp4",
                 "duration": 60,
                 "file_size": 15728640,  # 15MB
                 "quality_score": 8.5,

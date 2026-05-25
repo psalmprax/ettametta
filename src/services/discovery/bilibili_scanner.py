@@ -1,6 +1,5 @@
 import httpx
 import logging
-import json
 import re
 import random
 from datetime import datetime
@@ -295,7 +294,7 @@ class BilibiliScanner:
                 return int(float(count_str.replace("万", "")) * 10000)
             else:
                 return int(count_str)
-        except:
+        except Exception:
             return 0
     
     def _parse_duration(self, duration_str: str) -> float:
@@ -309,7 +308,7 @@ class BilibiliScanner:
                 return int(parts[0]) * 60 + int(parts[1])
             elif len(parts) == 3:
                 return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-        except:
+        except Exception:
             pass
         
         return 0.0

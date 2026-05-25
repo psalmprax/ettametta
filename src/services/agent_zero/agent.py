@@ -2,9 +2,6 @@ import logging
 import asyncio
 import json
 import time
-from typing import Any
-from groq import Groq
-from src.api.config import settings
 from .tools.discovery import discovery_tool
 from .tools.render import render_tool
 from .tools.publish import publish_tool
@@ -68,7 +65,7 @@ class AgentZero(BaseEttamettaAgent):
                 
                 await db.commit()
         except Exception as e:
-            logger.error(f"[AgentZero] Persistence failed: {e}")
+            logger.exception(f"[AgentZero] Persistence failed: {e}")
 
     async def start(self, auto_resume: bool = False):
         """Starts the autonomous production loop."""
@@ -111,7 +108,7 @@ class AgentZero(BaseEttamettaAgent):
                 await self.run_iteration()
                 self.current_step = "WAITING"
                 await self._log(
-                    f"Cycle Complete. Engine entering standby. Next run in 4 hours.",
+                    "Cycle Complete. Engine entering standby. Next run in 4 hours.",
                     "SUCCESS",
                 )
                 # The loop will naturally wait at the beginning of the next iteration
@@ -149,7 +146,7 @@ class AgentZero(BaseEttamettaAgent):
                         # Launch in background
                         asyncio.create_task(self.start(auto_resume=True))
         except Exception as e:
-            logger.error(f"[AgentZero] Load state failed: {e}")
+            logger.exception(f"[AgentZero] Load state failed: {e}")
 
     async def run_iteration(self):
         """A single iteration of the autonomous cycle."""
@@ -164,7 +161,7 @@ class AgentZero(BaseEttamettaAgent):
         monitored_niches = []
         try:
             async with async_session_factory() as db:
-                stmt = select(MonitoredNiche).where(MonitoredNiche.is_active == True)
+                stmt = select(MonitoredNiche).where(MonitoredNiche.is_active)
                 result = await db.execute(stmt)
                 monitored_niches = [m.niche for m in result.scalars().all()]
         except Exception as e:
@@ -187,12 +184,11 @@ class AgentZero(BaseEttamettaAgent):
         self.current_step = "SCOUTING"
         
         # Standard: RAG Retrieval Hook
-        knowledge_context = ""
         try:
             from src.services.knowledge.service import base_knowledge_service
             relevant_docs = await base_knowledge_service.query(text=target_niche, limit=2)
             if relevant_docs:
-                knowledge_context = "\n".join([doc["content"] for doc in relevant_docs])
+                "\n".join([doc["content"] for doc in relevant_docs])
                 await self._log(f"Knowledge Base Sync: {len(relevant_docs)} historical anchors retrieved.", "SYSTEM")
         except Exception as e:
             logger.warning(f"[AgentZero] Knowledge retrieval failed: {e}")
@@ -318,7 +314,7 @@ class AgentZero(BaseEttamettaAgent):
         self.current_step = "PUBLISHING"
         video_path = render_res.get("output_path", "")
         if video_path:
-            await self._log(f"Initiating Broadcast to Platform Mesh...", "SYSTEM")
+            await self._log("Initiating Broadcast to Platform Mesh...", "SYSTEM")
             publish_res = publish_tool.run(
                 video_path=video_path,
                 platform="YouTube",  # Optimized for primary node

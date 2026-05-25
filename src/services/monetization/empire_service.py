@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from src.api.utils.models import SocialAccount, PublishedContentDB, VideoJobDB
+from src.api.utils.models import SocialAccount, PublishedContentDB
 from typing import Any
 
 
@@ -12,7 +12,7 @@ class EmpireService:
         """
         import datetime
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         last_week = now - datetime.timedelta(days=7)
         prev_week = now - datetime.timedelta(days=14)
 
@@ -99,7 +99,7 @@ class EmpireService:
 
         niches = (
             db.query(MonitoredNiche)
-            .filter(MonitoredNiche.user_id == user_id, MonitoredNiche.is_active == True)
+            .filter(MonitoredNiche.user_id == user_id, MonitoredNiche.is_active)
             .all()
         )
 
@@ -174,7 +174,7 @@ class EmpireService:
         # Query A/B tests with confirmed winners
         winning_tests = (
             db.query(ABTestDB)
-            .filter(ABTestDB.winner_variant != None)
+            .filter(ABTestDB.winner_variant is not None)
             .order_by(ABTestDB.created_at.desc())
             .limit(10)
             .all()
@@ -237,7 +237,6 @@ class EmpireService:
         Returns True if successful.
         """
         from src.api.utils.models import MonitoredNiche, AffiliateLinkDB, UserSetting
-        import datetime
 
         logging.info(
             f"[Empire] User {user_id} cloning strategy: {source_niche} -> {target_niche}"
@@ -352,7 +351,7 @@ class EmpireService:
 
         except Exception as e:
             db.rollback()
-            logging.error(f"[Empire] Clone strategy failed: {e}")
+            logging.exception(f"[Empire] Clone strategy failed: {e}")
             return False
 
     async def get_activity_stream(
@@ -362,7 +361,6 @@ class EmpireService:
         Aggregates real system and monetization events into a single timeline.
         Transitions from simulation to real telemetry.
         """
-        import datetime
         from src.api.utils.models import (
             PublishedContentDB,
             AffiliateLinkDB,

@@ -6,7 +6,6 @@ sources. Can be called at startup AND at runtime by the ConsistencySentinel
 when drift is detected. Records recovery timing via Prometheus.
 """
 
-import asyncio
 import logging
 import time
 from src.services.analytics.drift_detector import base_drift_service
@@ -66,11 +65,11 @@ class RecoveryService:
                     ex=86400,
                 )
             logger.info(
-                f"🧠 [Recovery] Redis Hot State reconstructed for "
+                "🧠 [Recovery] Redis Hot State reconstructed for "
                 f"{len(base_experiment_service.active_batches)} cohorts."
             )
         except Exception as e:
-            logger.error(f"Failed to rebuild Redis hot state: {e}")
+            logger.exception(f"Failed to rebuild Redis hot state: {e}")
 
     def get_status(self):
         """Returns recovery service health info."""

@@ -44,7 +44,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                 platform_uri = setting.value if setting else None
                 
                 if not platform_uri:
-                    logger.warning(f"[MembershipStrategy] No membership platform configured.")
+                    logger.warning("[MembershipStrategy] No membership platform configured.")
                     return []
                 
                 return [
@@ -57,7 +57,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                     }
                 ]
             except Exception as e:
-                logger.error(f"[MembershipStrategy] Error: {e}")
+                logger.exception(f"[MembershipStrategy] Error: {e}")
                 return []
 
     async def generate_cta(self, niche: str, context: str) -> str:

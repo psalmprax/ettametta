@@ -27,7 +27,7 @@ class EconomicController:
                 if state.get("date") != str(datetime.now().date()):
                     return {"date": str(datetime.now().date()), "credits_spent": 0.0}
                 return state
-        except:
+        except Exception:
             return {"date": str(datetime.now().date()), "credits_spent": 0.0}
 
     def _save_state(self):

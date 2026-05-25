@@ -1,7 +1,5 @@
 import os
 import logging
-import requests
-import aiohttp
 from typing import Any
 from datetime import datetime
 import random
@@ -168,7 +166,7 @@ Format as:
             f"## Introduction\n\nWelcome to our complete guide on {topic}. In this article, we'll cover everything you need to know.",
             f"## What is {topic}?\n\nLet's start by understanding the basics of {topic} and why it matters.",
             f"## Key Benefits\n\nHere are the main benefits of understanding {topic}:\n- Benefit 1\n- Benefit 2\n- Benefit 3",
-            f"## How to Get Started\n\nFollow these steps to begin:\n1. First step\n2. Second step\n3. Third step",
+            "## How to Get Started\n\nFollow these steps to begin:\n1. First step\n2. Second step\n3. Third step",
             f"## Common Mistakes to Avoid\n\nMany people make these errors when learning about {topic}. Don't be one of them!",
             f"## Conclusion\n\nNow you have a solid understanding of {topic}. Start implementing these tips today!",
         ]
@@ -181,8 +179,8 @@ Format as:
             f"What is {topic}?",
             f"Why {topic} Matters",
             f"Getting Started with {topic}",
-            f"Best Practices",
-            f"Common Questions",
+            "Best Practices",
+            "Common Questions",
         ]
 
 

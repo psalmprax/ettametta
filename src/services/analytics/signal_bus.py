@@ -7,7 +7,6 @@ real-time viral forecasting.
 """
 
 import logging
-import json
 import time
 import sqlite3
 from typing import Any
@@ -34,7 +33,7 @@ class SignalBus:
                     logger.info("🔧 [Bus] Migrating 'topic' column to 'niche' in signal_vault.db")
                     conn.execute("ALTER TABLE signals RENAME COLUMN topic TO niche")
             except Exception as e:
-                logger.error(f"Migration error: {e}")
+                logger.exception(f"Migration error: {e}")
 
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS signals (

@@ -6,15 +6,14 @@ Follows Clean Architecture principles for better testability and separation of c
 
 import logging
 import datetime
-from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import select, and_, func, outerjoin
+from typing import Any, Dict, List
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.models import (
     ContentCandidateDB,
     MonitoredNiche,
     DiscoveryAlertDB,
 )
-from src.api.utils.user_models import UserDB, UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +60,10 @@ class DiscoveryServiceExtended:
                 "total_candidates": total_count,
                 "high_velocity_candidates": high_count,
                 "platform_distribution": platform_dist,
-                "last_scan": datetime.datetime.utcnow().isoformat(),
+                "last_scan": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             }
         except Exception as e:
-            logger.error(f"Discovery summary service failed: {e}")
+            logger.exception(f"Discovery summary service failed: {e}")
             return {"total_candidates": 0, "status": "partial_offline"}
 
     async def list_monitored_niches(self, user_id: str) -> List[Dict[str, Any]]:
@@ -110,7 +109,7 @@ class DiscoveryServiceExtended:
                 for r in rows
             ]
         except Exception as e:
-            logger.error(f"List monitored niches service failed: {e}")
+            logger.exception(f"List monitored niches service failed: {e}")
             raise e
 
     async def watch_niche(
@@ -179,7 +178,7 @@ class DiscoveryServiceExtended:
             }
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Watch niche service failed: {e}")
+            logger.exception(f"Watch niche service failed: {e}")
             raise e
 
 

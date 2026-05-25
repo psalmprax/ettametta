@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import urllib.parse
 from playwright.async_api import async_playwright, Browser, Page
 from typing import Any
 
@@ -191,7 +190,7 @@ class PerchanceSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[Perchance] Generation failed: {str(e)}")
+            logger.exception(f"[Perchance] Generation failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e), "generator": "perchance"}
 

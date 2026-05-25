@@ -72,7 +72,7 @@ class ConsistencySentinel:
     async def start(self):
         """Starts the background auditing + enforcement loop."""
         logger.info(
-            f"🛡️ [Sentinel] Starting Enforcement Loop "
+            "🛡️ [Sentinel] Starting Enforcement Loop "
             f"(Audit: {self.check_interval}s, Repair Cooldown: {self.repair_cooldown}s)"
         )
         while not self._stop_event.is_set():
@@ -83,7 +83,7 @@ class ConsistencySentinel:
                 if len(self._audit_history) > 100:
                     self._audit_history = self._audit_history[-100:]
             except Exception as e:
-                logger.error(f"[Sentinel] Audit loop error: {e}", exc_info=True)
+                logger.exception(f"[Sentinel] Audit loop error: {e}", exc_info=True)
             await asyncio.sleep(self.check_interval)
 
     async def audit_experiment_state(self) -> DriftReport:
@@ -150,7 +150,7 @@ class ConsistencySentinel:
                     sentinel_audit_pass.inc()
                     if db_counts:
                         logger.info(
-                            f"✅ [Sentinel] Audit PASSED. "
+                            "✅ [Sentinel] Audit PASSED. "
                             f"{len(db_counts)} cohorts in sync."
                         )
                 else:
@@ -159,7 +159,7 @@ class ConsistencySentinel:
                     await self._attempt_repair(report)
 
             except Exception as e:
-                logger.error(f"Consistency Audit failed: {e}", exc_info=True)
+                logger.exception(f"Consistency Audit failed: {e}", exc_info=True)
                 sentinel_audit_fail.inc()
 
         return report
@@ -175,13 +175,13 @@ class ConsistencySentinel:
         if elapsed < self.repair_cooldown:
             remaining = self.repair_cooldown - elapsed
             logger.info(
-                f"🕐 [Sentinel] Repair cooldown active. "
+                "🕐 [Sentinel] Repair cooldown active. "
                 f"Next repair eligible in {remaining:.0f}s"
             )
             return
 
         logger.warning(
-            f"🔧 [Sentinel] TRIGGERING AUTONOMOUS REPAIR. "
+            "🔧 [Sentinel] TRIGGERING AUTONOMOUS REPAIR. "
             f"{len(report.drifts)} drifts detected."
         )
 
@@ -207,7 +207,7 @@ class ConsistencySentinel:
                 f"Total repairs this session: {self._total_repairs}"
             )
         except Exception as e:
-            logger.error(f"[Sentinel] Repair FAILED: {e}", exc_info=True)
+            logger.exception(f"[Sentinel] Repair FAILED: {e}", exc_info=True)
 
     def get_status(self) -> dict[str, Any]:
         """Returns the current sentinel health summary."""

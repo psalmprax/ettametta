@@ -1,6 +1,5 @@
 import pytest
 import os
-import httpx
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.services.video_engine.models.wan_inference import generate_wan_api
 from src.services.video_engine.models.mochi_inference import generate_mochi_api

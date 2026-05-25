@@ -18,15 +18,13 @@ stackoverflow, wikipedia, notion, discord, telegram, twitch,
 pinterest, linkedin, threads, bluesky, snapchat, github, etc.
 """
 
-import os
 import json
 import asyncio
 import logging
 import subprocess
-import time
 from typing import Any
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -38,32 +36,7 @@ from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
+from src.api.utils.resilience import CircuitBreaker
 
 # Platform capabilities matrix — what each platform supports via opencli-rs
 PLATFORM_CAPABILITIES = {
@@ -217,7 +190,7 @@ class OpenCLIService:
             )
             return True
         except Exception as e:
-            logger.error(f"[OpenCLI] Failed to save cookies: {e}")
+            logger.exception(f"[OpenCLI] Failed to save cookies: {e}")
             return False
 
     async def verify_user_session(self, user_id: str, platform: str) -> dict[str, Any]:
@@ -253,7 +226,7 @@ class OpenCLIService:
                     "platform": platform,
                     "status": "connected",
                     "capabilities": PLATFORM_CAPABILITIES.get(platform, []),
-                    "last_verified": datetime.utcnow().isoformat(),
+                    "last_verified": datetime.now(timezone.utc).isoformat(),
                     "message": "Session valid",
                 }
             else:
@@ -274,7 +247,7 @@ class OpenCLIService:
     async def get_user_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """Get all platform session statuses for a user."""
         sessions = []
-        user_dir = self._user_session_dir(user_id)
+        self._user_session_dir(user_id)
 
         for platform in PLATFORM_CAPABILITIES:
             cookie_path = self._cookie_path(user_id, platform)
@@ -305,7 +278,7 @@ class OpenCLIService:
                 )
             return True
         except Exception as e:
-            logger.error(f"[OpenCLI] Failed to disconnect: {e}")
+            logger.exception(f"[OpenCLI] Failed to disconnect: {e}")
             return False
 
     @retry(
@@ -379,14 +352,14 @@ class OpenCLIService:
 
         except asyncio.TimeoutError:
             self.circuit_breaker.record_failure()
-            logger.error(f"[OpenCLI] Command timed out after {timeout}s")
+            logger.exception(f"[OpenCLI] Command timed out after {timeout}s")
             return None
         except json.JSONDecodeError:
             logger.warning(f"[OpenCLI] Non-JSON output: {output[:200]}")
             return {"raw": output}
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[OpenCLI] Execution error: {e}")
+            logger.exception(f"[OpenCLI] Execution error: {e}")
             return None
 
     # ─── Discovery Integration ─────────────────────────────────────────

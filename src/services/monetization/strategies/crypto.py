@@ -24,7 +24,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
             wallets_setting = result.scalar_one_or_none()
             
             if not wallets_setting or not wallets_setting.value:
-                logging.warning(f"[CryptoStrategy] No crypto wallets configured. Set 'crypto_wallets' in settings (format: BTC:addr,ETH:addr).")
+                logging.warning("[CryptoStrategy] No crypto wallets configured. Set 'crypto_wallets' in settings (format: BTC:addr,ETH:addr).")
                 return []
             
             # Parse wallets (format: BTC:addr,ETH:addr,USDT:addr)
@@ -126,7 +126,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
                     if resp.status_code == 200:
                         return resp.json().get("balance", 0) / 10**18
         except Exception as e:
-            logging.error(f"[CryptoStrategy] Balance check failed for {symbol}: {e}")
+            logging.exception(f"[CryptoStrategy] Balance check failed for {symbol}: {e}")
         return None
 
     def _extract_wallet(self, wallet_str: str, symbol: str) -> str:

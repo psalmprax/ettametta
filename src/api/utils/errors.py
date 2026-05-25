@@ -4,9 +4,9 @@ Error Handling Schema
 Centralized error response schemas for consistent API error handling
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 
@@ -53,12 +53,11 @@ class ErrorResponse(BaseModel):
     """Standard error response schema."""
     error_code: ErrorCode
     message: str
-    timestamp: datetime = datetime.utcnow()
+    timestamp: datetime = datetime.now(timezone.utc)
     details: dict[str, Any] | None = None
     request_id: str | None = None
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class ValidationErrorResponse(ErrorResponse):
@@ -170,7 +169,7 @@ def create_http_exception(status_code: int, error_code: ErrorCode, message: str)
         detail={
             "error_code": error_code.value,
             "message": message,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
 

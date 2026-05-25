@@ -1,8 +1,6 @@
-import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from src.services.discovery.tasks import process_high_potential_candidates
 from src.api.utils.models import ContentCandidateDB, UserDB
-from sqlalchemy import select
 
 def test_process_high_potential_candidates_trigger():
     """
@@ -21,7 +19,7 @@ def test_process_high_potential_candidates_trigger():
     mock_admin.id = "admin_001"
 
     with patch("src.api.utils.database.async_session_factory") as mock_sf, \
-         patch("src.services.discovery.tasks.celery_app.send_task") as mock_send_task, \
+         patch("src.services.discovery.tasks.celery_app.send_task"), \
          patch("src.services.discovery.tasks.asyncio.run") as mock_run:
         
         # mock_run should just return the result of the coroutine it's given
@@ -61,8 +59,8 @@ def test_process_high_potential_candidates_skips_processed():
     """
     Verifies that already processed candidates are not re-triggered.
     """
-    with patch("src.api.utils.database.async_session_factory") as mock_sf, \
-         patch("src.services.discovery.tasks.celery_app.send_task") as mock_send_task, \
+    with patch("src.api.utils.database.async_session_factory"), \
+         patch("src.services.discovery.tasks.celery_app.send_task"), \
          patch("src.services.discovery.tasks.asyncio.run") as mock_run:
         
         mock_run.return_value = 0

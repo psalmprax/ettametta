@@ -27,7 +27,7 @@ import logging
 import os
 from typing import Any
 
-from src.services.video_engine.dag_executor import BaseNode, Cache
+from src.services.video_engine.dag_executor import BaseNode
 
 # WebSocket notification helper for DAG progress reporting
 from src.api.routes.ws import notify_nexus_job_update_sync
@@ -62,7 +62,7 @@ def _dag_notify(
         notify_nexus_job_update_sync(payload)
     except Exception as _exc:
         logger.debug("[DAG:WS] WS notification failed (non-blocking): %s", _exc)
-from src.services.video_engine.media_ir import MediaIR, NULL_MEDIA
+from src.services.video_engine.media_ir import MediaIR
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class StockSearchNode(BaseNode):
                 niche=niche if niche != keyword else None,
                 count=count,
             )
-            url_count = len(results)
+            len(results)
             _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 50, niche=niche)
             # Store both URLs and local paths so downstream nodes can reuse
             urls = [r["url"] for r in results]
@@ -386,7 +386,7 @@ class VisionAuditNode(BaseNode):
     """
 
     async def execute(self, ctx: dict[str, Any]) -> dict:
-        from src.services.llm.service import unified_llm_service, LLMProvider
+        from src.services.llm.service import unified_llm_service
 
         # Resolve video path from input
         path_key = str(self.params.get("video_path_key", "video_path"))
@@ -423,7 +423,7 @@ class VisionAuditNode(BaseNode):
 
         audit_prompt = (
             f"Does this video frame match the description: '{prompt}'? "
-            f"Answer with YES or NO followed by a brief reason."
+            "Answer with YES or NO followed by a brief reason."
         )
 
         try:
@@ -577,10 +577,10 @@ class SceneRenderNode(BaseNode):
 
         job_id = str(self.params.get("job_id", "unknown"))
         niche = str(self.params.get("niche", ""))
-        style = str(self.params.get("style", "CINEMATIC_DOC"))
+        str(self.params.get("style", "CINEMATIC_DOC"))
         _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 70, niche=niche)
-        blueprint = dict(self.params.get("blueprint", {}))
-        job_metadata = dict(self.params.get("job_metadata", {}))
+        dict(self.params.get("blueprint", {}))
+        dict(self.params.get("job_metadata", {}))
         composition_id = str(self.params.get("composition_id", "ViralClip"))
 
         # Collect audited clips from upstream context
@@ -611,7 +611,7 @@ class SceneRenderNode(BaseNode):
             logger.error("[DAG:SceneRender] No visual paths available for '%s'", self.id)
             return {"success": False, "error": "no_visual_assets", "output_path": None}
 
-        render_dir = f"outputs/nexus"
+        render_dir = "outputs/nexus"
         os.makedirs(render_dir, exist_ok=True)
         output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"
         fallback_output = os.path.join(render_dir, f"ffmpeg_{job_id}.mp4")

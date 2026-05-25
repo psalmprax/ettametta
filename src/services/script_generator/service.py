@@ -1,16 +1,7 @@
-import os
 import json
 import logging
-import time
 from typing import Any
 from src.services.llm.intelligence_hub import base_intelligence_service
-from src.api.config import settings
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
 
 
 NICHE_TAXONOMY = {
@@ -127,10 +118,10 @@ class ScriptGenerator:
         STYLE: {style}
         GUIDANCE: {style_guidance}
         
-        {f"⚡ WINNING PATTERNS (Crystallized from viral hits):" if hermes_context else ""}
+        {"⚡ WINNING PATTERNS (Crystallized from viral hits):" if hermes_context else ""}
         {hermes_context}
 
-        {f"🎬 ASSET CONTEXT (Available Clips):" if asset_context else ""}
+        {"🎬 ASSET CONTEXT (Available Clips):" if asset_context else ""}
         {asset_context}
 
         DYNAMISM REQUIREMENTS:

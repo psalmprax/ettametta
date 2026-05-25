@@ -64,7 +64,7 @@ async def test_full_pipeline():
 
         visual_analysis = await base_vlm_service.analyze_video_content(test_video)
         if visual_analysis:
-            print(f"  ✅ VLM Analysis:")
+            print("  ✅ VLM Analysis:")
             print(f"    - Visual mood: {visual_analysis.get('visual_mood', 'unknown')}")
             print(
                 f"    - Content type: {visual_analysis.get('content_type', 'unknown')}"

@@ -19,7 +19,7 @@ load_dotenv()
 import asyncio
 
 
-async def test_transcription(video_path: str):
+async def run_transcription(video_path: str):
     """Step 3: Transcribe video audio"""
     print(f"\n[STEP 3] TRANSCRIBING: {video_path}")
 
@@ -42,7 +42,7 @@ async def test_transcription(video_path: str):
     return []
 
 
-async def test_vlm_analysis(video_path: str):
+async def run_vlm_analysis(video_path: str):
     """Step 4: Analyze video with VLM"""
     print(f"\n[STEP 4] VLM ANALYSIS: {video_path}")
 
@@ -52,7 +52,7 @@ async def test_vlm_analysis(video_path: str):
         result = await base_vlm_service.analyze_video_content(video_path)
 
         if result:
-            print(f"  ✅ VLM Analysis:")
+            print("  ✅ VLM Analysis:")
             print(f"    - Visual mood: {result.get('visual_mood', 'unknown')}")
             print(f"    - Content type: {result.get('content_type', 'unknown')}")
             print(f"    - Key moments: {len(result.get('key_moments', []))}")
@@ -82,10 +82,10 @@ async def main():
     print(f"File size: {os.path.getsize(video_path) / 1024 / 1024:.2f} MB")
 
     # Step 3: Transcription
-    transcript = await test_transcription(video_path)
+    transcript = await run_transcription(video_path)
 
     # Step 4: VLM Analysis
-    vlm_result = await test_vlm_analysis(video_path)
+    vlm_result = await run_vlm_analysis(video_path)
 
     # Summary
     print("\n" + "=" * 50)

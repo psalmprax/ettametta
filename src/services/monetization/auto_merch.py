@@ -1,11 +1,8 @@
 import logging
 import httpx
-import random
-import uuid
 from typing import Any
 from src.api.config import settings
 from src.api.utils.os_worker import ai_worker
-from src.services.monetization.commerce_service import base_commerce_service
 
 logger = logging.getLogger("AutoMerchService")
 
@@ -140,10 +137,10 @@ class AutoMerchService:
                     raise RuntimeError(f"Printful Rejection: {error_detail}")
 
         except httpx.RequestError as exc:
-            logger.error(f"[AutoMerch] Network connectivity issue with Printful: {exc}")
+            logger.exception(f"[AutoMerch] Network connectivity issue with Printful: {exc}")
             raise RuntimeError(f"Failed to reach Printful: {exc}")
         except Exception as e:
-            logger.error(f"[AutoMerch] POD Pipeline Failure: {e}")
+            logger.exception(f"[AutoMerch] POD Pipeline Failure: {e}")
             raise
 
 base_auto_merch_service = AutoMerchService()

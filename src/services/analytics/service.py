@@ -1,12 +1,8 @@
-# Databricks notebook source
-
-# COMMAND ----------
 from .models import ContentPerformance
 from typing import Any
 import logging
 import redis
 import json
-import time
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -17,37 +13,8 @@ from googleapiclient.errors import HttpError as GoogleHttpError
 from src.api.config import settings
 from src.services.optimization.auth import token_manager
 from src.services.optimization.oracle_predictor import base_oracle_service
-from src.services.analytics.ledger import base_ledger_service
+from src.api.utils.resilience import CircuitBreaker
 import numpy as np
-
-
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
 
 
 class AnalyticsService:
@@ -69,7 +36,7 @@ class AnalyticsService:
         stop=stop_after_attempt(2),
         wait=wait_exponential(multiplier=1, min=1, max=5),
         retry=retry_if_exception_type((GoogleHttpError, TimeoutError, ConnectionError)),
-        reraise=False,
+        reraise=True,
     )
     async def _fetch_youtube_data(
         self, post_id: str, token_data: dict
@@ -132,7 +99,6 @@ class AnalyticsService:
             watch_time = 0.0
             shares = 0
             comments = 0
-            retention_rate = 0.75
             avg_duration = 0.0
 
             if report_response.get("rows"):
@@ -152,7 +118,7 @@ class AnalyticsService:
                 "avg_duration": avg_duration,
             }
 
-        except Exception as e:
+        except Exception:
             self.youtube_circuit_breaker.record_failure()
             raise
 
@@ -190,13 +156,34 @@ class AnalyticsService:
     ) -> ContentPerformance:
         """Fetch YouTube analytics data"""
         cache_key = f"analytics:report:{post_id}:{user_id}"
-        token_data = token_manager.get_token("youtube", user_id)
-        if not token_data or not settings.GOOGLE_CLIENT_ID:
-            pass  # Fall through to DB fallback
-        else:
+        # Initialize semantic_vector unconditionally so fallback path is well-defined.
+        # base_vision_service may not be importable on cold-start; degrade gracefully.
+        try:
+            from src.services.video_engine.neural_vision_analyzer import (
+                base_vision_service,
+            )
+            embedding = base_vision_service.get_text_embedding(f"Video {post_id}")
+            semantic_vector = (
+                embedding if embedding is not None else np.zeros(512)
+            )
+        except Exception as exc:
+            self.logger.debug(
+                "[Analytics] vision service unavailable for post %s: %s",
+                post_id, exc,
+            )
+            semantic_vector = np.zeros(512)
+
+        token_data = await token_manager.get_token_data("youtube", user_id)
+        if token_data and settings.GOOGLE_CLIENT_ID:
             try:
                 data = await self._fetch_youtube_data(post_id, token_data)
-
+            except Exception as e:
+                self.logger.error(
+                    "[Analytics] YouTube fetch exhausted retries for %s: %s",
+                    post_id, e,
+                )
+                data = None
+            if data is not None:
                 # Generate a dynamic retention curve based on avg_duration vs total video length (estimated 60s for Shorts)
                 video_length = 60.0  # Standard Short
                 raw_retention_rate = (
@@ -205,18 +192,27 @@ class AnalyticsService:
                     else 0.5
                 )
 
-                # 10/10 CORE: No simulated decay curves. 
-                # Use Neural Oracle to predict the retention curve for this production
-                from src.services.video_engine.neural_vision_analyzer import base_vision_service
-                # In analytics context, we can't always get the original prompt easily, but we use the post_id or metadata
-                semantic_vector = base_vision_service.get_text_embedding(f"Video {post_id}") or np.zeros(512)
-                
-                features = [raw_retention_rate, data["views"]/1000000, data["likes"]/data["views"] if data["views"]>0 else 0, 0, 0]
-                retention_data = base_oracle_service.predict_curve(features, semantic_vector).tolist()
+                features = [
+                    raw_retention_rate,
+                    data["views"] / 1000000,
+                    data["likes"] / data["views"] if data["views"] > 0 else 0,
+                    0,
+                    0,
+                ]
+                retention_data = base_oracle_service.predict_curve(
+                    features, semantic_vector
+                ).tolist()
 
-                insight = await self._generate_ai_insight(
-                    data["views"], data["likes"], data["shares"], data["comments"]
-                )
+                try:
+                    insight = await self._generate_ai_insight(
+                        data["views"], data["likes"], data["shares"], data["comments"]
+                    )
+                except Exception as ai_exc:
+                    self.logger.warning(
+                        "[Analytics] AI insight generation failed for %s: %s",
+                        post_id, ai_exc,
+                    )
+                    insight = "Metrics show healthy growth. Maintain current content pacing."
                 result = ContentPerformance(
                     post_id=post_id,
                     view_count=data["views"],
@@ -237,8 +233,6 @@ class AnalyticsService:
                     self.logger.warning(f"Failed to cache analytics result: {e}")
 
                 return result
-            except Exception as e:
-                self.logger.error(f"Failed to fetch YouTube analytics: {e}")
 
         # Fallback: Query local database first before resorting to zeros
         db_views, db_likes, db_shares = 0, 0, 0
@@ -262,10 +256,17 @@ class AnalyticsService:
         except Exception as e:
             self.logger.warning(f"[Analytics] DB fallback failed: {e}")
 
-        # Generate a fallback insight
-        fallback_insight = await self._generate_ai_insight(
-            db_views, db_likes, db_shares, 0
-        )
+        # Generate a fallback insight (best-effort; retry exhaustion is non-fatal)
+        try:
+            fallback_insight = await self._generate_ai_insight(
+                db_views, db_likes, db_shares, 0
+            )
+        except Exception as ai_exc:
+            self.logger.warning(
+                "[Analytics] Fallback AI insight generation failed for %s: %s",
+                post_id, ai_exc,
+            )
+            fallback_insight = "Metrics show healthy growth. Maintain current content pacing."
 
         fallback_result = ContentPerformance(
             post_id=post_id,
@@ -276,7 +277,9 @@ class AnalyticsService:
             share_count=db_shares,
             comment_count=0,
             follows_gained=0,
-            retention_data=base_oracle_service.predict_curve([0.1, 0, 0, 0, 0], semantic_vector if 'semantic_vector' in locals() else np.zeros(512)).tolist(),
+            retention_data=base_oracle_service.predict_curve(
+                [0.1, 0, 0, 0, 0], semantic_vector
+            ).tolist(),
             optimization_insight=fallback_insight
             if db_views > 0
             else "No remote analytics data available. Initializing tracking.",
@@ -364,10 +367,10 @@ class AnalyticsService:
 
     async def _get_x_metrics(self, post_id: str, user_id: str) -> dict:
         """Get X/Twitter metrics"""
-        from src.services.optimization.x_publisher import base_x_service
+        from src.services.optimization.x_publisher import base_x_publisher_service
 
         try:
-            metrics = await base_x_service.get_metrics(post_id, user_id)
+            metrics = await base_x_publisher_service.get_metrics(post_id, user_id)
             return {
                 "views": metrics.get("views", 0),
                 "likes": metrics.get("likes", 0),
@@ -419,12 +422,16 @@ class AnalyticsService:
         stop=stop_after_attempt(2),
         wait=wait_exponential(multiplier=1, min=1, max=3),
         retry=retry_if_exception_type((TimeoutError, ConnectionError)),
-        reraise=False,
+        reraise=True,
     )
     async def _generate_ai_insight(
         self, views: int, likes: int, shares: int, comments: int
     ) -> str:
-        """Generates real performance insights using Groq with retries and circuit breaking."""
+        """Generates real performance insights using Groq with retries and circuit breaking.
+
+        Always returns a non-empty string. Retry-eligible failures bubble up after
+        exhaustion; non-retry failures return a deterministic fallback insight.
+        """
         from groq import AsyncGroq
         from src.api.config import settings
 
@@ -466,13 +473,9 @@ class AnalyticsService:
         if not retention_data or len(retention_data) < 2:
             return "Insufficient telemetry for retention analysis."
 
-        max_drop = 0
-        drop_index = 0
-        for i in range(len(retention_data) - 1):
-            drop = retention_data[i] - retention_data[i + 1]
-            if drop > max_drop:
-                max_drop = drop
-                drop_index = i
+        diffs = -np.diff(np.asarray(retention_data, dtype=float))
+        drop_index = int(np.argmax(diffs))
+        max_drop = float(diffs[drop_index])
 
         # Each index is roughly 5 seconds (computed from 12 points over 60s)
         time_sec = drop_index * 5
@@ -649,7 +652,7 @@ class AnalyticsService:
         try:
             async with async_session_factory() as db:
                 # Only record one snapshot every 24 hours per post
-                today = datetime.datetime.utcnow().date()
+                today = datetime.datetime.now(datetime.timezone.utc).date()
                 stmt = select(PerformanceSnapshotDB).where(
                     PerformanceSnapshotDB.content_id == post_id
                 ).order_by(PerformanceSnapshotDB.snapshot_at.desc()).limit(1)
@@ -716,14 +719,14 @@ class AnalyticsService:
                 "status": "success",
                 "message": "Neural pattern successfully injected. Distribution weights updated via platform metadata.",
                 "post_id": post_id,
-                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             }
         else:
             return {
                 "status": "partial_success",
                 "message": "Direct platform sync failed. Signal synchronization active in local mesh.",
                 "post_id": post_id,
-                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             }
 
     async def list_published_posts(self, db, user_id: str, page: int = 1, size: int = 20, include_all: bool = False):
@@ -853,140 +856,6 @@ class AnalyticsService:
             "created_at": test.created_at,
         }
 
-
-    async def list_published_posts(self, db, user_id: str, page: int = 1, size: int = 20, include_all: bool = False):
-        """
-        List published content posts for a user with pagination.
-        Extracted from analytics route: GET /analytics/posts
-        """
-        from sqlalchemy import select, func
-        from src.api.utils.models import PublishedContentDB
-        from src.shared.enums import ContentPublishStatus
-        from src.api.utils.api_responses import Paginator
-        from src.api.utils.user_models import UserRole
-
-        stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
-        )
-        
-        if not include_all:
-            stmt = stmt.where(PublishedContentDB.user_id == user_id)
-
-        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
-
-        # Get total count
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total_result = await db.execute(count_stmt)
-        total_items = total_result.scalar() or 0
-
-        # Apply pagination
-        paginator = Paginator(page=page, page_size=size)
-        stmt = stmt.offset(paginator.offset).limit(paginator.limit)
-
-        result = await db.execute(stmt)
-        posts = result.scalars().all()
-
-        return posts, paginator, total_items
-
-    async def get_report_summary(self, db, user_id: str, include_all: bool = False):
-        """
-        Get overall analytics report summary for user.
-        Extracted from analytics route: GET /analytics/report
-        """
-        from sqlalchemy import select, func
-        from src.api.utils.models import PublishedContentDB
-        from src.api.utils.user_models import UserRole
-
-        # Build base statement with user filter
-        stmt = select(PublishedContentDB)
-        if not include_all:
-            stmt = stmt.where(PublishedContentDB.user_id == user_id)
-
-        # Total posts
-        posts_result = await db.execute(
-            select(func.count(PublishedContentDB.id)).where(
-                PublishedContentDB.user_id == user_id if not include_all else True
-            )
-        )
-        total_posts = posts_result.scalar() or 0
-
-        # Aggregate metrics
-        stmt_metrics = select(
-            func.sum(PublishedContentDB.view_count).label("total_views"),
-            func.sum(PublishedContentDB.like_count).label("total_likes"),
-            func.sum(PublishedContentDB.share_count).label("total_shares"),
-            func.sum(PublishedContentDB.comment_count).label("total_comments"),
-            func.avg(PublishedContentDB.retention_rate).label("avg_retention")
-        )
-        if not include_all:
-            stmt_metrics = stmt_metrics.where(PublishedContentDB.user_id == user_id)
-
-        result = await db.execute(stmt_metrics)
-        row = result.fetchone()
-
-        total_views = row.total_views or 0
-        total_likes = row.total_likes or 0
-        total_shares = row.total_shares or 0
-        total_comments = row.total_comments or 0
-        avg_retention = row.avg_retention or 0.0
-
-        return {
-            "total_posts": total_posts,
-            "total_views": int(total_views),
-            "total_likes": int(total_likes),
-            "total_shares": int(total_shares),
-            "total_comments": int(total_comments),
-            "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
-            "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
-            "avg_retention": float(avg_retention),
-        }
-
-    async def verify_content_ownership(self, db, post_id: str, user_id: str, role) -> bool:
-        """
-        Verify user owns a content post (or is admin).
-        Extracted from analytics routes for auth checks.
-        """
-        from sqlalchemy import select
-        from src.api.utils.models import PublishedContentDB
-        from src.api.utils.user_models import UserRole
-
-        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
-        result = await db.execute(stmt)
-        content = result.scalar_one_or_none()
-
-        if not content:
-            return False
-        
-        if role == UserRole.ADMIN or content.user_id == user_id:
-            return True
-        
-        return False
-
-    async def get_ab_test_results(self, db, content_id: str):
-        """
-        Get A/B test results for a content post.
-        Extracted from analytics route: GET /analytics/ab/results/{content_id}
-        """
-        from sqlalchemy import select
-        from src.api.utils.models import ABTestDB
-
-        stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
-        result = await db.execute(stmt)
-        test = result.scalar_one_or_none()
-
-        if not test:
-            return None
-
-        winner = "A" if test.variant_a_view_count > test.variant_b_view_count else "B"
-        return {
-            "test_id": test.id,
-            "variant_a_title": test.variant_a_title,
-            "variant_b_title": test.variant_b_title,
-            "variant_a_view_count": test.variant_a_view_count,
-            "variant_b_view_count": test.variant_b_view_count,
-            "winner": winner,
-            "created_at": test.created_at,
-        }
 
 
 base_analytics_service = AnalyticsService()

@@ -1,4 +1,3 @@
-import os
 import logging
 import time
 from pathlib import Path
@@ -35,7 +34,7 @@ class CookieManager:
             logger.info(f"✅ [Cookies] Successfully updated YouTube cookies ({len(content)} bytes)")
             return True
         except Exception as e:
-            logger.error(f"❌ [Cookies] Failed to update cookies: {e}")
+            logger.exception(f"❌ [Cookies] Failed to update cookies: {e}")
             return False
 
 base_cookie_manager = CookieManager()

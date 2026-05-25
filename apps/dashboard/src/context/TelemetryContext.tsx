@@ -132,7 +132,9 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
                 console.error("[Telemetry] Connection Failed:", e);
                 if (isMounted) {
                     setStatus("closed");
-                    reconnectTimeout = setTimeout(connect, 5000);
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+                    reconnectAttempts.current++;
+                    reconnectTimeout = setTimeout(connect, delay);
                 }
             }
         };

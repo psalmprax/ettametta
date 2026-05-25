@@ -1,4 +1,3 @@
-import os
 import sys
 import subprocess
 import shutil
@@ -19,7 +18,7 @@ def is_intel_gpu():
         result = subprocess.run(["lspci"], capture_output=True, text=True)
         intel_vga_lines = [line for line in result.stdout.splitlines() if "Intel Corporation" in line and ("VGA" in line or "Display" in line)]
         return len(intel_vga_lines) > 0
-    except:
+    except Exception:
         return False
 
 def get_torch_install_command():

@@ -31,7 +31,7 @@ def sentinel_trend_watcher():
                 else False
             )
 
-            stmt = select(MonitoredNiche).where(MonitoredNiche.is_active == True)
+            stmt = select(MonitoredNiche).where(MonitoredNiche.is_active)
             result = await db.execute(stmt)
             niches = result.scalars().all()
             logger.info(
@@ -60,7 +60,7 @@ def sentinel_trend_watcher():
             "auto_pilot": is_auto_pilot,
         }
     except Exception as e:
-        logger.error(f"[Sentinel] Watcher failed: {e}")
+        logger.exception(f"[Sentinel] Watcher failed: {e}")
         return {"status": "error", "error": str(e)}
 
 
@@ -124,7 +124,7 @@ def deep_scan_task(niches: list[str], tier: str = "free"):
                 ]
             )
         except Exception as e:
-            logger.error(f"[Discovery Task] Deep scan failed for {niche}: {e}")
+            logger.exception(f"[Discovery Task] Deep scan failed for {niche}: {e}")
 
     return {"status": "success", "niches": niches, "found_count": len(all_results)}
 @celery_app.task(name="discovery.process_high_potential")
@@ -144,8 +144,8 @@ def process_high_potential_candidates():
         async with async_session_factory() as db:
             # Find candidates that are analyzed, high potential, and not yet processed
             stmt = select(ContentCandidateDB).where(
-                ContentCandidateDB.analyzed_at != None,
-                ContentCandidateDB.is_processed == False
+                ContentCandidateDB.analyzed_at is not None,
+                not ContentCandidateDB.is_processed
             )
             result = await db.execute(stmt)
             candidates = result.scalars().all()
@@ -208,7 +208,7 @@ def process_high_potential_candidates():
                     logger.info(f"[Autonomous] Triggered Nexus job {job_id} for candidate {candidate.id}")
                     
                 except Exception as e:
-                    logger.error(f"[Autonomous] Failed to trigger job for {candidate.id}: {e}")
+                    logger.exception(f"[Autonomous] Failed to trigger job for {candidate.id}: {e}")
                     await db.rollback()
                     
             return triggered_count
@@ -216,5 +216,5 @@ def process_high_potential_candidates():
     try:
         return asyncio.run(run_process())
     except Exception as e:
-        logger.error(f"[Autonomous] Task failed: {e}")
+        logger.exception(f"[Autonomous] Task failed: {e}")
         return 0

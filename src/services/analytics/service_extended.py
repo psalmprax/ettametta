@@ -5,7 +5,7 @@ Follows Clean Architecture principles for better testability and separation of c
 """
 
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.models import (
     PublishedContentDB,
@@ -14,8 +14,7 @@ from src.api.utils.models import (
     ABTestDB,
 )
 from src.shared.enums import SystemJobStatus, ContentPublishStatus
-from src.api.utils.user_models import UserDB, UserRole
-from src.api.utils.api_responses import success_response
+from src.api.utils.user_models import UserRole
 import logging
 import datetime
 
@@ -221,7 +220,7 @@ class AnalyticsServiceExtended:
         active_trends_count = result.scalar() or 0
         
         # Calculate velocity (recent trends)
-        yesterday = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
         result = await self.db.execute(
             select(func.count(NicheTrendDB.id)).where(
                 NicheTrendDB.last_updated >= yesterday

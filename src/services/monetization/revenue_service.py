@@ -6,11 +6,11 @@ and integrating with external platform APIs where available.
 """
 
 import logging
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
-from sqlalchemy import select, func
+from typing import Any
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import select
 from src.api.utils.database import async_session_factory
-from src.api.utils.models import PublishedContentDB, UserDB
+from src.api.utils.models import PublishedContentDB
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class MonetizationService:
             
             for content in contents:
                 platform = content.platform or "Unknown"
-                pub_date = content.published_at.date() if content.published_at else datetime.utcnow().date()
+                pub_date = content.published_at.date() if content.published_at else datetime.now(timezone.utc).date()
                 date_str = pub_date.isoformat()
                 
                 # Initialize stats
@@ -147,7 +147,7 @@ class MonetizationService:
         current_progress = summary["total_revenue"]
         
         # Calculate projected end of month
-        days_remaining = 30 - (datetime.utcnow().day)
+        days_remaining = 30 - (datetime.now(timezone.utc).day)
         daily_avg = summary["daily_average"]
         projected_end = current_progress + (daily_avg * days_remaining)
         
@@ -163,4 +163,4 @@ class MonetizationService:
 
 
 # Singleton instance
-base_monetization_service = MonetizationService()
+base_revenue_service = MonetizationService()

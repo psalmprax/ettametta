@@ -1,8 +1,7 @@
 import os
 import httpx
 import logging
-import importlib.util
-import tenacity
+import importlib
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.api.utils.vault import get_secret
 from src.api.config import settings
@@ -11,7 +10,11 @@ from src.api.utils.resilience import CircuitBreaker
 logger = logging.getLogger(__name__)
 
 def check_module_available(module_name: str) -> bool:
-    return importlib.util.find_spec(module_name) is not None
+    try:
+        importlib.import_module(module_name)
+        return True
+    except ImportError:
+        return False
 
 class VoiceoverService:
     @property
@@ -59,7 +62,7 @@ class VoiceoverService:
         # 1. Check Fish Speech (Local Infrastructure)
         if (self.engine == "fish_speech" or not self.elevenlabs_key) and not self.breakers["fish"].is_open():
             try:
-                logger.info(f"[VoiceoverService] Attempting Fish Speech...")
+                logger.info("[VoiceoverService] Attempting Fish Speech...")
                 async with httpx.AsyncClient() as client:
                     payload = {"text": text, "voice": voice_id or "default"}
                     logger.info(f"[VoiceoverService] POST {self.fish_endpoint}/generate")
@@ -85,16 +88,15 @@ class VoiceoverService:
                         logger.info(f"[VoiceoverService] Fish Speech Success: {file_path}")
                         return f"outputs/audio/{file_name}"
             except Exception as e:
-                logger.error(f"[VoiceoverService] Fish Speech failure: {e}")
+                logger.exception(f"[VoiceoverService] Fish Speech failure: {e}")
                 self.breakers["fish"].record_failure()
                 # If Fish fails, we continue to ElevenLabs or gTTS
 
         # 2. ElevenLabs (Cloud API)
         if self.elevenlabs_key and not self.breakers["elevenlabs"].is_open():
-            logger.info(f"[VoiceoverService] Attempting ElevenLabs...")
+            logger.info("[VoiceoverService] Attempting ElevenLabs...")
             voice_id = voice_id or self.default_voice_id
             url = f"{self.elevenlabs_url}/text-to-speech/{voice_id}"
-            headers = {"xi-api-key": self.elevenlabs_key, "Content-Type": "application/json"}
             data = {
                 "text": text,
                 "model_id": "eleven_monolingual_v1",
@@ -112,11 +114,11 @@ class VoiceoverService:
                     logger.info(f"[VoiceoverService] ElevenLabs Success: {file_path}")
                     return f"outputs/audio/{file_name}"
             except Exception as e:
-                logger.error(f"[VoiceoverService] ElevenLabs failure: {e}")
+                logger.exception(f"[VoiceoverService] ElevenLabs failure: {e}")
                 self.breakers["elevenlabs"].record_failure()
 
         # 3. Fallback to gTTS (Free)
-        logger.info(f"[VoiceoverService] Attempting gTTS Fallback...")
+        logger.info("[VoiceoverService] Attempting gTTS Fallback...")
         if check_module_available("gtts"):
             try:
                 from gtts import gTTS
@@ -125,7 +127,7 @@ class VoiceoverService:
                 logger.info(f"[VoiceoverService] gTTS Success: {file_path}")
                 return f"outputs/audio/{file_name}"
             except Exception as e:
-                logger.error(f"[VoiceoverService] gTTS Fallback Failed: {e}")
+                logger.exception(f"[VoiceoverService] gTTS Fallback Failed: {e}")
         else:
             logger.warning("[VoiceoverService] gTTS not available, skipping fallback")
         

@@ -1,39 +1,10 @@
-import os
 import logging
-import time
 import json
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timezone
+from src.api.utils.resilience import CircuitBreaker
 
 logger = logging.getLogger(__name__)
-
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            logger.warning("[CrewAI] Circuit opened due to agent execution failures")
 
 class CrewAIService:
     """
@@ -93,7 +64,7 @@ class CrewAIService:
                 self.llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key)
                 logger.info("[CrewAI] Initialized with OpenAI fallback")
             except Exception as e:
-                logger.error(f"[CrewAI] Failed fallback to OpenAI: {e}")
+                logger.exception(f"[CrewAI] Failed fallback to OpenAI: {e}")
                 self.enabled = False
                 return
 
@@ -190,7 +161,7 @@ class CrewAIService:
             raise RuntimeError("CrewAI circuit breaker is OPEN")
 
         try:
-            from crewai import Crew, Task, Agent
+            from crewai import Crew, Task
             
             # 1. Generate dynamic tasks
             task_specs = await self._generate_dynamic_tasks(topic, platform)
@@ -231,12 +202,12 @@ class CrewAIService:
                 "topic": topic,
                 "platform": platform,
                 "result": str(result),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[CrewAI] Workflow failed: {e}")
+            logger.exception(f"[CrewAI] Workflow failed: {e}")
             raise
 
 # Singleton instance

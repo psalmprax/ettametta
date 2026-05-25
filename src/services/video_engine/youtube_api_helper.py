@@ -18,7 +18,7 @@ async def get_youtube_streaming_url(
     Supports both Public (API Key) and Private (OAuth) access.
     Returns the best quality adaptive format URL.
     """
-    url = f"https://www.googleapis.com/youtube/v3/videos"
+    url = "https://www.googleapis.com/youtube/v3/videos"
     params = {
         "part": "streamingData,snippet,status",
         "id": video_id,
@@ -87,7 +87,7 @@ async def get_youtube_streaming_url(
         logger.warning(f"[YouTube API] No streaming data found for video {video_id}")
         return None
     except Exception as e:
-        logger.error(f"[YouTube API] Exception fetching video {video_id}: {e}")
+        logger.exception(f"[YouTube API] Exception fetching video {video_id}: {e}")
         return None
 
 

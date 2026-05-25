@@ -53,7 +53,7 @@ class EmpireModeScheduler:
             content = response.choices[0].message.content
             return json.loads(content)
         except Exception as e:
-            logging.error(f"[EmpireModeScheduler] Cloning Error: {e}")
+            logging.exception(f"[EmpireModeScheduler] Cloning Error: {e}")
             return base_script
 
 base_scheduler_service = EmpireModeScheduler()

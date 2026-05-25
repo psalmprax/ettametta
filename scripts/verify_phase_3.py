@@ -1,5 +1,4 @@
 import requests
-import time
 import sys
 
 API_URL = "http://localhost:8011"

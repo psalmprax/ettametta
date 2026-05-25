@@ -1,4 +1,3 @@
-import aiohttp
 import logging
 from .models import ContentCandidate
 from .google_trends_scanner import base_google_trends_service

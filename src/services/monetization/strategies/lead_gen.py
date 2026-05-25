@@ -31,7 +31,6 @@ class LeadGenStrategy(BaseMonetizationStrategy):
                     } for config in configs]
 
                 # Fallback to default newsletter if no specific config
-                from src.api.config import settings
                 return [{
                     "id": "newsletter",
                     "name": "Weekly Newsletter",
@@ -41,7 +40,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
                     "source": "lead_gen_default"
                 }]
             except Exception as e:
-                logger.error(f"[LeadGenStrategy] Error fetching assets: {e}")
+                logger.exception(f"[LeadGenStrategy] Error fetching assets: {e}")
                 return []
 
     @retry(
@@ -55,7 +54,6 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         """
         from src.api.config import settings
         import httpx
-        import hashlib
 
         # 1. Mailchimp Integration
         if settings.MAILCHIMP_API_KEY and settings.MAILCHIMP_LIST_ID:
@@ -79,7 +77,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         # 2. ConvertKit Integration
         if settings.CONVERTKIT_API_KEY:
             logger.info(f"[LeadGen] Subscribing {email} to ConvertKit")
-            url = f"https://api.convertkit.com/v3/forms/YOUR_FORM_ID/subscribe"
+            url = "https://api.convertkit.com/v3/forms/YOUR_FORM_ID/subscribe"
             data = {
                 "api_key": settings.CONVERTKIT_API_KEY,
                 "email": email,
@@ -105,7 +103,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         try:
             cta = await ai_worker.generate_text(prompt)
             if cta: return cta.strip()
-        except:
+        except Exception:
             pass
             
         return f"Download our FREE {niche} guide! Link in bio 🚀"

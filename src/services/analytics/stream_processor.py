@@ -7,11 +7,9 @@ crashes, using a SQLite-backed persistent queue.
 """
 
 import asyncio
-import threading
 from src.shared.enums import SystemJobStatus
 import json
 import sqlite3
-import time
 from typing import Any
 from pathlib import Path
 import logging
@@ -86,7 +84,7 @@ class StreamProcessor:
                     await handler_callback(item["topic"], item["data"])
                     self.queue.complete(item["id"])
                 except Exception as e:
-                    logger.error(f"❌ [Stream] Processing Error: {e}")
+                    logger.exception(f"❌ [Stream] Processing Error: {e}")
             
             await asyncio.sleep(1) # Frequency management
 

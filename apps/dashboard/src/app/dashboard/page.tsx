@@ -88,7 +88,7 @@ function DashboardContent() {
     return [...actionLogsFormatted, ...systemLogs].sort((a, b) => b.timestamp - a.timestamp);
   }, [actionLogs, systemLogs]);
 
-  const sparklineData = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: 40 + Math.random() * 40 })), []);
+  const sparklineData = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: 40 + (((i * 7 + 13) % 40)) })), []);
 
   return (
     <CommandCenterLayout
@@ -189,7 +189,7 @@ function DashboardContent() {
                         </div>
                         <div className="h-[200px] relative z-10">
                             <AreaChartCustom 
-                                data={Array.from({ length: 20 }, (_, i) => ({ time: i, value: 30 + Math.random() * 50 }))} 
+                                data={Array.from({ length: 20 }, (_, i) => ({ time: i, value: 30 + ((i * 11 + 7) % 50) }))} 
                                 dataKey="value" 
                                 color="rgba(6,182,212,1)" 
                                 height="100%"

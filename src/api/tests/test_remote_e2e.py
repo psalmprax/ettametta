@@ -1,6 +1,5 @@
 import httpx
 import time
-import os
 import sys
 
 # Define constants
@@ -60,7 +59,7 @@ def test_remote_e2e():
                         last_status = current_status
                     
                     if current_status == "COMPLETED":
-                        print(f"\n🎉 SUCCESS! E2E Remote Generation Test Passed.")
+                        print("\n🎉 SUCCESS! E2E Remote Generation Test Passed.")
                         print(f"📂 Local Output Path: {status_data.get('output_path')}")
                         return True
                     

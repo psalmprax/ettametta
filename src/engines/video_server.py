@@ -7,7 +7,6 @@ Remote HTTP Server for Video Serving
 import http.server
 import socketserver
 import os
-import threading
 
 PORT = 3001
 VIDEO_DIR = "/tmp"

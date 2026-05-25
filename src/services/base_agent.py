@@ -1,9 +1,5 @@
 import logging
-import asyncio
-import json
 import os
-import requests
-from typing import Any
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)
@@ -103,10 +99,10 @@ class BaseEttamettaAgent:
     def _init_gemini(self):
         if hasattr(settings, "GOOGLE_API_KEY") and settings.GOOGLE_API_KEY:
             try:
-                import google.generativeai as genai
+                from google import genai
 
-                genai.configure(api_key=settings.GOOGLE_API_KEY)
-                self.clients["gemini"] = genai.GenerativeModel("gemini-1.5-pro")
+                self.clients["gemini"] = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                self._gemini_model_name = "gemini-1.5-pro"
             except ImportError:
                 logger.warning(
                     f"[{self.agent_name}] Google Generative AI package not installed"
@@ -361,8 +357,9 @@ class BaseEttamettaAgent:
         return resp.choices[0].message.content
 
     async def _execute_gemini(self, client, prompt: str, system_prompt: str) -> str:
-        resp = await client.generate_content_async(
-            f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        resp = await client.aio.models.generate_content(
+            model=self._gemini_model_name,
+            contents=f"{system_prompt}\n\n{prompt}" if system_prompt else prompt,
         )
         return resp.text
 

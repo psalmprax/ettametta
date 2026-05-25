@@ -1,4 +1,3 @@
-import os
 import logging
 import subprocess
 
@@ -28,7 +27,7 @@ class AudioMixer:
             return output_path
             
         except Exception as e:
-            logging.error(f"[AudioMixer] FFmpeg Mix Error: {e}")
+            logging.exception(f"[AudioMixer] FFmpeg Mix Error: {e}")
             return None
 
 base_audio_mixer = AudioMixer()

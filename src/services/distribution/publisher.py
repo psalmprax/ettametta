@@ -6,7 +6,6 @@ Handles automated scheduling and publishing to social platforms
 and manages the A/B testing variants in the wild.
 """
 
-import logging
 import asyncio
 import uuid
 import os
@@ -113,7 +112,7 @@ class Publisher:
                     await base_state_machine.transition_to(job_id, JobState.PUBLISHING, JobState.COMPLETED, result)
                 return result
             except Exception as e:
-                logger.error(f"Real publishing failed for {platform}: {e}")
+                logger.exception(f"Real publishing failed for {platform}: {e}")
                 if job_id:
                     await base_state_machine.transition_to(job_id, JobState.PUBLISHING, JobState.FAILED, {"error": str(e)})
                 return {"status": "error", "message": str(e)}
@@ -141,4 +140,4 @@ class Publisher:
         return [f["video_id"] for f in self.flight_plan]
 
 # Singleton Instance
-base_publisher = Publisher()
+base_publisher_service = Publisher()

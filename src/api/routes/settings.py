@@ -1,17 +1,45 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Form
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
-from src.api.routes.auth import get_current_user, admin_required
-from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.auth import get_current_user, admin_required
+from src.api.utils.user_models import UserDB
 from src.api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
 from src.api.utils.api_responses import success_response
 from pydantic import BaseModel
 import asyncio
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
+
+REDACTED_SECRET = "********"
+SENSITIVE_SETTING_MARKERS = (
+    "secret",
+    "token",
+    "api_key",
+    "apikey",
+    "password",
+    "private_key",
+    "access_key",
+    "auth_token",
+    "client_secret",
+)
+
+
+def _is_sensitive_key(key: str) -> bool:
+    normalized = key.lower()
+    return any(marker in normalized for marker in SENSITIVE_SETTING_MARKERS)
+
+
+def _redact_settings(values: dict) -> dict:
+    return {
+        key: REDACTED_SECRET if _is_sensitive_key(str(key)) and value else value
+        for key, value in values.items()
+    }
+
+
+def _is_redacted_placeholder(value) -> bool:
+    return isinstance(value, str) and value.strip() in {REDACTED_SECRET, "***REDACTED***"}
 
 
 class SettingUpdateRequest(BaseModel):
@@ -32,7 +60,6 @@ async def get_settings(
     db=Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     from src.api.config import settings as app_settings
-    from src.api.utils.models import UserSetting
 
     # 1. Fetch system-wide defaults from DB
     stmt_system = select(SystemSettings)
@@ -76,8 +103,8 @@ async def get_settings(
         "google_client_secret": app_settings.GOOGLE_CLIENT_SECRET,
         # Payment & E-commerce
         "stripe_secret_key": app_settings.STRIPE_SECRET_KEY,
-        "shopify_access_token": app_settings.SHOPIFY_ACCESS_TOKEN,
-        "shopify_shop_url": app_settings.SHOPIFY_SHOP_URL,
+        "shopify_access_token": app_settings.SHOPIFY_ACCESS_TOKEN or "",
+        "shopify_shop_url": app_settings.SHOPIFY_SHOP_URL or "",
         "printful_api_key": app_settings.PRINTFUL_API_KEY,
         # Communication
         "telegram_bot_token": app_settings.TELEGRAM_BOT_TOKEN,
@@ -97,7 +124,7 @@ async def get_settings(
         "shareasale_api_key": app_settings.SHAREASALE_API_KEY,
         # Video & Voice
         "elevenlabs_api_key": app_settings.ELEVENLABS_API_KEY,
-        "fish_speech_endpoint": app_settings.FISH_SPEECH_ENDPOINT,
+        "fish_speech_endpoint": app_settings.FISH_SPEECH_ENDPOINT or "http://voiceover:8080",
         "pexels_api_key": app_settings.PEXELS_API_KEY,
         "google_search_cx": app_settings.GOOGLE_SEARCH_CX,
         "runway_api_key": app_settings.RUNWAY_API_KEY,
@@ -110,14 +137,14 @@ async def get_settings(
         # Feature Settings (Admin UI)
         "default_llm_provider": app_settings.DEFAULT_LLM_PROVIDER,
         "use_os_models": str(app_settings.USE_OS_MODELS),
-        "monetization_mode": app_settings.MONETIZATION_MODE,
-        "voice_engine": app_settings.VOICE_ENGINE,
+        "monetization_mode": app_settings.MONETIZATION_MODE or "selective",
+        "voice_engine": app_settings.VOICE_ENGINE or "fish_speech",
         "default_vlm_model": app_settings.DEFAULT_VLM_MODEL,
-        "ai_video_provider": app_settings.AI_VIDEO_PROVIDER,
+        "ai_video_provider": app_settings.AI_VIDEO_PROVIDER or "none",
         "ai_video_fallbacks": app_settings.AI_VIDEO_FALLBACKS,
-        "default_quality_tier": app_settings.DEFAULT_QUALITY_TIER,
-        "enable_sound_design": str(app_settings.ENABLE_SOUND_DESIGN),
-        "enable_motion_graphics": str(app_settings.ENABLE_MOTION_GRAPHICS),
+        "default_quality_tier": app_settings.DEFAULT_QUALITY_TIER or "standard",
+        "enable_sound_design": str(app_settings.ENABLE_SOUND_DESIGN) if app_settings.ENABLE_SOUND_DESIGN is not None else "false",
+        "enable_motion_graphics": str(app_settings.ENABLE_MOTION_GRAPHICS) if app_settings.ENABLE_MOTION_GRAPHICS is not None else "false",
         "enable_langchain": str(app_settings.ENABLE_LANGCHAIN),
         "enable_crewai": str(app_settings.ENABLE_CREWAI),
         "enable_interpreter": str(app_settings.ENABLE_INTERPRETER),
@@ -147,36 +174,10 @@ async def get_settings(
         "auto_merch_enabled": "false",
         "lead_gen_url": "",
         "digital_product_url": "",
-        "tiktok_client_key": app_settings.TIKTOK_CLIENT_KEY,
-        "tiktok_client_secret": app_settings.TIKTOK_CLIENT_SECRET,
-        "scan_frequency": "Every 1 hour",
-        "force_originality": "true",
-        "auto_pilot": "false",
-        "monetization_aggression": "80",
-        "shopify_access_token": app_settings.SHOPIFY_ACCESS_TOKEN or "",
-        "shopify_shop_url": app_settings.SHOPIFY_SHOP_URL or "",
-        "elevenlabs_api_key": app_settings.ELEVENLABS_API_KEY,
-        "fish_speech_endpoint": "http://voiceover:8080",
-        "voice_engine": "fish_speech",
-        "pexels_api_key": app_settings.PEXELS_API_KEY,
-        "google_client_id": app_settings.GOOGLE_CLIENT_ID,
-        "google_client_secret": app_settings.GOOGLE_CLIENT_SECRET,
-        "monetization_mode": "selective",
-        "active_monetization_strategy": "commerce",
-        # Video Quality Tiers (Defaults)
-        "enable_sound_design": "false",
-        "enable_motion_graphics": "false",
-        "ai_video_provider": "none",
-        "default_quality_tier": "standard",
-        "ai_matching_enabled": "true",
-        "auto_promo_enabled": "true",
-        "auto_merch_enabled": "false",
-        "lead_gen_url": "",
-        "digital_product_url": "",
     }
 
-    # Cascade: Config -> System -> User (User wins)
-    merged = {**config_dict, **system_dict, **user_dict}
+    # Cascade: Config -> System -> User (User wins). Never send raw secrets to the browser.
+    merged = _redact_settings({**config_dict, **system_dict, **user_dict})
     return success_response(data=merged)
 
 
@@ -186,7 +187,12 @@ async def update_setting(
     db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
-    from src.api.utils.models import UserSetting
+
+    if _is_redacted_placeholder(request.value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Redacted secret placeholders cannot be saved as setting values",
+        )
 
     # Non-admins can only update their own UserSetting overrides
     # Adms can update SystemSettings via /admin routes, but we'll allow them to have personal overrides too if they use this route.
@@ -306,7 +312,7 @@ async def get_system_settings(
     result = await db.execute(stmt)
     db_items = result.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
-    return success_response(data=system_dict)
+    return success_response(data=_redact_settings(system_dict))
 
 
 @router.post("/system")
@@ -316,6 +322,8 @@ async def update_system_settings(
     """Update system-wide settings (admin only)"""
     for key, value in settings_dict.items():
         if key in ("id", "created_at", "updated_at"):
+            continue
+        if _is_redacted_placeholder(value):
             continue
         stmt = select(SystemSettings).where(SystemSettings.key == key)
         result = await db.execute(stmt)
@@ -334,8 +342,8 @@ async def update_system_settings(
         from src.api.config import settings as app_settings
         r = redis.from_url(app_settings.REDIS_URL)
         await r.publish("system_config_reload", "settings_update")
-    except Exception as e:
-        logging.error(f"Failed to broadcast settings reload: {e}")
+    except Exception:
+        logging.exception("Failed to broadcast settings reload")
 
     return success_response(data={"status": "success", "updated_count": len(settings_dict)})
 
@@ -347,6 +355,8 @@ async def bulk_update_settings(
     _admin=Depends(admin_required),
 ):
     for req in settings_list:
+        if _is_redacted_placeholder(req.value):
+            continue
         stmt = select(SystemSettings).where(SystemSettings.key == req.key)
         result = await db.execute(stmt)
         setting = result.scalar_one_or_none()
@@ -370,9 +380,10 @@ async def bulk_update_user_settings(
     current_user: UserDB = Depends(get_current_user),
 ):
     """Bulk update user-specific settings (non-admin users)"""
-    from src.api.utils.models import UserSetting
 
     for req in settings_list:
+        if _is_redacted_placeholder(req.value):
+            continue
         stmt = select(UserSetting).where(
             UserSetting.user_id == current_user.id,
             UserSetting.key == req.key.lower(),
@@ -400,6 +411,7 @@ async def toggle_filter(
     filter_id: str,
     db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
+    _admin=Depends(admin_required),
 ):
     # Handle service-level filters (Sound Design, Motion Graphics)
     if filter_id in ("sound_design", "motion_graphics"):
@@ -433,7 +445,6 @@ async def toggle_filter(
         )
 
     # Handle standard video filter toggles
-    from src.api.utils.models import VideoFilterDB
 
     stmt = select(VideoFilterDB).where(VideoFilterDB.id == filter_id)
     result = await db.execute(stmt)
@@ -459,8 +470,6 @@ async def toggle_filter(
 async def get_available_filters(
     db=Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
-    from src.api.utils.models import VideoFilterDB
-    from src.api.config import settings as app_settings
 
     stmt = select(VideoFilterDB)
     result = await db.execute(stmt)
@@ -582,7 +591,6 @@ async def verify_service(
     Performs a real-time handshake/verification of an external service configuration.
     This ensures that saved URLs/keys are functional 'Real Solutions'.
     """
-    from src.api.utils.models import UserSetting
     import httpx
 
     # Map service_id to setting keys
@@ -664,7 +672,7 @@ async def verify_service(
 
                 client = groq.Groq(api_key=api_key)
                 # Simple test request
-                response = await asyncio.get_event_loop().run_in_executor(
+                response = await asyncio.get_running_loop().run_in_executor(
                     None,
                     lambda: client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
@@ -692,7 +700,7 @@ async def verify_service(
                 import openai
 
                 client = openai.OpenAI(api_key=api_key)
-                response = await asyncio.get_event_loop().run_in_executor(
+                response = await asyncio.get_running_loop().run_in_executor(
                     None,
                     lambda: client.chat.completions.create(
                         model="gpt-3.5-turbo",
@@ -777,7 +785,7 @@ async def verify_service(
                     region_name=region,
                 )
                 # Test with a simple list buckets call (will fail if no permissions but credentials are valid)
-                response = await asyncio.get_event_loop().run_in_executor(
+                response = await asyncio.get_running_loop().run_in_executor(
                     None, client.list_buckets
                 )
                 return {
@@ -807,7 +815,7 @@ async def verify_service(
 
                 stripe.api_key = secret_key
                 # Test with a simple balance call
-                balance = await asyncio.get_event_loop().run_in_executor(
+                await asyncio.get_running_loop().run_in_executor(
                     None, stripe.Balance.retrieve
                 )
                 return {
@@ -860,7 +868,7 @@ async def telegram_webhook(update: dict, db=Depends(get_db)):
                 stmt = select(BotCodeDB).where(
                     BotCodeDB.code == text,
                     BotCodeDB.platform == "telegram",
-                    BotCodeDB.used == False,
+                    not BotCodeDB.used,
                 )
                 result = await db.execute(stmt)
                 bot_code = result.scalar_one_or_none()
@@ -890,7 +898,7 @@ async def whatsapp_webhook(
         stmt = select(BotCodeDB).where(
             BotCodeDB.code == body,
             BotCodeDB.platform == "whatsapp",
-            BotCodeDB.used == False,
+            not BotCodeDB.used,
         )
         result = await db.execute(stmt)
         bot_code = result.scalar_one_or_none()

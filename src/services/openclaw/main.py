@@ -11,11 +11,10 @@ from telegram.ext import (
 )
 from src.api.config import settings
 from .agent import OpenClawAgent
-from .dispatcher import dispatcher
+from .dispatcher import base_dispatcher_service
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 from pydantic import BaseModel
-import time
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -33,33 +32,7 @@ app = FastAPI()
 agent = OpenClawAgent()
 
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
+from src.api.utils.resilience import CircuitBreaker
 
 
 class BotManager:
@@ -108,7 +81,7 @@ class BotManager:
 
         except Exception as e:
             self.api_circuit_breaker.record_failure()
-            logger.error(f"Error fetching users: {e}")
+            logger.exception(f"Error fetching users: {e}")
             raise
 
     async def start_bot(self, user_id: str, token: str):
@@ -153,7 +126,7 @@ class BotManager:
             self.apps[user_id] = application
             logger.info(f"Bot for user {user_id} started successfully.")
         except Exception as e:
-            logger.error(f"Failed to start bot for user {user_id}: {e}")
+            logger.exception(f"Failed to start bot for user {user_id}: {e}")
         finally:
             if user_id in self._starting_ids:
                 self._starting_ids.remove(user_id)
@@ -167,7 +140,7 @@ class BotManager:
                 await app.stop()
                 await app.shutdown()
             except Exception as e:
-                logger.error(f"Error during stop_bot: {e}")
+                logger.exception(f"Error during stop_bot: {e}")
             finally:
                 del self.apps[user_id]
 
@@ -201,7 +174,7 @@ class BotManager:
                         f"Failed to fetch users (Attempt {attempt + 1}/{max_retries})"
                     )
             except Exception as e:
-                logger.error(
+                logger.exception(
                     f"Error initializing bots (Attempt {attempt + 1}/{max_retries}): {e}"
                 )
 
@@ -278,9 +251,9 @@ async def whatsapp_webhook(request: Request):
         return Response(content=twiml, media_type="application/xml")
 
     except Exception as e:
-        logger.error(f"WhatsApp Webhook Error: {e}")
+        logger.exception(f"WhatsApp Webhook Error: {e}")
         # Return generic error in TwiML
-        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+        twiml = """<?xml version="1.0" encoding="UTF-8"?>
         <Response>
             <Message>⚠️ Agent encountered an internal error processing your WhatsApp message.</Message>
         </Response>"""
@@ -306,7 +279,7 @@ async def broadcast_message(
             # We fire these off in the background to avoid blocking the API response
             # In a heavy environment, we'd use Celery for this.
             background_tasks.add_task(
-                dispatcher.broadcast_to_user,
+                base_dispatcher_service.broadcast_to_user,
                 uid,
                 request.message,
                 request.platform_hint,
@@ -318,7 +291,7 @@ async def broadcast_message(
             "message": f"Broadcast queued for {success_count} users.",
         }
     except Exception as e:
-        logger.error(f"Broadcast Error: {e}")
+        logger.exception(f"Broadcast Error: {e}")
         return {"status": "error", "message": str(e)}
 
 
@@ -344,7 +317,7 @@ async def execute_tool(request: ToolRequest):
         })
         return {"status": "success", "result": result}
     except Exception as e:
-        logger.error(f"Tool Execution Error: {e}")
+        logger.exception(f"Tool Execution Error: {e}")
         return {"status": "error", "message": str(e)}
 
 

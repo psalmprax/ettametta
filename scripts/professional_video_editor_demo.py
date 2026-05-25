@@ -21,8 +21,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Fix environment
 os.environ["DEBUG"] = "false"
 
-from services.discovery.video_lead_scanner import video_lead_scanner
-from services.video_engine.scene_orchestrator import scene_based_orchestrator
 
 
 async def create_professional_video_content():
@@ -144,7 +142,7 @@ By the end of this video, you'll have a clear roadmap for implementing AI tools 
 
             if result and result.get("success"):
                 print("🎉 VIDEO PRODUCTION COMPLETE!")
-                print(f"Title: AI Productivity Tools Masterclass")
+                print("Title: AI Productivity Tools Masterclass")
                 print(f"Duration: {result.get('duration', 0)} seconds")
                 print(f"Scenes Used: {result.get('scenes_used', 0)}")
                 print(f"Quality Score: {result.get('quality_score', 0)}/10")

@@ -31,7 +31,7 @@ class SponsorshipStrategy(BaseMonetizationStrategy):
             contact_email = setting_email.value if setting_email else "support@ettametta.ai"
 
             if not brand_partners:
-                logging.warning(f"[SponsorshipStrategy] No brand partners configured. Set 'brand_partners' in settings.")
+                logging.warning("[SponsorshipStrategy] No brand partners configured. Set 'brand_partners' in settings.")
                 return []
             
             # Return brand partnerships as assets

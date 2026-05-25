@@ -10,7 +10,6 @@ This complements the automated discovery and planning system.
 import json
 from pathlib import Path
 from typing import Any
-import os
 
 
 class VideoProductionAssistant:
@@ -118,8 +117,8 @@ class VideoProductionAssistant:
                     f"    mediaPoolItem = mediaPool:GetItemList():GetItem({i + 1}),",
                     f"    startFrame = {segment.get('start_time', 0) * fusion_plan.get('frame_rate', 30)},",
                     f"    endFrame = {(segment.get('start_time', 0) + segment.get('duration', 0)) * fusion_plan.get('frame_rate', 30)},",
-                    f"    trackIndex = 1",
-                    f"}}",
+                    "    trackIndex = 1",
+                    "}}",
                     f"timeline:CreateCompoundClip(clip_{i + 1})",
                     "",
                 ]
@@ -132,7 +131,7 @@ class VideoProductionAssistant:
 
         fusion_plan = production_plan.get("fusion_plan", {})
         segments = fusion_plan.get("segments", [])
-        audio_plan = production_plan.get("audio_plan", {})
+        production_plan.get("audio_plan", {})
 
         commands = []
 

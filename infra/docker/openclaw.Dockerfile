@@ -37,8 +37,18 @@ RUN npm install -g npx
 COPY src/api/requirements.txt api/requirements.txt
 COPY src/services/openclaw/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -r api/requirements.txt
+    pip install --no-cache-dir -r api/requirements.txt && \
+    pip uninstall -y langchain langchain-community langchain-core crewai duckduckgo-search && \
+    pip install --no-cache-dir --force-reinstall \
+        "langchain==0.1.20" \
+        "langchain-community==0.0.38" \
+        "langchain-core==0.1.52" \
+        "crewai==1.14.4" \
+        "duckduckgo-search>=5.3.0" && \
+    pip install --no-cache-dir \
+        "open-interpreter==0.4.3" \
+        "litellm==1.80.0" && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
 RUN playwright install chromium || true
@@ -61,6 +71,9 @@ ENV PYTHONPATH=/app:/app/src
 
 # Expose port for health checks/webhooks
 EXPOSE 3001
+
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
 
 # Command to run the service
 CMD ["python", "-m", "services.openclaw.main"]

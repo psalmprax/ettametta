@@ -67,7 +67,7 @@ class PublicDomainScanner:
                                     )
                                 )
             except Exception as e:
-                logging.error(f"[PublicDomain] Pexels Error: {e}")
+                logging.exception(f"[PublicDomain] Pexels Error: {e}")
 
         # 2. Archive.org Public Domain (More restrictive title search)
         try:
@@ -105,7 +105,7 @@ class PublicDomainScanner:
                                 )
                             )
         except Exception as e:
-            logging.error(f"[PublicDomain] Archive.org Error: {e}")
+            logging.exception(f"[PublicDomain] Archive.org Error: {e}")
 
         return candidates
 

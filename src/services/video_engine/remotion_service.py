@@ -48,17 +48,18 @@ class RemotionService:
     Uses non-blocking asyncio subprocess for production scale.
     """
 
-    def __init__(self, studio_path: str | None = None, concurrency_limit: int = 2):
+    def __init__(self, studio_path: str | None = None, concurrency_limit: int | None = None):
         self.studio_path = os.path.abspath(studio_path or settings.REMOTION_STUDIO_PATH)
         self.output_dir = os.path.join(self.studio_path, "out")
         os.makedirs(self.output_dir, exist_ok=True)
         
+        limit = concurrency_limit if concurrency_limit is not None else settings.REMOTION_CONCURRENCY_LIMIT
         # Concurrency guarding to prevent event loop starvation and server crashes
-        self.render_semaphore = asyncio.Semaphore(concurrency_limit)
+        self.render_semaphore = asyncio.Semaphore(limit)
         
         # Cache baseline context logger to avoid duplicate adapter instantiation overhead in initialization
         self._default_log = self._get_logger()
-        self._default_log.info(f"[RemotionService] Initialized with concurrency limit: {concurrency_limit}")
+        self._default_log.info(f"[RemotionService] Initialized with concurrency limit: {limit}")
 
         # Dynamic browser discovery
         self.browser_path = os.getenv("CHROMIUM_PATH") or \
@@ -81,6 +82,8 @@ class RemotionService:
             self._normalize_and_resolve_path(tempfile.gettempdir()),
             self._normalize_and_resolve_path("/app/temp"),
             self._normalize_and_resolve_path("/app/downloads"),
+            self._normalize_and_resolve_path("/app/local_downloads"),
+            self._normalize_and_resolve_path("local_downloads"),
         ]
         
         # Initialize Prometheus circuit breaker state
@@ -368,6 +371,57 @@ class RemotionService:
             log.warning(f"Invalid duration_in_frames found during render command build: {e}")
             return []
 
+    def _get_cgroup_memory_limit(self) -> int | None:
+        """Attempts to read the container memory limit from cgroups (v1 or v2)."""
+        # Cgroups v2
+        if os.path.exists("/sys/fs/cgroup/memory.max"):
+            try:
+                with open("/sys/fs/cgroup/memory.max", "r") as f:
+                    val = f.read().strip()
+                    if val and val != "max":
+                        return int(val)
+            except Exception:
+                pass
+
+        # Cgroups v1
+        if os.path.exists("/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+            try:
+                with open("/sys/fs/cgroup/memory/memory.limit_in_bytes", "r") as f:
+                    val = f.read().strip()
+                    if val:
+                        limit = int(val)
+                        if limit < 9000000000000000000:
+                            return limit
+            except Exception:
+                pass
+
+        return None
+
+    def _get_dynamic_max_old_space_size(self) -> int:
+        """Gets memory limit in MB dynamically, scaling to host/container constraints."""
+        limit_bytes = self._get_cgroup_memory_limit()
+        
+        # Fallback to system memory (/proc/meminfo) if cgroups info is missing or unlimited
+        if not limit_bytes or limit_bytes <= 0:
+            try:
+                with open("/proc/meminfo", "r") as f:
+                    for line in f:
+                        if line.startswith("MemTotal:"):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                limit_bytes = int(parts[1]) * 1024  # kB to bytes
+                                break
+            except Exception:
+                pass
+
+        # Global fallback: default to 4GB
+        if not limit_bytes or limit_bytes <= 0:
+            limit_bytes = 4 * 1024 * 1024 * 1024
+
+        limit_mb = limit_bytes // (1024 * 1024)
+        # Allocate ~60% of available memory to V8, clamped between 1024MB and 8192MB
+        return max(1024, min(8192, int(limit_mb * 0.6)))
+
     def _build_render_command(self, composition_id: str, props: dict[str, Any], output_path: str, props_path: str, output_name: str, log: logging.LoggerAdapter) -> tuple[str, list[str]]:
         """
         Safely builds the executable program and argument array for Remotion rendering.
@@ -390,13 +444,17 @@ class RemotionService:
 
         args.extend(self._get_duration_frames_arg(props, log))
 
+        # Dynamically allocate memory for node/chromium process
+        limit_mb = self._get_dynamic_max_old_space_size()
+        log.info(f"[RemotionService] Dynamic max-old-space-size calculated: {limit_mb}MB")
+
         # Harden chromium flags by removing unstable/dangerous '--single-process' and '--disable-web-security'
         chrome_flags = [
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-gpu",
             "--disable-dev-shm-usage",
-            "--js-flags='--max-old-space-size=1024'"
+            f"--js-flags='--max-old-space-size={limit_mb}'"
         ]
         
         scale_val = "0.5" if "test" in (output_name or "") else "1"
@@ -448,8 +506,10 @@ class RemotionService:
         try:
             process.kill()
             await process.wait()
-        except Exception:
-            log.exception("Failed to kill cancelled process")
+        except ProcessLookupError:
+            pass  # Process already exited; nothing to clean up
+        except OSError:
+            log.warning("OS error while killing cancelled process")
 
     def _check_process_returncode(self, returncode: int, stderr_accumulator: list[str], log: logging.LoggerAdapter) -> None:
         """Helper to raise an error if the subprocess failed."""
@@ -481,7 +541,7 @@ class RemotionService:
         stderr_task = asyncio.create_task(self._drain_stderr(process.stderr, stderr_accumulator, log))
 
         # Decouple rendering timeout from LLM configuration parameters
-        timeout = getattr(settings, "REMOTION_TIMEOUT_SECONDS", 300)
+        timeout = getattr(settings, "REMOTION_TIMEOUT_SECONDS", 900)
 
         try:
             async with asyncio.timeout(timeout):
@@ -593,7 +653,7 @@ class RemotionService:
         # Concurrency queue gate
         async with self.render_semaphore:
             log.info(f"Acquired render slot for job {job_id} ({composition_id})")
-            start_time = asyncio.get_event_loop().time()
+            start_time = asyncio.get_running_loop().time()
             
             try:
                 # Safe isolated asset preparation (no file race conditions)
@@ -613,7 +673,7 @@ class RemotionService:
                 # Post-Render Output Validation
                 self._verify_render_output(output_path, log)
                 
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.info(f"[Telemetry] Render job completed successfully in {duration:.2f} seconds. Size: {os.path.getsize(output_path)} bytes")
                 
                 # Record metrics
@@ -624,24 +684,24 @@ class RemotionService:
                 return output_path
 
             except RemotionFatalError:
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.error(f"[Telemetry] Render job failed fatally in {duration:.2f} seconds.")
                 self._record_render_metrics(composition_id, "fatal_failure")
                 raise
             except RemotionTransientError:
                 self._breaker_record_failure()
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.error(f"[Telemetry] Render job failed transiently in {duration:.2f} seconds.")
                 self._record_render_metrics(composition_id, "transient_failure")
                 raise
             except asyncio.CancelledError:
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.warning(f"[Telemetry] Render job was cancelled after {duration:.2f} seconds.")
                 self._record_render_metrics(composition_id, "cancelled")
                 raise
             except Exception as e:
                 self._breaker_record_failure()
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.exception(f"[Telemetry] Unhandled system error during render for job {job_id} after {duration:.2f} seconds")
                 self._record_render_metrics(composition_id, "transient_failure")
                 raise RemotionTransientError(f"Unhandled render system crash: {e}") from e

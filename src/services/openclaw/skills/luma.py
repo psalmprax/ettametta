@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 from typing import Any
-import uuid
 
 from .base_skill import OpenClawBaseSkill
 
@@ -106,7 +105,7 @@ class LumaSkill(OpenClawBaseSkill):
             video_element = await page.query_selector("video[src]")
             video_uri = await video_element.get_attribute("src")
 
-            logger.info(f"[Luma] Video generated successfully")
+            logger.info("[Luma] Video generated successfully")
 
             await browser.close()
             await playwright.stop()
@@ -119,7 +118,7 @@ class LumaSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[Luma] Generation failed: {str(e)}")
+            logger.exception(f"[Luma] Generation failed: {str(e)}")
             return {"status": "failed", "error": str(e), "engine": "luma"}
 
 
