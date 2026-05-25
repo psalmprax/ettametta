@@ -132,7 +132,7 @@ TEST_CASES = [
 ]
 
 
-def test_render_all():
+def run_render_all():
     print("=== STARTING ALL TEMPLATES RENDER VERIFICATION ===")
     
     success_count = 0
@@ -185,6 +185,10 @@ def test_render_all():
     return success_count == len(TEST_CASES)
 
 
+def test_render_all():
+    assert run_render_all()
+
+
 if __name__ == "__main__":
-    all_passed = test_render_all()
+    all_passed = run_render_all()
     sys.exit(0 if all_passed else 1)

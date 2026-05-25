@@ -19,7 +19,7 @@ OUTPUT_DIR = os.path.join(STUDIO_PATH, "out")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-def test_remotion():
+def run_remotion_test():
     """Test remotion rendering"""
 
     video_path = sys.argv[1] if len(sys.argv) > 1 else "/tmp/test_video.mp4"
@@ -77,5 +77,9 @@ def test_remotion():
         return None
 
 
+def test_remotion():
+    assert run_remotion_test() is not None
+
+
 if __name__ == "__main__":
-    test_remotion()
+    run_remotion_test()

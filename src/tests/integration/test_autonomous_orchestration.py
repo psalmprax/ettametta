@@ -12,9 +12,12 @@ async def test_autonomous_flow_discovery_to_nexus(test_db):
     """
     from src.api.utils.database import AsyncSessionLocal
     
+    import uuid
+    content_id = f"yt_test_{uuid.uuid4().hex[:8]}"
+
     # 1. Mock the platform scanner to return a specific candidate
     mock_candidate = ContentCandidate(
-        id="yt_test123",
+        id=content_id,
         platform="youtube",
         title="AI Revolution in 2024",
         description="This technology is going viral! #ai #tech",
@@ -56,7 +59,7 @@ async def test_autonomous_flow_discovery_to_nexus(test_db):
     async with AsyncSessionLocal() as db:
         # Verify it's in the DB
         from sqlalchemy import select
-        stmt = select(ContentCandidateDB).where(ContentCandidateDB.id == "yt_test123")
+        stmt = select(ContentCandidateDB).where(ContentCandidateDB.id == content_id)
         result = await db.execute(stmt)
         content = result.scalar_one_or_none()
         assert content is not None

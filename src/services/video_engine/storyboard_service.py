@@ -7,6 +7,7 @@ import subprocess
 import shutil
 from pathlib import Path
 from bs4 import BeautifulSoup
+import aiofiles
 
 logger = logging.getLogger("StoryboardService")
 logging.basicConfig(level=logging.INFO)
@@ -57,7 +58,7 @@ class StoryboardService:
         
         return ""
 
-    async def generate_scene(self, prompt: str, character_name: str = None, frames: int = 49, steps: int = 20) -> str:
+    async def generate_scene(self, prompt: str, character_name: str = None, frames: int = 49, steps: int = 20) -> str | None:
         """
         Requests an Image-to-Video generation using the remote RTX 6000 node.
         """
@@ -105,8 +106,8 @@ class StoryboardService:
                         if r.status == 200:
                             logger.info(f"   📥 Downloading {job_id} to local disk...")
                             content = await r.read()
-                            with open(output_path, 'wb') as f:
-                                f.write(content)
+                            async with aiofiles.open(output_path, 'wb') as f:
+                                await f.write(content)
                             logger.info(f"   ✅ Saved clip: {output_path}")
                             return True
                         elif r.status == 404:

@@ -11,7 +11,9 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 
-from src.api.utils.security import SECRET_KEY, ALGORITHM
+from src.api.utils.security import (  # noqa: F401 — re-exported for routes/auth.py
+    SECRET_KEY, ALGORITHM, verify_password, get_password_hash, create_access_token,
+)
 
 
 import redis.asyncio as redis_async
