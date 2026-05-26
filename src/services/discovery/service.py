@@ -21,6 +21,11 @@ from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
 from .tiktok_scanner import TikTokScanner
 from .cloak_scanner import CloakBrowserScanner
+from .cloak_tiktok_scanner import CloakTikTokScanner
+from .cloak_instagram_scanner import CloakInstagramScanner
+from .cloak_facebook_scanner import CloakFacebookScanner
+from .cloak_x_scanner import CloakXScanner
+from .cloak_linkedin_scanner import CloakLinkedInScanner
 from .reddit_scanner import base_reddit_service
 from .x_scanner import base_x_scanner_service
 from .public_domain_scanner import base_public_domain_service
@@ -60,28 +65,31 @@ class DiscoveryService:
             "faster_whisper": FASTER_WHISPER_AVAILABLE,
         }
 
+        # Resolve scraper URL once
+        _scraper_url = os.environ.get('DISCOVERY_SCRAPER_URL', 'http://discovery-scraper:8010')
+
         # Primary scanners (run for every niche)
         # These are the production-ready scanners with real APIs
         self.scanners = [
             YouTubeShortsScanner(),  # Real API ✓
             YouTubeLongScanner(),  # Real API ✓
-            CloakBrowserScanner(scraper_url=os.environ.get('DISCOVERY_SCRAPER_URL', 'http://discovery-scraper:8010')),
-            TikTokScanner(),  # Web scrape ✓
+            CloakBrowserScanner(scraper_url=_scraper_url),  # YouTube web scrape ✓
+            CloakTikTokScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback ✓
             base_duckduckgo_service,  # Free fallback ✓
         ]
         # Secondary scanners (supplementary, web scraping)
-        # Now all implemented with web scraping (no API keys needed)
+        # Cloak-backed scanners use Playwright stealth first, httpx fallback
         self.global_scanners = [
             base_reddit_service,  # Real API (JSON) ✓
-            base_x_scanner_service,  # Web scrape
-            base_instagram_service,  # Web scrape
-            base_facebook_scanner_service,  # Web scrape
-            base_twitch_service,  # Web scrape (NEW)
-            base_pinterest_service,  # Web scrape (NEW)
-            base_linkedin_scanner_service,  # Web scrape (NEW)
-            base_snapchat_service,  # Web scrape (NEW)
-            base_bilibili_service,  # Web scrape (NEW)
-            base_rumble_service,  # Web scrape (NEW)
+            CloakXScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
+            CloakInstagramScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
+            CloakFacebookScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
+            base_twitch_service,  # Web scrape
+            base_pinterest_service,  # Web scrape
+            CloakLinkedInScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
+            base_snapchat_service,  # Web scrape
+            base_bilibili_service,  # Web scrape
+            base_rumble_service,  # Web scrape
             base_public_domain_service,  # Partial (Pexels)
             base_metasearch_service,  # Partial
             base_skool_service,  # Partial

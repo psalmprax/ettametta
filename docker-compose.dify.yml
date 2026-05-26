@@ -5,6 +5,8 @@ services:
     image: langgenius/dify-api:0.6.11
     container_name: ettametta-dify-api
     restart: always
+    ports:
+      - "5001:5001"
     environment:
       - DB_USERNAME=${POSTGRES_USER:?}
       - DB_PASSWORD=${POSTGRES_PASSWORD:?}
