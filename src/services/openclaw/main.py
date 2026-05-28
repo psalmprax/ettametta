@@ -159,12 +159,30 @@ class BotManager:
             finally:
                 del self.apps[user_id]
 
+    def _init_master_bot(self):
+        """Start the Master Bot from settings if configured."""
+        if not (settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_ADMIN_ID):
+            return
+        if 0 in self.apps or 0 in self._starting_ids:
+            return
+        logger.info("Initializing Master Bot from system settings...")
+        asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
+
+    def _start_user_bots(self, users: list[dict]):
+        """Auto-start bots for fetched users."""
+        logger.info(f"Auto-starting bots for {len(users)} users...")
+        for user in users:
+            user_id = user.get("id")
+            token = user.get("telegram_token")
+            if not (user_id and token):
+                continue
+            if user_id in self.apps or user_id in self._starting_ids:
+                continue
+            asyncio.create_task(self.start_bot(user_id, token))
+
     async def init_bots(self):
         # 1. Start the Master Bot from settings
-        if settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_ADMIN_ID:
-            if 0 not in self.apps and 0 not in self._starting_ids:
-                logger.info("Initializing Master Bot from system settings...")
-                asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
+        self._init_master_bot()
 
         # 2. Fetch all users with tokens from API
         max_retries = 5
@@ -172,22 +190,12 @@ class BotManager:
             try:
                 users = await self._fetch_users_with_bots()
                 if users:
-                    logger.info(f"Auto-starting bots for {len(users)} users...")
-                    for user in users:
-                        user_id = user.get("id")
-                        token = user.get("telegram_token")
-                        if user_id and token:
-                            # Avoid restarting 0 if it's already managed or starting
-                            if (
-                                user_id not in self.apps
-                                and user_id not in self._starting_ids
-                            ):
-                                asyncio.create_task(self.start_bot(user_id, token))
+                    self._start_user_bots(users)
                     break
-                else:
-                    logger.error(
-                        f"Failed to fetch users (Attempt {attempt + 1}/{max_retries})"
-                    )
+
+                logger.error(
+                    f"Failed to fetch users (Attempt {attempt + 1}/{max_retries})"
+                )
             except Exception as e:
                 logger.exception(
                     f"Error initializing bots (Attempt {attempt + 1}/{max_retries}): {e}"
