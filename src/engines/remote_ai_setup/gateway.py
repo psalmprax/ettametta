@@ -6,6 +6,7 @@ import sqlite3
 import httpx
 import os
 import time
+import tempfile
 import threading
 import asyncio
 import traceback
@@ -106,6 +107,44 @@ for node in env_nodes:
 
 NODE_HEALTH: dict[str, dict[str, Any]] = {}
 LOCK = threading.Lock()
+BACKGROUND_TASKS: set[asyncio.Task[Any]] = set()
+
+async def _check_single_node(client: httpx.AsyncClient, node_data: dict[str, Any]):
+    node = node_data["url"]
+    
+    # --- PUSH/PULL COHESION ---
+    with LOCK:
+        health = NODE_HEALTH.get(node, {})
+        # If node is in active PUSH mode (seen via heartbeat in last 60s), skip Pull
+        if health.get("push_mode") and (time.time() - health.get("last_seen", 0) < 60):
+            # Ensure DB stays READY if we are skipping pull
+            if node_data["status"] != "READY":
+                job_store.update_node_status(node, "READY")
+            return
+
+    try:
+        headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
+        resp = await client.get(f"{node}/health", headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            job_store.update_node_status(node, "READY")
+            with LOCK:
+                NODE_HEALTH[node] = {
+                    "online": True,
+                    "busy": data.get("busy", False),
+                    "current_model": data.get("current_model"),
+                    "last_seen": time.time(),
+                    "error": None
+                }
+        else:
+            job_store.update_node_status(node, "OFFLINE")
+            with LOCK:
+                NODE_HEALTH[node] = {"online": False, "error": f"Status {resp.status_code}"}
+    except Exception as e:
+        print(f"Health check for {node} failed: {e}")
+        job_store.update_node_status(node, "OFFLINE")
+        with LOCK:
+            NODE_HEALTH[node] = {"online": False, "error": str(e)}
 
 async def update_node_health():
     """Background loop to monitor CPU/GPU node health and model status"""
@@ -120,46 +159,14 @@ async def update_node_health():
 
             nodes = job_store.get_nodes()
             for node_data in nodes:
-                node = node_data["url"]
-                
-                # --- PUSH/PULL COHESION ---
-                with LOCK:
-                    health = NODE_HEALTH.get(node, {})
-                    # If node is in active PUSH mode (seen via heartbeat in last 60s), skip Pull
-                    if health.get("push_mode") and (time.time() - health.get("last_seen", 0) < 60):
-                        # Ensure DB stays READY if we are skipping pull
-                        if node_data["status"] != "READY":
-                            job_store.update_node_status(node, "READY")
-                        continue
-
-                try:
-                    headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
-                    resp = await client.get(f"{node}/health", headers=headers)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        job_store.update_node_status(node, "READY")
-                        with LOCK:
-                            NODE_HEALTH[node] = {
-                                "online": True,
-                                "busy": data.get("busy", False),
-                                "current_model": data.get("current_model"),
-                                "last_seen": time.time(),
-                                "error": None
-                            }
-                    else:
-                        job_store.update_node_status(node, "OFFLINE")
-                        with LOCK:
-                            NODE_HEALTH[node] = {"online": False, "error": f"Status {resp.status_code}"}
-                except Exception as e:
-                    print(f"Health check for {node} failed: {e}")
-                    job_store.update_node_status(node, "OFFLINE")
-                    with LOCK:
-                        NODE_HEALTH[node] = {"online": False, "error": str(e)}
+                await _check_single_node(client, node_data)
             await asyncio.sleep(10)
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(update_node_health())
+    task = asyncio.create_task(update_node_health())
+    BACKGROUND_TASKS.add(task)
+    task.add_done_callback(BACKGROUND_TASKS.discard)
     nodes = job_store.get_nodes()
     print(f"🚀 AI Gateway started with {len(nodes)} nodes registered.", flush=True)
 
@@ -206,7 +213,7 @@ class HeartbeatRequest(BaseModel):
     hardware: dict[str, Any]
     status: str = "ready"
 
-async def verify_admin(x_admin_token: str = Header(None)):
+def verify_admin(x_admin_token: str = Header(None)):
     if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized Admin Action")
 
@@ -273,7 +280,7 @@ async def proxy_status(job_id: str):
 
 @app.post("/register")
 async def register_node(request: RegisterNodeRequest, x_admin_token: str = Header(None)):
-    await verify_admin(x_admin_token)
+    verify_admin(x_admin_token)
     job_store.add_node(request.url)
     return {"status": "registered", "url": request.url}
 
@@ -286,7 +293,7 @@ from urllib.parse import unquote
 
 @app.delete("/nodes/{node_url:path}")
 async def remove_node_from_cluster(node_url: str, x_admin_token: str = Header(None)):
-    await verify_admin(x_admin_token)
+    verify_admin(x_admin_token)
     # Ensure URL is unquoted to match DB format
     decoded_url = unquote(node_url)
     job_store.remove_node(decoded_url)
@@ -299,7 +306,7 @@ async def provision_node(request: ProvisionNodeRequest, x_admin_token: str = Hea
     Hardened Provisioning: Key is passed in encrypted JSON Body.
     Zero-Storage architecture ensures key never hits Gateway disk or logs.
     """
-    await verify_admin(x_admin_token)
+    verify_admin(x_admin_token)
     ip = request.ip
     ssh_key = request.ssh_key
     port = request.port
@@ -320,12 +327,11 @@ async def provision_node(request: ProvisionNodeRequest, x_admin_token: str = Hea
             # Easiest hardened way: Python writes to a temporary named pipe or uses /dev/stdin.
             # Let's use a temporary file in /dev/shm (RAM-only disk) if /dev/stdin is tricky for rsync.
             
-            os.makedirs("/dev/shm/vf_provision", exist_ok=True)
-            temp_key = f"/dev/shm/vf_provision/{uuid.uuid4().hex}"
+            os.makedirs("/dev/shm/vf_provision", mode=0o700, exist_ok=True)
+            fd, temp_key = tempfile.mkstemp(dir="/dev/shm/vf_provision")
             try:
-                with open(temp_key, "w") as f:
+                with os.fdopen(fd, "w") as f:
                     f.write(ssh_key)
-                os.chmod(temp_key, 0o600)
                 
                 env["SSH_KEY"] = temp_key
                 env["AI_CLUSTER_SECRET"] = WORKER_TOKEN or ""
