@@ -275,7 +275,7 @@ class DefaultSynthesisHandler:
             engine=engine,
             aspect_ratio=inputs.get("aspect_ratio", "16:9")
         )
-        return {"output_generated": True, "video_path": video_path, "engine": engine}
+        return {"output_generated": video_path is not None, "video_path": video_path, "engine": engine}
 
 class TopicFusionSynthesisHandler:
     async def execute(self, inputs: dict, previous_results: dict, job_id: str) -> dict:
@@ -322,10 +322,16 @@ class DefaultEgressHandler:
     async def execute(self, inputs: dict, previous_results: dict, job_id: str) -> dict:
         synthesis = previous_results.get("synthesis", {})
         video_path = synthesis.get("video_path")
+        if video_path:
+            return {
+                "finalized": True,
+                "output_path": video_path,
+                "summary": f"Blueprint execution completed. Video saved to {video_path}",
+            }
         return {
-            "finalized": True,
-            "output_path": video_path,
-            "summary": f"Blueprint execution completed. Video saved to {video_path}",
+            "finalized": False,
+            "output_path": None,
+            "summary": "Blueprint execution completed but no output file was produced (synthesis step returned None)",
         }
 
 # --- Register Handlers ---
@@ -448,7 +454,7 @@ async def execute_blueprint(
                     job = result.scalar_one_or_none()
                     
                     if job:
-                        metadata = job.job_metadata or {}
+                        metadata = dict(job.job_metadata or {})
                         metadata["preview_scenes"] = node_result["scenes"]
                         job.job_metadata = metadata
                         await db.commit()

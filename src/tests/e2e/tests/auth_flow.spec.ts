@@ -55,7 +55,7 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveURL(/\/dashboard/);
     
     // Logout
-    await page.getByRole('button', { name: /sign out/i }).click();
+    await page.locator('button:has(svg.lucide-log-out)').click();
     await expect(page).toHaveURL(/\/login/);
   });
 });

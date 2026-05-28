@@ -269,7 +269,9 @@ class AutoCreator:
             result = await db.execute(stmt)
             job = result.scalar_one_or_none()
             if job:
-                job.job_metadata["output_path"] = output_path
+                metadata = dict(job.job_metadata or {})
+                metadata["output_path"] = output_path
+                job.job_metadata = metadata
                 await db.commit()
                 
         await notify("egress", NodeStatus.COMPLETED, 100)
@@ -311,7 +313,9 @@ class AutoCreator:
                 except Exception as e:
                     publish_results[platform] = {"status": "error", "message": str(e)}
 
-            job.job_metadata["publish_results"] = publish_results
+            metadata = dict(job.job_metadata or {})
+            metadata["publish_results"] = publish_results
+            job.job_metadata = metadata
             await db.commit()
             return publish_results
 

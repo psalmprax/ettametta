@@ -80,18 +80,32 @@ jobs:
           
       - name: Install E2E dependencies
         run: |
-          cd e2e
+          cd src/tests/e2e
           npm install
           npx playwright install --with-deps chromium
           
-      - name: Run E2E tests (GitHub Actions)
+      - name: Run all E2E tests (GitHub Actions)
         run: |
-          cd e2e
+          cd src/tests/e2e
           # Run against the Docker-compose stack
           npx playwright test
         env:
           BASE_URL: http://localhost:3000
-          
+
+      - name: Run Nexus Engine E2E tests (dedicated)
+        run: |
+          cd src/tests/e2e
+          npx playwright test tests/nexus/ --project=chromium --timeout=300000
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Run Agent Zero E2E tests (dedicated)
+        run: |
+          cd src/tests/e2e
+          npx playwright test tests/autonomous/ --project=chromium --timeout=300000
+        env:
+          BASE_URL: http://localhost:3000
+
       - name: Cleanup
         if: always()
         run: |

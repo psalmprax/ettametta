@@ -77,6 +77,7 @@ function NexusContent() {
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const [actionLogs, setActionLogs] = useState<string[]>(["NEXUS_CORE_ONLINE", "AWAITING_PIPELINE_ORCHESTRATION"]);
+    const [creationMode, setCreationMode] = useState<'cinema' | 'blueprint'>('cinema');
     
     const [searchTerm, setSearchTerm] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
@@ -84,6 +85,7 @@ function NexusContent() {
     // Preview Scenes Modal State
     const [previewJobId, setPreviewJobId] = useState<string | null>(null);
     const [previewScenes, setPreviewScenes] = useState<any[]>([]);
+    const [previewJobStatus, setPreviewJobStatus] = useState<string>("");
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
@@ -218,6 +220,7 @@ function NexusContent() {
             if (response.ok) {
                 const data = await response.json();
                 setPreviewScenes(data.data?.scenes || []);
+                setPreviewJobStatus(data.data?.status || "");
                 setIsPreviewModalOpen(true);
             } else {
                 toast.error("No scene data available for this job");
@@ -244,12 +247,23 @@ function NexusContent() {
     }, []);
 
     const handleLaunchPipeline = async () => {
-        if (!selectedNiche || !activeBlueprint) return;
+        if (!selectedNiche) return;
         setIsLaunching(true);
-        setActionLogs(prev => [`[PIPELINE] Dispatching: ${activeBlueprint.name} for ${selectedNiche}`, ...prev]);
+        const modeLabel = creationMode === 'cinema' ? 'Stock Video + Remotion' : 'AI Blueprint (GPU)';
+        setActionLogs(prev => [`[PIPELINE] Dispatching: ${modeLabel} for ${selectedNiche}`, ...prev]);
         
         const token = await getAuthToken();
         if (!token) return;
+
+        const payload: Record<string, unknown> = {
+            niche: selectedNiche,
+            cinema_mode: creationMode === 'cinema',
+        };
+
+        // Only send blueprint_id when explicitly using blueprint mode
+        if (creationMode === 'blueprint' && activeBlueprint) {
+            payload.blueprint_id = activeBlueprint.id;
+        }
 
         await withRealFallback(
             () => fetch(`${API_BASE}/nexus/compose`, {
@@ -258,11 +272,7 @@ function NexusContent() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    niche: selectedNiche,
-                    blueprint_id: activeBlueprint.id,
-                    cinema_mode: true
-                })
+                body: JSON.stringify(payload)
             }),
             {
                 fallback: null,
@@ -560,36 +570,102 @@ function NexusContent() {
                                                 <ChevronDown className="w-4 h-4" />
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Active Architecture Selector - Top-Notch Custom UI */}
-                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Architecture</label>
-                                        <div className="relative">
-                                            <select 
-                                                value={activeBlueprint?.id}
-                                                onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
-                                                className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
-                                            >
-                                                {blueprints?.map((b) => (
-                                                    <option key={b.id} value={b.id} className="bg-[#0F0F11] text-white">
-                                                        {b.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
-                                                <ChevronDown className="w-4 h-4" />
-                                            </div>
+                                        <div className="flex items-center gap-2 pt-1">
+                                            <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="text-[8px] text-emerald-500/80 font-mono uppercase tracking-tighter">Pexels Stock Ready</span>
                                         </div>
                                     </div>
+
+                                    {/* Creation Mode Toggle - Top-Notch Custom UI */}
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Creation Mode</label>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setCreationMode('cinema')}
+                                                className={cn(
+                                                    "flex-1 px-4 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all border",
+                                                    creationMode === 'cinema'
+                                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+                                                        : "bg-white/5 border-white/5 text-zinc-500 hover:text-zinc-300 hover:bg-white/10"
+                                                )}
+                                            >
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <Video className="h-4 w-4" />
+                                                    <span>Stock Video</span>
+                                                    <span className="text-[6px] text-emerald-500/60 tracking-wider">Quick Create</span>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => setCreationMode('blueprint')}
+                                                className={cn(
+                                                    "flex-1 px-4 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all border",
+                                                    creationMode === 'blueprint'
+                                                        ? "bg-violet-500/10 border-violet-500/30 text-violet-400 shadow-[0_0_20px_rgba(139,92,246,0.1)]"
+                                                        : "bg-white/5 border-white/5 text-zinc-500 hover:text-zinc-300 hover:bg-white/10"
+                                                )}
+                                            >
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <Brain className="h-4 w-4" />
+                                                    <span>AI Blueprint</span>
+                                                    <span className="text-[6px] text-violet-500/60 tracking-wider">Requires GPU</span>
+                                                </div>
+                                            </button>
+                                        </div>
+                                        {creationMode === 'cinema' && (
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                                                <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                                                <span className="text-[7px] text-emerald-400/80 font-mono">Pexels Stock + Remotion Render — Working Now</span>
+                                            </div>
+                                        )}
+                                        {creationMode === 'blueprint' && (
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                                                <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
+                                                <span className="text-[7px] text-amber-400/80 font-mono">Requires GPU Node — Configure RENDER_NODE_URL</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Blueprint Selector (visible only in blueprint mode) */}
+                                    {creationMode === 'blueprint' && (
+                                        <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Blueprint</label>
+                                            <div className="relative">
+                                                <select 
+                                                    value={activeBlueprint?.id}
+                                                    onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
+                                                    className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                                                >
+                                                    {blueprints?.map((b) => (
+                                                        <option key={b.id} value={b.id} className="bg-[#0F0F11] text-white">
+                                                            {b.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                                                    <ChevronDown className="w-4 h-4" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="flex flex-col justify-end">
                                         <Button 
                                             onClick={handleLaunchPipeline}
-                                            disabled={isLaunching || !selectedNiche}
-                                            className="w-full h-16 bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg rounded-2xl shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-all uppercase tracking-widest"
+                                            disabled={isLaunching || !selectedNiche || (creationMode === 'blueprint' && !activeBlueprint)}
+                                            className={cn(
+                                                "w-full h-16 text-black font-bold text-lg rounded-2xl transition-all uppercase tracking-widest",
+                                                creationMode === 'cinema'
+                                                    ? "bg-emerald-500 hover:bg-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+                                                    : "bg-violet-500 hover:bg-violet-400 shadow-[0_0_30px_rgba(139,92,246,0.3)]"
+                                            )}
                                         >
-                                            {isLaunching ? <Loader2 className="h-6 w-6 animate-spin" /> : "Dispatch Pipeline"}
+                                            {isLaunching ? (
+                                                <Loader2 className="h-6 w-6 animate-spin" />
+                                            ) : creationMode === 'cinema' ? (
+                                                <><Clapperboard className="h-5 w-5 mr-2" /> Create Video</>
+                                            ) : (
+                                                <><Play className="h-5 w-5 mr-2" /> Dispatch Blueprint</>
+                                            )}
                                         </Button>
                                     </div>
                                 </div>
@@ -1153,8 +1229,24 @@ scout.on("VIRAL_DETECT", async (data) => {
                                 </div>
                             ) : previewScenes.length === 0 ? (
                                 <div className="text-center py-32 space-y-4">
-                                    <AlertCircle className="h-14 w-14 text-zinc-700 mx-auto" />
-                                    <p className="text-sm font-bold uppercase tracking-widest text-zinc-500">No scene data available for this pipeline.</p>
+                                    {["COMPLETED", "FAILED"].includes(previewJobStatus) ? (
+                                        <AlertCircle className="h-14 w-14 text-zinc-700 mx-auto" />
+                                    ) : (
+                                        <Loader2 className="h-14 w-14 animate-spin text-violet-400 mx-auto" />
+                                    )}
+                                    <p className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                                        {!["COMPLETED", "FAILED"].includes(previewJobStatus)
+                                            ? `Narrative decomposition in progress (status: ${previewJobStatus}). Scenes will appear once the Cognition stage finishes.`
+                                            : previewJobStatus === "FAILED"
+                                            ? `This job failed with status: ${previewJobStatus}. No scene data is available.`
+                                            : "No scene data available for this pipeline."}
+                                    </p>
+                                    <button
+                                        onClick={() => handlePreviewScenes(previewJobId || "")}
+                                        className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/5 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2 mx-auto"
+                                    >
+                                        <RefreshCw className="h-3 w-3" /> Refresh Preview
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

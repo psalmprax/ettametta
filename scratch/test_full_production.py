@@ -8,7 +8,8 @@ from sqlalchemy import select
 
 # Override environment variables before importing settings
 os.environ["ENV"] = "development"
-os.environ["OLLAMA_URL"] = "http://localhost:11434"
+if "OLLAMA_URL" not in os.environ:
+    os.environ["OLLAMA_URL"] = "http://localhost:11434"
 os.environ["ELEVENLABS_API_KEY"] = ""
 # Require DATABASE_URL to be set by the caller (never hardcode credentials)
 _database_url = os.environ.get("DATABASE_URL")

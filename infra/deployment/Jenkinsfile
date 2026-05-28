@@ -265,12 +265,36 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                     echo "Running E2E tests with Playwright..."
                     sh """
                         # Install Playwright dependencies
-                        cd e2e
+                        cd src/tests/e2e
                         npm install
                         npx playwright install --with-deps chromium
                         
-                        # Run E2E tests
+                        # Run all E2E tests
                         npm test
+                    """
+                }
+            }
+        }
+
+        stage('Nexus Engine E2E Tests') {
+            steps {
+                script {
+                    echo "Running Nexus Engine dedicated E2E tests..."
+                    sh """
+                        cd src/tests/e2e
+                        BASE_URL=${params.PRODUCTION_DOMAIN} npx playwright test tests/nexus/ --project=chromium --timeout=300000 --reporter=list,junit
+                    """
+                }
+            }
+        }
+
+        stage('Agent Zero E2E Tests') {
+            steps {
+                script {
+                    echo "Running Agent Zero autonomous E2E tests..."
+                    sh """
+                        cd src/tests/e2e
+                        BASE_URL=${params.PRODUCTION_DOMAIN} npx playwright test tests/autonomous/ --project=chromium --timeout=300000 --reporter=list,junit
                     """
                 }
             }

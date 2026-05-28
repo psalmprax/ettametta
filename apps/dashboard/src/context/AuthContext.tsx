@@ -116,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error("Invalid token received");
             }
             
-            const userData = await userRes.json();
+            const responseData = await userRes.json();
+            const userData = responseData?.data || responseData;
             setUser(userData);
             TokenManager.setUser(userData);
             
@@ -163,15 +164,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {
                 fallback: null as any,
             onSuccess: (userData: User) => {
-                if (userData && userData.username) {
+                if (userData && (userData.username || userData.email)) {
                     setUser(userData);
                     TokenManager.setUser(userData);
                 } else {
                     logout();
                 }
             },
-                onFallback: () => {
-                    logout();
+                onFallback: (err) => {
+                    console.warn("[AuthContext] Failed to refresh user profile, preserving local session:", err);
                 }
             }
         );
