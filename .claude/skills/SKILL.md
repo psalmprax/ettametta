@@ -13,6 +13,7 @@ Skills for diagnosing and debugging ettametta subsystems. Each skill provides qu
 | `dep-audit` | Security vulnerabilities, version conflicts, outdated packages |
 | `docker-compose` | Service orchestration, container networking, Traefik routing, healthchecks |
 | `fastapi-debug` | Middleware issues, auth failures, route errors, CORS, rate limiting |
+| `nexus-engine` | Compose failures, script generation, asset sourcing, Remotion render, DAG execution, styles |
 | `redis-debug` | Cache issues, pub/sub problems, broker connectivity, memory pressure |
 | `remotion-debug` | Render failures, prop validation, composition issues, asset staging |
 | `social-api` | OAuth flows, content publishing, trend scanning, platform API issues |
