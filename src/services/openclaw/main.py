@@ -52,6 +52,14 @@ class BotManager:
         self._starting_ids: set = set()
         self.api_circuit_breaker = CircuitBreaker()
         self.http_client: httpx.AsyncClient | None = None
+        self._background_tasks: set[asyncio.Task] = set()
+
+    def run_background_task(self, coro):
+        """Create a task and keep a strong reference to prevent garbage collection."""
+        task = asyncio.create_task(coro)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
+        return task
 
     @property
     def http(self) -> httpx.AsyncClient:
@@ -166,7 +174,7 @@ class BotManager:
         if 0 in self.apps or 0 in self._starting_ids:
             return
         logger.info("Initializing Master Bot from system settings...")
-        asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
+        self.run_background_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
 
     def _start_user_bots(self, users: list[dict]):
         """Auto-start bots for fetched users."""
@@ -178,7 +186,7 @@ class BotManager:
                 continue
             if user_id in self.apps or user_id in self._starting_ids:
                 continue
-            asyncio.create_task(self.start_bot(user_id, token))
+            self.run_background_task(self.start_bot(user_id, token))
 
     async def init_bots(self):
         # 1. Start the Master Bot from settings
@@ -346,7 +354,7 @@ async def execute_tool(request: ToolRequest):
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(bot_manager.init_bots())
+    bot_manager.run_background_task(bot_manager.init_bots())
 
 
 if __name__ == "__main__":
