@@ -27,7 +27,12 @@ app.add_middleware(
 
 # Persistent Storage for Jobs
 class JobStore:
-    def __init__(self, db_path="gateway_state.db"):
+    def __init__(self, db_path=None):
+        if db_path is None:
+            if os.path.exists("/workspace") and os.access("/workspace", os.W_OK):
+                db_path = "/workspace/gateway_state.db"
+            else:
+                db_path = "gateway_state.db"
         self.db_path = db_path
         self._init_db()
 
