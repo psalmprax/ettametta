@@ -34,10 +34,10 @@ class CrewAIService:
                     except ImportError:
                         pass
 
-                self.Agent = Agent
-                self.Task = Task
-                self.Crew = Crew
-                self.Tool = tool_class
+                self.agent_class = Agent
+                self.task_class = Task
+                self.crew_class = Crew
+                self.tool_class = tool_class
 
                 logger.info("CrewAI integration enabled")
             except ImportError as e:
@@ -57,7 +57,7 @@ class CrewAIService:
             return None
 
         try:
-            return self.Agent(
+            return self.agent_class(
                 role=role,
                 goal=goal,
                 backstory=backstory,
@@ -76,7 +76,7 @@ class CrewAIService:
             return None
 
         try:
-            return self.Task(
+            return self.task_class(
                 description=description, agent=agent, expected_output=expected_output
             )
         except Exception as e:
@@ -91,7 +91,7 @@ class CrewAIService:
             return "CrewAI not enabled"
 
         try:
-            crew = self.Crew(agents=agents, tasks=tasks, process=process)
+            crew = self.crew_class(agents=agents, tasks=tasks, process=process)
 
             result = crew.kickoff()
             return str(result)
