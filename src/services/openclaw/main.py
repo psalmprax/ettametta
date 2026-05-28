@@ -1,14 +1,25 @@
 import asyncio
 import logging
 import httpx
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    ContextTypes,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
+try:
+    from telegram import Update
+    from telegram.ext import (
+        ApplicationBuilder,
+        ContextTypes,
+        CommandHandler,
+        MessageHandler,
+        filters,
+    )
+    telegram_available = True
+except ImportError:
+    class Update: pass
+    class ContextTypes:
+        class DEFAULT_TYPE: pass
+    ApplicationBuilder = None
+    CommandHandler = None
+    MessageHandler = None
+    filters = None
+    telegram_available = False
 from src.api.config import settings
 from .agent import OpenClawAgent
 from .dispatcher import base_dispatcher_service
@@ -85,6 +96,10 @@ class BotManager:
             raise
 
     async def start_bot(self, user_id: str, token: str):
+        if not telegram_available:
+            logger.warning(f"python-telegram-bot is not installed. Cannot start bot for user {user_id}.")
+            return
+
         if user_id in self._starting_ids:
             logger.warning(f"Bot for user {user_id} is already starting. Skipping.")
             return
