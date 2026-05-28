@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class NotificationSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}"
+        self.api_url = f"{settings.API_URL}/api/v1"
         self.notification_log: list[dict] = []
         self.webhooks: dict[str, str] = {}
         self.alert_rules: list[dict] = []

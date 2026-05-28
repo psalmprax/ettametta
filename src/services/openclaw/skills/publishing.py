@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 class PublishingSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.video_uri = f"{settings.API_URL}/video"
-        self.publish_url = f"{settings.API_URL}/publish"
+        self.video_uri = f"{settings.API_URL}/api/v1/video"
+        self.publish_url = f"{settings.API_URL}/api/v1/publish"
 
     def execute(
         self,

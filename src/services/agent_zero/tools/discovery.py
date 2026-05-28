@@ -10,7 +10,7 @@ class DiscoveryTool:
     Standardized Tool for Agent Zero to access the ettametta Discovery Engine.
     """
     def __init__(self):
-        self.api_url = f"{settings.API_URL}/discovery"
+        self.api_url = f"{settings.API_URL}/api/v1/discovery"
 
     def run(self, niche: str, limit: int = 5) -> dict[str, Any]:
         """

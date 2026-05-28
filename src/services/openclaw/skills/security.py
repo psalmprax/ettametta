@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class SecuritySkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}/security"
+        self.api_url = f"{settings.API_URL}/api/v1/security"
 
     def execute(self, action: str = "status", **kwargs) -> str:
         """

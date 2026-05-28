@@ -10,7 +10,7 @@ class AffiliateTool:
     Standardized Tool for Agent Zero to manage affiliate links and monetization.
     """
     def __init__(self):
-        self.api_url = f"{settings.API_URL}/monetization"
+        self.api_url = f"{settings.API_URL}/api/v1/monetization"
 
     def recommend_links(self, niche: str, script_text: str) -> dict[str, Any]:
         """

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class NoFaceSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}/no-face"
+        self.api_url = f"{settings.API_URL}/api/v1/no-face"
 
     def execute(
         self, action: str = "script", topic: str = "General advice", **kwargs

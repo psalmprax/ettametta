@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RepurposeSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}"
+        self.api_url = f"{settings.API_URL}/api/v1"
 
     def execute(self, action: str = "analyze", source_uri: str = None, **kwargs) -> str:
         """

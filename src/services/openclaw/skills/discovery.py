@@ -14,7 +14,7 @@ class DiscoverySkill(OpenClawBaseSkill):
 
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}/discovery"
+        self.api_url = f"{settings.API_URL}/api/v1/discovery"
         self.groq_client = None
         try:
             from groq import Groq

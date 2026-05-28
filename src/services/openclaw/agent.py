@@ -537,11 +537,11 @@ class OpenClawAgent(BaseEttamettaAgent):
                 # Format: whatsapp:+1234567890
                 clean_id = str(identifier)
                 response = requests.get(
-                    f"{settings.API_URL}/auth/verify-whatsapp/{clean_id}", timeout=5
+                    f"{settings.API_URL}/api/v1/auth/verify-whatsapp/{clean_id}", timeout=5
                 )
             else:
                 response = requests.get(
-                    f"{settings.API_URL}/auth/verify-telegram/{identifier}", timeout=5
+                    f"{settings.API_URL}/api/v1/auth/verify-telegram/{identifier}", timeout=5
                 )
 
             if response.status_code == 200:
