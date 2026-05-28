@@ -196,10 +196,35 @@ class MotionGraphicsService:
         logger.info("[MotionGraphics] Adding watermark")
 
         try:
-            # Simple FFmpeg watermark implementation
-            # This could be done even when service is disabled
+            import subprocess
 
-            return video_path  # Placeholder
+            output_path = video_path.replace(".mp4", "_watermarked.mp4")
+            safe_text = watermark_text.replace("'", "'\\''").replace(":", "\\:")
+
+            # Position mapping
+            pos_map = {
+                "bottom_right": "x=w-tw-10:y=h-th-10",
+                "bottom_left": "x=10:y=h-th-10",
+                "top_right": "x=w-tw-10:y=10",
+                "top_left": "x=10:y=10",
+            }
+            position_filter = pos_map.get(position, pos_map["bottom_right"])
+
+            cmd = [
+                "ffmpeg", "-y", "-i", video_path,
+                "-vf", f"drawtext=text='{safe_text}':fontsize=24:fontcolor=white@{opacity}:borderw=1:bordercolor=black@{opacity}:{position_filter}",
+                "-c:a", "copy",
+                output_path,
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+            if result.returncode == 0 and os.path.exists(output_path):
+                logger.info(f"[MotionGraphics] Watermark added: {output_path}")
+                return output_path
+            else:
+                logger.warning(f"[MotionGraphics] FFmpeg watermark failed: {result.stderr[:200]}")
+                return video_path
 
         except Exception as e:
             logger.exception(f"[MotionGraphics] Error adding watermark: {e}")

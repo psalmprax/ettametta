@@ -74,7 +74,7 @@ class BrowserAgentService:
             return ChatOpenAI(
                 model=self.model_name,
                 base_url=f"{settings.OLLAMA_URL.rstrip('/')}/v1",
-                api_key="ollama", # placeholder
+                api_key="ollama",  # Ollama doesn't require auth; non-empty string required by OpenAI client
             )
         elif self.model_provider == "openai":
             return ChatOpenAI(

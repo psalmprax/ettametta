@@ -107,14 +107,14 @@ async def run_elite_production_cycle(
         logger.info(
             f"[Step 2/6] QUALITY GATE: Performing ViralCritic Audit for {session_id}..."
         )
-        # We simulate a "Production Package" for the critic to review before fusion
-        mock_metadata = {"duration": duration, "segments_used": len(eligible_leads)}
-        mock_script = {
+        # Assemble a preview package from discovered leads for the critic to review
+        preview_metadata = {"duration": duration, "segments_used": len(eligible_leads)}
+        preview_script = {
             "segments": [{"text": lead["title"]} for lead in eligible_leads[:5]]
         }
 
         audit_report = await base_viral_critic.review_production(
-            current_topic, mock_script, mock_metadata, session_id=session_id
+            current_topic, preview_script, preview_metadata, session_id=session_id
         )
 
         score = audit_report.get("overall_score", 0)
@@ -178,7 +178,7 @@ async def run_elite_production_cycle(
     # Generate monetization strategy and inject into the fused video
     monetization_plan = await base_monetization_service.plan_monetization_strategy(
         current_topic,
-        str(mock_script),
+        str(preview_script),
         video_path=fused_video_path,
         session_id=session_id,
     )

@@ -1,4 +1,3 @@
-# Databricks notebook source
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from src.api.utils.api_responses import success_response
@@ -19,10 +18,7 @@ class ErrorReport(BaseModel):
 
 
 @router.post("/errors")
-async def report_error(
-    error: ErrorReport,
-    db=Depends(lambda: None),  # Placeholder, audit logging optional
-):
+async def report_error(error: ErrorReport):
     """
     Reports frontend errors to the backend for logging.
     Accessible to all authenticated users.

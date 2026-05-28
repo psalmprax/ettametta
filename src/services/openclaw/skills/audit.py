@@ -754,11 +754,18 @@ class AuditSkill(OpenClawBaseSkill):
                 if views > 0:
                     total_engagement += (likes + comments) / views * 100
             elif platform == "tiktok":
-                # TikTok engagement calculation
-                total_engagement += 5.0  # Placeholder
+                likes = item.get("like_count", 0)
+                comments = item.get("comment_count", 0)
+                shares = item.get("share_count", 0)
+                views = item.get("view_count", 0)
+                if views > 0:
+                    total_engagement += (likes + comments + shares) / views * 100
             elif platform == "instagram":
-                # Instagram engagement calculation
-                total_engagement += 3.0  # Placeholder
+                likes = item.get("like_count", 0)
+                comments = item.get("comments_count", 0)
+                views = item.get("views", 0) or item.get("impressions", 0)
+                if views > 0:
+                    total_engagement += (likes + comments) / views * 100
 
         return total_engagement / len(content) if content else 0.0
 
