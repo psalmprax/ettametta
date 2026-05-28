@@ -22,7 +22,15 @@ class CrewAIService:
         if self.enabled:
             try:
                 from crewai import Agent, Task, Crew
-                from crewai.tools import Tool
+                
+                Tool = None
+                try:
+                    from langchain_core.tools import Tool
+                except ImportError:
+                    try:
+                        from langchain.tools import Tool
+                    except ImportError:
+                        pass
 
                 self.Agent = Agent
                 self.Task = Task
