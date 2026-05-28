@@ -224,6 +224,7 @@ pip show <package> | grep -i home-page
 | `dep-audit` | Audit dependencies for vulnerabilities and version conflicts |
 | `docker-compose` | Debug Docker Compose stack (service orchestration, networking, Traefik) |
 | `fastapi-debug` | Debug FastAPI application (middleware, auth, routes, rate limiting) |
+| `nexus-engine` | Debug Nexus Engine video production pipeline (compose, scripts, assets, rendering) |
 | `redis-debug` | Debug Redis usage (cache, pub/sub, broker, connection issues) |
 | `remotion-debug` | Debug Remotion video compositions and rendering pipeline |
 | `social-api` | Debug social media platform integrations (8 platforms, OAuth, publishing) |
