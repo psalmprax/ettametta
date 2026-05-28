@@ -81,6 +81,7 @@ class RemotionService:
             self._normalize_and_resolve_path(getattr(settings, "OUTPUT_DIR", None) or "/app/outputs"),
             self._normalize_and_resolve_path(tempfile.gettempdir()),
             self._normalize_and_resolve_path("/app/temp"),
+            self._normalize_and_resolve_path("/app/tmp"),
             self._normalize_and_resolve_path("/app/downloads"),
             self._normalize_and_resolve_path("/app/local_downloads"),
             self._normalize_and_resolve_path("local_downloads"),
@@ -440,7 +441,10 @@ class RemotionService:
         if self.browser_path:
             args.extend(["--browser-executable", self.browser_path])
 
-        args.extend(["--concurrency", "1"])
+        # Frame-level concurrency: 1 is safest for CPU-only rendering (avoids OOM).
+        # Job-level concurrency (max parallel renders) is controlled by self.render_semaphore.
+        frame_concurrency = getattr(settings, "REMOTION_FRAME_CONCURRENCY", 1)
+        args.extend(["--concurrency", str(frame_concurrency)])
 
         args.extend(self._get_duration_frames_arg(props, log))
 
@@ -457,7 +461,8 @@ class RemotionService:
             f"--js-flags='--max-old-space-size={limit_mb}'"
         ]
         
-        scale_val = "0.5" if "test" in (output_name or "") else "1"
+        # Use lower scale for faster renders; scale can be tuned in settings
+        scale_val = "0.5" if "test" in (output_name or "") else getattr(settings, "REMOTION_RENDER_SCALE", "0.75")
         
         args.extend([
             "--chromium-flags", " ".join(chrome_flags),

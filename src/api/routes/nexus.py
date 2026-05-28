@@ -28,7 +28,7 @@ class NexusComposeRequest(BaseModel):
     automation_mode: str = Field("manual", description="Automation level: manual, partial, or full")
     generate_thumbnail: bool = False
     cinema_mode: bool = False
-    blueprint_id: str | None = Field("viral-reskin", description="The Nexus blueprint to execute.")
+    blueprint_id: str | None = Field(None, description="The Nexus blueprint to execute (e.g. 'viral-reskin'). When None and cinema_mode is True, runs the stock-footage + Remotion pipeline.")
     job_metadata: dict | None = None
 
 
@@ -127,7 +127,36 @@ async def _compose_core(
     job_id = str(job.id)
     niche = request.niche
 
-    # Check if this is a blueprint execution
+    output_path = None
+
+    if request.cinema_mode:
+        # 1. Autonomous Cinema Mode (progress 20→90)
+        # Uses StockService (Pexels) + Remotion — works without GPU or RENDER_NODE_URL
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 20, niche=niche,
+        )
+        target_topic = request.topic or f"Viral trends in {niche}"
+        output_path = await base_creator_service.create_cinema_video(
+            job_id=job_id, topic=target_topic, niche=niche
+        )
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
+        )
+
+        if not output_path:
+            await _update_job_progress(
+                job_id, SystemJobStatus.FAILED, 0,
+                niche=niche, error="Cinema mode produced no output file",
+            )
+            return
+
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPLETED, 100,
+            niche=niche, output_path=output_path,
+        )
+        return
+
+    # 2. Blueprint execution (when explicitly requested, requires GPU or RENDER_NODE_URL)
     if hasattr(request, "blueprint_id") and request.blueprint_id:
         blueprint = await get_blueprint_by_id(db, request.blueprint_id)
         if blueprint:
@@ -160,6 +189,14 @@ async def _compose_core(
                     .get("egress", {})
                     .get("output_path")
                 )
+
+                if not output_path:
+                    await _update_job_progress(
+                        job_id, SystemJobStatus.FAILED, 0,
+                        niche=niche, error="Blueprint produced no output file",
+                    )
+                    return
+
                 await _update_job_progress(
                     job_id, SystemJobStatus.COMPLETED, 100,
                     niche=niche, output_path=output_path,
@@ -172,10 +209,8 @@ async def _compose_core(
                 )
             return
 
-    output_path = None
-
-    if request.cinema_mode:
-        # 1. Autonomous Cinema Mode (progress 20→90)
+    # 3. Storytelling Blueprint (progress 20→90)
+    if request.blueprint_id == "story-factory":
         await _update_job_progress(
             job_id, SystemJobStatus.COMPOSING, 20, niche=niche,
         )
@@ -186,51 +221,52 @@ async def _compose_core(
         await _update_job_progress(
             job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
         )
-    elif request.blueprint_id == "story-factory":
-        # 2. Storytelling Blueprint (progress 20→90)
-        await _update_job_progress(
-            job_id, SystemJobStatus.COMPOSING, 20, niche=niche,
-        )
-        target_topic = request.topic or f"Viral trends in {niche}"
-        output_path = await base_creator_service.create_cinema_video(
-            job_id=job_id, topic=target_topic, niche=niche
-        )
-        await _update_job_progress(
-            job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
-        )
-    else:
-        # 3. Manual Nexus Assembly or Viral Reskin (Default)
-        await _update_job_progress(
-            job_id, SystemJobStatus.COMPOSING, 25, niche=niche,
-        )
-        if getattr(request, "generate_thumbnail", False):
-            script_text = " ".join(
-                [s.get("text", "") for s in request.script_segments]
+
+        if not output_path:
+            await _update_job_progress(
+                job_id, SystemJobStatus.FAILED, 0,
+                niche=niche, error="Story factory produced no output file",
             )
-            thumbnail_uri = await base_thumbnail_service.generate_thumbnail(
-                script_text
-            )
-            logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_uri}")
+            return
 
         await _update_job_progress(
-            job_id, SystemJobStatus.COMPOSING, 50, niche=niche,
+            job_id, SystemJobStatus.COMPLETED, 100,
+            niche=niche, output_path=output_path,
         )
-        output_path = await base_nexus_service.assemble_video(
-            job_id=job_id,
-            niche=niche,
-            script_segments=request.script_segments,
-            voiceover_paths=request.voiceover_paths,
-            visual_paths=request.visual_paths,
-            music_path=request.music_path,
+        return
+
+    # 4. Manual Nexus Assembly (fallback — no cinema_mode, no blueprint_id)
+    await _update_job_progress(
+        job_id, SystemJobStatus.COMPOSING, 25, niche=niche,
+    )
+    if getattr(request, "generate_thumbnail", False):
+        script_text = " ".join(
+            [s.get("text", "") for s in request.script_segments]
         )
-        await _update_job_progress(
-            job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
+        thumbnail_uri = await base_thumbnail_service.generate_thumbnail(
+            script_text
         )
+        logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_uri}")
+
+    await _update_job_progress(
+        job_id, SystemJobStatus.COMPOSING, 50, niche=niche,
+    )
+    output_path = await base_nexus_service.assemble_video(
+        job_id=job_id,
+        niche=niche,
+        script_segments=request.script_segments,
+        voiceover_paths=request.voiceover_paths,
+        visual_paths=request.visual_paths,
+        music_path=request.music_path,
+    )
+    await _update_job_progress(
+        job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
+    )
 
     if not output_path:
         await _update_job_progress(
             job_id, SystemJobStatus.FAILED, 0,
-            niche=niche, error="Pipeline completed but produced no output file",
+            niche=niche, error="Assembly produced no output file",
         )
         return
 

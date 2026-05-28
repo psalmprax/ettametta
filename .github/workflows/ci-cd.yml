@@ -85,8 +85,78 @@ jobs:
         pip install safety
         safety check --full-report || true
 
-  deploy:
+  e2e-tests:
     needs: [test, security-scan]
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install E2E dependencies
+      run: |
+        cd src/tests/e2e
+        npm install
+        npx playwright install --with-deps chromium
+
+    - name: Start Docker Compose stack
+      run: |
+        docker compose up -d
+        # Wait for services to be healthy
+        sleep 20
+        docker compose ps
+        # Verify both API and dashboard are reachable
+        curl -s -o /dev/null -w "API: %{http_code}\n" http://localhost:8000/api/health || echo "API health check endpoint not found, trying dashboard..."
+        curl -s -o /dev/null -w "Dashboard: %{http_code}\n" http://localhost:3000
+
+    - name: Run Nexus Engine E2E tests
+      run: |
+        cd src/tests/e2e
+        npx playwright test tests/nexus/ --project=chromium --timeout=300000 --reporter=list
+      env:
+        BASE_URL: http://localhost:3000
+
+    - name: Run Agent Zero E2E tests
+      run: |
+        cd src/tests/e2e
+        npx playwright test tests/autonomous/ --project=chromium --timeout=300000 --reporter=list
+      env:
+        BASE_URL: http://localhost:3000
+
+    - name: Upload E2E test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-test-results
+        path: |
+          src/tests/e2e/test-results/
+          src/tests/e2e/playwright-report/
+        retention-days: 7
+
+  deploy:
+    needs: [test, security-scan, e2e-tests]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
