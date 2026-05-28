@@ -21,21 +21,23 @@ class CrewAIService:
 
         if self.enabled:
             try:
-                from crewai import Agent, Task, Crew
+                from crewai import Agent, Task, Crew  # type: ignore
                 
-                Tool = None
+                tool_class = None
                 try:
-                    from langchain_core.tools import Tool
+                    from langchain_core.tools import Tool  # type: ignore
+                    tool_class = Tool
                 except ImportError:
                     try:
-                        from langchain.tools import Tool
+                        from langchain.tools import Tool  # type: ignore
+                        tool_class = Tool
                     except ImportError:
                         pass
 
                 self.Agent = Agent
                 self.Task = Task
                 self.Crew = Crew
-                self.Tool = Tool
+                self.Tool = tool_class
 
                 logger.info("CrewAI integration enabled")
             except ImportError as e:
