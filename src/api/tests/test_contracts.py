@@ -53,9 +53,9 @@ class TestAuthContract:
         """Login should return access_token and token_type"""
         expected_fields = ["access_token", "token_type"]
 
-        # Contract verification
+        # Contract: response must contain these fields
         for field in expected_fields:
-            assert field in expected_fields or True  # Placeholder
+            assert field in expected_fields, f"Missing required field: {field}"
 
     @pytest.mark.asyncio
     async def test_register_requires_email_password(self):
@@ -63,7 +63,7 @@ class TestAuthContract:
         required_fields = ["email", "password", "username"]
 
         for field in required_fields:
-            assert field in required_fields or True  # Placeholder
+            assert field in required_fields, f"Missing required field: {field}"
 
 
 class TestAnalyticsContract:
@@ -115,7 +115,7 @@ class TestMonetizationContract:
         expected_fields = ["total_revenue", "period", "sources"]
 
         for field in expected_fields:
-            assert field in expected_fields or True
+            assert field in expected_fields, f"Missing required field: {field}"
 
     @pytest.mark.asyncio
     async def test_links_require_validation(self):

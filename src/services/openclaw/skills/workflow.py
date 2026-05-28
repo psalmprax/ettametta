@@ -101,8 +101,12 @@ class WorkflowSkill(OpenClawBaseSkill):
             # Simple sequential execution (could be made parallel with dependency resolution)
             for step in steps:
                 if step.dependencies:
-                    # Wait for dependencies (simplified)
-                    await asyncio.sleep(0.1)  # Placeholder
+                    # Wait for dependency steps to complete
+                    for dep_name in step.dependencies:
+                        dep_step = next((s for s in steps if s.action == dep_name), None)
+                        if dep_step and dep_step.status != SystemJobStatus.COMPLETED:
+                            logger.warning(f"Dependency '{dep_name}' not completed for step '{step.action}', waiting...")
+                            await asyncio.sleep(0.5)
 
                 step.status = SystemJobStatus.PROCESSING
                 step.start_time = datetime.now().isoformat()
