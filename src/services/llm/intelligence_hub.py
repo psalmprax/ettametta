@@ -54,7 +54,7 @@ class IntelligenceHub:
             logger.warning("GOOGLE_API_KEY detected as placeholder — ignoring")
         # Corrected: Use settings and ensure endpoint suffix
         self.primary_ollama_url = settings.OLLAMA_URL.rstrip("/") + "/api/chat"
-        self.fallback_ollama_url = "http://localhost:11434/api/chat"
+        self.fallback_ollama_url = "http://ollama:11434/api/chat"
         self.ollama_url = self.primary_ollama_url
 
         # Dynamic Load Balancer: Track health per provider
