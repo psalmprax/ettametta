@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ class CrewAIService:
         try:
             crew = self.crew_class(agents=agents, tasks=tasks, process=process)
 
-            result = crew.kickoff()
+            result = await asyncio.to_thread(crew.kickoff)
             return str(result)
         except Exception as e:
             logger.exception(f"Error running crew: {e}")
@@ -156,7 +157,8 @@ class EttamettaCrew:
                 process="sequential",
             )
 
-            return str(crew.kickoff())
+            result = await asyncio.to_thread(crew.kickoff)
+            return str(result)
         except Exception as e:
             logger.exception(f"Error running content team: {e}")
             return f"Error: {str(e)}"
@@ -200,7 +202,8 @@ class EttamettaCrew:
                 process="sequential",
             )
 
-            return str(crew.kickoff())
+            result = await asyncio.to_thread(crew.kickoff)
+            return str(result)
         except Exception as e:
             logger.exception(f"Error running affiliate campaign: {e}")
             return f"Error: {str(e)}"
