@@ -247,6 +247,14 @@ class Settings(BaseSettings):
     def LINKEDIN_REDIRECT_URI(self) -> str:
         return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/publish/auth/linkedin/callback"
 
+    @property
+    def SNAPCHAT_REDIRECT_URI(self) -> str:
+        return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/publish/auth/snapchat/callback"
+
+    @property
+    def TWITCH_REDIRECT_URI(self) -> str:
+        return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/publish/auth/twitch/callback"
+
     # Multi-Cloud Storage Engine
     STORAGE_PROVIDER: str = "LOCAL"  # Options: AWS, OCI, GCP, AZURE, CUSTOM, LOCAL
     STORAGE_ENDPOINT: str | None = None

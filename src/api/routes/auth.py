@@ -248,12 +248,10 @@ async def google_auth():
 
 @router.post("/logout")
 async def logout(token: str = Depends(oauth2_scheme)):
+    from src.api.utils.auth import redis_async_client
 
-    redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
-    try:
-        await redis_client.sadd("token_blacklist", token)
-    finally:
-        await redis_client.close()
+    # Use individual key with TTL (24h) instead of unbounded set
+    await redis_async_client.set(f"token_blacklist:{token}", "1", ex=86400)
     return success_response(data={"message": "Logged out"})
 
 
