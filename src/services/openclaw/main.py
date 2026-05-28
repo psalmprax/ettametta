@@ -14,7 +14,7 @@ try:
 except ImportError:
     class Update: pass
     class ContextTypes:
-        class DEFAULT_TYPE: pass
+        DEFAULT_TYPE = object
     ApplicationBuilder = None
     CommandHandler = None
     MessageHandler = None
