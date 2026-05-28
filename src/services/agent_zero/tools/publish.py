@@ -10,7 +10,7 @@ class PublishTool:
     Standardized Tool for Agent Zero to publish content to social platforms.
     """
     def __init__(self):
-        self.api_url = f"{settings.API_URL}/publish"
+        self.api_url = f"{settings.API_URL}/api/v1/publish"
 
     def run(self, video_path: str, platform: str, title: str, description: str = "") -> dict[str, Any]:
         """

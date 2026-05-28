@@ -10,7 +10,7 @@ class RenderTool:
     Standardized Tool for Agent Zero to trigger Remotion video renders.
     """
     def __init__(self):
-        self.api_url = f"{settings.API_URL}/remotion/render"
+        self.api_url = f"{settings.API_URL}/api/v1/remotion/render"
 
     def run(self, title: str, subtitle: str, video_uri: str = "", audio_uri: str = "") -> dict[str, Any]:
         """

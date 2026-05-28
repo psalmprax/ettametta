@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class NicheSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}/discovery"
+        self.api_url = f"{settings.API_URL}/api/v1/discovery"
 
     def execute(self, action: str = "trends", niche: str = "general", **kwargs) -> str:
         """
@@ -77,7 +77,7 @@ class NicheSkill(OpenClawBaseSkill):
         """
         try:
             # Note: We need the full base URL since monetization is on a different route prefix
-            api_url = settings.API_URL
+            api_url = f"{settings.API_URL}/api/v1"
             payload = {"niche": niche}
             response = requests.post(
                 f"{api_url}/monetization/auto-merch",

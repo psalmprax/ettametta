@@ -60,7 +60,10 @@ COPY src/api/requirements-agents.txt ./requirements-agents.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --default-timeout=100 -r requirements-agents.txt && \
     pip install --no-cache-dir psutil && \
-    pip install --no-cache-dir -U yt-dlp
+    pip install --no-cache-dir -U yt-dlp && \
+    pip install --no-cache-dir playwright && \
+    playwright install chromium && \
+    playwright install-deps chromium
 
 # Install Remotion dependencies for Tier 3 Motion Graphics
 COPY apps/remotion-studio /app/apps/remotion-studio

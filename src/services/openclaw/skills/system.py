@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class SystemSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = settings.API_URL
+        self.api_url = f"{settings.API_URL}/api/v1"
 
     def execute(self, action: str = "health", **kwargs) -> str:
         """

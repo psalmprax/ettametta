@@ -31,7 +31,7 @@ class PersonaSkill(OpenClawBaseSkill):
             payload = {"persona_id": int(pid), "topic": topic}
 
             # Use API_URL from settings instead of hardcoded localhost
-            url = f"{settings.API_URL}/persona/generate"
+            url = f"{settings.API_URL}/api/v1/persona/generate"
             response = requests.post(
                 url, json=payload, headers=self._get_headers(), timeout=30
             )

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class ContentSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.api_url = f"{settings.API_URL}/video"
+        self.api_url = f"{settings.API_URL}/api/v1/video"
 
     def execute(
         self,
