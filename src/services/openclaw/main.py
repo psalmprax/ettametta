@@ -48,8 +48,8 @@ from src.api.utils.resilience import CircuitBreaker
 
 class BotManager:
     def __init__(self):
-        self.apps: dict[int, any] = {}
-        self._starting_ids: set = set()
+        self.apps: dict[str, any] = {}
+        self._starting_ids: set[str] = set()
         self.api_circuit_breaker = CircuitBreaker()
         self.http_client: httpx.AsyncClient | None = None
         self._background_tasks: set[asyncio.Task] = set()
@@ -171,10 +171,10 @@ class BotManager:
         """Start the Master Bot from settings if configured."""
         if not (settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_ADMIN_ID):
             return
-        if 0 in self.apps or 0 in self._starting_ids:
+        if "0" in self.apps or "0" in self._starting_ids:
             return
         logger.info("Initializing Master Bot from system settings...")
-        self.run_background_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
+        self.run_background_task(self.start_bot("0", settings.TELEGRAM_BOT_TOKEN))
 
     def _start_user_bots(self, users: list[dict]):
         """Auto-start bots for fetched users."""
@@ -184,9 +184,10 @@ class BotManager:
             token = user.get("telegram_token")
             if not (user_id and token):
                 continue
-            if user_id in self.apps or user_id in self._starting_ids:
+            user_id_str = str(user_id)
+            if user_id_str in self.apps or user_id_str in self._starting_ids:
                 continue
-            self.run_background_task(self.start_bot(user_id, token))
+            self.run_background_task(self.start_bot(user_id_str, token))
 
     async def init_bots(self):
         # 1. Start the Master Bot from settings
