@@ -24,6 +24,7 @@ from src.api.config import settings
 from .agent import OpenClawAgent
 from .dispatcher import base_dispatcher_service
 import uvicorn
+from typing import Optional
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 from pydantic import BaseModel
 from tenacity import (
@@ -295,7 +296,7 @@ async def whatsapp_webhook(request: Request):
 class BroadcastRequest(BaseModel):
     user_ids: list[str]
     message: str
-    platform_hint: str = None
+    platform_hint: Optional[str] = None
 
 
 @app.post("/broadcast")
