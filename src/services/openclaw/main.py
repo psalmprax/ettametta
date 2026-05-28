@@ -2,8 +2,8 @@ import asyncio
 import logging
 import httpx
 try:
-    from telegram import Update
-    from telegram.ext import (
+    from telegram import Update  # type: ignore
+    from telegram.ext import (  # type: ignore
         ApplicationBuilder,
         ContextTypes,
         CommandHandler,
