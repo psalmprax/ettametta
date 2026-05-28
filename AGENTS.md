@@ -211,7 +211,24 @@ pip show <package> | grep -i home-page
 <!-- GSD:skills-start source:skills/ -->
 ## Project Skills
 
-No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, or `.github/skills/` with a `SKILL.md` index file.
+13 project skills in `.claude/skills/`:
+
+| Skill | Description |
+|-------|-------------|
+| `ai-provider-debug` | Debug AI/LLM provider integrations (17+ providers, fallback chains, rate limits) |
+| `alembic-workflow` | Create and manage Alembic database migrations |
+| `celery-monitor` | Monitor, debug, and troubleshoot Celery tasks and workers |
+| `cloakbrowser` | Debug CloakBrowser stealth scraping (6 platforms) |
+| `content-discovery` | Debug content discovery and trend scanning system |
+| `db-performance` | Debug database performance (slow queries, pool issues, schema drift) |
+| `dep-audit` | Audit dependencies for vulnerabilities and version conflicts |
+| `docker-compose` | Debug Docker Compose stack (service orchestration, networking, Traefik) |
+| `fastapi-debug` | Debug FastAPI application (middleware, auth, routes, rate limiting) |
+| `redis-debug` | Debug Redis usage (cache, pub/sub, broker, connection issues) |
+| `remotion-debug` | Debug Remotion video compositions and rendering pipeline |
+| `social-api` | Debug social media platform integrations (8 platforms, OAuth, publishing) |
+| `video-pipeline` | Debug end-to-end video generation pipeline |
+
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->
