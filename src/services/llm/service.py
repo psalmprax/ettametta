@@ -65,7 +65,7 @@ class UnifiedLLMService:
         LLMProvider.XAI: "https://api.x.ai/v1",
         LLMProvider.DEEPSEEK: "https://api.deepseek.com/v1",
         LLMProvider.ANTHROPIC: "https://api.anthropic.com/v1",
-        LLMProvider.OLLAMA: "http://localhost:11434/v1",
+        LLMProvider.OLLAMA: f"{os.getenv('OLLAMA_URL', 'http://ollama:11434')}/v1",
     }
 
     def __init__(self, default_provider: LLMProvider | None = None):
