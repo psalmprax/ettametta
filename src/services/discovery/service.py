@@ -978,7 +978,7 @@ class DiscoveryService:
                 #    (DB may have results from other scanners, but user expects live CloakBrowser data)
                 if query:
                     has_cloak_results = any(
-                        c.metadata.get("source") == "cloakbrowser" or
+                        c.metadata_json.get("source") == "cloakbrowser" or
                         c.platform.lower() in ("cloakyoutube", "cloaktiktok", "cloakweb")
                         for c in candidates
                     )
