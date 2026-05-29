@@ -1005,7 +1005,39 @@ class DiscoveryService:
                         except Exception as cloak_err:
                             logger.warning(f"[Discovery] CloakBrowser direct fallback failed: {cloak_err}")
 
-                return candidates[:limit]
+                # Filter noise from all candidates
+                filtered = []
+                for c in candidates:
+                    title = (c.title or "").strip().lower()
+                    url = (c.source_uri or "").lower()
+                    # Skip noise
+                    if len(title) < 8:
+                        continue
+                    noise_titles = {
+                        "sign up", "log in", "login", "sign in", "register",
+                        "terms of service", "terms", "privacy policy", "privacy",
+                        "cookie policy", "cookies", "about", "about us",
+                        "help", "support", "faq", "contact", "contact us",
+                        "download", "download the app", "get the app",
+                        "notifications", "settings", "profile", "explore",
+                        "following", "for you", "home", "search", "discover",
+                        "reels", "shorts", "trending", "popular", "live",
+                        "shop", "menu", "more", "careers", "jobs", "blog",
+                        "accessibility", "ads info", "cookie use.",
+                        "help center", "community guidelines",
+                    }
+                    if title in noise_titles:
+                        continue
+                    noise_url_patterns = [
+                        "/about", "/careers", "/blog", "/help", "/support",
+                        "/terms", "/privacy", "/cookie", "/legal", "/contact",
+                        "/download", "/settings", "/notifications",
+                    ]
+                    if any(p in url for p in noise_url_patterns):
+                        continue
+                    filtered.append(c)
+
+                return filtered[:limit]
             except Exception as e:
                 logger.exception(f"[Discovery] Search failed: {e}")
                 return []
