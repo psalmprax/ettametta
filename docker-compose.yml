@@ -407,6 +407,23 @@ services:
 #              capabilities: [gpu]
 #    restart: unless-stopped
 
+  cloakbrowser:
+    build:
+      context: ./src/services/cloakbrowser
+      dockerfile: Dockerfile
+    image: ettametta-cloakbrowser
+    ports:
+      - "8010:8010"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: ettametta-qdrant
