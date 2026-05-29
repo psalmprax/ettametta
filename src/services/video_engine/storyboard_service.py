@@ -22,40 +22,69 @@ class StoryboardService:
 
     async def fetch_likeness_image(self, character_name: str) -> str:
         """
-        Scrapes DuckDuckGo Images for an HD portrait of the requested character,
-        downloads it, and returns the base64 encoded string.
+        Fetches an HD portrait for the requested character.
+        Tries: DuckDuckGo HTML scraping → Wikipedia API → fallback placeholder.
+        Returns base64 encoded image or empty string.
         """
-        logger.info(f"🔍 Sourcing HD Reference Image for '{character_name}'...")
-        # Simulating DuckDuckGo Image Search via HTML
-        search_url = f"https://html.duckduckgo.com/html/?q={character_name.replace(' ', '+')}+portrait+high+definition"
-        
+        logger.info(f"Sourcing HD Reference Image for '{character_name}'...")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(search_url, headers=headers) as resp:
+        async with aiohttp.ClientSession() as session:
+            # Strategy 1: DuckDuckGo HTML image search
+            try:
+                search_url = f"https://html.duckduckgo.com/html/?q={character_name.replace(' ', '+')}+portrait+high+definition"
+                async with session.get(search_url, headers=headers, timeout=10) as resp:
                     if resp.status == 200:
                         html = await resp.text()
-                        BeautifulSoup(html, 'html.parser')
-                        # Note: DuckDuckGo HTML restricts pure image search, standard HTML limits image parsing.
-                        # For production reliability without API keys, we hit Wikipedia or IMDB directly if DDG fails,
-                        # but for this POC we will use a known reliable static fallback URL if we cant reliably parse DDG HTML.
-                        img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Davido_2022.jpg/800px-Davido_2022.jpg"
-                        
-                        logger.info(f"   => Found optimal portrait URL: {img_url}")
-                        
-                        # Download Image
-                        async with session.get(img_url) as img_resp:
-                            if img_resp.status == 200:
-                                img_data = await img_resp.read()
-                                b64_encoded = base64.b64encode(img_data).decode('utf-8')
-                                logger.info(f"   => Successfully downloaded and base64 encoded portrait ({len(b64_encoded)} bytes)")
-                                return b64_encoded
-        except Exception as e:
-            logger.exception(f"Failed to fetch likeness for {character_name}: {e}")
-        
+                        soup = BeautifulSoup(html, 'html.parser')
+                        # Parse DuckDuckGo result links for image URLs
+                        for link in soup.find_all("a", class_="result__a"):
+                            href = link.get("href", "")
+                            if any(ext in href.lower() for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                                if "duckduckgo.com" not in href:
+                                    img_url = href
+                                    logger.info(f"   => Found DDG image: {img_url[:80]}")
+                                    async with session.get(img_url, headers=headers, timeout=10) as img_resp:
+                                        if img_resp.status == 200:
+                                            img_data = await img_resp.read()
+                                            if len(img_data) > 5000:  # Skip tiny placeholders
+                                                return base64.b64encode(img_data).decode('utf-8')
+            except Exception as e:
+                logger.debug(f"DDG search failed: {e}")
+
+            # Strategy 2: Wikipedia API for known characters
+            try:
+                wiki_api = f"https://en.wikipedia.org/api/rest_v1/page/summary/{character_name.replace(' ', '_')}"
+                async with session.get(wiki_api, headers=headers, timeout=10) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        thumb = data.get("thumbnail", {})
+                        img_url = thumb.get("source", "")
+                        if img_url:
+                            logger.info(f"   => Found Wikipedia image: {img_url[:80]}")
+                            async with session.get(img_url, headers=headers, timeout=10) as img_resp:
+                                if img_resp.status == 200:
+                                    img_data = await img_resp.read()
+                                    if len(img_data) > 5000:
+                                        return base64.b64encode(img_data).decode('utf-8')
+            except Exception as e:
+                logger.debug(f"Wikipedia API failed: {e}")
+
+            # Strategy 3: Generate a placeholder image with the character's initials
+            try:
+                initials = "".join(w[0].upper() for w in character_name.split()[:2])
+                placeholder_url = f"https://ui-avatars.com/api/?name={initials}&size=512&background=random&color=fff&bold=true&format=png"
+                logger.info(f"   => Using generated avatar for '{character_name}'")
+                async with session.get(placeholder_url, timeout=10) as img_resp:
+                    if img_resp.status == 200:
+                        img_data = await img_resp.read()
+                        return base64.b64encode(img_data).decode('utf-8')
+            except Exception as e:
+                logger.debug(f"Avatar generation failed: {e}")
+
+        logger.warning(f"No image found for '{character_name}'")
         return ""
 
     async def generate_scene(self, prompt: str, character_name: str = None, frames: int = 49, steps: int = 20) -> str | None:

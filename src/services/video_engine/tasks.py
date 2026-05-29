@@ -289,9 +289,22 @@ def download_and_process_task(
         elif platform == "TikTok":
             from src.services.optimization.tiktok_publisher import base_tiktok_service
             await update_job(status=SystemJobStatus.TIKTOK_UPLOAD, progress=90)
-            url = await base_tiktok_service.upload_video(processed_path, metadata)
-            if not url:
-                url = "tiktok_upload_failed_check_logs"
+            try:
+                url = await base_tiktok_service.upload_video(processed_path, metadata)
+                if not url:
+                    logger.error("[GenerateVideo] TikTok upload returned empty URL")
+                    await update_job(
+                        status=SystemJobStatus.FAILED,
+                        error_message="TikTok upload failed — check API credentials and token refresh",
+                    )
+                    return {"status": "error", "message": "TikTok upload failed"}
+            except Exception as tiktok_err:
+                logger.exception(f"[GenerateVideo] TikTok upload error: {tiktok_err}")
+                await update_job(
+                    status=SystemJobStatus.FAILED,
+                    error_message=f"TikTok upload error: {tiktok_err}",
+                )
+                return {"status": "error", "message": f"TikTok upload failed: {tiktok_err}"}
         else:
             url = "platform_not_supported_yet"
 
@@ -467,11 +480,16 @@ def generate_video_task(
                 )
                 raise  # Trigger retry
             else:
-                # Fallback to demo video for E2E testing when no API keys configured or max retries reached
-                logger.warning(
-                    f"[GenerateVideo] Synthesis failed permanently: {e}, using demo fallback"
+                # Max retries exhausted — fail the job properly
+                logger.error(
+                    f"[GenerateVideo] Synthesis failed permanently after {self.max_retries + 1} attempts: {e}"
                 )
-                video_uri = "https://sample-videos.com/video123/mp4/720p/big_buck_bunny_720p_1mb.mp4"
+                await update_job(
+                    status=SystemJobStatus.FAILED_SYNTHESIS_ERROR,
+                    progress=0,
+                    error_message=f"Video synthesis failed after {self.max_retries + 1} attempts: {e}",
+                )
+                return {"status": "error", "message": f"Synthesis failed: {e}"}
 
         if not video_uri:
             update_job(

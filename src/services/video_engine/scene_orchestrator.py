@@ -453,7 +453,11 @@ class SceneBasedVideoOrchestrator:
     async def _add_audio_overlay(
         self, video_path: str, audio_plan: dict[str, Any]
     ) -> dict[str, Any]:
-        """Add audio overlay to the video"""
+        """Add audio overlay to the video using FFmpeg"""
+        import time
+        import subprocess
+        import tempfile
+
         try:
             if not audio_plan.get("voice_over", False):
                 return {
@@ -474,30 +478,136 @@ class SceneBasedVideoOrchestrator:
                     "processing_time": 0,
                 }
 
-            # Simulate audio processing
-            import time
-
             start_time = time.time()
-
-            # Create output path for audio-enhanced video
+            audio_segments = audio_plan.get("audio_segments", [])
             audio_output_path = video_path.replace(".mp4", "_with_audio.mp4")
 
-            # Simulate audio processing time
-            audio_segments = audio_plan.get("audio_segments", [])
-            processing_time = len(audio_segments) * 1.5  # 1.5 seconds per audio segment
-            await asyncio.sleep(processing_time)
+            if not audio_segments:
+                # No audio segments — try to use background_music or voiceover_path
+                bg_music = audio_plan.get("background_music")
+                voiceover_path = audio_plan.get("voiceover_path")
 
-            # Create placeholder for audio-enhanced video
-            with open(audio_output_path, "w") as f:
-                f.write(
-                    f"MOCK_VIDEO_WITH_AUDIO\\nAudio segments: {len(audio_segments)}\\n"
-                )
+                if voiceover_path and Path(voiceover_path).exists():
+                    # Mix voiceover with video using FFmpeg
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-i", video_path,
+                        "-i", voiceover_path,
+                        "-filter_complex",
+                        "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+                        "-map", "0:v", "-map", "[a]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        audio_output_path,
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                    if result.returncode == 0 and Path(audio_output_path).exists():
+                        return {
+                            "success": True,
+                            "video_path": audio_output_path,
+                            "audio_added": True,
+                            "audio_segments": 0,
+                            "processing_time": time.time() - start_time,
+                        }
+                    logger.warning(f"FFmpeg voiceover mix failed: {result.stderr[:200]}")
 
+                elif bg_music and Path(bg_music).exists():
+                    # Mix background music at lower volume
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-i", video_path,
+                        "-i", bg_music,
+                        "-filter_complex",
+                        "[0:a]volume=1.0[orig];[1:a]volume=0.25[music];[orig][music]amix=inputs=2:duration=first[a]",
+                        "-map", "0:v", "-map", "[a]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        audio_output_path,
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                    if result.returncode == 0 and Path(audio_output_path).exists():
+                        return {
+                            "success": True,
+                            "video_path": audio_output_path,
+                            "audio_added": True,
+                            "audio_segments": 0,
+                            "processing_time": time.time() - start_time,
+                        }
+                    logger.warning(f"FFmpeg music mix failed: {result.stderr[:200]}")
+
+                # No audio to add
+                return {
+                    "success": True,
+                    "video_path": video_path,
+                    "audio_added": False,
+                    "processing_time": time.time() - start_time,
+                }
+
+            # Multiple audio segments — concatenate them, then mix with video
+            valid_segments = [s for s in audio_segments if isinstance(s, str) and Path(s).exists()]
+            if not valid_segments:
+                logger.warning("No valid audio segment files found")
+                return {
+                    "success": True,
+                    "video_path": video_path,
+                    "audio_added": False,
+                    "processing_time": time.time() - start_time,
+                }
+
+            # Concatenate audio segments into one track
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+                for seg in valid_segments:
+                    f.write(f"file '{Path(seg).absolute()}'\n")
+                concat_list = f.name
+
+            concat_audio = video_path.replace(".mp4", "_concat_audio.m4a")
+            try:
+                cmd_concat = [
+                    "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                    "-i", concat_list, "-c:a", "aac", "-b:a", "192k",
+                    concat_audio,
+                ]
+                result = subprocess.run(cmd_concat, capture_output=True, text=True, timeout=60)
+                if result.returncode != 0:
+                    logger.warning(f"Audio concat failed: {result.stderr[:200]}")
+                    return {
+                        "success": True,
+                        "video_path": video_path,
+                        "audio_added": False,
+                        "processing_time": time.time() - start_time,
+                    }
+            finally:
+                Path(concat_list).unlink(missing_ok=True)
+
+            # Mix concatenated audio with video
+            cmd_mix = [
+                "ffmpeg", "-y",
+                "-i", video_path,
+                "-i", concat_audio,
+                "-filter_complex",
+                "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+                "-map", "0:v", "-map", "[a]",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                "-shortest",
+                audio_output_path,
+            ]
+            result = subprocess.run(cmd_mix, capture_output=True, text=True, timeout=120)
+            Path(concat_audio).unlink(missing_ok=True)
+
+            if result.returncode == 0 and Path(audio_output_path).exists():
+                return {
+                    "success": True,
+                    "video_path": audio_output_path,
+                    "audio_added": True,
+                    "audio_segments": len(valid_segments),
+                    "processing_time": time.time() - start_time,
+                }
+
+            logger.warning(f"FFmpeg audio mix failed: {result.stderr[:200]}")
             return {
                 "success": True,
-                "video_path": audio_output_path,
-                "audio_added": True,
-                "audio_segments": len(audio_segments),
+                "video_path": video_path,
+                "audio_added": False,
                 "processing_time": time.time() - start_time,
             }
 

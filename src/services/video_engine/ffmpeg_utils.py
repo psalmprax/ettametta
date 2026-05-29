@@ -90,8 +90,6 @@ class FFmpegTransformer:
         elif lut_path:
             filters.append("curves=preset=vintage")
             
-        ",".join(filters) if filters else "copy"
-        
         # Check for audio presence to prevent mapping errors
         has_audio = self._has_audio(input_path)
         
@@ -147,22 +145,24 @@ class FFmpegTransformer:
 
     def concatenate_videos(self, video_paths: list[str], output_path: str) -> bool:
         """Concatenates multiple video files into one"""
+        import tempfile
+
         if not video_paths: return False
-        
-        # Create temporary file list for ffmpeg
-        with open("concat_list.txt", "w") as f:
+
+        # Use tempfile to avoid race conditions under concurrent use
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             for path in video_paths:
                 f.write(f"file '{Path(path).absolute()}'\n")
-        
-        cmd = [
-            "ffmpeg", "-y", "-", "concat", "-safe", "0",
-            "-i", "concat_list.txt", "-c", "copy", output_path
-        ]
-        
-        success = self._run_cmd(cmd)
-        if os.path.exists("concat_list.txt"):
-            os.remove("concat_list.txt")
-        return success
+            concat_list = f.name
+
+        try:
+            cmd = [
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", concat_list, "-c", "copy", output_path
+            ]
+            return self._run_cmd(cmd)
+        finally:
+            Path(concat_list).unlink(missing_ok=True)
 
     def add_background_music(self, video_path: str, music_path: str, output_path: str, music_volume: float = 0.3) -> bool:
         """Mixes background music into the video while keeping original audio (at lower volume)"""
