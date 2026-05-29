@@ -57,8 +57,7 @@ function SecurityContent() {
     const fetchSecurityStatus = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/security/status`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/security/status`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -73,8 +72,7 @@ function SecurityContent() {
     const fetchSecurityEvents = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/security/events`, {
+        await withRealFallback<any[]>((signal) => fetch(`${API_BASE}/security/events`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -90,8 +88,7 @@ function SecurityContent() {
         const token = await getAuthToken();
         if (!token) { setIsScanning(false); return; }
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/security/scan`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/security/scan`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),

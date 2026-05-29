@@ -41,8 +41,8 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
 
     const fetchNodes = useCallback(async () => {
         await withRealFallback(
-            async () => {
-                return fetch(`${AI_GATEWAY_URL}/health`);
+            async (signal) => {
+                return fetch(`${AI_GATEWAY_URL}/health`, { signal });
             },
             {
                 fallback: { nodes: [] } as GatewayHealth,
@@ -65,14 +65,15 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
         e.preventDefault();
         if (!newNodeUrl) return;
         await withRealFallback(
-            async () => {
+            async (signal) => {
                 return fetch(`${AI_GATEWAY_URL}/register`, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
-                        'X-Admin-Token': isAdminToken 
+                        'X-Admin-Token': isAdminToken
                     },
-                    body: JSON.stringify({ url: newNodeUrl })
+                    body: JSON.stringify({ url: newNodeUrl }),
+                    signal
                 });
             },
             {
@@ -96,10 +97,11 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
 
     const handleRemoveNode = async (url: string) => {
         await withRealFallback(
-            async () => {
+            async (signal) => {
                 return fetch(`${AI_GATEWAY_URL}/nodes/${encodeURIComponent(url)}`, {
                     method: 'DELETE',
-                    headers: { 'X-Admin-Token': isAdminToken }
+                    headers: { 'X-Admin-Token': isAdminToken },
+                    signal
                 });
             },
             {

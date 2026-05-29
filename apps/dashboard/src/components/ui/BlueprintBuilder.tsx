@@ -99,8 +99,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
             return;
         }
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/nexus/blueprints`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/nexus/blueprints`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -112,7 +111,8 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                     description,
                     composition_id: compositionId,
                     nodes
-                })
+                }),
+                signal
             }),
             {
                 fallback: {} as any,

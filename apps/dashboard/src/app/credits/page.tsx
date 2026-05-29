@@ -67,11 +67,11 @@ export default function CreditsPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
-            withRealFallback(() => fetch(`${API_BASE}/credits/balance`, { headers }), { fallback: null, onSuccess: setBalance }),
-            withRealFallback(() => fetch(`${API_BASE}/credits/costs`, { headers }), { fallback: [], onSuccess: setCosts }),
-            withRealFallback(() => fetch(`${API_BASE}/credits/transactions`, { headers }), { fallback: [], onSuccess: setTransactions }),
-            withRealFallback(() => fetch(`${API_BASE}/credits/referral/code`, { headers }), { fallback: null, onSuccess: setReferralCode }),
-            withRealFallback(() => fetch(`${API_BASE}/credits/packages`, { headers }), { fallback: [], onSuccess: setPackages }),
+            withRealFallback((signal) => fetch(`${API_BASE}/credits/balance`, { headers, signal }), { fallback: null, onSuccess: setBalance }),
+            withRealFallback((signal) => fetch(`${API_BASE}/credits/costs`, { headers, signal }), { fallback: [], onSuccess: setCosts }),
+            withRealFallback((signal) => fetch(`${API_BASE}/credits/transactions`, { headers, signal }), { fallback: [], onSuccess: setTransactions }),
+            withRealFallback((signal) => fetch(`${API_BASE}/credits/referral/code`, { headers, signal }), { fallback: null, onSuccess: setReferralCode }),
+            withRealFallback((signal) => fetch(`${API_BASE}/credits/packages`, { headers, signal }), { fallback: [], onSuccess: setPackages }),
         ]);
         setIsRefreshing(false);
     }, []);
@@ -85,8 +85,7 @@ export default function CreditsPage() {
         if (!token) return;
 
         setLogs((prev: string[]) => [`[PROTOCOL] Initializing Credit Acquisition: ${packageId}`, ...prev]);
-        await withRealFallback(
-            () => fetch(`${API_BASE}/credits/purchase`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/credits/purchase`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ package_id: packageId })

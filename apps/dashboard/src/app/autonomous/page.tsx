@@ -60,8 +60,7 @@ function AutonomousContent() {
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/zero/status`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/zero/status`, { headers }),
                 {
                     fallback: null,
                     onSuccess: (data) => {
@@ -73,8 +72,7 @@ function AutonomousContent() {
                     }
                 }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/zero/insights`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/zero/insights`, { headers }),
                 {
                     fallback: null,
                     onSuccess: (data) => data && setInsights(data.insights || data)
@@ -99,8 +97,7 @@ function AutonomousContent() {
         }
 
         setActionLogs((prev: string[]) => [`[PROTOCOL] Sending ${action.toUpperCase()} signal to Agent Zero...`, ...prev]);
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/zero/${action}`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/zero/${action}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),

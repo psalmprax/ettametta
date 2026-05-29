@@ -78,8 +78,7 @@ export const MultiPublishModal: React.FC<MultiPublishModalProps> = ({
         setIsSubmitting(true);
         setResults(null);
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/publish/post-multi`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/publish/post-multi`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -73,8 +73,7 @@ function AgentContent() {
     const fetchCapabilities = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/agent/capabilities`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/agent/capabilities`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -125,8 +124,7 @@ function AgentContent() {
         };
         setMessages((prev) => [...prev, placeholder]);
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/agent/chat`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/agent/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ message, context: { source: "dashboard" } })

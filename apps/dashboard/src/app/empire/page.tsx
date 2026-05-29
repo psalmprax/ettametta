@@ -86,19 +86,16 @@ function EmpireContent() {
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/no-face/sentinel/status`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/no-face/sentinel/status`, { headers }),
                 { fallback: null, onSuccess: (data) => setSentinelStatus(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/monetization/revenue/summary?days=30`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/revenue/summary?days=30`, { headers }),
                 { 
                     fallback: null, 
                     onSuccess: (data) => setRevenueReport(data)
                 } 
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
                 { 
                     fallback: { blueprints: [] }, 
                     onSuccess: (data) => {
@@ -107,12 +104,10 @@ function EmpireContent() {
                     } 
                 }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/monetization/report`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/report`, { headers }),
                 { fallback: null, onSuccess: (data) => setRevenueReport(data) }
             ),
-            withRealFallback<any[]>(
-                () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 { 
                     fallback: [], 
                     onSuccess: (responseData: any) => {
@@ -138,12 +133,10 @@ function EmpireContent() {
                     }
                 }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
                 { fallback: { nodes: [], links: [] }, onSuccess: (data) => setNetworkData(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/monetization/links`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/links`, { headers }),
                 { fallback: { links: [] }, onSuccess: (data) => setAffiliateLinks(Array.isArray(data.links) ? data.links : []) }
             )
         ]);
@@ -159,13 +152,14 @@ function EmpireContent() {
         if (!cloningNiche) return;
         setActionLogs((prev: string[]) => [`[PROTOCOL] Initializing Strategic Clone: ${cloningNiche}`, ...prev]);
         await withRealFallback(
-            async () => {
+            async (signal) => {
                 const token = await getAuthToken();
                 if (!token) return;
                 return fetch(`${API_BASE}/monetization/empire/clone`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ source_niche: "Motivation", target_niche: cloningNiche, auto_publish: true })
+                    body: JSON.stringify({ source_niche: "Motivation", target_niche: cloningNiche, auto_publish: true }),
+                    signal
                 });
             },
             {
@@ -501,8 +495,7 @@ function EmpireContent() {
                                             const token = await getAuthToken();
                                             if (!token) return;
                                             toast.info("Initializing Commerce Sync...");
-                                            await withRealFallback(
-                                                () => fetch(`${API_BASE}/monetization/commerce/sync?niche=General`, { 
+                                            await withRealFallback((signal) => fetch(`${API_BASE}/monetization/commerce/sync?niche=General`, { 
                                                     method: "POST",
                                                     headers: { Authorization: `Bearer ${token}` }
                                                 }),

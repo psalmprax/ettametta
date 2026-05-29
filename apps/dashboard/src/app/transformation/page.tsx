@@ -80,8 +80,7 @@ function TransformationContent() {
         const fetchData = async () => {
             const token = await getAuthToken();
             if (!token) return;
-            await withRealFallback<{jobs: any[], pagination: any}>(
-                () => fetch(`${API_BASE}/video/jobs`, {
+            await withRealFallback<{jobs: any[], pagination: any}>((signal) => fetch(`${API_BASE}/video/jobs`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
                 {
@@ -102,8 +101,7 @@ function TransformationContent() {
         if (!token) return;
         setActionLogs((prev: string[]) => [`[SIGNAL] Aborting Job: ${id}`, ...prev]);
         
-        await withRealFallback(
-            () => fetch(`${API_BASE}/video/jobs/${id}/abort`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/video/jobs/${id}/abort`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -122,8 +120,7 @@ function TransformationContent() {
         if (!token) return;
         setActionLogs((prev: string[]) => [`[SIGNAL] Triggering Neural Link Insertion for ${id}`, ...prev]);
         
-        await withRealFallback(
-            () => fetch(`${API_BASE}/video/auto-insert-links`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/video/auto-insert-links`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",

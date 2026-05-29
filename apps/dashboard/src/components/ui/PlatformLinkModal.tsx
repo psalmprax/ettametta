@@ -27,8 +27,7 @@ export const PlatformLinkModal: React.FC<PlatformLinkModalProps> = ({ isOpen, on
         const token = getAuthToken();
         if (!token) return;
 
-        await withRealFallback<{ url: string }>(
-            () => fetch(`${API_BASE}/publish/auth/${platformId}`, {
+        await withRealFallback<{ url: string }>((signal) => fetch(`${API_BASE}/publish/auth/${platformId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {

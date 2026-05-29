@@ -142,8 +142,7 @@ function NexusContent() {
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
-            withRealFallback<Blueprint[]>(
-                () => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
+            withRealFallback<Blueprint[]>((signal) => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
                 {
                     fallback: [],
                     onSuccess: (data) => {
@@ -152,15 +151,13 @@ function NexusContent() {
                     }
                 }
             ),
-            withRealFallback<NexusJob[]>(
-                () => fetch(`${API_BASE}/nexus/jobs`, { headers }),
+            withRealFallback<NexusJob[]>((signal) => fetch(`${API_BASE}/nexus/jobs`, { headers }),
                 {
                     fallback: [],
                     onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
                 }
             ),
-            withRealFallback<any[]>(
-                () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 {
                     fallback: [
                         "AI Technology", "Motivation", "Finance", "Health & Fitness",
@@ -192,8 +189,7 @@ function NexusContent() {
                     }
                 }
             ),
-            withRealFallback<any[]>(
-                () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/agent/capabilities`, { headers }),
                 {
                     fallback: [],
                     onSuccess: (data: any) => {
@@ -235,8 +231,7 @@ function NexusContent() {
     const fetchPersonas = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<Persona[]>(
-            () => fetch(`${API_BASE}/persona/list`, {
+        await withRealFallback<Persona[]>((signal) => fetch(`${API_BASE}/persona/list`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -265,8 +260,7 @@ function NexusContent() {
             payload.blueprint_id = activeBlueprint.id;
         }
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/nexus/compose`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/nexus/compose`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -296,8 +290,7 @@ function NexusContent() {
         setDeployingIds(prev => new Set(prev).add(workerId));
         setActionLogs(prev => [`[DEPLOY] Initializing Neural Instance: ${worker.name}`, ...prev]);
         
-        const promise = withRealFallback<any>(
-            () => fetch(`${API_BASE}/tools/crew/run`, {
+        const promise = withRealFallback<any>((signal) => fetch(`${API_BASE}/tools/crew/run`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -993,8 +986,7 @@ function NexusContent() {
                                                 const token = await getAuthToken();
                                                 if (!token) return;
                                                 toast.info("Dispatching code to sandbox...");
-                                                await withRealFallback(
-                                                    () => fetch(`${API_BASE}/agent/sandbox-execute`, {
+                                                await withRealFallback((signal) => fetch(`${API_BASE}/agent/sandbox-execute`, {
                                                         method: "POST",
                                                         headers: {
                                                             "Content-Type": "application/json",

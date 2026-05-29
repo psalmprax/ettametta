@@ -171,8 +171,7 @@ function ScriptEnginePanel() {
         // Send null for niche to trigger auto-detection
         const nichePayload = niche === "Auto-Detect" ? null : niche;
 
-        await withRealFallback<ScriptOutput>(
-            () => fetch(`${API_BASE}/no-face/script`, {
+        await withRealFallback<ScriptOutput>((signal) => fetch(`${API_BASE}/no-face/script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -379,8 +378,7 @@ function VisualCorePanel() {
             }
         } else {
             // For generate mode, use original logic
-            await withRealFallback<any>(
-                () => fetch(endpoint, {
+            await withRealFallback<any>((signal) => fetch(endpoint, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -622,8 +620,7 @@ function CreationContent() {
             return;
         }
 
-        await withRealFallback<ScriptOutput>(
-            () => fetch(`${API_BASE}/no-face/script`, {
+        await withRealFallback<ScriptOutput>((signal) => fetch(`${API_BASE}/no-face/script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -652,8 +649,7 @@ function CreationContent() {
         const token = await getAuthToken();
         if (!token) return;
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/launch-cinema`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/no-face/launch-cinema`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -693,8 +689,7 @@ function CreationContent() {
         const fetchHistory = async () => {
             const token = await getAuthToken();
             if (!token) return;
-            await withRealFallback<any[]>(
-                () => fetch(`${API_BASE}/publish/history`, {
+            await withRealFallback<any[]>((signal) => fetch(`${API_BASE}/publish/history`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
                 { fallback: [], onSuccess: (data) => setActivityFeed(data.slice(0, 5)) }
