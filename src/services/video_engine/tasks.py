@@ -204,6 +204,62 @@ def download_and_process_task(
             strategy=strategy,
         )
 
+        # ===== AUTO-CAPTIONS (Always on — captions boost engagement 40-80%) =====
+        if transcript_segments:
+            try:
+                from .ffmpeg_utils import base_ffmpeg_service
+                ass_path = processed_path.replace(".mp4", ".ass")
+                # Convert transcription segments to subtitle format
+                subtitle_segments = [
+                    {"text": seg["text"], "duration": seg["end"] - seg["start"]}
+                    for seg in transcript_segments
+                    if seg.get("text") and seg.get("end", 0) > seg.get("start", 0)
+                ]
+                if subtitle_segments:
+                    await asyncio.to_thread(
+                        base_ffmpeg_service.generate_styled_subtitles,
+                        subtitle_segments, ass_path
+                    )
+                    captioned_path = processed_path.replace(".mp4", "_captioned.mp4")
+                    success = await asyncio.to_thread(
+                        base_ffmpeg_service.apply_production_render,
+                        processed_path, ass_path, captioned_path
+                    )
+                    if success and os.path.exists(captioned_path):
+                        processed_path = captioned_path
+                        logger.info(f"[Task] Auto-captions burned in ({len(subtitle_segments)} segments)")
+                    # Cleanup ASS file
+                    if os.path.exists(ass_path):
+                        os.remove(ass_path)
+            except Exception as caption_err:
+                logger.warning(f"[Task] Auto-caption failed (non-fatal): {caption_err}")
+
+        # ===== LOUDNESS NORMALIZATION (-14 LUFS for YouTube/TikTok/Instagram) =====
+        try:
+            from .ffmpeg_utils import base_ffmpeg_service
+            norm_path = processed_path.replace(".mp4", "_norm.mp4")
+            success = await asyncio.to_thread(
+                base_ffmpeg_service.normalize_loudness,
+                processed_path, norm_path, -14.0
+            )
+            if success and os.path.exists(norm_path):
+                processed_path = norm_path
+                logger.info("[Task] Loudness normalized to -14 LUFS")
+        except Exception as norm_err:
+            logger.warning(f"[Task] Loudness normalization failed (non-fatal): {norm_err}")
+
+        # ===== WATERMARK (Brand protection) =====
+        try:
+            from .motion_graphics import base_motion_graphics_service
+            wm_path = await base_motion_graphics_service.add_watermark(
+                processed_path, watermark_text=f"Created with ettametta"
+            )
+            if wm_path and os.path.exists(wm_path):
+                processed_path = wm_path
+                logger.info("[Task] Watermark applied")
+        except Exception as wm_err:
+            logger.warning(f"[Task] Watermark failed (non-fatal): {wm_err}")
+
         # ===== TIER 3 ENHANCEMENTS (Any) =====
         # Sound Design: enabled by explicit flag OR quality_tier
         if sound_design or quality_tier in ("enhanced", "premium"):
