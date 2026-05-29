@@ -59,24 +59,56 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     const frame = useCurrentFrame();
     const { fps, durationInFrames } = useVideoConfig();
 
+    // Style detection
     const isReddit = style === 'REDDIT_STORY';
     const isNews = style === 'BROADCAST_NEWS';
     const isTutorial = style === 'ULTIMATE_TUTORIAL';
     const isHeartfelt = style === 'HEARTFELT_NARRATIVE';
     const isListicle = style === 'TOP_LISTICLE';
     const isCinematic = style === 'CINEMATIC_DOC';
-    
+    const isVox = style === 'VOX_EXPLAINER';
+    const isDeepDive = style === 'DEEP_DIVE';
+    const isPersona = style === 'PERSONA_MONTAGE';
+    const isFastHype = style === 'FAST_HYPE';
+    const isNoir = style === 'NOIR_MYSTERY';
+    const isInvestigation = style === 'INVESTIGATION';
+    const isRetro = style === 'RETRO_ARCHIVE';
+    const isMotivational = style === 'MOTIVATIONAL';
+    const isProduct = style === 'PRODUCT_SHOWCASE';
+    const isReaction = style === 'REACTION_COMMENTARY';
+    const isHorror = style === 'HORROR_CREEPY';
+    const isLofi = style === 'LOFI_CHILL';
+    const isPodcast = style === 'PODCAST_SIM';
+    const isCulinary = style === 'CULINARY_MASTERCLASS';
+    const isStoic = style === 'STOIC_WISDOM';
+    const isRelationship = style === 'RELATIONSHIP_DRAMA';
+    const isTravel = style === 'TRAVEL_VLOG';
+    const isFitness = style === 'FITNESS_MOTIVATION';
+    const isGaming = style === 'GAMING_LORE';
+    const isEsports = style === 'ESPORTS_HYPE';
+
     // --- 1. Beat-Sync Logic (Rhythmic Pulse) ---
-    const bpm = isListicle ? 128 : (isHeartfelt ? 75 : 100);
+    const bpm = isListicle ? 128 : (isEsports ? 140 : (isFastHype ? 130 : (isFitness ? 135 : (isHeartfelt ? 75 : (isLofi ? 85 : (isStoic ? 80 : 100))))));
     const safeFps = fps || 30;
     const framesPerBeat = (60 / bpm) * safeFps;
     const beatProgress = framesPerBeat > 0 ? (frame % framesPerBeat) / framesPerBeat : 0;
-    
+
     // Impact scale on every beat
     const beatScale = isNaN(beatProgress) ? 1 : interpolate(beatProgress, [0, 0.1, 0.4], [1, 1.02, 1], { extrapolateRight: 'clamp' });
-    
+
     // --- 2. Color Grade Resolution ---
-    const colorGrade: GradeType = isHeartfelt ? 'warm_narrative' : (isListicle ? 'electric_listicle' : 'default');
+    const colorGrade: GradeType =
+        isHeartfelt ? 'warm_narrative' :
+        isListicle ? 'electric_listicle' :
+        isNoir || isHorror ? 'dark_mystery' :
+        isCinematic ? 'default' :
+        isRetro ? 'retro_vhs' :
+        isCulinary || isTravel ? 'vibrant_bloom' :
+        isRelationship ? 'melancholic' :
+        isStoic ? 'monochrome_high_contrast' :
+        isMotivational ? 'gold_luxury' :
+        isFastHype || isEsports ? 'neon_hype' :
+        'default';
 
     // Path resolution
     const resolvePath = (url?: string) => {
@@ -98,12 +130,28 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     const effectiveDuration = totalClipDuration > 0 ? totalClipDuration : durationInFrames;
 
     // Transition Logic Table
-    const getTransitionType = (index: number) => {
-        if (isCinematic) {
+    const getTransitionType = (index: number): TransitionType => {
+        if (isCinematic || isDeepDive || isStoic) {
             const cinemaTypes: TransitionType[] = ['blur', 'zoom', 'fade'];
             return cinemaTypes[index % cinemaTypes.length];
         }
-        if (isListicle) return 'slide';
+        if (isListicle || isFastHype || isEsports) return 'slide';
+        if (isNoir || isHorror || isInvestigation) {
+            const darkTypes: TransitionType[] = ['blur', 'fade'];
+            return darkTypes[index % darkTypes.length];
+        }
+        if (isHeartfelt || isRelationship || isLofi) {
+            const softTypes: TransitionType[] = ['fade', 'blur'];
+            return softTypes[index % softTypes.length];
+        }
+        if (isProduct || isCulinary) {
+            const cleanTypes: TransitionType[] = ['zoom', 'fade'];
+            return cleanTypes[index % cleanTypes.length];
+        }
+        if (isRetro) {
+            const retroTypes: TransitionType[] = ['fade', 'slide'];
+            return retroTypes[index % retroTypes.length];
+        }
         const types: TransitionType[] = ['zoom', 'blur', 'slide'];
         return types[index % types.length];
     };
@@ -119,11 +167,11 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
             <VFXShader type={(job_metadata?.vfx as string) || 'default'} />
 
             {!isReddit && !isNews && (
-                <CinematicOverlay 
-                    vignetteIntensity={vignette_intensity ?? 0.6} 
-                    grainOpacity={grain_opacity ?? 0.08}
-                    showLetterbox={isCinematic}
-                    chromaticAberration={isCinematic ? 4 : 2}
+                <CinematicOverlay
+                    vignetteIntensity={isNoir || isHorror ? 0.8 : (isCinematic ? 0.7 : 0.6)}
+                    grainOpacity={isNoir || isRetro ? 0.15 : (isCinematic ? 0.1 : 0.08)}
+                    showLetterbox={isCinematic || isDeepDive || isStoic || isNoir}
+                    chromaticAberration={isCinematic ? 4 : (isNoir ? 3 : 2)}
                 />
             )}
 
@@ -192,8 +240,8 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
 
             {/* --- FEATURE: News Ticker for BROADCAST_NEWS style --- */}
             {isNews && (
-                <NewsTicker 
-                    headline={title || 'Breaking News'} 
+                <NewsTicker
+                    headline={title || 'Breaking News'}
                     breaking={true}
                 />
             )}
@@ -203,6 +251,43 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
                 <Sequence from={0} durationInFrames={fps * 3}>
                     <RedditHook {...(job_metadata.reddit_data as any)} />
                 </Sequence>
+            )}
+
+            {/* Investigation: magnifier overlay */}
+            {isInvestigation && (
+                <div style={{
+                    position: 'absolute', top: '10px', left: '10px',
+                    padding: '6px 12px', backgroundColor: 'rgba(0,255,0,0.15)',
+                    border: '1px solid rgba(0,255,0,0.4)', borderRadius: '4px',
+                    color: '#0f0', fontSize: '14px', fontFamily: 'monospace',
+                    zIndex: 50
+                }}>
+                    INVESTIGATION: {title || 'CLASSIFIED'}
+                </div>
+            )}
+
+            {/* Retro: timestamp overlay */}
+            {isRetro && (
+                <div style={{
+                    position: 'absolute', bottom: '60px', right: '20px',
+                    padding: '4px 8px', backgroundColor: 'rgba(0,0,0,0.5)',
+                    color: '#0f0', fontSize: '16px', fontFamily: 'monospace',
+                    zIndex: 50
+                }}>
+                    REC {new Date().toLocaleDateString()}
+                </div>
+            )}
+
+            {/* Podcast: show mic icon */}
+            {isPodcast && (
+                <div style={{
+                    position: 'absolute', top: '20px', right: '20px',
+                    padding: '8px 16px', backgroundColor: 'rgba(0,0,0,0.6)',
+                    borderRadius: '20px', color: 'white', fontSize: '14px',
+                    zIndex: 50
+                }}>
+                    PODCAST
+                </div>
             )}
 
             {/* --- FEATURE: High-Fidelity Outro --- */}

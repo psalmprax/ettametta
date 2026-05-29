@@ -101,5 +101,130 @@ export const VFXShader: React.FC<VFXShaderProps> = ({ type }) => {
         );
     }
 
+    if (type === 'glitch_jumpscare') {
+        // Horror glitch: intense distortion, random flashes
+        const flashIntensity = frame % 45 === 0 ? 0.8 : 0;
+        const distortX = frame % 20 === 0 ? Math.sin(frame * 0.3) * 15 : 0;
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                {flashIntensity > 0 && (
+                    <div style={{
+                        width: '100%', height: '100%',
+                        backgroundColor: 'white', opacity: flashIntensity,
+                        mixBlendMode: 'overlay'
+                    }} />
+                )}
+                {distortX !== 0 && (
+                    <div style={{
+                        position: 'absolute', top: `${(frame * 13) % 100}%`,
+                        left: 0, width: '100%', height: '4px',
+                        backgroundColor: `hsl(${(frame * 60) % 360}, 100%, 50%)`,
+                        opacity: 0.7, transform: `translateX(${distortX}px)`
+                    }} />
+                )}
+                <div style={{
+                    width: '100%', height: '100%',
+                    background: 'repeating-linear-gradient(transparent, transparent 2px, rgba(0,0,0,0.15) 3px)',
+                    opacity: 0.4
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
+    if (type === 'film_grain') {
+        // Film grain overlay for cinematic/narrative styles
+        const grainOpacity = 0.06 + Math.sin(frame * 0.1) * 0.02;
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                <div style={{
+                    width: '100%', height: '100%',
+                    backgroundColor: 'white', opacity: grainOpacity,
+                    mixBlendMode: 'overlay',
+                    backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")'
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
+    if (type === 'glow') {
+        // Soft glow for motivational/inspirational content
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                <div style={{
+                    width: '100%', height: '100%',
+                    background: 'radial-gradient(circle at center, rgba(255,215,0,0.1) 0%, transparent 60%)',
+                    mixBlendMode: 'screen'
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
+    if (type === 'glitch_shake') {
+        // Fitness/hype shake effect on beats
+        const shakeIntensity = frame % 10 === 0 ? 3 : 0;
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                {shakeIntensity > 0 && (
+                    <div style={{
+                        width: '100%', height: '100%',
+                        transform: `translate(${Math.sin(frame) * shakeIntensity}px, ${Math.cos(frame) * shakeIntensity}px)`,
+                        border: '2px solid rgba(255,0,0,0.3)'
+                    }} />
+                )}
+                <div style={{
+                    width: '100%', height: '100%',
+                    background: 'repeating-linear-gradient(transparent, transparent 3px, rgba(0,0,0,0.05) 4px)',
+                    opacity: 0.3
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
+    if (type === 'magnifier') {
+        // Investigation/mystery magnifier effect
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    width: '300px', height: '300px',
+                    transform: 'translate(-50%, -50%)',
+                    border: '3px solid rgba(0,255,0,0.3)',
+                    borderRadius: '50%',
+                    boxShadow: '0 0 50px rgba(0,255,0,0.1)'
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
+    if (type === 'reaction_pip') {
+        // Reaction/commentary PIP frame
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                <div style={{
+                    position: 'absolute', bottom: '20px', right: '20px',
+                    width: '200px', height: '150px',
+                    border: '3px solid white',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                    backgroundColor: 'rgba(0,0,0,0.3)'
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
+    if (type === 'liquid_transitions') {
+        // Product showcase liquid effect
+        const wave = Math.sin(frame * 0.05) * 10;
+        return (
+            <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 99 }}>
+                <div style={{
+                    width: '100%', height: '100%',
+                    background: `linear-gradient(${wave}deg, rgba(255,255,255,0.05), transparent, rgba(255,255,255,0.05))`,
+                    mixBlendMode: 'overlay'
+                }} />
+            </AbsoluteFill>
+        );
+    }
+
     return null;
 };

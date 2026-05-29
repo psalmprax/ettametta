@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 
-export type GradeType = 'warm_narrative' | 'electric_listicle' | 'dark_mystery' | 'cyberpunk' | 'classic_bw' | 'default';
+export type GradeType = 'warm_narrative' | 'electric_listicle' | 'dark_mystery' | 'cyberpunk' | 'classic_bw' | 'retro_vhs' | 'horror_desaturated' | 'vibrant_bloom' | 'melancholic' | 'monochrome_high_contrast' | 'gold_luxury' | 'neon_hype' | 'default';
 
 interface ColorGradeProps {
     type: GradeType;
@@ -75,6 +75,105 @@ export const ColorGrade: React.FC<ColorGradeProps> = ({ type, intensity = 1 }) =
                         <feFuncB type="gamma" exponent="1.2" />
                     </feComponentTransfer>
                 </filter>
+
+                <filter id="retro_vhs_filter">
+                    {/* Retro VHS: warm fade, slight desaturation, lifted blacks */}
+                    <feColorMatrix type="matrix" values="
+                        1.1 0.05 0   0   0.05
+                        0   1.0  0.05 0   0.03
+                        0   0    0.85 0   0.08
+                        0   0    0    1   0"
+                    />
+                    <feComponentTransfer>
+                        <feFuncR type="linear" slope="0.9" intercept="0.05" />
+                        <feFuncG type="linear" slope="0.9" intercept="0.05" />
+                        <feFuncB type="linear" slope="0.85" intercept="0.08" />
+                    </feComponentTransfer>
+                </filter>
+
+                <filter id="horror_desaturated_filter">
+                    {/* Horror: heavy desaturation, crushed shadows, green tint */}
+                    <feColorMatrix type="matrix" values="
+                        0.7 0   0   0   -0.1
+                        0   0.8 0   0   -0.05
+                        0   0   0.7 0   -0.1
+                        0   0   0   1   0"
+                    />
+                    <feComponentTransfer>
+                        <feFuncR type="gamma" exponent="1.3" />
+                        <feFuncG type="gamma" exponent="1.1" />
+                        <feFuncB type="gamma" exponent="1.3" />
+                    </feComponentTransfer>
+                </filter>
+
+                <filter id="vibrant_bloom_filter">
+                    {/* Vibrant bloom: saturated, bright, punchy */}
+                    <feColorMatrix type="matrix" values="
+                        1.3 0   0   0   0.05
+                        0   1.2 0   0   0.05
+                        0   0   1.1 0   0
+                        0   0   0   1   0"
+                    />
+                    <feComponentTransfer>
+                        <feFuncR type="gamma" exponent="0.85" />
+                        <feFuncG type="gamma" exponent="0.85" />
+                        <feFuncB type="gamma" exponent="0.9" />
+                    </feComponentTransfer>
+                </filter>
+
+                <filter id="melancholic_filter">
+                    {/* Melancholic: cool blues, muted tones, lifted shadows */}
+                    <feColorMatrix type="matrix" values="
+                        0.9 0   0   0   0
+                        0   0.9 0   0   0
+                        0   0   1.2 0   0.1
+                        0   0   0   1   0"
+                    />
+                    <feComponentTransfer>
+                        <feFuncR type="linear" slope="0.85" intercept="0.1" />
+                        <feFuncG type="linear" slope="0.85" intercept="0.1" />
+                        <feFuncB type="linear" slope="0.95" intercept="0.05" />
+                    </feComponentTransfer>
+                </filter>
+
+                <filter id="monochrome_high_contrast_filter">
+                    {/* Monochrome high contrast: B&W with crushed blacks */}
+                    <feColorMatrix type="saturate" values="0" />
+                    <feComponentTransfer>
+                        <feFuncR type="gamma" exponent="0.7" />
+                        <feFuncG type="gamma" exponent="0.7" />
+                        <feFuncB type="gamma" exponent="0.7" />
+                    </feComponentTransfer>
+                </filter>
+
+                <filter id="gold_luxury_filter">
+                    {/* Gold luxury: warm gold tones, rich shadows */}
+                    <feColorMatrix type="matrix" values="
+                        1.3 0.1 0   0   0.1
+                        0   1.1 0.05 0   0.05
+                        0   0   0.8 0   -0.05
+                        0   0   0   1   0"
+                    />
+                    <feComponentTransfer>
+                        <feFuncR type="gamma" exponent="0.9" />
+                        <feFuncG type="gamma" exponent="0.95" />
+                        <feFuncB type="gamma" exponent="1.1" />
+                    </feComponentTransfer>
+                </filter>
+
+                <filter id="neon_hype_filter">
+                    {/* Neon hype: high saturation, pushed highlights, cyan/magenta */}
+                    <feColorMatrix type="matrix" values="
+                        1.4 0   0   0   0
+                        0   1.0 0   0   0.1
+                        0   0   1.5 0   0.1
+                        0   0   0   1   0"
+                    />
+                    <feComponentTransfer>
+                        <feFuncR type="gamma" exponent="0.8" />
+                        <feFuncB type="gamma" exponent="0.8" />
+                    </feComponentTransfer>
+                </filter>
             </svg>
 
             <AbsoluteFill style={{
@@ -87,6 +186,18 @@ export const ColorGrade: React.FC<ColorGradeProps> = ({ type, intensity = 1 }) =
                 <AbsoluteFill style={{
                     background: 'linear-gradient(45deg, rgba(255,0,255,0.1), rgba(0,255,255,0.1))',
                     mixBlendMode: 'screen'
+                }} />
+            )}
+            {type === 'neon_hype' && (
+                <AbsoluteFill style={{
+                    background: 'linear-gradient(135deg, rgba(0,255,255,0.08), rgba(255,0,128,0.08))',
+                    mixBlendMode: 'screen'
+                }} />
+            )}
+            {type === 'gold_luxury' && (
+                <AbsoluteFill style={{
+                    background: 'linear-gradient(180deg, rgba(255,215,0,0.05), transparent)',
+                    mixBlendMode: 'overlay'
                 }} />
             )}
         </AbsoluteFill>
