@@ -26,6 +26,8 @@ from .cloak_instagram_scanner import CloakInstagramScanner
 from .cloak_facebook_scanner import CloakFacebookScanner
 from .cloak_x_scanner import CloakXScanner
 from .cloak_linkedin_scanner import CloakLinkedInScanner
+from .cloak_reddit_scanner import CloakRedditScanner
+from .cloak_twitch_scanner import CloakTwitchScanner
 from .reddit_scanner import base_reddit_service
 from .x_scanner import base_x_scanner_service
 from .public_domain_scanner import base_public_domain_service
@@ -80,11 +82,11 @@ class DiscoveryService:
         # Secondary scanners (supplementary, web scraping)
         # Cloak-backed scanners use Playwright stealth first, httpx fallback
         self.global_scanners = [
-            base_reddit_service,  # Real API (JSON) ✓
+            CloakRedditScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
             CloakXScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
             CloakInstagramScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
             CloakFacebookScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
-            base_twitch_service,  # Web scrape
+            CloakTwitchScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
             base_pinterest_service,  # Web scrape
             CloakLinkedInScanner(scraper_url=_scraper_url),  # Cloak + httpx fallback
             base_snapchat_service,  # Web scrape
@@ -327,10 +329,10 @@ class DiscoveryService:
             self.global_scanners
             if deep_scan or tier != "free"
             else [
-                base_x_scanner_service,
-                base_instagram_service,
-                base_facebook_scanner_service,
-                base_twitch_service,
+                CloakXScanner(scraper_url=_scraper_url),
+                CloakInstagramScanner(scraper_url=_scraper_url),
+                CloakFacebookScanner(scraper_url=_scraper_url),
+                CloakTwitchScanner(scraper_url=_scraper_url),
                 base_bilibili_service,
                 base_rumble_service,
             ]

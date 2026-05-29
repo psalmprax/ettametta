@@ -28,10 +28,52 @@ logger = logging.getLogger(__name__)
 # Semaphore to limit concurrent CloakBrowser scans (Playwright is heavy)
 _CLOAK_SEMAPHORE = asyncio.Semaphore(3)
 
+# ── Noise filtering ──────────────────────────────────────────
+
+NOISE_TITLES = {
+    "sign up", "log in", "login", "sign in", "register", "create account",
+    "terms of service", "terms", "privacy policy", "privacy", "cookie policy",
+    "cookies", "about", "about us", "about me", "careers", "jobs", "blog",
+    "help", "support", "faq", "contact", "contact us", "advertise",
+    "download", "download the app", "get the app", "install",
+    "notifications", "settings", "profile", "explore", "following",
+    "for you", "home", "search", "discover", "reels", "shorts",
+    "trending", "popular", "live", "shop", "menu", "more",
+    "sign up with phone or email", "community guidelines",
+}
+
+NOISE_URL_PATTERNS = [
+    "/about", "/careers", "/blog", "/help", "/support", "/faq",
+    "/terms", "/privacy", "/cookie", "/legal", "/contact",
+    "/download", "/install", "/settings", "/notifications",
+    "/accounts/", "/explore/", "/directory",
+]
+
+
+def _is_noise(title: str, url: str = "") -> bool:
+    """Check if a scraped item is noise (nav links, footers, etc.)."""
+    t = title.strip().lower()
+    # Skip empty or very short titles
+    if len(t) < 8:
+        return True
+    # Skip exact noise matches
+    if t in NOISE_TITLES:
+        return True
+    # Skip titles that are just common nav words
+    if len(t.split()) <= 2 and t in NOISE_TITLES:
+        return True
+    # Skip URL patterns
+    if url:
+        url_lower = url.lower()
+        for pattern in NOISE_URL_PATTERNS:
+            if pattern in url_lower:
+                return True
+    return False
+
 
 class CloakBrowserScanner(DiscoveryScannerBase):
     """
-    Scanner that delegates to the containerized discovery-scraper service
+    Scanner that delegates to the containerized CloakBrowser service
     powered by CloakBrowser + Playwright for stealth browsing.
     Supports multiple platforms via the platform config registry.
     """
@@ -149,7 +191,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
         niche: str,
         region: Optional[str],
     ) -> list[ContentCandidate]:
-        """Execute a single scrape attempt against the discovery-scraper service."""
+        """Execute a single scrape attempt against the CloakBrowser service."""
         params = {
             "niche": niche,
             "region": region or "US",
@@ -201,6 +243,8 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             "facebook": self._parse_facebook,
             "x (twitter)": self._parse_x_twitter,
             "linkedin": self._parse_linkedin,
+            "reddit": self._parse_reddit,
+            "twitch": self._parse_twitch,
         }
         return parsers.get(platform_name, self._parse_generic)
 
@@ -210,13 +254,17 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             video_id = item.get("id", "")
             if not video_id:
                 continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
             candidates.append(
                 ContentCandidate(
                     id=f"{config.id_prefix}_{video_id}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", ""),
+                    source_uri=url,
                     creator_name=item.get("channel", "Unknown"),
-                    title=item.get("title", "No Title"),
+                    title=title,
                     thumbnail_uri=item.get("thumbnail", ""),
                     view_count=self._parse_views(item.get("views", "0")),
                     like_count=0,
@@ -227,7 +275,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": "youtube_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": "youtube_web"},
                 )
             )
         return candidates
@@ -237,6 +285,10 @@ class CloakBrowserScanner(DiscoveryScannerBase):
         for item in items:
             vid = item.get("id") or item.get("video_id", "")
             if not vid:
+                continue
+            title = item.get("title", item.get("desc", f"TikTok {niche}"))
+            url = item.get("url", "")
+            if _is_noise(title, url):
                 continue
             author = item.get("author") or item.get("channel") or "Unknown"
             views = self._parse_views(str(item.get("views", item.get("playCount", 0))))
@@ -249,9 +301,9 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                 ContentCandidate(
                     id=f"{config.id_prefix}_{vid}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", f"https://www.tiktok.com/video/{vid}"),
+                    source_uri=url or f"https://www.tiktok.com/video/{vid}",
                     creator_name=author,
-                    title=item.get("title", item.get("desc", f"TikTok {niche}")),
+                    title=title,
                     thumbnail_uri=item.get("thumbnail", item.get("cover", "")),
                     view_count=views,
                     like_count=likes,
@@ -262,7 +314,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": "tiktok_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": "tiktok_web"},
                 )
             )
         return candidates
@@ -273,6 +325,10 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             shortcode = item.get("shortcode") or item.get("id", "")
             if not shortcode:
                 continue
+            title = item.get("title") or item.get("caption", f"IG Reel: {niche}")[:100]
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
             likes = self._safe_int(item.get("likes", 0))
             comments = self._safe_int(item.get("comments", 0))
             views_est = max(likes * 20, 1)
@@ -281,9 +337,9 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                 ContentCandidate(
                     id=f"{config.id_prefix}_{shortcode}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", f"https://www.instagram.com/reel/{shortcode}/"),
+                    source_uri=url or f"https://www.instagram.com/reel/{shortcode}/",
                     creator_name=item.get("author") or item.get("username", "Unknown"),
-                    title=item.get("title") or item.get("caption", f"IG Reel: {niche}")[:100],
+                    title=title,
                     thumbnail_uri=item.get("thumbnail", ""),
                     view_count=views_est,
                     like_count=likes,
@@ -292,7 +348,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": "instagram_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": "instagram_web"},
                 )
             )
         return candidates
@@ -303,6 +359,10 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             vid = item.get("id") or item.get("video_id", "")
             if not vid:
                 continue
+            title = item.get("title", f"Facebook Video: {niche}")[:100]
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
             views = self._safe_int(item.get("views", item.get("view_count", 0)))
             likes = self._safe_int(item.get("likes", 0))
             comments = self._safe_int(item.get("comments", 0))
@@ -312,9 +372,9 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                 ContentCandidate(
                     id=f"{config.id_prefix}_{vid}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", ""),
+                    source_uri=url,
                     creator_name=item.get("author") or item.get("page_name", "Unknown"),
-                    title=item.get("title", f"Facebook Video: {niche}")[:100],
+                    title=title,
                     thumbnail_uri=item.get("thumbnail", ""),
                     view_count=views,
                     like_count=likes,
@@ -324,7 +384,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": "facebook_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": "facebook_web"},
                 )
             )
         return candidates
@@ -334,6 +394,10 @@ class CloakBrowserScanner(DiscoveryScannerBase):
         for item in items:
             tid = item.get("id") or item.get("tweet_id", "")
             if not tid:
+                continue
+            text = (item.get("text", "") or item.get("title", f"X: {niche}"))[:100]
+            url = item.get("url", "")
+            if _is_noise(text, url):
                 continue
             likes = self._safe_int(item.get("likes", item.get("favorite_count", 0)))
             retweets = self._safe_int(item.get("retweets", item.get("retweet_count", 0)))
@@ -345,9 +409,9 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                 ContentCandidate(
                     id=f"{config.id_prefix}_{tid}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", f"https://x.com/i/status/{tid}"),
+                    source_uri=url or f"https://x.com/i/status/{tid}",
                     creator_name=item.get("author") or item.get("username", "Unknown"),
-                    title=(item.get("text", "") or item.get("title", f"X: {niche}"))[:100],
+                    title=text,
                     thumbnail_uri=item.get("media_url", item.get("thumbnail", "")),
                     view_count=views_est,
                     like_count=likes,
@@ -357,7 +421,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": "x_twitter_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": "x_twitter_web"},
                 )
             )
         return candidates
@@ -367,6 +431,10 @@ class CloakBrowserScanner(DiscoveryScannerBase):
         for item in items:
             pid = item.get("id") or item.get("post_id", "")
             if not pid:
+                continue
+            text = (item.get("title", "") or item.get("text", f"LinkedIn: {niche}"))[:100]
+            url = item.get("url", "")
+            if _is_noise(text, url):
                 continue
             likes = self._safe_int(item.get("likes", 0))
             comments = self._safe_int(item.get("comments", 0))
@@ -378,9 +446,9 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                 ContentCandidate(
                     id=f"{config.id_prefix}_{pid}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", f"https://www.linkedin.com/feed/update/{pid}"),
+                    source_uri=url or f"https://www.linkedin.com/feed/update/{pid}",
                     creator_name=item.get("author", "Unknown"),
-                    title=(item.get("title", "") or item.get("text", f"LinkedIn: {niche}"))[:100],
+                    title=text,
                     thumbnail_uri=item.get("thumbnail", ""),
                     view_count=views_est,
                     like_count=likes,
@@ -390,7 +458,72 @@ class CloakBrowserScanner(DiscoveryScannerBase):
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": "linkedin_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": "linkedin_web"},
+                )
+            )
+        return candidates
+
+    def _parse_reddit(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            pid = item.get("id") or item.get("post_id", "")
+            if not pid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            score = self._safe_int(item.get("views", item.get("score", 0)))
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{pid}",
+                    platform=config.platform_label,
+                    source_uri=url or f"https://www.reddit.com/comments/{pid}/",
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=abs(score) * 10,  # Estimate views from score
+                    like_count=score if score > 0 else 0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=min(max(score, 0), 95),
+                    region=region or "US",
+                    category="social",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "reddit_web"},
+                )
+            )
+        return candidates
+
+    def _parse_twitch(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            item_id = item.get("id", "")
+            if not item_id:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{item_id}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="video",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "twitch_web"},
                 )
             )
         return candidates
@@ -401,19 +534,23 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             cid = item.get("id", "")
             if not cid:
                 continue
+            title = item.get("title", "No Title")[:100]
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
             candidates.append(
                 ContentCandidate(
                     id=f"{config.id_prefix}_{cid}",
                     platform=config.platform_label,
-                    source_uri=item.get("url", ""),
+                    source_uri=url,
                     creator_name=item.get("author", "Unknown"),
-                    title=item.get("title", "No Title")[:100],
+                    title=title,
                     thumbnail_uri=item.get("thumbnail", ""),
                     view_count=self._safe_int(item.get("views", 0)),
                     region=region or "US",
                     category=config.category,
                     tags=[niche] + config.tags_extra,
-                    metadata={"scraper": "cloakbrowser", "source": f"{config.name.lower()}_web"},
+                    metadata_json={"scraper": "cloakbrowser", "source": f"{config.name.lower()}_web"},
                 )
             )
         return candidates

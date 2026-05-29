@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class CloakXScanner(DiscoveryScannerBase):
     """X/Twitter scanner backed by CloakBrowser stealth engine with httpx fallback."""
 
-    def __init__(self, scraper_url: str = "http://discovery-scraper:8010"):
+    def __init__(self, scraper_url: str = "http://cloakbrowser:8010"):
         self.cloak_engine = CloakBrowserScanner(
             scraper_url=scraper_url, platform="x_twitter"
         )
