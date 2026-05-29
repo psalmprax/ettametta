@@ -37,13 +37,13 @@ class Settings(BaseSettings):
     
     # Resilience Settings (Global Hardening)
     DEFAULT_TIMEOUT: int = 60
-    LLM_TIMEOUT: int = 300
+    LLM_TIMEOUT: int = 60  # Base timeout; global = LLM_TIMEOUT * 2 (120s), per-provider = 30s
     VIDEO_GEN_TIMEOUT: int = 600
     VOICEOVER_TIMEOUT: int = 30
     SEARCH_TIMEOUT: int = 30
     STOCK_TIMEOUT: int = 30
     REMOTION_TIMEOUT_SECONDS: int = 900
-    MAX_RENDER_FRAMES: int = 300  # Cap total frames for CPU Remotion render (~10s @ 30fps)
+    MAX_RENDER_FRAMES: int = 2700  # Cap total frames for CPU Remotion render (~90s @ 30fps)
     NEXUS_COMPOSE_TIMEOUT: int = 1800  # 30 min global timeout for compose background task
     DEFAULT_RETRY_COUNT: int = 3
     RETRY_MULTIPLIER: int = 1
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     DIFY_API_URL: str = "http://localhost:7200/api/v1"
     DIFY_API_KEY: str | None = None
     DIFY_DATASET_API_KEY: str | None = None
-    DIFY_TIMEOUT: int = 120
+    DIFY_TIMEOUT: int = 25  # Must be < per-provider timeout (30s) to avoid blocking fallback
 
     USE_OS_MODELS: bool = True
     WHISPER_MODEL_SIZE: str = "base"
