@@ -38,7 +38,7 @@ class CloakBrowserScanner(DiscoveryScannerBase):
 
     def __init__(
         self,
-        scraper_url: str = "http://discovery-scraper:8010",
+        scraper_url: str = "http://cloakbrowser:8010",
         timeout: float = 45.0,
         platform: str = "youtube",
     ):
