@@ -239,12 +239,14 @@ async def _scrape_tiktok_inner(niche: str, region: str, max_results: int) -> lis
         logger.info(f"[TikTok] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        # Wait for video items to load
-        try:
-            await page.wait_for_selector('[data-e2e="search_video-item"]', timeout=15000)
-        except Exception:
-            await page.wait_for_selector('div[class*="DivItemContainer"]', timeout=10000)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in ['[data-e2e="search_video-item"]', 'div[class*="DivItemContainer"]', 'div[class*="video-card"]', 'a[href*="/video/"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Scroll to load more
         for _ in range(2):
@@ -347,11 +349,14 @@ async def _scrape_x_inner(niche: str, region: str, max_results: int) -> list[dic
         logger.info(f"[X] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        try:
-            await page.wait_for_selector('[data-testid="tweet"]', timeout=15000)
-        except Exception:
-            await page.wait_for_selector('article', timeout=10000)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in ['[data-testid="tweet"]', 'article', 'a[href*="/status/"]', '[data-testid="tweetText"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Scroll to load more
         for _ in range(2):
@@ -447,11 +452,14 @@ async def _scrape_instagram_inner(niche: str, region: str, max_results: int) -> 
         logger.info(f"[Instagram] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        try:
-            await page.wait_for_selector("article", timeout=15000)
-        except Exception:
-            await asyncio.sleep(5)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in ["article", 'a[href*="/reel/"]', 'a[href*="/p/"]', 'img[alt]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Scroll to load more
         for _ in range(2):
@@ -531,11 +539,14 @@ async def _scrape_facebook_inner(niche: str, region: str, max_results: int) -> l
         logger.info(f"[Facebook] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        try:
-            await page.wait_for_selector('[role="article"]', timeout=15000)
-        except Exception:
-            await asyncio.sleep(5)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in ['[role="article"]', 'a[href*="/watch/"]', 'a[href*="/videos/"]', 'div[data-pagelet]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Scroll to load more
         for _ in range(2):
@@ -614,11 +625,14 @@ async def _scrape_linkedin_inner(niche: str, region: str, max_results: int) -> l
         logger.info(f"[LinkedIn] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        try:
-            await page.wait_for_selector(".feed-shared-update-v2", timeout=15000)
-        except Exception:
-            await asyncio.sleep(5)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in [".feed-shared-update-v2", "article", 'a[href*="/feed/update/"]', 'a[href*="linkedin.com/posts/"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Scroll to load more
         for _ in range(2):
@@ -706,11 +720,14 @@ async def _scrape_reddit_inner(niche: str, region: str, max_results: int) -> lis
         logger.info(f"[Reddit] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        try:
-            await page.wait_for_selector('shreddit-post', timeout=15000)
-        except Exception:
-            await page.wait_for_selector('[data-testid="post-container"]', timeout=10000)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in ['shreddit-post', '[data-testid="post-container"]', 'a[href*="/comments/"]', '[slot="post"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Scroll to load more
         for _ in range(2):
@@ -795,11 +812,14 @@ async def _scrape_twitch_inner(niche: str, region: str, max_results: int) -> lis
         logger.info(f"[Twitch] Scraping: {url}")
 
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        try:
-            await page.wait_for_selector('[data-a-target="search-result"]', timeout=15000)
-        except Exception:
-            await asyncio.sleep(5)
-        await asyncio.sleep(2)
+        # Wait for page to load - try multiple selectors
+        for selector in ['[data-a-target="search-result"]', '.search-result', 'a[href*="/videos/"]', 'a[href*="/clip/"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=5000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
 
         # Get search results
         items = await page.query_selector_all('[data-a-target="search-result"]')
