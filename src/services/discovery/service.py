@@ -974,22 +974,34 @@ class DiscoveryService:
                             candidates.append(lc)
                             seen_urls.add(lc.source_uri)
 
-                # 3. CloakBrowser Direct Fallback (when DB + live scanners return nothing)
-                if query and len(candidates) == 0:
-                    logger.info(
-                        f"[Discovery] All sources empty for '{query}', invoking CloakBrowser directly..."
+                # 3. CloakBrowser Direct Fallback — run when no CloakBrowser results present
+                #    (DB may have results from other scanners, but user expects live CloakBrowser data)
+                if query:
+                    has_cloak_results = any(
+                        c.metadata.get("source") == "cloakbrowser" or
+                        c.platform.lower() in ("cloakyoutube", "cloaktiktok", "cloakweb")
+                        for c in candidates
                     )
-                    try:
-                        scraper = CloakBrowserScanner()
-                        cloak_results = await scraper.scan_trends(query, region=region)
-                        if cloak_results:
-                            candidates.extend(cloak_results)
-                            await self._persist_candidates_batch(cloak_results, query, region)
-                            logger.info(
-                                f"[Discovery] CloakBrowser returned {len(cloak_results)} candidates for '{query}'"
-                            )
-                    except Exception as cloak_err:
-                        logger.warning(f"[Discovery] CloakBrowser direct fallback failed: {cloak_err}")
+                    if not has_cloak_results:
+                        logger.info(
+                            f"[Discovery] No CloakBrowser results for '{query}', invoking directly..."
+                        )
+                        try:
+                            scraper = CloakBrowserScanner()
+                            cloak_results = await scraper.scan_trends(query, region=region)
+                            if cloak_results:
+                                # Deduplicate and merge
+                                seen_urls = {c.source_uri for c in candidates}
+                                for cr in cloak_results:
+                                    if cr.source_uri not in seen_urls:
+                                        candidates.append(cr)
+                                        seen_urls.add(cr.source_uri)
+                                await self._persist_candidates_batch(cloak_results, query, region)
+                                logger.info(
+                                    f"[Discovery] CloakBrowser returned {len(cloak_results)} candidates for '{query}'"
+                                )
+                        except Exception as cloak_err:
+                            logger.warning(f"[Discovery] CloakBrowser direct fallback failed: {cloak_err}")
 
                 return candidates[:limit]
             except Exception as e:
