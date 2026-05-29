@@ -73,8 +73,7 @@ function DiscoveryContent() {
         
         setActionLogs((prev: string[]) => [`[ANALYSIS] Initiating deep analysis: ${candidate.title.slice(0, 30)}...`, ...prev]);
         
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/analyze`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/discovery/analyze`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
@@ -155,8 +154,7 @@ function DiscoveryContent() {
         
         setActionLogs((prev: string[]) => [`[CREATE] Creating video from analysis task ${taskId}...`, ...prev]);
         
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/analyze/${taskId}/create-video`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/discovery/analyze/${taskId}/create-video`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
@@ -236,8 +234,7 @@ function DiscoveryContent() {
     const fetchAlerts = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/alerts`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/discovery/alerts`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -253,8 +250,7 @@ function DiscoveryContent() {
     const fetchIntel = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/insights/${encodeURIComponent(activeNiche)}`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/discovery/insights/${encodeURIComponent(activeNiche)}`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {

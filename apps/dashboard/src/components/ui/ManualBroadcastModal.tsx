@@ -42,8 +42,7 @@ export const ManualBroadcastModal: React.FC<ManualBroadcastModalProps> = ({
         if (!token) return;
 
         setIsSubmitting(true);
-        await withRealFallback(
-            () => fetch(`${API_BASE}/publish/post`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/publish/post`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -55,7 +54,8 @@ export const ManualBroadcastModal: React.FC<ManualBroadcastModalProps> = ({
                     niche: niche,
                     account_id: selectedAccount,
                     inject_monetization: injectMonetization
-                })
+                }),
+                signal
             }),
             {
                 fallback: null,

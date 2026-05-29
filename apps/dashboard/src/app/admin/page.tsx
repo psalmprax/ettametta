@@ -84,20 +84,16 @@ export default function AdminSettingsPage() {
 
         setIsLoading(true);
         await Promise.all([
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/settings/system`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/settings/system`, { headers }),
                 { fallback: {}, onSuccess: (data) => setSettings(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/security/status`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/security/status`, { headers }),
                 { fallback: null, onSuccess: (data) => setSecurityStatus(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/admin/system/status`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/admin/system/status`, { headers }),
                 { fallback: null, onSuccess: (data) => setSystemStatus(data) }
             ),
-            withRealFallback<any[]>(
-                () => fetch(`${API_BASE}/admin/audits`, { headers }),
+            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/admin/audits`, { headers }),
                 { fallback: [], onSuccess: (data) => setAdminAudits(data) }
             )
         ]);
@@ -116,8 +112,7 @@ export default function AdminSettingsPage() {
         const token = await getAuthToken();
         if (!token) return;
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/settings/system`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/settings/system`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify(settings)

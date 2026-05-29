@@ -71,12 +71,10 @@ export default function ABTestingStudio() {
 
         setIsLoading(true);
         await Promise.all([
-            withRealFallback<{ active_tests: ABTest[] }>(
-                () => fetch(`${API_BASE}/ab-testing/tests/active`, { headers }),
+            withRealFallback<{ active_tests: ABTest[] }>((signal) => fetch(`${API_BASE}/ab-testing/tests/active`, { headers }),
                 { fallback: { active_tests: [] }, onSuccess: (data) => setActiveTests(data.active_tests) }
             ),
-            withRealFallback<{ completed_tests: ABTest[] }>(
-                () => fetch(`${API_BASE}/ab-testing/tests/completed`, { headers }),
+            withRealFallback<{ completed_tests: ABTest[] }>((signal) => fetch(`${API_BASE}/ab-testing/tests/completed`, { headers }),
                 { fallback: { completed_tests: [] }, onSuccess: (data) => setCompletedTests(data.completed_tests) }
             )
         ]);
@@ -89,8 +87,7 @@ export default function ABTestingStudio() {
         const headers = { Authorization: `Bearer ${token}` };
 
         setLogs((prev: string[]) => [`[ANALYSIS] Pulling deep metrics for Node: ${testId}`, ...prev]);
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/ab-testing/test/${testId}`, { headers }),
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/test/${testId}`, { headers }),
             { 
                 fallback: null, 
                 onSuccess: (data) => {
@@ -118,8 +115,7 @@ export default function ABTestingStudio() {
         if (!token) return;
 
         setLogs((prev: string[]) => [`[WINNER] Calculating statistical significance...`, ...prev]);
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/ab-testing/test/${testId}/determine-winner`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/test/${testId}/determine-winner`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -147,8 +143,7 @@ export default function ABTestingStudio() {
         if (!token) return;
 
         setLogs((prev: string[]) => [`[EVOLUTION] Triggering Flywheel Neural Evolution...`, ...prev]);
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/ab-testing/evolution/${parentId}`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/evolution/${parentId}`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",

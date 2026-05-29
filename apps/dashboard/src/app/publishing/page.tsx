@@ -78,12 +78,13 @@ export default function PublishingPage() {
     const handleUnlink = async (id: string) => {
         setIsDeploying(true);
         await withRealFallback(
-            async () => {
+            async (signal) => {
                 const token = await getAuthToken();
                 if (!token) return;
                 return fetch(`${API_BASE}/publish/account/${id}`, {
                     method: "DELETE",
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
+                    signal
                 });
             },
             {
@@ -106,8 +107,7 @@ export default function PublishingPage() {
 
         setActionLogs((prev: string[]) => [`[RETRY] Attempting to republish: ${contentId}...`, ...prev]);
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/publish/retry/${contentId}`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/publish/retry/${contentId}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -134,8 +134,7 @@ export default function PublishingPage() {
 
         setActionLogs((prev: string[]) => [`[SCHEDULE] Cancelling scheduled post: ${scheduleId}...`, ...prev]);
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/publish/schedule/${scheduleId}`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/publish/schedule/${scheduleId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -160,8 +159,7 @@ export default function PublishingPage() {
         if (!token) return;
         setActionLogs((prev: string[]) => [`[ACTION] Triggering Autonomous Broadcast Pattern...`, ...prev]);
         
-        await withRealFallback(
-            () => fetch(`${API_BASE}/publish/auto-broadcast`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/publish/auto-broadcast`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -181,24 +179,19 @@ export default function PublishingPage() {
         const headers = { Authorization: `Bearer ${token}` };
         
         await Promise.all([
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/accounts`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/publish/accounts`, { headers }),
                 { fallback: [], onSuccess: (data) => setAccounts(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/history`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/publish/history`, { headers }),
                 { fallback: [], onSuccess: (data) => setHistory(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/jobs`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/publish/jobs`, { headers }),
                 { fallback: [], onSuccess: (data) => setJobs(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/scheduled`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/publish/scheduled`, { headers }),
                 { fallback: [], onSuccess: (data) => setScheduledPosts(data) }
             ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/schedule/suggested-times?count=5`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/publish/schedule/suggested-times?count=5`, { headers }),
                 { fallback: [], onSuccess: (data) => setSuggestedTimes(data?.suggestions || []) }
             ),
         ]);

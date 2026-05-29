@@ -68,8 +68,7 @@ export default function KnowledgePage() {
         if (!token) return;
 
         setIsLoadingStats(true);
-        await withRealFallback<KnowledgeStats | null>(
-            () => fetch(`${API_BASE}/knowledge/stats`, {
+        await withRealFallback<KnowledgeStats | null>((signal) => fetch(`${API_BASE}/knowledge/stats`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -103,8 +102,7 @@ export default function KnowledgePage() {
             return;
         }
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/knowledge/ingest`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/knowledge/ingest`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -135,8 +133,7 @@ export default function KnowledgePage() {
         const token = await getAuthToken();
         if (!token) return;
 
-        await withRealFallback<SearchResult[]>(
-            () => fetch(`${API_BASE}/knowledge/query`, {
+        await withRealFallback<SearchResult[]>((signal) => fetch(`${API_BASE}/knowledge/query`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

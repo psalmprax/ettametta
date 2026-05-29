@@ -48,8 +48,7 @@ function DashboardContent() {
     if (!token) return;
     const headers = { Authorization: `Bearer ${token}` };
 
-    await withRealFallback<any[]>(
-      () => fetch(`${API_BASE}/publish/history`, { headers }),
+    await withRealFallback<any[]>((signal) => fetch(`${API_BASE}/publish/history`, { headers }),
       { fallback: [], onSuccess: (data) => data && setActivityFeed(data.slice(0, 10)) }
     );
   }, []);

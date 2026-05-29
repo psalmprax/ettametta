@@ -66,8 +66,7 @@ export default function VideoEditorPage() {
         setIsGenerating(true);
         const token = await getAuthToken();
         
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/script`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/no-face/script`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -97,8 +96,7 @@ export default function VideoEditorPage() {
         setIsGenerating(true);
         const token = await getAuthToken();
         
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/launch-cinema`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/no-face/launch-cinema`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",

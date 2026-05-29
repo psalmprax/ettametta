@@ -63,8 +63,7 @@ function PersonaContent() {
         const token = await getAuthToken();
         if (!token) return;
         setIsLoading(true);
-        await withRealFallback<Persona[]>(
-            () => fetch(`${API_BASE}/persona/list`, {
+        await withRealFallback<Persona[]>((signal) => fetch(`${API_BASE}/persona/list`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -99,8 +98,7 @@ function PersonaContent() {
             formData.append("reference_image_uri", newPersonaImageUri.trim());
         }
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/persona/create?name=${encodeURIComponent(newPersonaName.trim())}${newPersonaImageUri.trim() ? `&reference_image_uri=${encodeURIComponent(newPersonaImageUri.trim())}` : ""}`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/persona/create?name=${encodeURIComponent(newPersonaName.trim())}${newPersonaImageUri.trim() ? `&reference_image_uri=${encodeURIComponent(newPersonaImageUri.trim())}` : ""}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -128,8 +126,7 @@ function PersonaContent() {
         const token = await getAuthToken();
         if (!token) return;
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/persona/${personaId}`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/persona/${personaId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -158,8 +155,7 @@ function PersonaContent() {
         const token = await getAuthToken();
         if (!token) { setIsGenerating(null); return; }
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/persona/generate`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/persona/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({

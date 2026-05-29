@@ -45,12 +45,10 @@ export default function AuditsPage() {
 
         if (activeTab === "security") {
             await Promise.all([
-                withRealFallback<any>(
-                    () => fetch(`${API_BASE}/security/status`, { headers }),
+                withRealFallback<any>((signal) => fetch(`${API_BASE}/security/status`, { headers }),
                     { fallback: null, onSuccess: (data) => setSecurityStatus(data) }
                 ),
-                withRealFallback<any[]>(
-                    () => fetch(`${API_BASE}/security/events`, { headers }),
+                withRealFallback<any[]>((signal) => fetch(`${API_BASE}/security/events`, { headers }),
                     { fallback: [], onSuccess: (data) => setSecurityEvents(data) }
                 )
             ]);
@@ -64,8 +62,7 @@ export default function AuditsPage() {
         if (!token) return;
         setActionLogs(prev => [`[ACTION] Triggering Red Team Security Audit...`, ...prev]);
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/security/scan`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/security/scan`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -89,8 +86,7 @@ export default function AuditsPage() {
         if (!token) return;
         setActionLogs(prev => [`[ACTION] Triggering Bias Neutrality Scan...`, ...prev]);
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/security/bias-scan`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/security/bias-scan`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
@@ -114,8 +110,7 @@ export default function AuditsPage() {
         if (!token) return;
         setActionLogs(prev => [`[ACTION] Dispatched compliance audit for ${platform}...`, ...prev]);
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/agent/account-audit`, {
+        await withRealFallback<any>((signal) => fetch(`${API_BASE}/agent/account-audit`, {
                 method: "POST",
                 headers: { 
                     "Authorization": `Bearer ${token}`,

@@ -83,8 +83,7 @@ export default function SettingsPage() {
         setIsLoading(true);
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback(
-            () => fetch(`${API_BASE}/settings/`, { headers: { Authorization: `Bearer ${token}` } }),
+        await withRealFallback((signal) => fetch(`${API_BASE}/settings/`, { headers: { Authorization: `Bearer ${token}` }, signal }),
             { fallback: null, onSuccess: (data: any) => reset(data) }
         );
         setIsLoading(false);
@@ -106,11 +105,11 @@ export default function SettingsPage() {
             category: "api_key"
         }));
 
-        await withRealFallback(
-            () => fetch(`${API_BASE}/settings/user`, {
+        await withRealFallback((signal) => fetch(`${API_BASE}/settings/user`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal
             }),
             {
                 fallback: null,
