@@ -97,7 +97,7 @@ class BotManager:
 
             self.api_circuit_breaker.record_failure()
             logger.error(f"Failed to fetch users: {response.status_code}")
-            return []
+            return None
 
         except Exception as e:
             self.api_circuit_breaker.record_failure()
@@ -199,8 +199,11 @@ class BotManager:
         for attempt in range(max_retries):
             try:
                 users = await self._fetch_users_with_bots()
-                if users:
-                    self._start_user_bots(users)
+                if users is not None:
+                    if users:
+                        self._start_user_bots(users)
+                    else:
+                        logger.info("No users with Telegram bots configured")
                     break
 
                 logger.error(
