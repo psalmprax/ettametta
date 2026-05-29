@@ -51,6 +51,8 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 | FastAPI + Next.js Stack | Modern, scalable full-stack architecture | Development velocity and performance |
 | UUID-v4 Identifiers | Migrate from integer IDs to UUID strings for all entities | Production-grade security, scalability and cross-service ID consistency |
 | Semantic Hardening | Global type normalization, path dynamic lookup, and docstring alignment | Industrial-grade resilience, portability, and type safety |
+| Skills-First Debugging | 14+ operational skills in `.claude/skills/` for targeted diagnostics | Faster root-cause analysis, reduced context switching |
+| Audit-Fix-Commit Flow | Quick triage → fix → commit for code quality issues | Higher velocity on hardening work |
 
 ## Context
 
@@ -88,5 +90,5 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-08 after project review*</content>
+*Last updated: 2026-05-29 — Phase 9 Enterprise Hardening, skill-building initiative*</content>
 <parameter name="filePath">.planning/PROJECT.md
