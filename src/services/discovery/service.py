@@ -168,6 +168,23 @@ class DiscoveryService:
             if not all_candidates:
                 all_candidates = await self._fetch_swarm_fallback(niche)
 
+            # 4.5. CloakBrowser Direct Fallback (bypass cache, last resort)
+            if not all_candidates:
+                logger.info(
+                    f"[Discovery] All sources empty for '{niche}', invoking CloakBrowser directly..."
+                )
+                try:
+                    scraper = CloakBrowserScanner()
+                    cloak_results = await scraper.scan_trends(niche, region=region)
+                    if cloak_results:
+                        all_candidates.extend(cloak_results)
+                        await self._persist_candidates_batch(cloak_results, niche, region)
+                        logger.info(
+                            f"[Discovery] CloakBrowser direct fallback returned {len(cloak_results)} candidates"
+                        )
+                except Exception as cloak_err:
+                    logger.warning(f"[Discovery] CloakBrowser direct fallback failed: {cloak_err}")
+
             # 5. Quality auditing
             await self._audit_candidates_quality(all_candidates)
 
@@ -956,6 +973,23 @@ class DiscoveryService:
                         if lc.source_uri not in seen_urls:
                             candidates.append(lc)
                             seen_urls.add(lc.source_uri)
+
+                # 3. CloakBrowser Direct Fallback (when DB + live scanners return nothing)
+                if query and len(candidates) == 0:
+                    logger.info(
+                        f"[Discovery] All sources empty for '{query}', invoking CloakBrowser directly..."
+                    )
+                    try:
+                        scraper = CloakBrowserScanner()
+                        cloak_results = await scraper.scan_trends(query, region=region)
+                        if cloak_results:
+                            candidates.extend(cloak_results)
+                            await self._persist_candidates_batch(cloak_results, query, region)
+                            logger.info(
+                                f"[Discovery] CloakBrowser returned {len(cloak_results)} candidates for '{query}'"
+                            )
+                    except Exception as cloak_err:
+                        logger.warning(f"[Discovery] CloakBrowser direct fallback failed: {cloak_err}")
 
                 return candidates[:limit]
             except Exception as e:
