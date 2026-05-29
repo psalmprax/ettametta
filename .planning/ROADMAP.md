@@ -127,6 +127,14 @@
 - [x] 09-01-PLAN.md — Unified Observability and Request Tracing
 - [ ] 09-02-PLAN.md — Verify enterprise infrastructure capabilities
 
+**Recent Hardening Work (2026-04-17 to 2026-05-29):**
+- 14+ operational/debugging skills created (ai-provider-debug, celery-monitor, cloakbrowser, content-discovery, db-performance, dep-audit, docker-compose, fastapi-debug, nexus-engine, redis-debug, remotion-debug, security-sentinel, social-api, storage-lifecycle, video-pipeline, voiceover-tts)
+- OpenClaw hardened: asyncio offload, PEP 8 compliance, type safety, GC management
+- AI Gateway: cognitive complexity reduced, temp file hardening
+- CloakBrowser: multi-platform stealth scraping (Instagram, Facebook, X, LinkedIn)
+- Semantic hardening: global type normalization, placeholder code elimination
+- System-wide skill audit completed
+
 **UI hint**: yes
 
 | Phase | Plans Complete | Status | Completed |
@@ -136,10 +144,10 @@
 | 3. Basic Video Generation | 5/5 | Complete | 2026-04-15 |
 | 4. Advanced Video Generation | 0/1 | In Progress | - |
 | 5. Multi-Platform Publishing | 1/2 | In Progress | - |
-| 6. Automated Scheduling Publishing | 3/3 | Complete | - |
+| 6. Automated Scheduling Publishing | 3/3 | Complete | 2026-04-17 |
 | 7. Monetization | 1/2 | In Progress | - |
 | 8. Analytics | 1/2 | In Progress | - |
-| 9. Enterprise Hardening | 1/2 | In Progress | - |
+| 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
 
 ---
-*Roadmap created: 2026-04-08*
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29*
