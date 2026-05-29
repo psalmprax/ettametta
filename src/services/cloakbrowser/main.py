@@ -24,7 +24,7 @@ logger = logging.getLogger("cloakbrowser")
 _browser = None
 _playwright = None
 _browser_lock = asyncio.Lock()
-_scrape_semaphore = asyncio.Semaphore(2)  # Max 2 concurrent scrapes
+_scrape_semaphore = asyncio.Semaphore(3)  # Max 3 concurrent scrapes
 
 async def get_browser():
     """Get or create browser with auto-recovery on crash."""
@@ -97,6 +97,48 @@ window.chrome = {runtime: {}};
 Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
 """
 
+# ── Noise filtering ──────────────────────────────────────────
+
+NOISE_TITLES = {
+    "sign up", "log in", "login", "sign in", "register", "create account",
+    "terms of service", "terms", "privacy policy", "privacy", "cookie policy",
+    "cookies", "about", "about us", "about me", "careers", "jobs", "blog",
+    "help", "support", "faq", "contact", "contact us", "advertise",
+    "download", "download the app", "get the app", "install",
+    "notifications", "settings", "profile", "explore", "following",
+    "for you", "home", "search", "discover", "reels", "shorts",
+    "trending", "popular", "live", "shop", "menu", "more",
+    "sign up with phone or email",
+    "terms of service", "privacy policy", "community guidelines",
+}
+
+NOISE_URL_PATTERNS = [
+    "/about", "/careers", "/blog", "/help", "/support", "/faq",
+    "/terms", "/privacy", "/cookie", "/legal", "/contact",
+    "/download", "/install", "/settings", "/notifications",
+    "/accounts/", "/explore/", "/search", "/directory",
+]
+
+def is_noise(title: str, url: str = "") -> bool:
+    """Check if a scraped item is noise (nav links, footers, etc.)."""
+    t = title.strip().lower()
+    # Skip empty or very short titles
+    if len(t) < 8:
+        return True
+    # Skip exact noise matches
+    if t in NOISE_TITLES:
+        return True
+    # Skip titles that are just common nav words
+    if len(t.split()) <= 2 and t in NOISE_TITLES:
+        return True
+    # Skip URL patterns
+    if url:
+        url_lower = url.lower()
+        for pattern in NOISE_URL_PATTERNS:
+            if pattern in url_lower:
+                return True
+    return False
+
 async def new_stealth_context(browser):
     context = await browser.new_context(
         viewport={"width": 1920, "height": 1080},
@@ -155,7 +197,7 @@ async def _scrape_youtube_inner(niche: str, region: str, max_results: int) -> li
                 thumb_el = await item.query_selector("img")
                 thumbnail = await thumb_el.get_attribute("src") if thumb_el else ""
 
-                if video_id and title:
+                if video_id and title and not is_noise(title, href):
                     results.append({
                         "id": video_id,
                         "url": f"https://www.youtube.com/watch?v={video_id}",
@@ -171,7 +213,641 @@ async def _scrape_youtube_inner(niche: str, region: str, max_results: int) -> li
         logger.info(f"[YouTube] Found {len(results)} videos for {niche}")
     except Exception as e:
         logger.error(f"[YouTube] Scrape failed: {e}")
-        # Force browser restart on crash
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── TikTok scraper ────────────────────────────────────────────
+
+async def scrape_tiktok(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_tiktok_inner(niche, region, max_results)
+
+async def _scrape_tiktok_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.tiktok.com/search/video?q={query}"
+        logger.info(f"[TikTok] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        # Wait for video items to load
+        try:
+            await page.wait_for_selector('[data-e2e="search_video-item"]', timeout=15000)
+        except Exception:
+            await page.wait_for_selector('div[class*="DivItemContainer"]', timeout=10000)
+        await asyncio.sleep(2)
+
+        # Scroll to load more
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+
+        # Try multiple selector strategies
+        items = await page.query_selector_all('[data-e2e="search_video-item"]')
+        if not items:
+            items = await page.query_selector_all('div[class*="DivItemContainer"]')
+        if not items:
+            items = await page.query_selector_all('div[class*="video-card"]')
+
+        for item in items[:max_results * 2]:  # Extra to account for noise
+            try:
+                # Try to get video link
+                link_el = await item.query_selector('a[href*="/video/"]')
+                if not link_el:
+                    link_el = await item.query_selector('a[href*="tiktok.com"]')
+                if not link_el:
+                    continue
+
+                href = await link_el.get_attribute("href") or ""
+                if "/video/" not in href:
+                    continue
+
+                # Extract video ID from URL
+                vid_match = re.search(r'/video/(\d+)', href)
+                video_id = vid_match.group(1) if vid_match else ""
+                if not video_id:
+                    continue
+
+                # Get title/description
+                title_el = await item.query_selector('[data-e2e="search-card-desc"]')
+                if not title_el:
+                    title_el = await item.query_selector('p[class*="PDesc"]')
+                title = await title_el.inner_text() if title_el else ""
+                if not title:
+                    title = f"TikTok video {video_id}"
+
+                # Get author
+                author_el = await item.query_selector('[data-e2e="search-card-user-unique-id"]')
+                if not author_el:
+                    author_el = await item.query_selector('span[class*="SpanUniqueId"]')
+                author = await author_el.inner_text() if author_el else "Unknown"
+
+                # Get views
+                views_el = await item.query_selector('[data-e2e="search-card-like-container"]')
+                views_text = await views_el.inner_text() if views_el else "0"
+
+                # Get thumbnail
+                thumb_el = await item.query_selector('img')
+                thumbnail = await thumb_el.get_attribute("src") if thumb_el else ""
+
+                # Filter noise
+                if is_noise(title, href):
+                    continue
+
+                results.append({
+                    "id": video_id,
+                    "url": href if href.startswith("http") else f"https://www.tiktok.com{href}",
+                    "title": title.strip()[:200],
+                    "author": author.strip(),
+                    "views": views_text.strip(),
+                    "thumbnail": thumbnail,
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[TikTok] Skip item: {e}")
+                continue
+
+        logger.info(f"[TikTok] Found {len(results)} videos for {niche}")
+    except Exception as e:
+        logger.error(f"[TikTok] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── X (Twitter) scraper ───────────────────────────────────────
+
+async def scrape_x(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_x_inner(niche, region, max_results)
+
+async def _scrape_x_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://x.com/search?q={query}&f=live"
+        logger.info(f"[X] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            await page.wait_for_selector('[data-testid="tweet"]', timeout=15000)
+        except Exception:
+            await page.wait_for_selector('article', timeout=10000)
+        await asyncio.sleep(2)
+
+        # Scroll to load more
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+
+        # Get tweet articles
+        items = await page.query_selector_all('[data-testid="tweet"]')
+        if not items:
+            items = await page.query_selector_all('article')
+
+        for item in items[:max_results * 2]:
+            try:
+                # Get tweet link
+                link_el = await item.query_selector('a[href*="/status/"]')
+                if not link_el:
+                    continue
+                href = await link_el.get_attribute("href") or ""
+                if "/status/" not in href:
+                    continue
+
+                # Extract tweet ID
+                tid_match = re.search(r'/status/(\d+)', href)
+                tweet_id = tid_match.group(1) if tid_match else ""
+                if not tweet_id:
+                    continue
+
+                # Get tweet text
+                text_el = await item.query_selector('[data-testid="tweetText"]')
+                text = await text_el.inner_text() if text_el else ""
+                if not text or len(text.strip()) < 10:
+                    continue
+
+                # Get author
+                author_el = await item.query_selector('[data-testid="User-Name"]')
+                author_text = await author_el.inner_text() if author_el else ""
+                author = author_text.split("@")[-1].split("\n")[0].strip() if author_text else "Unknown"
+
+                # Get engagement
+                likes_el = await item.query_selector('[data-testid="like"]')
+                likes_text = await likes_el.inner_text() if likes_el else "0"
+                retweets_el = await item.query_selector('[data-testid="retweet"]')
+                retweets_text = await retweets_el.inner_text() if retweets_el else "0"
+
+                # Filter noise
+                if is_noise(text, href):
+                    continue
+
+                full_url = href if href.startswith("http") else f"https://x.com{href}"
+                results.append({
+                    "id": tweet_id,
+                    "url": full_url,
+                    "title": text.strip()[:200],
+                    "author": author,
+                    "views": "0",
+                    "likes": likes_text.strip(),
+                    "retweets": retweets_text.strip(),
+                    "thumbnail": "",
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[X] Skip item: {e}")
+                continue
+
+        logger.info(f"[X] Found {len(results)} tweets for {niche}")
+    except Exception as e:
+        logger.error(f"[X] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── Instagram scraper ─────────────────────────────────────────
+
+async def scrape_instagram(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_instagram_inner(niche, region, max_results)
+
+async def _scrape_instagram_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "").replace("+", "")
+        url = f"https://www.instagram.com/explore/tags/{query}/"
+        logger.info(f"[Instagram] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            await page.wait_for_selector("article", timeout=15000)
+        except Exception:
+            await asyncio.sleep(5)
+        await asyncio.sleep(2)
+
+        # Scroll to load more
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+
+        # Get reel/video links
+        links = await page.query_selector_all('a[href*="/reel/"]')
+        if not links:
+            links = await page.query_selector_all('a[href*="/p/"]')
+
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen:
+                    continue
+                seen.add(href)
+
+                # Extract shortcode
+                sc_match = re.search(r'/(?:reel|p)/([A-Za-z0-9_-]+)', href)
+                shortcode = sc_match.group(1) if sc_match else ""
+                if not shortcode:
+                    continue
+
+                # Get title from alt text or aria
+                img_el = await link.query_selector("img")
+                title = await img_el.get_attribute("alt") if img_el else ""
+                if not title or is_noise(title, href):
+                    title = f"Instagram Reel {shortcode}"
+
+                # Get thumbnail
+                thumbnail = await img_el.get_attribute("src") if img_el else ""
+
+                full_url = href if href.startswith("http") else f"https://www.instagram.com{href}"
+                results.append({
+                    "id": shortcode,
+                    "url": full_url,
+                    "title": title.strip()[:200],
+                    "author": "Unknown",
+                    "views": "0",
+                    "thumbnail": thumbnail,
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Instagram] Skip item: {e}")
+                continue
+
+        logger.info(f"[Instagram] Found {len(results)} reels for {niche}")
+    except Exception as e:
+        logger.error(f"[Instagram] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── Facebook scraper ──────────────────────────────────────────
+
+async def scrape_facebook(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_facebook_inner(niche, region, max_results)
+
+async def _scrape_facebook_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.facebook.com/watch/search/?q={query}"
+        logger.info(f"[Facebook] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            await page.wait_for_selector('[role="article"]', timeout=15000)
+        except Exception:
+            await asyncio.sleep(5)
+        await asyncio.sleep(2)
+
+        # Scroll to load more
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+
+        # Get video links
+        links = await page.query_selector_all('a[href*="/watch/"]')
+        if not links:
+            links = await page.query_selector_all('a[href*="/videos/"]')
+
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen:
+                    continue
+                seen.add(href)
+
+                # Extract video ID
+                vid_match = re.search(r'/watch/\?v=(\d+)', href)
+                if not vid_match:
+                    vid_match = re.search(r'/videos/(\d+)', href)
+                video_id = vid_match.group(1) if vid_match else ""
+                if not video_id:
+                    continue
+
+                # Get title
+                title_el = await link.query_selector("span")
+                title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href):
+                    title = f"Facebook Video {video_id}"
+
+                full_url = href if href.startswith("http") else f"https://www.facebook.com{href}"
+                results.append({
+                    "id": video_id,
+                    "url": full_url,
+                    "title": title.strip()[:200],
+                    "author": "Unknown",
+                    "views": "0",
+                    "thumbnail": "",
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Facebook] Skip item: {e}")
+                continue
+
+        logger.info(f"[Facebook] Found {len(results)} videos for {niche}")
+    except Exception as e:
+        logger.error(f"[Facebook] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── LinkedIn scraper ──────────────────────────────────────────
+
+async def scrape_linkedin(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_linkedin_inner(niche, region, max_results)
+
+async def _scrape_linkedin_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.linkedin.com/search/results/content/?keywords={query}"
+        logger.info(f"[LinkedIn] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            await page.wait_for_selector(".feed-shared-update-v2", timeout=15000)
+        except Exception:
+            await asyncio.sleep(5)
+        await asyncio.sleep(2)
+
+        # Scroll to load more
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+
+        # Get post articles
+        items = await page.query_selector_all(".feed-shared-update-v2")
+        if not items:
+            items = await page.query_selector_all("article")
+
+        for item in items[:max_results * 2]:
+            try:
+                # Get post link
+                link_el = await item.query_selector('a[href*="/feed/update/"]')
+                if not link_el:
+                    link_el = await item.query_selector('a[href*="linkedin.com/posts/"]')
+                if not link_el:
+                    continue
+
+                href = await link_el.get_attribute("href") or ""
+                if not href:
+                    continue
+
+                # Extract post ID
+                pid_match = re.search(r'(?:update/|posts/)([A-Za-z0-9_-]+)', href)
+                post_id = pid_match.group(1) if pid_match else hashlib.md5(href.encode()).hexdigest()[:12]
+
+                # Get text
+                text_el = await item.query_selector('.feed-shared-update-v2__description')
+                if not text_el:
+                    text_el = await item.query_selector('.feed-shared-text')
+                text = await text_el.inner_text() if text_el else ""
+                if not text or len(text.strip()) < 15:
+                    continue
+                if is_noise(text, href):
+                    continue
+
+                # Get author
+                author_el = await item.query_selector('.feed-shared-actor__name')
+                author = await author_el.inner_text() if author_el else "Unknown"
+
+                full_url = href if href.startswith("http") else f"https://www.linkedin.com{href}"
+                results.append({
+                    "id": post_id,
+                    "url": full_url,
+                    "title": text.strip()[:200],
+                    "author": author.strip(),
+                    "views": "0",
+                    "thumbnail": "",
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[LinkedIn] Skip item: {e}")
+                continue
+
+        logger.info(f"[LinkedIn] Found {len(results)} posts for {niche}")
+    except Exception as e:
+        logger.error(f"[LinkedIn] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── Reddit scraper ────────────────────────────────────────────
+
+async def scrape_reddit(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_reddit_inner(niche, region, max_results)
+
+async def _scrape_reddit_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.reddit.com/search/?q={query}&type=link&sort=relevance"
+        logger.info(f"[Reddit] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            await page.wait_for_selector('shreddit-post', timeout=15000)
+        except Exception:
+            await page.wait_for_selector('[data-testid="post-container"]', timeout=10000)
+        await asyncio.sleep(2)
+
+        # Scroll to load more
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+
+        # Get posts
+        items = await page.query_selector_all('shreddit-post')
+        if not items:
+            items = await page.query_selector_all('[data-testid="post-container"]')
+
+        for item in items[:max_results * 2]:
+            try:
+                # Get post link
+                href = await item.get_attribute("permalink") or ""
+                if not href:
+                    link_el = await item.query_selector('a[href*="/comments/"]')
+                    href = await link_el.get_attribute("href") if link_el else ""
+                if not href or "/comments/" not in href:
+                    continue
+
+                # Extract post ID
+                pid_match = re.search(r'/comments/([a-z0-9]+)/', href)
+                post_id = pid_match.group(1) if pid_match else ""
+
+                # Get title
+                title = await item.get_attribute("post-title") or ""
+                if not title:
+                    title_el = await item.query_selector('[data-testid="post-content"] h2')
+                    title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href):
+                    continue
+
+                # Get author
+                author = await item.get_attribute("author") or "Unknown"
+
+                # Get score
+                score = await item.get_attribute("score") or "0"
+
+                full_url = href if href.startswith("http") else f"https://www.reddit.com{href}"
+                results.append({
+                    "id": post_id,
+                    "url": full_url,
+                    "title": title.strip()[:200],
+                    "author": author.strip(),
+                    "views": score,
+                    "thumbnail": "",
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Reddit] Skip item: {e}")
+                continue
+
+        logger.info(f"[Reddit] Found {len(results)} posts for {niche}")
+    except Exception as e:
+        logger.error(f"[Reddit] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+# ── Twitch scraper ────────────────────────────────────────────
+
+async def scrape_twitch(niche: str, region: str = "US", max_results: int = 10) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_twitch_inner(niche, region, max_results)
+
+async def _scrape_twitch_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.twitch.tv/search?term={query}"
+        logger.info(f"[Twitch] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        try:
+            await page.wait_for_selector('[data-a-target="search-result"]', timeout=15000)
+        except Exception:
+            await asyncio.sleep(5)
+        await asyncio.sleep(2)
+
+        # Get search results
+        items = await page.query_selector_all('[data-a-target="search-result"]')
+        if not items:
+            items = await page.query_selector_all('.search-result')
+
+        for item in items[:max_results * 2]:
+            try:
+                # Get link
+                link_el = await item.query_selector("a")
+                href = await link_el.get_attribute("href") if link_el else ""
+                if not href:
+                    continue
+
+                # Get title
+                title_el = await item.query_selector('[data-a-target="search-result-title"]')
+                if not title_el:
+                    title_el = await item.query_selector("h3")
+                title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href):
+                    continue
+
+                # Extract ID from URL
+                item_id = hashlib.md5(href.encode()).hexdigest()[:12]
+
+                # Get channel name
+                channel_el = await item.query_selector('[data-a-target="search-result-channel"]')
+                channel = await channel_el.inner_text() if channel_el else "Unknown"
+
+                full_url = href if href.startswith("http") else f"https://www.twitch.tv{href}"
+                results.append({
+                    "id": item_id,
+                    "url": full_url,
+                    "title": title.strip()[:200],
+                    "author": channel.strip(),
+                    "views": "0",
+                    "thumbnail": "",
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Twitch] Skip item: {e}")
+                continue
+
+        logger.info(f"[Twitch] Found {len(results)} results for {niche}")
+    except Exception as e:
+        logger.error(f"[Twitch] Scrape failed: {e}")
         if "Target page, context or browser has been closed" in str(e):
             async with _browser_lock:
                 await _cleanup_browser()
@@ -234,7 +910,8 @@ async def _scrape_web_inner(
                 title = await link.inner_text()
                 title = title.strip() if title else ""
 
-                if not title or len(title) < 5:
+                # Apply noise filter
+                if is_noise(title, href):
                     continue
                 if href in seen_urls:
                     continue
@@ -247,12 +924,13 @@ async def _scrape_web_inner(
 
                 # Filter for content-like URLs
                 is_content = any(p in href for p in [
-                    "/watch", "/reel", "/shorts", "/video", "/post",
+                    "/watch", "/reel", "/shorts", "/video", "/post", "/clip",
                     "tiktok.com", "instagram.com", "facebook.com",
                     "x.com", "twitter.com", "linkedin.com",
+                    "reddit.com", "twitch.tv",
                 ])
 
-                if is_content or platform in ["tiktok", "instagram", "facebook", "x (twitter)", "linkedin"]:
+                if is_content or platform in ["tiktok", "instagram", "facebook", "x (twitter)", "linkedin", "reddit", "twitch"]:
                     item_id = hashlib.md5(href.encode()).hexdigest()[:12]
                     results.append({
                         "id": item_id,
@@ -271,7 +949,6 @@ async def _scrape_web_inner(
         logger.info(f"[Web:{platform}] Found {len(results)} items from {url}")
     except Exception as e:
         logger.error(f"[Web:{platform}] Scrape failed: {e}")
-        # Force browser restart on crash
         if "Target page, context or browser has been closed" in str(e):
             async with _browser_lock:
                 await _cleanup_browser()
@@ -289,7 +966,7 @@ async def lifespan(app: FastAPI):
     await close_browser()
     logger.info("[CloakBrowser] Shutting down")
 
-app = FastAPI(title="CloakBrowser", version="1.1.0", lifespan=lifespan)
+app = FastAPI(title="CloakBrowser", version="2.0.0", lifespan=lifespan)
 
 @app.get("/health")
 async def health():
@@ -319,6 +996,97 @@ async def scrape_youtube_endpoint(
         return {"success": True, "candidates": candidates}
     except Exception as e:
         logger.exception(f"[YouTube] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/tiktok")
+async def scrape_tiktok_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_tiktok(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[TikTok] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/x")
+async def scrape_x_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_x(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[X] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/instagram")
+async def scrape_instagram_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_instagram(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[Instagram] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/facebook")
+async def scrape_facebook_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_facebook(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[Facebook] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/linkedin")
+async def scrape_linkedin_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_linkedin(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[LinkedIn] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/reddit")
+async def scrape_reddit_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_reddit(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[Reddit] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/twitch")
+async def scrape_twitch_endpoint(
+    niche: str = Query(..., description="Search niche/query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(10, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_twitch(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[Twitch] Endpoint error: {e}")
         return {"success": False, "error": str(e), "candidates": []}
 
 @app.get("/scrape/web")

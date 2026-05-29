@@ -1,8 +1,8 @@
 """
-Cloak-Backed LinkedIn Scanner
+Cloak-Backed Twitch Scanner
 
 Uses CloakBrowser stealth engine as primary scraper with the existing
-httpx-based LinkedInScanner as fallback when the scraper service is unavailable.
+httpx-based TwitchScanner as fallback when the scraper service is unavailable.
 """
 
 import datetime
@@ -12,19 +12,19 @@ from typing import Optional
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
 from .cloak_scanner import CloakBrowserScanner
-from .linkedin_scanner import LinkedInScanner
+from .twitch_scanner import TwitchScanner
 
 logger = logging.getLogger(__name__)
 
 
-class CloakLinkedInScanner(DiscoveryScannerBase):
-    """LinkedIn scanner backed by CloakBrowser stealth engine with httpx fallback."""
+class CloakTwitchScanner(DiscoveryScannerBase):
+    """Twitch scanner backed by CloakBrowser stealth engine with httpx fallback."""
 
     def __init__(self, scraper_url: str = "http://cloakbrowser:8010"):
         self.cloak_engine = CloakBrowserScanner(
-            scraper_url=scraper_url, platform="linkedin"
+            scraper_url=scraper_url, platform="twitch"
         )
-        self.fallback_scanner = LinkedInScanner()
+        self.fallback_scanner = TwitchScanner()
 
     async def scan_trends(
         self,
@@ -33,21 +33,23 @@ class CloakLinkedInScanner(DiscoveryScannerBase):
         region: Optional[str] = None,
         **kwargs,
     ) -> list[ContentCandidate]:
+        # 1. Try CloakBrowser first (stealth Playwright)
         try:
             results = await self.cloak_engine.scan_platform(
-                "linkedin", niche, published_after=published_after, region=region
+                "twitch", niche, published_after=published_after, region=region
             )
             if results:
                 logger.info(
-                    f"[CloakLinkedIn] Stealth scan returned {len(results)} candidates for '{niche}'"
+                    f"[CloakTwitch] Stealth scan returned {len(results)} candidates for '{niche}'"
                 )
                 return results
         except Exception as e:
-            logger.warning(f"[CloakLinkedIn] Stealth scan failed: {e}")
+            logger.warning(f"[CloakTwitch] Stealth scan failed: {e}")
 
-        logger.info(f"[CloakLinkedIn] Falling back to httpx scraper for '{niche}'")
+        # 2. Fall back to existing HTTP scraper
+        logger.info(f"[CloakTwitch] Falling back to httpx scraper for '{niche}'")
         return await self.fallback_scanner.scan_trends(
-            niche, published_after=published_after
+            niche, published_after=published_after, region=region
         )
 
     async def close(self):
