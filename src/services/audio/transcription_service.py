@@ -21,7 +21,8 @@ class TranscriptionService:
         self.compute_type = settings.WHISPER_COMPUTE_TYPE
         self.timeout = settings.TRANSCRIPTION_TIMEOUT
         self._model = None
-        
+        self._download_failed = False  # Prevent repeated download attempts
+
         # Remote offloading configuration
         self.remote_url = os.getenv("RENDER_NODE_URL")
         if self.remote_url:
@@ -30,29 +31,35 @@ class TranscriptionService:
     def _get_model(self, force_size: str | None = None):
         """Lazy loading of the Faster-Whisper model with fallback support."""
         size = force_size or self.model_size
-        
+
         # If we already have a model and it's the right size, return it
         if self._model is not None and getattr(self, "_current_size", None) == size:
             return self._model
 
+        # If a previous download attempt failed, don't keep retrying
+        if self._download_failed:
+            return None
+
         try:
             from faster_whisper import WhisperModel
-            logger.info(f"🚀 [TranscriptionService] Loading Faster-Whisper model ({size}) on {self.device}")
+            logger.info(f"[TranscriptionService] Loading Faster-Whisper model ({size}) on {self.device}")
             self._model = WhisperModel(
-                size, 
-                device=self.device, 
+                size,
+                device=self.device,
                 compute_type=self.compute_type
             )
             self._current_size = size
             return self._model
         except ImportError:
-            logger.exception("[TranscriptionService] faster-whisper not installed. Local transcription disabled.")
+            logger.warning("[TranscriptionService] faster-whisper not installed. Local transcription disabled.")
+            self._download_failed = True
             return None
         except Exception as e:
-            logger.exception(f"[TranscriptionService] Failed to load model {size}: {e}")
-            if size != "tiny":
+            logger.warning(f"[TranscriptionService] Failed to load model {size}: {e}")
+            if size != "tiny" and not self._download_failed:
                 logger.warning("[TranscriptionService] Attempting fallback to 'tiny' model...")
                 return self._get_model(force_size="tiny")
+            self._download_failed = True
             return None
 
     async def transcribe(self, audio_path: str, language: str | None = None) -> Dict[str, Any]:

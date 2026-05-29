@@ -99,7 +99,7 @@ class IntelligenceHub:
             if provider:
                 span.set_attribute("provider_override", provider)
 
-            actual_timeout = timeout_seconds or settings.LLM_TIMEOUT * 10
+            actual_timeout = timeout_seconds or settings.LLM_TIMEOUT * 2
             try:
                 result = await asyncio.wait_for(
                     self._chat_inner(
@@ -157,6 +157,9 @@ class IntelligenceHub:
         candidates = list(dict.fromkeys(candidates))
         logger.info(f"[{request_id}] LLM Candidates: {candidates}")
 
+        # Per-provider timeout: no single provider can block longer than this
+        per_provider_timeout = 30  # seconds
+
         for p in candidates:
             if p not in self.breakers:
                 logger.warning(f"Provider {p} not in breakers, skipping")
@@ -189,14 +192,24 @@ class IntelligenceHub:
                 logger.info(f"Attempting provider {p} for request {request_id}")
                 with tracer.start_as_current_span(f"IntelligenceHub._call_{p}") as subspan:
                     subspan.set_attribute("provider", p)
-                    result = await self._call_provider(
-                        p, prompt, system_prompt, request_id, json_mode, rag_context
+                    result = await asyncio.wait_for(
+                        self._call_provider(
+                            p, prompt, system_prompt, request_id, json_mode, rag_context
+                        ),
+                        timeout=per_provider_timeout,
                     )
                     self.breakers[p].record_success()
                     # Reset health on success
                     self.provider_health[p]["errors"] = 0
                     self.provider_health[p]["status"] = "healthy"
                     return {**result, "request_id": request_id, "provider": p}
+            except asyncio.TimeoutError:
+                logger.warning(f"Provider {p} timed out after {per_provider_timeout}s for request {request_id}")
+                self.breakers[p].record_failure()
+                self.provider_health[p]["errors"] += 1
+                self.provider_health[p]["last_error"] = time.time()
+                if self.provider_health[p]["errors"] >= 3:
+                    self.provider_health[p]["status"] = "degraded"
             except Exception as e:
                 logger.debug(f"Provider {p} failed: {e}")
                 self.breakers[p].record_failure()
