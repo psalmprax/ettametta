@@ -484,7 +484,7 @@ def generate_video_task(
                 logger.error(
                     f"[GenerateVideo] Synthesis failed permanently after {self.max_retries + 1} attempts: {e}"
                 )
-                await update_job(
+                update_job(
                     status=SystemJobStatus.FAILED_SYNTHESIS_ERROR,
                     progress=0,
                     error_message=f"Video synthesis failed after {self.max_retries + 1} attempts: {e}",
