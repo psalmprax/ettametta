@@ -414,6 +414,10 @@ services:
     image: ettametta-cloakbrowser
     ports:
       - "8010:8010"
+    networks:
+      default:
+        aliases:
+          - discovery-scraper
     deploy:
       resources:
         limits:
