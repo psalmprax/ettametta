@@ -484,5 +484,125 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         else:
             logging.info(f"[FFmpegTransformer] Cinematic filters applied successfully to {output_path}")
 
+    def normalize_loudness(self, input_path: str, output_path: str, target_lufs: float = -14.0) -> bool:
+        """
+        Normalize audio loudness to target LUFS using FFmpeg loudnorm filter.
+        YouTube/TikTok/Instagram all require -14 LUFS.
+        Two-pass for accurate normalization.
+        """
+        if not os.path.exists(input_path):
+            logger.error(f"[FFmpegTransformer] Input not found: {input_path}")
+            return False
+
+        # Pass 1: Measure current loudness
+        cmd_measure = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-af", f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11:print_format=json",
+            "-f", "null", "-"
+        ]
+        result = subprocess.run(cmd_measure, capture_output=True, text=True, timeout=120)
+
+        # Parse loudnorm JSON output from stderr
+        import json as _json
+        measured = {}
+        try:
+            # Find JSON block in stderr
+            stderr = result.stderr
+            json_start = stderr.rfind("{")
+            json_end = stderr.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                measured = _json.loads(stderr[json_start:json_end])
+        except Exception as e:
+            logger.warning(f"[FFmpegTransformer] Could not parse loudnorm output: {e}")
+
+        if not measured:
+            # Fallback: single-pass normalization
+            logger.info("[FFmpegTransformer] Using single-pass loudness normalization")
+            cmd = [
+                "ffmpeg", "-y", "-i", input_path,
+                "-af", f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                output_path
+            ]
+            return self._run_cmd(cmd)
+
+        # Pass 2: Apply measured values for accurate normalization
+        measured_i = measured.get("input_i", "-24.0")
+        measured_tp = measured.get("input_tp", "0.0")
+        measured_lra = measured.get("input_lra", "7.0")
+        measured_thresh = measured.get("input_thresh", "-34.0")
+
+        cmd = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-af", (
+                f"loudnorm=I={target_lufs}:TP=-1.5:LRA=11"
+                f":measured_I={measured_i}:measured_TP={measured_tp}"
+                f":measured_LRA={measured_lra}:measured_thresh={measured_thresh}"
+                f":linear=true:print_format=summary"
+            ),
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            output_path
+        ]
+        success = self._run_cmd(cmd)
+        if success:
+            logger.info(f"[FFmpegTransformer] Loudness normalized to {target_lufs} LUFS")
+        return success
+
+    def trim_silence(self, input_path: str, output_path: str, threshold_db: float = -35.0, min_duration: float = 0.3) -> bool:
+        """
+        Remove silence from audio/video using FFmpeg silencedetect.
+        Useful for trimming dead air from voiceovers.
+        """
+        if not os.path.exists(input_path):
+            logger.error(f"[FFmpegTransformer] Input not found: {input_path}")
+            return False
+
+        # Detect silence periods
+        cmd_detect = [
+            "ffmpeg", "-i", input_path,
+            "-af", f"silencedetect=noise={threshold_db}dB:d={min_duration}",
+            "-f", "null", "-"
+        ]
+        result = subprocess.run(cmd_detect, capture_output=True, text=True, timeout=60)
+
+        # Parse silence periods from stderr
+        silence_periods = []
+        silence_start = None
+        for line in result.stderr.split("\n"):
+            if "silence_start:" in line:
+                try:
+                    silence_start = float(line.split("silence_start:")[1].strip().split()[0])
+                except (ValueError, IndexError):
+                    pass
+            elif "silence_end:" in line and silence_start is not None:
+                try:
+                    parts = line.split("silence_end:")[1].strip().split()
+                    silence_end = float(parts[0])
+                    silence_periods.append((silence_start, silence_end))
+                    silence_start = None
+                except (ValueError, IndexError):
+                    pass
+
+        if not silence_periods:
+            logger.info("[FFmpegTransformer] No significant silence detected")
+            # Just copy the file
+            import shutil
+            shutil.copy2(input_path, output_path)
+            return True
+
+        # Build filter to remove silence
+        # Use aselect to keep non-silent parts, then concat
+        # Simpler approach: use silenceremove filter
+        cmd = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-af", f"silenceremove=start_periods=1:start_duration=0:start_threshold={threshold_db}dB:start_silence=0.1:stop_periods=1:stop_duration={min_duration}:stop_threshold={threshold_db}dB:stop_silence=0.1",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            output_path
+        ]
+        success = self._run_cmd(cmd)
+        if success:
+            logger.info(f"[FFmpegTransformer] Trimmed {len(silence_periods)} silence periods")
+        return success
+
 # Singleton Instance
 base_ffmpeg_service = FFmpegTransformer()
