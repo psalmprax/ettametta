@@ -125,9 +125,23 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     const resolvedAudioUrl = resolvePath(audio_url);
     const resolvedTrademarkUrl = resolvePath(trademark_url);
 
-    // Calculate actual video length from clips
+    // Calculate actual video length from clips — loop clips if they don't cover full duration
     const totalClipDuration = resolvedClips?.reduce((acc, c) => acc + c.duration_in_frames, 0) || 0;
-    const effectiveDuration = totalClipDuration > 0 ? totalClipDuration : durationInFrames;
+    const effectiveDuration = durationInFrames; // Always use the full video duration
+
+    // Build a looping clip list that covers the full video duration
+    const loopingClips: typeof resolvedClips = resolvedClips ? (() => {
+        const out: typeof resolvedClips = [];
+        let covered = 0;
+        while (covered < durationInFrames && resolvedClips.length > 0) {
+            for (const clip of resolvedClips) {
+                if (covered >= durationInFrames) break;
+                out.push(clip);
+                covered += clip.duration_in_frames;
+            }
+        }
+        return out;
+    })() : [];
 
     // Transition Logic Table
     const getTransitionType = (index: number): TransitionType => {
@@ -185,18 +199,21 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
             </Sequence>
 
             {/* --- FEATURE: Ken Burns Background Engine with SceneTransitions --- */}
-            {resolvedClips && resolvedClips.length > 0 ? (
-                resolvedClips.reduce((acc, clip, index) => {
+            {loopingClips && loopingClips.length > 0 ? (
+                loopingClips.reduce((acc, clip, index) => {
                     const startFrame = acc.totalFrames;
                     acc.totalFrames += clip.duration_in_frames;
-                    
+
+                    // Stop accumulating once we've covered the full video
+                    if (startFrame >= durationInFrames) return acc;
+
                     const isActive = frame >= startFrame && frame < startFrame + clip.duration_in_frames;
 
                     if (isActive) {
                         acc.elements.push(
                             <Sequence key={index} from={startFrame} durationInFrames={clip.duration_in_frames}>
-                                <SceneTransition 
-                                    type={getTransitionType(index)} 
+                                <SceneTransition
+                                    type={getTransitionType(index)}
                                     durationInFrames={clip.duration_in_frames}
                                 >
                                     <KenBurns durationInFrames={clip.duration_in_frames} index={index}>
@@ -217,9 +234,10 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
 
             {/* --- FEATURE: Automated SFX Sync --- */}
             {(() => {
-                const clips = resolvedClips || [];
+                const clips = loopingClips || [];
                 return clips.map((_, index) => {
                     const startFrame = clips.slice(0, index).reduce((acc, c) => acc + c.duration_in_frames, 0);
+                    if (startFrame >= durationInFrames) return null;
                     return (
                         <React.Fragment key={`sfx-${index}`}>
                             {index > 0 && <Sequence from={startFrame - 5} durationInFrames={15}><Audio src={staticFile('sfx/whoosh.mp3')} volume={0.4} /></Sequence>}
