@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Dict, Protocol, Type
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -97,6 +98,15 @@ async def dag_execute_blueprint(
     if not scenes:
         return {"status": "failed", "error": "No scenes available for DAG execution", "blueprint_id": blueprint_id}
 
+    # Pre-fetch platform + stock URLs for all segments via PlatformComposer
+    from src.services.nexus_engine.platform_composer import base_composer_service
+
+    seg_prompts = [s.get("visual_prompt", niche) for s in scenes]
+    compose_results = await asyncio.gather(
+        *[base_composer_service.compose_for_dag(p, niche, count=3) for p in seg_prompts],
+        return_exceptions=True,
+    )
+
     # Build DAG nodes for each scene
     all_dag_nodes = []
     scene_index = 0
@@ -105,13 +115,19 @@ async def dag_execute_blueprint(
         visual_prompt = segment.get("visual_prompt", niche)
         seg_id = f"seg_{seg_num}"
 
+        # Extract platform_urls from composer result
+        result = compose_results[seg_num] if seg_num < len(compose_results) else None
+        platform_urls = result[0] if isinstance(result, tuple) else []
+        stock_urls = result[1] if isinstance(result, tuple) else []
+
         # --- Parallel Asset Source (runs stock + platform search concurrently) ---
         asset_node = ParallelAssetSourceNode(
             node_id=f"{seg_id}_sourcing",
             params={
                 "keyword": visual_prompt,
                 "niche": niche,
-                "platform_urls": [],
+                "platform_urls": platform_urls,
+                "stock_urls": stock_urls,
             },
         )
         all_dag_nodes.append(asset_node)
