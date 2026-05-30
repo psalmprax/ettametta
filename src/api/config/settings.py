@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     STOCK_TIMEOUT: int = 30
     REMOTION_TIMEOUT_SECONDS: int = 900
     MAX_RENDER_FRAMES: int = 2700  # Cap total frames for CPU Remotion render (~90s @ 30fps)
-    NEXUS_COMPOSE_TIMEOUT: int = 1800  # 30 min global timeout for compose background task
+    NEXUS_COMPOSE_TIMEOUT: int = 3600  # 60 min global timeout for compose background task
     DEFAULT_RETRY_COUNT: int = 3
     RETRY_MULTIPLIER: int = 1
     RETRY_MIN_WAIT: int = 2
