@@ -71,5 +71,9 @@ celery_app.conf.update(
             "task": "discovery.process_high_potential",
             "schedule": 3600.0,  # Every hour
         },
+        "nexus-cleanup-stale-jobs-10m": {
+            "task": "nexus.cleanup_stale_jobs",
+            "schedule": 600.0,  # Every 10 minutes
+        },
     },
 )
