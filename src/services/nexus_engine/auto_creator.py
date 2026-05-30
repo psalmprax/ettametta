@@ -553,37 +553,46 @@ class AutoCreator:
         compiler = DAGCompiler()
         scheduler = Scheduler(cache=cache)
 
-        # Pre-import stock service for use in node closures
+        # Pre-import services for use in node closures
         from src.services.video_engine.stock_service import base_stock_service
+        from src.services.video_engine.downloader import base_downloader_service
+        from src.services.nexus_engine.platform_composer import base_composer_service
 
         # ─── Inline DAG nodes ────────────────────────────────────────────
-        # Each class captures its dependencies via closure (self, stock_service, etc.)
+        # Each class captures its dependencies via closure.
 
-        class _StockSearchNode(BaseNode):
-            """Search stock video service for a visual prompt."""
+        class _ComposerSearchNode(BaseNode):
+            """Search all sources (stock + CloakBrowser + discovery) for visual assets."""
 
             async def execute(self, ctx: dict) -> dict:
                 prompt = str(self.params.get("prompt", niche))
-                logger.info(f"[DAG] Stock search for: {prompt}")
-                urls = await base_stock_service.fetch_b_roll(prompt, count=3)
-                if not urls:
-                    logger.warning(f"[DAG] No stock for {prompt}, trying niche fallback")
-                    urls = await base_stock_service.fetch_b_roll(niche, count=1)
-                return {"urls": urls or [], "prompt": prompt}
+                logger.info(f"[DAG] Composer search for: {prompt}")
+                platform_urls, stock_urls = await base_composer_service.compose_for_dag(
+                    prompt, niche, count=3,
+                )
+                all_urls = stock_urls + platform_urls
+                logger.info(
+                    "[DAG] Composer found %d stock + %d platform URLs for: %s",
+                    len(stock_urls), len(platform_urls), prompt,
+                )
+                return {"urls": all_urls, "platform_urls": platform_urls, "prompt": prompt}
 
         class _VideoDownloadNode(BaseNode):
             """Download video URLs from upstream search results."""
 
             async def execute(self, ctx: dict) -> dict:
-                # Get search results from the upstream node
                 search_id = self.inputs[0] if self.inputs else None
                 search_result = ctx.get(search_id, {}) if search_id else {}
                 urls = search_result.get("urls", [])
+                platform_urls = set(search_result.get("platform_urls", []))
                 seg_idx = self.params.get("seg_idx", 0)
 
                 paths = []
                 for url in urls:
-                    path = await base_stock_service.download_stock_video(url)
+                    if url in platform_urls:
+                        path = await base_downloader_service.download_video(url)
+                    else:
+                        path = await base_stock_service.download_stock_video(url)
                     if path:
                         paths.append(path)
                 return {"paths": paths, "seg_idx": seg_idx}
@@ -633,8 +642,8 @@ class AutoCreator:
             prompt = segments[i].get("visual_prompt", niche)
             seg_id = f"seg_{i}"
 
-            # Stock search (no dependencies — runs in batch 1)
-            search_node = _StockSearchNode(
+            # Composer search (no dependencies — runs in batch 1)
+            search_node = _ComposerSearchNode(
                 node_id=f"{seg_id}_search",
                 params={"prompt": prompt, "niche": niche, "seg_idx": i},
             )

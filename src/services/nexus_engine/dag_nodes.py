@@ -294,10 +294,11 @@ class ParallelAssetSourceNode(BaseNode):
         keyword = str(self.params.get("keyword", ""))
         niche = str(self.params.get("niche", keyword))
         platform_urls: list[str] = list(self.params.get("platform_urls", []))
+        stock_urls: list[str] = list(self.params.get("stock_urls", []))
 
         async def _try_stock() -> str | None:
             """Search Pexels + download, with up to 3 attempts."""
-            urls = await base_stock_service.fetch_b_roll(keyword, count=3)
+            urls = stock_urls or await base_stock_service.fetch_b_roll(keyword, count=3)
             for url in urls[:3]:
                 path = await base_stock_service.download_stock_video(url)
                 if path and os.path.exists(path):
