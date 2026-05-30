@@ -28,7 +28,9 @@ def _mark_job_failed(job_id: str, error: str) -> None:
                 job.status = SystemJobStatus.FAILED
                 job.error_log = error
                 # Mark any ACTIVE node as FAILED
-                current_status = dict(job.node_status or {})
+                import json
+                raw = job.node_status or {}
+                current_status = dict(raw) if isinstance(raw, dict) else json.loads(raw) if isinstance(raw, str) else {}
                 for node, st in current_status.items():
                     if st == "ACTIVE":
                         current_status[node] = "FAILED"
@@ -125,7 +127,9 @@ def cleanup_stale_jobs_task():
                     f"Job stuck in {original_status} state for "
                     f"{stale_minutes} minutes — auto-failed by cleanup"
                 )
-                current_status = dict(job.node_status or {})
+                import json as _json
+                raw = job.node_status or {}
+                current_status = dict(raw) if isinstance(raw, dict) else _json.loads(raw) if isinstance(raw, str) else {}
                 for node, st in current_status.items():
                     if st == "ACTIVE":
                         current_status[node] = "FAILED"
