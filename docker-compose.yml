@@ -174,7 +174,11 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     environment:
-      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_KEEP_ALIVE=30m
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     restart: always
 
   celery_beat:
