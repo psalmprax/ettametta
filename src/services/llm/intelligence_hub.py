@@ -157,16 +157,11 @@ class IntelligenceHub:
         candidates = list(dict.fromkeys(candidates))
         logger.info(f"[{request_id}] LLM Candidates: {candidates}")
 
-        # Per-provider timeout: varies by provider (Dify hangs, Ollama is slow on CPU)
+        # Per-provider timeout: only Dify needs a fast timeout (it hangs indefinitely).
+        # Other providers use the global timeout — Ollama on CPU needs ~5-7min for scripts.
         per_provider_timeouts = {
-            "dify": 25,      # Dify hangs — fail fast
-            "ollama": 180,   # Ollama on CPU needs ~2min for script generation
-            "vllm": 60,
-            "gemini": 30,
-            "groq": 30,
-            "openai": 30,
+            "dify": 25,      # Dify hangs — fail fast to skip to next provider
         }
-        default_provider_timeout = 30
 
         for p in candidates:
             if p not in self.breakers:
@@ -196,24 +191,26 @@ class IntelligenceHub:
                 )
                 continue
 
-            provider_timeout = per_provider_timeouts.get(p, default_provider_timeout)
+            provider_timeout = per_provider_timeouts.get(p)
             try:
                 logger.info(f"Attempting provider {p} for request {request_id}")
                 with tracer.start_as_current_span(f"IntelligenceHub._call_{p}") as subspan:
                     subspan.set_attribute("provider", p)
-                    result = await asyncio.wait_for(
-                        self._call_provider(
-                            p, prompt, system_prompt, request_id, json_mode, rag_context
-                        ),
-                        timeout=provider_timeout,
+                    call_coro = self._call_provider(
+                        p, prompt, system_prompt, request_id, json_mode, rag_context
                     )
+                    if provider_timeout:
+                        result = await asyncio.wait_for(call_coro, timeout=provider_timeout)
+                    else:
+                        result = await call_coro
                     self.breakers[p].record_success()
                     # Reset health on success
                     self.provider_health[p]["errors"] = 0
                     self.provider_health[p]["status"] = "healthy"
                     return {**result, "request_id": request_id, "provider": p}
             except asyncio.TimeoutError:
-                logger.warning(f"Provider {p} timed out after {provider_timeout}s for request {request_id}")
+                timeout_val = provider_timeout or "global"
+                logger.warning(f"Provider {p} timed out after {timeout_val}s for request {request_id}")
                 self.breakers[p].record_failure()
                 self.provider_health[p]["errors"] += 1
                 self.provider_health[p]["last_error"] = time.time()
