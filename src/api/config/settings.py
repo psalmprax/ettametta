@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     
     # Resilience Settings (Global Hardening)
     DEFAULT_TIMEOUT: int = 60
-    LLM_TIMEOUT: int = 60  # Base timeout; global = LLM_TIMEOUT * 2 (120s), per-provider = 30s
+    LLM_TIMEOUT: int = 150  # Base timeout; global = LLM_TIMEOUT * 2 (300s), per-provider varies
     VIDEO_GEN_TIMEOUT: int = 600
     VOICEOVER_TIMEOUT: int = 30
     SEARCH_TIMEOUT: int = 30

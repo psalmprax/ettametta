@@ -159,8 +159,8 @@ class IntelligenceHub:
 
         # Per-provider timeout: varies by provider (Dify hangs, Ollama is slow on CPU)
         per_provider_timeouts = {
-            "dify": 25,     # Dify hangs — fail fast
-            "ollama": 90,   # Ollama on CPU needs time for script generation
+            "dify": 25,      # Dify hangs — fail fast
+            "ollama": 180,   # Ollama on CPU needs ~2min for script generation
             "vllm": 60,
             "gemini": 30,
             "groq": 30,
