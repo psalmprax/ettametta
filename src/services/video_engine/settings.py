@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     VOICEOVER_TIMEOUT: int = 30
     SEARCH_TIMEOUT: int = 30
     STOCK_TIMEOUT: int = 30
-    REMOTION_TIMEOUT_SECONDS: int = 900
+    REMOTION_TIMEOUT_SECONDS: int = 2400  # 40 min — CPU rendering 1500+ frames at 0.75 scale needs 30-40 min
     NEXUS_COMPOSE_TIMEOUT: int = 600  # 10 min global timeout for compose background task
     DEFAULT_RETRY_COUNT: int = 3
     RETRY_MULTIPLIER: int = 1
