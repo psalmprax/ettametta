@@ -157,8 +157,16 @@ class IntelligenceHub:
         candidates = list(dict.fromkeys(candidates))
         logger.info(f"[{request_id}] LLM Candidates: {candidates}")
 
-        # Per-provider timeout: no single provider can block longer than this
-        per_provider_timeout = 30  # seconds
+        # Per-provider timeout: varies by provider (Dify hangs, Ollama is slow on CPU)
+        per_provider_timeouts = {
+            "dify": 25,     # Dify hangs — fail fast
+            "ollama": 90,   # Ollama on CPU needs time for script generation
+            "vllm": 60,
+            "gemini": 30,
+            "groq": 30,
+            "openai": 30,
+        }
+        default_provider_timeout = 30
 
         for p in candidates:
             if p not in self.breakers:
@@ -188,6 +196,7 @@ class IntelligenceHub:
                 )
                 continue
 
+            provider_timeout = per_provider_timeouts.get(p, default_provider_timeout)
             try:
                 logger.info(f"Attempting provider {p} for request {request_id}")
                 with tracer.start_as_current_span(f"IntelligenceHub._call_{p}") as subspan:
@@ -196,7 +205,7 @@ class IntelligenceHub:
                         self._call_provider(
                             p, prompt, system_prompt, request_id, json_mode, rag_context
                         ),
-                        timeout=per_provider_timeout,
+                        timeout=provider_timeout,
                     )
                     self.breakers[p].record_success()
                     # Reset health on success
@@ -204,7 +213,7 @@ class IntelligenceHub:
                     self.provider_health[p]["status"] = "healthy"
                     return {**result, "request_id": request_id, "provider": p}
             except asyncio.TimeoutError:
-                logger.warning(f"Provider {p} timed out after {per_provider_timeout}s for request {request_id}")
+                logger.warning(f"Provider {p} timed out after {provider_timeout}s for request {request_id}")
                 self.breakers[p].record_failure()
                 self.provider_health[p]["errors"] += 1
                 self.provider_health[p]["last_error"] = time.time()
