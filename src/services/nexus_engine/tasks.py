@@ -13,14 +13,14 @@ def run_async(coro):
 
 def _mark_job_failed(job_id: str, error: str) -> None:
     """Update nexus_jobs row to FAILED and notify WebSocket clients."""
-    from src.api.utils.database import async_session_factory
     from src.api.utils.models import NexusJobDB
     from src.api.routes.ws import notify_nexus_job_update_sync
     from src.shared.enums import SystemJobStatus
     from sqlalchemy import select
 
     async def _do():
-        async with async_session_factory() as db:
+        from src.api.utils.database import get_async_session
+        async with get_async_session() as db:
             stmt = select(NexusJobDB).where(NexusJobDB.id == str(job_id))
             result = await db.execute(stmt)
             job = result.scalar_one_or_none()
@@ -43,7 +43,6 @@ def _mark_job_failed(job_id: str, error: str) -> None:
                     if st == "ACTIVE":
                         current_status[node] = "FAILED"
                 job.node_status = current_status
-                await db.commit()
 
     try:
         asyncio.run(_do())
@@ -94,7 +93,6 @@ def create_cinema_video_task(
 @celery_app.task(name="nexus.cleanup_stale_jobs")
 def cleanup_stale_jobs_task():
     """Mark nexus jobs stuck in non-terminal states for >30 minutes as FAILED."""
-    from src.api.utils.database import async_session_factory
     from src.api.utils.models import NexusJobDB
     from src.api.routes.ws import notify_nexus_job_update_sync
     from src.shared.enums import SystemJobStatus
@@ -105,7 +103,8 @@ def cleanup_stale_jobs_task():
     cutoff = datetime.utcnow() - timedelta(minutes=STALE_THRESHOLD_MINUTES)
 
     async def _do():
-        async with async_session_factory() as db:
+        from src.api.utils.database import get_async_session
+        async with get_async_session() as db:
             stmt = select(NexusJobDB).where(
                 NexusJobDB.status.notin_([
                     SystemJobStatus.COMPLETED,
@@ -161,7 +160,6 @@ def cleanup_stale_jobs_task():
                 except Exception:
                     pass
 
-            await db.commit()
             logger.warning(f"[Nexus Cleanup] Marked {len(stale_jobs)} stale jobs as FAILED")
             return len(stale_jobs)
 
