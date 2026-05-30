@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from src.api.utils.celery import celery_app
 from src.services.nexus_engine.auto_creator import base_creator_service
 
@@ -91,7 +91,8 @@ def cleanup_stale_jobs_task():
     from sqlalchemy import select
 
     STALE_THRESHOLD_MINUTES = 30
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=STALE_THRESHOLD_MINUTES)
+    # Use naive UTC — SQLAlchemy columns store naive datetimes
+    cutoff = datetime.utcnow() - timedelta(minutes=STALE_THRESHOLD_MINUTES)
 
     async def _do():
         async with async_session_factory() as db:
@@ -111,7 +112,7 @@ def cleanup_stale_jobs_task():
                 return 0
 
             for job in stale_jobs:
-                age = datetime.now(timezone.utc) - (job.updated_at or job.created_at)
+                age = datetime.utcnow() - (job.updated_at or job.created_at)
                 stale_minutes = int(age.total_seconds() / 60)
                 original_status = job.status
                 logger.warning(
