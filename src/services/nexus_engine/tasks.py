@@ -30,7 +30,15 @@ def _mark_job_failed(job_id: str, error: str) -> None:
                 # Mark any ACTIVE node as FAILED
                 import json
                 raw = job.node_status or {}
-                current_status = dict(raw) if isinstance(raw, dict) else json.loads(raw) if isinstance(raw, str) else {}
+                if isinstance(raw, dict):
+                    current_status = dict(raw)
+                elif isinstance(raw, str) and raw.strip():
+                    try:
+                        current_status = json.loads(raw)
+                    except (json.JSONDecodeError, ValueError):
+                        current_status = {}
+                else:
+                    current_status = {}
                 for node, st in current_status.items():
                     if st == "ACTIVE":
                         current_status[node] = "FAILED"
@@ -129,7 +137,15 @@ def cleanup_stale_jobs_task():
                 )
                 import json as _json
                 raw = job.node_status or {}
-                current_status = dict(raw) if isinstance(raw, dict) else _json.loads(raw) if isinstance(raw, str) else {}
+                if isinstance(raw, dict):
+                    current_status = dict(raw)
+                elif isinstance(raw, str) and raw.strip():
+                    try:
+                        current_status = _json.loads(raw)
+                    except (_json.JSONDecodeError, ValueError):
+                        current_status = {}
+                else:
+                    current_status = {}
                 for node, st in current_status.items():
                     if st == "ACTIVE":
                         current_status[node] = "FAILED"
