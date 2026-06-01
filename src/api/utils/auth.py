@@ -16,19 +16,17 @@ from src.api.utils.security import (  # noqa: F401 — re-exported for routes/au
 )
 
 
-import redis.asyncio as redis_async
+from src.api.utils.redis import get_async_redis
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 logger = logging.getLogger(__name__)
 
-# Global Redis client for async operations
-redis_async_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
-
 
 async def decode_access_token(token: str):
     try:
-        if await redis_async_client.exists(f"token_blacklist:{token}"):
+        r = await get_async_redis()
+        if await r.exists(f"token_blacklist:{token}"):
             return None
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

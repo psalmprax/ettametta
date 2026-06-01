@@ -1,4 +1,3 @@
-import redis.asyncio as redis_async
 import redis
 import json
 import logging
@@ -24,7 +23,8 @@ class DistributedEventBus:
 
     async def connect(self):
         if not self._redis:
-            self._redis = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
+            from src.api.utils.redis import get_async_redis
+            self._redis = await get_async_redis()
             # Ensure consumer group exists
             try:
                 await self._redis.xgroup_create(self.stream_name, self.group_name, id="0", mkstream=True)

@@ -12,7 +12,7 @@ from src.api.utils.limiter import limiter
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from redis import asyncio as aioredis
+from src.api.utils.redis import get_async_redis
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.api.middleware.tracing import (
@@ -171,9 +171,7 @@ async def seed_monitored_niches():
 @app.on_event("startup")
 async def startup_event():
     # Initialize Redis Cache
-    redis_instance = aioredis.from_url(
-        settings.REDIS_URL, encoding="utf8", decode_responses=True
-    )
+    redis_instance = await get_async_redis()
     FastAPICache.init(RedisBackend(redis_instance), prefix="fastapi-cache")
     await seed_monitored_niches()
 

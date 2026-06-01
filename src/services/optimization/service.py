@@ -33,9 +33,8 @@ class OptimizationService:
     @property
     def redis(self):
         if not self._redis_client:
-            self._redis_client = redis.Redis.from_url(
-                settings.REDIS_URL, decode_responses=True
-            )
+            from src.api.utils.redis import get_sync_redis
+            self._redis_client = get_sync_redis()
         return self._redis_client
 
     @retry(

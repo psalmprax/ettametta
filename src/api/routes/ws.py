@@ -4,8 +4,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timedelta
-import redis.asyncio as redis
-import redis as redis_sync
+from src.api.utils.redis import get_async_redis, get_sync_redis
 from src.api.config import settings
 from src.services.analytics.signal_bus import base_signal_bus
 from src.services.analytics.drift_monitor import base_monitor_service
@@ -16,8 +15,13 @@ router = APIRouter(prefix="/ws", tags=["websockets"])
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
-        self.redis_client = redis.from_url(settings.REDIS_URL)
+        self.redis_client = None
         self.pubsub_task = None
+
+    async def _ensure_redis(self):
+        if self.redis_client is None:
+            self.redis_client = await get_async_redis()
+        return self.redis_client
 
     async def city_connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -51,10 +55,11 @@ class ConnectionManager:
         Listens to both legacy PubSub and modern Redis Streams (Event Bus).
         """
         from src.services.infrastructure.event_bus import base_event_service
-        
+        await self._ensure_redis()
+
         # 1. Start Event Bus Bridge (Modern)
         asyncio.create_task(base_event_service.subscribe("*", self._broadcast_event_bus))
-        
+
         # 2. Start Legacy PubSub Bridge
         pubsub = self.redis_client.pubsub()
         await pubsub.subscribe("job_updates", "system_logs")
@@ -354,7 +359,7 @@ def notify_job_update_sync(job_data: dict):
     """
     Synchronous utility (for Celery) to publish job updates to Redis.
     """
-    r = redis_sync.from_url(settings.REDIS_URL)
+    r = get_sync_redis()
     message = json.dumps({"type": "job_update", "data": job_data})
     r.publish("job_updates", message)
 
@@ -381,7 +386,7 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
 
     # Broadcast via Redis
     try:
-        r = redis_sync.from_url(settings.REDIS_URL)
+        r = get_sync_redis()
         message_data = json.dumps(
             {
                 "type": "log",
@@ -402,7 +407,6 @@ async def notify_system_log_async(
     """
     Asynchronous utility to publish system logs to Redis and persist to DB.
     """
-    import redis.asyncio as redis_async
     import time
     from src.api.utils.database import async_session_factory
     from src.api.utils.models import SystemActivityDB
@@ -418,7 +422,7 @@ async def notify_system_log_async(
 
     # Broadcast via Redis
     try:
-        r = redis_async.from_url(settings.REDIS_URL)
+        r = await get_async_redis()
         message_data = json.dumps(
             {
                 "type": "log",
@@ -437,6 +441,6 @@ def notify_nexus_job_update_sync(job_data: dict):
     """
     Synchronous utility to publish Nexus specific job updates to Redis.
     """
-    r = redis_sync.from_url(settings.REDIS_URL)
+    r = get_sync_redis()
     message = json.dumps({"type": "nexus_job_update", "data": job_data})
     r.publish("job_updates", message)
