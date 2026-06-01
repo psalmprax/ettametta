@@ -7,7 +7,6 @@ import uuid
 import shutil
 from pathlib import Path
 from src.api.config import settings
-import redis
 from contextlib import asynccontextmanager
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -172,7 +171,8 @@ from src.api.utils.resilience import CircuitBreaker
 
 class GpuQueueManager:
     def __init__(self):
-        self.redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        from src.api.utils.redis import get_sync_redis
+        self.redis = get_sync_redis()
         self.semaphore_key = "ettametta:gpu:slots"
         self.total_slots = settings.GPU_QUEUE_SLOTS or 1
         self.timeout = settings.GPU_QUEUE_TIMEOUT or 300

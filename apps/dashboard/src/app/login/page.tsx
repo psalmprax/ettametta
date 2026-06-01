@@ -66,10 +66,14 @@ export default function LoginPage() {
             formData.append("username", username);
             formData.append("password", password);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             const response = await fetch(`${API_BASE}/auth/login`, {
                 method: "POST",
                 body: formData,
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const data = await response.json();
