@@ -7,7 +7,6 @@ from .models import ContentCandidate, ViralPattern
 from opentelemetry import trace
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
-from src.api.utils.redis import get_async_redis
 
 # Graceful imports for optional dependencies
 try:
