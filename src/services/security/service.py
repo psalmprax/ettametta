@@ -1,11 +1,10 @@
 import os
 import json
 import datetime
-import redis
 import logging
 import socket
 import asyncio
-from src.api.config import settings
+from src.api.utils.redis import get_sync_redis
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +15,7 @@ class SecuritySentinel:
     """
 
     def __init__(self):
-        self.redis_client = redis.from_url(
-            settings.REDIS_URL.replace("//localhost", "//redis")
-            if "//localhost" in settings.REDIS_URL
-            else settings.REDIS_URL
-        )
+        self.redis_client = get_sync_redis()
         self.log_key = "sentinel:security_logs"
         self.health_key = "sentinel:security_health"
 

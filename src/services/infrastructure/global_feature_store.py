@@ -1,9 +1,8 @@
-import redis.asyncio as redis
 import json
 import logging
 import time
 from typing import Any
-from src.api.config import settings
+from src.api.utils.redis import get_async_redis
 
 logger = logging.getLogger("GlobalFeatureStore")
 
@@ -18,7 +17,7 @@ class GlobalFeatureStore:
 
     async def connect(self):
         if not self._redis:
-            self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+            self._redis = await get_async_redis()
 
     async def set_features(self, niche: str, features: dict[str, Any], ttl: int = 86400):
         """Stores signal features with a 24h default TTL."""

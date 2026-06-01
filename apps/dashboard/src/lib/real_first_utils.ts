@@ -19,7 +19,7 @@ export interface RealFirstOptions<T> {
     timeoutMs?: number;
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
  * Executes a real API call with a structured fallback.

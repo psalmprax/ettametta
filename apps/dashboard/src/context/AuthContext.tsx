@@ -107,9 +107,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Directly verify token is valid and fetch user WITH proper error handling
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             const userRes = await fetch(`${API_BASE}/auth/me`, {
                 headers: { Authorization: `Bearer ${authToken}` },
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
             
             if (!userRes.ok) {
                 logout();
@@ -134,11 +138,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const register = async (email: string, password: string, username?: string) => {
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             const response = await fetch(`${API_BASE}/auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password, username }),
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 return { success: true };

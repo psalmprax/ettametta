@@ -1,5 +1,4 @@
 import json
-import redis
 import asyncio
 import datetime
 import os
@@ -8,6 +7,7 @@ from .models import ContentCandidate, ViralPattern
 from opentelemetry import trace
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
+from src.api.utils.redis import get_async_redis
 
 # Graceful imports for optional dependencies
 try:
@@ -224,12 +224,9 @@ class DiscoveryService:
         if deep_scan:
             return None
 
-        redis_url = settings.REDIS_URL
-        if "localhost" in redis_url:
-            redis_url = redis_url.replace("localhost", "redis")
-
         try:
-            r = redis.from_url(redis_url)
+            from src.api.utils.redis import get_sync_redis
+            r = get_sync_redis()
             cache_key = f"discovery:trends:{niche}:{horizon}:{region}"
             cached_data = r.get(cache_key)
             if cached_data:
