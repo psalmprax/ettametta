@@ -54,7 +54,7 @@ class IntelligenceHub:
             logger.warning("GOOGLE_API_KEY detected as placeholder — ignoring")
         # Corrected: Use settings and ensure endpoint suffix
         self.primary_ollama_url = settings.OLLAMA_URL.rstrip("/") + "/api/chat"
-        self.fallback_ollama_url = "http://ollama:11434/api/chat"
+        self.fallback_ollama_url = "http://ettametta-ollama:11434/api/chat"
         self.ollama_url = self.primary_ollama_url
 
         # Dynamic Load Balancer: Track health per provider
@@ -160,7 +160,7 @@ class IntelligenceHub:
         # Per-provider timeout: only Dify needs a fast timeout (it hangs indefinitely).
         # Other providers use the global timeout — Ollama on CPU needs ~5-7min for scripts.
         per_provider_timeouts = {
-            "dify": 25,      # Dify hangs — fail fast to skip to next provider
+            "dify": 300,     # Dify agent + Ollama inference can be slow on CPU
         }
 
         for p in candidates:
@@ -521,7 +521,7 @@ class IntelligenceHub:
     ) -> dict[str, Any]:
         """vLLM provider (OpenAI compatible high-throughput inference)"""
         # Default to Ollama's OpenAI-compatible endpoint if not specified
-        url = os.getenv("VLLM_URL", "http://ollama:11434/v1")
+        url = os.getenv("VLLM_URL", "http://ettametta-ollama:11434/v1")
         if not url.endswith("/chat/completions"):
             url = f"{url.rstrip('/')}/chat/completions"
         
