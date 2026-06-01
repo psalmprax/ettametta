@@ -1125,14 +1125,10 @@ async def refresh_discovery(
     If no niches specified, refreshes all cached niches.
     Clears Redis cache and triggers new scans.
     """
-    import redis
+    from src.api.utils.redis import get_sync_redis
 
     try:
-        # Connect to Redis
-        redis_url = settings.REDIS_URL
-        if "localhost" in redis_url:
-            redis_url = redis_url.replace("localhost", "redis")
-        r = redis.from_url(redis_url)
+        r = get_sync_redis()
 
         refreshed_niches = []
 

@@ -73,10 +73,10 @@ class Settings(BaseSettings):
     FALLBACK_LLM_PROVIDER: str = "openai"
 
     # Dify AI Orchestration
-    DIFY_API_URL: str = "http://localhost:7200/api/v1"
+    DIFY_API_URL: str = "http://ettametta-dify-api:5001/v1"
     DIFY_API_KEY: str | None = None
     DIFY_DATASET_API_KEY: str | None = None
-    DIFY_TIMEOUT: int = 25  # Must be < per-provider timeout (30s) to avoid blocking fallback
+    DIFY_TIMEOUT: int = 300  # Dify agent + Ollama inference can be slow on CPU
 
     USE_OS_MODELS: bool = True
     WHISPER_MODEL_SIZE: str = "base"

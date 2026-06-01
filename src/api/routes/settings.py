@@ -338,9 +338,8 @@ async def update_system_settings(
     
      # Broadcast reload signal to all components
     try:
-        from src.api.routes.ws import redis
-        from src.api.config import settings as app_settings
-        r = redis.from_url(app_settings.REDIS_URL)
+        from src.api.utils.redis import get_async_redis
+        r = await get_async_redis()
         await r.publish("system_config_reload", "settings_update")
     except Exception:
         logging.exception("Failed to broadcast settings reload")
