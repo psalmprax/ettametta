@@ -678,10 +678,10 @@ class NexusOrchestrator:
                 await self._update_node_status(job_id, niche, "cognition", NodeStatus.ACTIVE, 40)
 
                 vibe_data = await self._determine_video_vibe(
-                    job_id, niche, style, blueprint_id, len(visual_paths)
+                    job_id, niche, style, blueprint_id, len(visual_paths or [])
                 )
 
-                remotion_clips = await self._prepare_remotion_clips(visual_paths)
+                remotion_clips = await self._prepare_remotion_clips(visual_paths or [])
 
                 if not remotion_clips:
                     await self._update_node_status(
