@@ -176,11 +176,11 @@ class NexusOrchestrator:
         """Validate input paths for existence (except remote HTTP URIs)."""
         def check_existence() -> list[str]:
             validation_errors = []
-            for i, path in enumerate(visual_paths):
+            for i, path in enumerate(visual_paths or []):
                 if not path.startswith("http") and not os.path.exists(path):
                     validation_errors.append(f"Visual clip {i} not found: {path}")
 
-            for i, path in enumerate(voiceover_paths):
+            for i, path in enumerate(voiceover_paths or []):
                 if not path.startswith("http") and not os.path.exists(path):
                     validation_errors.append(f"Voiceover clip {i} not found: {path}")
 
