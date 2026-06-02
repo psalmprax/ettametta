@@ -1,0 +1,12 @@
+{
+    "champion": "v1.0.0_bootstrap",
+    "versions": {
+        "v1.0.0_bootstrap": {
+            "created_at": 1780067454.5414088,
+            "mae": 0.12,
+            "training_samples": 0,
+            "path": "oracle_v1_bootstrap.pth",
+            "status": "deployed"
+        }
+    }
+}

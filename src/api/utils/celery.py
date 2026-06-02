@@ -1,10 +1,14 @@
 import os
 from celery import Celery
 from src.shared.observability import setup_observability
-from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
 setup_observability("ettametta-worker")
-CeleryInstrumentor().instrument()
+
+try:
+    from opentelemetry.instrumentation.celery import CeleryInstrumentor
+    CeleryInstrumentor().instrument()
+except ImportError:
+    pass
 
 from src.api.config import settings
 
