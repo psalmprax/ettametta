@@ -454,7 +454,7 @@ class NexusOrchestrator:
         voice_dir.mkdir(parents=True, exist_ok=True)
         master_voiceover = str(voice_dir / f"master_{job_id}.mp3")
 
-        if len(voiceover_paths) > 1:
+        if len(voiceover_paths or []) > 1:
             self.logger.info(f"[Nexus] Stitching {len(voiceover_paths)} voiceovers...")
             list_path = str(voice_dir / f"list_{job_id}.txt")
 
@@ -736,7 +736,7 @@ class NexusOrchestrator:
             music_path = self._source_music(music_path, music_keywords)
 
             # Concatenate all voiceovers into a single master file
-            audio_uri = await self._stitch_voiceovers(job_id, voiceover_paths, music_path)
+            audio_uri = await self._stitch_voiceovers(job_id, voiceover_paths or [], music_path)
 
             # Calculate total duration for Remotion
             total_frames = await self._determine_total_frames(audio_uri, audited_clips)
@@ -754,7 +754,7 @@ class NexusOrchestrator:
             word_timestamps = await self._transcribe_master_audio(audio_uri)
 
             # 2.7 Thumbnail Extraction Node
-            thumbnail_path = await self._extract_thumbnail(job_id, visual_paths)
+            thumbnail_path = await self._extract_thumbnail(job_id, visual_paths or [])
 
             # Final Props Preparation
             props = {
