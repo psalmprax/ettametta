@@ -104,9 +104,7 @@ async def _check_and_post_scheduled_internal(task_self):
                         failed += 1
                         continue
 
-                    # Adjust to nearest peak window
-
-                    await task_self._get_peak_windows_from_db(post.user_id)
+                    # Adjust to nearest peak window (no-op: peak window info already used at schedule time)
 
                     url = await publisher.upload_video(
                         post.video_path,

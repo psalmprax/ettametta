@@ -139,6 +139,13 @@ def engine_access_required(engine: str):
             "invideo": SubscriptionTier.FREE,
             "morph": SubscriptionTier.FREE,
             "genmo": SubscriptionTier.FREE,
+            # Direct API free-daily-credit engines
+            "zsky": SubscriptionTier.FREE,
+            "stability": SubscriptionTier.FREE,
+            "replicate": SubscriptionTier.BASIC,
+            # Local GPU inference engines
+            "zeroscope": SubscriptionTier.SOVEREIGN,
+            "animatediff": SubscriptionTier.SOVEREIGN,
             # Mid tier
             "zsky-wan": SubscriptionTier.FREE,
         }

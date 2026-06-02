@@ -32,13 +32,35 @@ ENGINE_ACTION_MAP: dict[str, str] = {
     "morph": "video_generation_morph",
     "genmo": "video_generation_genmo",
     "zsky-wan": "video_generation_zsky",
+    # Local GPU inference engines
+    "mochi": "video_generation_mochi",
+    "wan": "video_generation_wan",
+    "wan2.2": "video_generation_wan",
+    "cogvideo": "video_generation_cogvideo",
+    "zeroscope": "video_generation_zeroscope",
+    "animatediff": "video_generation_animatediff",
+    # Zero-API-key engine
+    "lite4k": "video_generation_lite4k",
+    # Direct API (free daily credits) engines
+    "zsky": "video_generation_zsky",
+    "stability": "video_generation_stability",
+    "replicate": "video_generation_replicate",
+    "replicate_wan": "video_generation_replicate",
+    "replicate_seedance": "video_generation_replicate",
+    "replicate_hailuo": "video_generation_replicate",
 }
 
-# Free tier engines (no credits needed)
-FREE_ENGINES: Set[str] = {"kling", "pika", "runway", "leonardo", "frameloop"}
+# Free tier engines (no credits needed) — browser-automation + zero-API-key + free-daily-credit APIs
+FREE_ENGINES: Set[str] = {
+    "kling", "pika", "runway", "leonardo", "frameloop",
+    "lite4k", "zsky", "stability",
+}
 
-# Premium engines (require subscription)
-PREMIUM_ENGINES: Set[str] = {"veo3", "hunyuan", "ltx-video"}
+# Premium engines (require subscription) — local GPU inference + high-cost cloud APIs
+PREMIUM_ENGINES: Set[str] = {
+    "veo3", "hunyuan", "ltx-video",
+    "mochi", "wan", "cogvideo", "zeroscope", "animatediff",
+}
 
 # Default fallback
 DEFAULT_ENGINE = "ltx"

@@ -42,7 +42,8 @@ import {
     Loader2,
     Search,
     PlaySquare,
-    FileVideo
+    FileVideo,
+    Coins
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ import { useNiches } from "@/hooks/useNiches";
 import { Button } from "@/components/ui/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTelemetry } from "@/context/TelemetryContext";
+import { useAuth } from "@/context/AuthContext";
 
 // --- Sub-Panel Components ---
 
@@ -271,14 +273,53 @@ function ScriptEnginePanel() {
     );
 }
 
+const AI_ENGINES = [
+    // Always works — no API key needed
+    { id: "lite4k", name: "Cinematic Parallax", free: true, needsKey: false, credits: 5, description: "FLUX image + motion — works out of the box" },
+    // API key required — direct API implementations
+    { id: "zsky", name: "ZSky AI", free: true, needsKey: true, credits: 0, description: "WAN 2.2 model, 50 free credits/day" },
+    { id: "kling", name: "Kling AI", free: true, needsKey: true, credits: 0, description: "100 free credits/day, high quality" },
+    { id: "pixverse", name: "PixVerse", free: true, needsKey: true, credits: 0, description: "20 free credits/day" },
+    { id: "pika", name: "Pika", free: true, needsKey: true, credits: 10, description: "10 free credits/day" },
+    { id: "runway", name: "Runway", free: true, needsKey: true, credits: 30, description: "10 free signup credits" },
+    { id: "stability", name: "Stability AI", free: true, needsKey: true, credits: 0, description: "~25 calls/day, reliable API" },
+    { id: "haiper", name: "Haiper", free: true, needsKey: true, credits: 0, description: "25 free credits/day + browser fallback" },
+    { id: "luma", name: "Luma Dream Machine", free: true, needsKey: true, credits: 0, description: "15 free credits/day + browser fallback" },
+    { id: "replicate", name: "Replicate (WAN/Seedance/Hailuo)", free: false, needsKey: true, credits: 5, description: "Pay-per-use, ~$0.02-0.40/video" },
+    // GPU node required
+    { id: "veo3", name: "Google Veo 3", free: false, needsKey: false, credits: 25, description: "Requires GPU node or Gemini API key" },
+    { id: "mochi", name: "Mochi", free: false, needsKey: false, credits: 15, description: "Requires GPU node (Genmo open model, 30GB VRAM)" },
+    { id: "wan", name: "WAN 2.1", free: false, needsKey: false, credits: 15, description: "Requires GPU node (open weights, 16GB VRAM)" },
+    { id: "wan2.2", name: "Wan 2.2", free: false, needsKey: false, credits: 15, description: "Requires GPU node or SiliconFlow key" },
+    { id: "cogvideo", name: "CogVideoX", free: false, needsKey: false, credits: 20, description: "Requires GPU node (RTX 8000)" },
+    { id: "zeroscope", name: "Zeroscope", free: false, needsKey: false, credits: 10, description: "Requires GPU node (lightweight text-to-video, 8GB VRAM)" },
+    { id: "animatediff", name: "AnimateDiff", free: false, needsKey: false, credits: 15, description: "Requires GPU node (image-to-video animation, 12GB VRAM)" },
+];
+
 function VisualCorePanel() {
+    const { credits, refreshCredits } = useAuth();
     const [prompt, setPrompt] = useState("");
     const [style, setStyle] = useState("cinematic");
     const [mode, setMode] = useState<"generate" | "remix">("generate");
+    const [provider, setProvider] = useState("lite4k");
     const [niche, setNiche] = useState("Auto-Detect");
     const [currentJobId, setCurrentJobId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [jobs, setJobs] = useState<any[]>([]);
+
+    // Auto-refresh credit balance every 2 minutes
+    const refreshRef = useRef(refreshCredits);
+    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current();
+        const interval = setInterval(() => refreshRef.current(), 120_000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Derived state
+    const selectedEngine = useMemo(() => AI_ENGINES.find(e => e.id === provider), [provider]);
+    const engineCost = selectedEngine?.credits ?? 0;
+    const insufficientCredits = credits !== null && engineCost > 0 && credits < engineCost;
 
     const pollJobStatus = async (jobId: string, token: string) => {
         const pollInterval = setInterval(async () => {
@@ -339,7 +380,7 @@ function VisualCorePanel() {
 
         const payload = mode === "remix"
             ? { topic: prompt, niche: niche === "Auto-Detect" ? null : niche, style, duration_seconds: 60 }
-            : { prompt, style, provider: "pixverse" };
+            : { prompt, style, engine: provider };
 
         if (mode === "remix") {
             // For remix mode, start job and poll for status
@@ -495,10 +536,86 @@ function VisualCorePanel() {
                     </select>
                 </div>
 
+                {mode === "generate" && (
+                    <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block flex items-center justify-between">
+                            <span>AI Engine <span className="text-zinc-600 font-normal">— generates from prompt</span></span>
+                            <button
+                                onClick={() => refreshCredits()}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors group"
+                                title="Refresh credit balance"
+                            >
+                                <Coins className="h-3 w-3 text-amber-400" />
+                                <span className="text-[9px] font-bold text-amber-400 tabular-nums">{credits ?? '—'}</span>
+                                <RefreshCw className="h-2.5 w-2.5 text-amber-500/50 group-hover:text-amber-400 group-hover:rotate-180 transition-all" />
+                            </button>
+                        </label>
+                        <div className="relative">
+                            <select
+                                value={provider}
+                                onChange={(e) => setProvider(e.target.value)}
+                                className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50 appearance-none"
+                            >
+                                <optgroup label="⚡ No API Key Needed">
+                                    {AI_ENGINES.filter(e => !e.needsKey && !e.description.includes('GPU')).map(eng => (
+                                        <option key={eng.id} value={eng.id}>
+                                            {eng.name} <span className="text-zinc-500">— {eng.credits > 0 ? `${eng.credits}¢` : 'Free'}</span>
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="🔑 Requires API Key">
+                                    {AI_ENGINES.filter(e => e.needsKey && !e.description.includes('GPU')).map(eng => (
+                                        <option key={eng.id} value={eng.id}>
+                                            {eng.name} <span className="text-zinc-500">— {eng.credits > 0 ? `${eng.credits}¢` : 'Free'}</span>
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="🖥️ GPU Node Required">
+                                    {AI_ENGINES.filter(e => e.description.includes('GPU')).map(eng => (
+                                        <option key={eng.id} value={eng.id}>
+                                            {eng.name} <span className="text-zinc-500">— {eng.credits > 0 ? `${eng.credits}¢` : 'Free'}</span>
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                                <ChevronDown className="h-4 w-4" />
+                            </div>
+                        </div>
+                        <p className="text-[8px] text-zinc-600 mt-1.5 leading-relaxed">
+                            {(() => {
+                                const eng = AI_ENGINES.find(e => e.id === provider);
+                                if (!eng) return '';
+                                const costLabel = eng.credits > 0 ? `${eng.credits} credits per video` : 'Free to use';
+                                return `${eng.description} — ${costLabel}`;
+                            })()}
+                        </p>
+                    </div>
+                )}
+
+                {insufficientCredits && (
+                    <a
+                        href="/credits"
+                        className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-colors group"
+                    >
+                        <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                        <div className="space-y-0.5 flex-1">
+                            <p className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">
+                                Insufficient Credits
+                            </p>
+                            <p className="text-[8px] text-rose-300/70 leading-relaxed">
+                                {selectedEngine?.name} costs <span className="font-bold text-rose-300">{engineCost} credits</span> per video. You have <span className="font-bold text-rose-300">{credits} credits</span>.
+                                <span className="ml-1 underline decoration-dotted underline-offset-2 group-hover:text-rose-200 transition-colors">Top up →</span>
+                            </p>
+                        </div>
+                        <ArrowRight className="h-3.5 w-3.5 text-rose-400/50 group-hover:text-rose-300 group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5" />
+                    </a>
+                )}
+
                 <Button
                     onClick={handleGenerate}
-                    disabled={isGenerating || !prompt}
-                    className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
+                    disabled={isGenerating || !prompt || insufficientCredits}
+                    className="w-full h-14 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
                 >
                     {isGenerating ? (
                         mode === "remix" && currentJobId ? (

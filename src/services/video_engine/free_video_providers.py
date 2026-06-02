@@ -260,6 +260,15 @@ class FreeVideoProviderService:
             "supports_image2video": True,
             "supports_audio": True,
         },
+        "leiapix": {
+            "api_url": "https://convert.leiapix.com",
+            "free_credits": 0,  # Browser-automation only, no API credits needed
+            "max_duration": 10,
+            "default_aspect": "16:9",
+            "supports_image2video": True,  # Image-to-video depth animation
+            "supports_audio": False,
+            "note": "Browser automation (Playwright) — image-to-video depth conversion",
+        },
         "heygen": {
             "api_url": "https://api.heygen.com/v1",
             "free_credits": 3,  # Monthly
@@ -485,7 +494,7 @@ class FreeVideoProviderService:
         browser_providers = {
             "kaiber", "fliki", "invideo", "morph", "genmo",
             "leonardo", "frameloop", "wavespeed", "ltx", "videoany",
-            "vidu", "hailuo", "seedance", "heygen"
+            "vidu", "hailuo", "seedance", "heygen", "leiapix",
         }
         if provider in browser_providers:
             return await self._generate_browser_automation(
@@ -782,6 +791,7 @@ class FreeVideoProviderService:
             "hailuo": "services.openclaw.skills.hailuo",
             "seedance": "services.openclaw.skills.seedance",
             "heygen": "services.openclaw.skills.heygen",
+            "leiapix": "services.openclaw.skills.leiapix",
         }
 
         try:

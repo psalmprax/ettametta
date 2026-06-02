@@ -117,7 +117,6 @@ def test_video_skills():
             "pixverse",
             "haiper",
             "luma",
-            "leiapix",
             "kaiber",
             "fliki",
             "invideo",

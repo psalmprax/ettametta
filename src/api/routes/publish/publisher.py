@@ -10,12 +10,14 @@ import datetime
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
-from src.api.utils.models import PublishedContentDB, ABTestDB, AffiliateLinkDB
+from src.api.utils.models import PublishedContentDB, ABTestDB, AffiliateLinkDB, VideoJobDB
+from src.shared.enums import SystemJobStatus
 from src.api.utils.api_responses import success_response
 from src.shared.enums import ContentPublishStatus
 from src.api.utils.subscription import credits_required
@@ -534,6 +536,96 @@ async def publish_multi_platform(
     except Exception as e:
         logger.exception(f"Multi-platform publishing failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")
+
+
+# ─── Pipeline Bridge: Job → Publish ────────────────────────────────────
+
+
+class PublishFromJobRequest(BaseModel):
+    platform: str = "YouTube Shorts"
+    niche: str = "General"
+    account_id: str | None = None
+    inject_monetization: bool = False
+    variant_b_title: str | None = None
+    variant_b_description: str | None = None
+
+
+@router.post("/from-job/{job_id}")
+async def publish_from_job(
+    job_id: str,
+    request: PublishFromJobRequest,
+    current_user: UserDB = Depends(get_current_user),
+    db=Depends(get_db),
+    credits_cost: int = Depends(credits_required("social_publish")),
+):
+    """
+    Bridge a completed video generation job directly into the publishing pipeline.
+
+    Closes the loop: Discovery → Analysis → Video Creation → Publish.
+    Looks up a completed VideoJobDB or NexusJobDB by ID, extracts the output
+    video path, and publishes it to the specified platform.
+    """
+    from src.api.utils.models import NexusJobDB
+
+    try:
+        # 1. Look up the job
+        stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
+        result = await db.execute(stmt)
+        job = result.scalar_one_or_none()
+
+        if not job:
+            stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+            result = await db.execute(stmt)
+            job = result.scalar_one_or_none()
+
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+        # 2. Verify user ownership
+        from src.api.utils.user_models import UserRole
+        if job.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Not authorized to publish this job")
+
+        # 3. Check job is completed
+        status_val = job.status.value if hasattr(job.status, 'value') else job.status
+        if status_val != SystemJobStatus.COMPLETED.value:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Job is not completed (status: {status_val}). Only completed jobs can be published.",
+            )
+
+        # 4. Get the video output path
+        output_path = getattr(job, "output_path", None)
+        if not output_path:
+            raise HTTPException(
+                status_code=400,
+                detail="Job has no output path. The video file may have been processed externally.",
+            )
+
+        # 5. Construct the publish request and delegate
+        publish_req = PublishRequest(
+            video_path=output_path,
+            niche=request.niche,
+            platform=request.platform,
+            account_id=request.account_id,
+            inject_monetization=request.inject_monetization,
+            variant_b_title=request.variant_b_title,
+            variant_b_description=request.variant_b_description,
+        )
+
+        # Reuse existing publish logic via the inner helper
+        return await publish_video(
+            request=publish_req,
+            current_user=current_user,
+            db=db,
+            credits_cost=credits_cost,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Publish from job failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to publish from job")
 
 
 # ─── Auto-Broadcast ────────────────────────────────────────────────────

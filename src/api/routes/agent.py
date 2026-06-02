@@ -41,7 +41,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
     
     # Detect video generation keywords
     video_keywords = ["generate video", "create video", "make video", "video of"]
-    provider_keywords = ["pixverse", "kling", "haiper", "luma", "pika", "runway", "leonardo"]
+    provider_keywords = ["pixverse", "kling", "haiper", "luma", "pika", "runway", "leonardo", "mochi", "wan", "cogvideo", "zeroscope", "animatediff", "lite4k", "zsky", "stability", "replicate"]
 
     is_video_request = any(kw in message_lower for kw in video_keywords)
     provider = next((kw for kw in provider_keywords if kw in message_lower), "hunyuan") # Default to internal

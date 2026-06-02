@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import {
     Zap,
@@ -41,7 +41,8 @@ import {
     Volume2,
     Palette,
     Scissors,
-    Sliders
+    Sliders,
+    Coins
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -59,11 +60,22 @@ import { AreaChartCustom } from "@/components/ui/ChartComponents";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 import { useTelemetry } from "@/context/TelemetryContext";
+import { useAuth } from "@/context/AuthContext";
 
 function NexusContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { agents, logs: systemLogs, lastJobUpdate, pulse, status } = useTelemetry();
+    const { credits, refreshCredits } = useAuth();
+
+    // Auto-refresh credit balance every 2 minutes
+    const refreshRef = useRef(refreshCredits);
+    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current();
+        const interval = setInterval(() => refreshRef.current(), 120_000);
+        return () => clearInterval(interval);
+    }, []);
     
     const [personas, setPersonas] = useState<Persona[]>([]);
     const [capabilities, setCapabilities] = useState<any[]>([]);
@@ -442,6 +454,20 @@ function NexusContent() {
             }
             rightPanel={
                 <>
+                    <button
+                        onClick={() => refreshCredits()}
+                        className="w-full p-4 rounded-2xl border border-white/5 bg-[#0F0F11]/60 space-y-2 mb-4 hover:bg-white/5 transition-colors group text-left"
+                        title="Refresh credit balance"
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Credits</span>
+                            <RefreshCw className="h-2.5 w-2.5 text-amber-500/50 group-hover:text-amber-400 group-hover:rotate-180 transition-all" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Coins className="h-4 w-4 text-amber-400" />
+                            <span className="text-sm font-bold text-white tabular-nums">{credits ?? '—'}</span>
+                        </div>
+                    </button>
                     <div className="p-4 rounded-2xl border border-white/5 bg-[#0F0F11]/60 space-y-2 mb-4">
                         <div className="flex items-center justify-between">
                             <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Node_ID</span>

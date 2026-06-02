@@ -45,10 +45,10 @@ export default function AuditsPage() {
 
         if (activeTab === "security") {
             await Promise.all([
-                withRealFallback<any>((signal) => fetch(`${API_BASE}/security/status`, { headers }),
+                withRealFallback<any>((signal) => fetch(`${API_BASE}/security/status`, { headers, signal }),
                     { fallback: null, onSuccess: (data) => setSecurityStatus(data) }
                 ),
-                withRealFallback<any[]>((signal) => fetch(`${API_BASE}/security/events`, { headers }),
+                withRealFallback<any[]>((signal) => fetch(`${API_BASE}/security/events`, { headers, signal }),
                     { fallback: [], onSuccess: (data) => setSecurityEvents(data) }
                 )
             ]);

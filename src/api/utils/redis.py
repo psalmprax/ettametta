@@ -17,6 +17,7 @@ Usage:
         r.get("key")
 """
 
+import os
 import asyncio
 import logging
 import redis
@@ -25,26 +26,32 @@ from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Pool configuration
-# ---------------------------------------------------------------------------
-ASYNC_MAX_CONNECTIONS = 20
-SYNC_MAX_CONNECTIONS = 10
 
-# ---------------------------------------------------------------------------
-# Async pool / client (redis.asyncio)
-# ---------------------------------------------------------------------------
-_async_pool = None
-_async_client = None
-_async_loop = None
+def _in_docker() -> bool:
+    """Detect whether we're running inside a Docker container."""
+    if os.path.exists("/.dockerenv"):
+        return True
+    try:
+        with open("/proc/1/cgroup", "rt") as f:
+            return "docker" in f.read()
+    except Exception:
+        return False
+
+
+_IN_DOCKER = _in_docker()
 
 
 def _build_async_url() -> str:
-    """Resolve the Redis URL, swapping localhost for the Docker service name."""
+    """Resolve the Redis URL, swapping localhost for the Docker service name when inside a container."""
     url = settings.REDIS_URL
-    if "//localhost" in url:
+    if _IN_DOCKER and "//localhost" in url:
         url = url.replace("//localhost", "//redis")
     return url
+
+
+_async_pool = None
+_async_client = None
+_async_loop = None
 
 
 async def get_async_redis():
@@ -84,9 +91,9 @@ _sync_client = None
 
 
 def _build_sync_url() -> str:
-    """Resolve the Redis URL, swapping localhost for the Docker service name."""
+    """Resolve the Redis URL, swapping localhost for the Docker service name when inside a container."""
     url = settings.REDIS_URL
-    if "//localhost" in url:
+    if _IN_DOCKER and "//localhost" in url:
         url = url.replace("//localhost", "//redis")
     return url
 

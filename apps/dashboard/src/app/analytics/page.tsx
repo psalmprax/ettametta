@@ -72,8 +72,9 @@ function AnalyticsContent() {
         if (!token) return;
         
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/analytics/stats/summary`, {
-                headers: { Authorization: `Bearer ${token}` }
+            (signal) => fetch(`${API_BASE}/analytics/stats/summary`, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal,
             }),
             {
                 fallback: null,

@@ -11,6 +11,7 @@ import logging
 from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
 from .models import PostMetadata
 from .auth import token_manager
+from src.services.storage.service import base_storage_service
 
 logger = logging.getLogger(__name__)
 
@@ -117,18 +118,47 @@ class InstagramPublisher(SocialPublisher):
             return None
 
     async def _resolve_video_uri(self, video_path: str) -> str | None:
-        """Resolve video path to URL - return if already URL, otherwise handle local file"""
+        """
+        Resolve video path to a publicly accessible URL.
+        - If already a URL, return as-is.
+        - If a local file, upload to cloud storage and return the presigned URL.
+        """
         import os
 
         if video_path and video_path.startswith(("http://", "https://")):
             return video_path
 
         if os.path.isfile(video_path):
-            logger.error(
-                "[InstagramPublisher] Local files require S3/cloud storage for Instagram API. "
-                "Cannot upload local files directly to Instagram."
+            logger.info(
+                f"[InstagramPublisher] Uploading local file to cloud storage: {video_path}"
             )
-            return None
+            try:
+                # Upload to configured cloud storage (S3/OCI/GCP) and get a presigned URL
+                object_key = base_storage_service.upload_to_cloud(video_path)
+                if object_key:
+                    url = base_storage_service.get_file_url(object_key, expiration=86400)
+                    if url:
+                        logger.info(
+                            f"[InstagramPublisher] File uploaded, using URL: {url}"
+                        )
+                        return url
+
+                logger.warning(
+                    "[InstagramPublisher] Cloud upload returned no URL. "
+                    "Falling back to local static serving."
+                )
+                # Fallback: serve locally via the static outputs endpoint
+                from src.api.config import settings
+                filename = os.path.basename(video_path)
+                local_url = f"{settings.PRODUCTION_DOMAIN}/static/outputs/{filename}"
+                logger.info(f"[InstagramPublisher] Using local static URL: {local_url}")
+                return local_url
+
+            except Exception as e:
+                logger.exception(
+                    f"[InstagramPublisher] Failed to upload local file to cloud: {e}"
+                )
+                return None
 
         logger.error(f"[InstagramPublisher] Invalid video path: {video_path}")
         return None

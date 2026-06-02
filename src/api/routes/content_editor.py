@@ -95,23 +95,51 @@ async def get_providers(
     current_user: UserDB = Depends(get_current_user),
 ):
     """
-    list available video generation providers/skills.
+    List available video generation providers/skills.
+    Each provider is tagged with:
+      - browser_automation: true if it relies on Playwright (no stable API)
+      - has_direct_api: true if there's a working HTTP/API integration
+      - free: whether free credits are available
+      - credits: approximate daily free credits (if applicable)
+      - platform_cost: platform credits deducted per generation (0 = free)
     """
     return {
         "providers": {
             "generation": [
-                {"id": "kling", "name": "Kling AI", "free": True, "credits": 66},
-                {"id": "pika", "name": "Pika", "free": True, "credits": 150},
-                {"id": "runway", "name": "Runway", "free": True},
-                {"id": "leonardo", "name": "Leonardo", "free": True},
-                {"id": "frameloop", "name": "Frameloop", "free": True},
-                {"id": "wavespeed", "name": "WaveSpeedAI", "free": True},
-                {"id": "ltx", "name": "LTX Studio", "free": True},
-                {"id": "videoany", "name": "VideoAny", "free": True},
-                {"id": "vidu", "name": "Vidu", "free": True},
-                {"id": "hailuo", "name": "Hailuo", "free": True},
-                {"id": "seedance", "name": "Seedance", "free": True},
-                {"id": "heygen", "name": "HeyGen", "free": True, "credits": 3},
+                # --- Direct API providers (working HTTP integrations) ---
+                {"id": "kling", "name": "Kling AI", "free": True, "credits": 100, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
+                {"id": "pika", "name": "Pika", "free": True, "credits": 10, "platform_cost": 10, "has_direct_api": True, "browser_automation": False},
+                {"id": "runway", "name": "Runway", "free": True, "credits": 10, "platform_cost": 30, "has_direct_api": True, "browser_automation": False},
+                {"id": "haiper", "name": "Haiper", "free": True, "credits": 25, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
+                {"id": "luma", "name": "Luma Dream Machine", "free": True, "credits": 15, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
+                {"id": "pixverse", "name": "PixVerse", "free": True, "credits": 20, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
+                {"id": "stability", "name": "Stability AI", "free": True, "credits": 25, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
+                {"id": "zsky", "name": "ZSky AI", "free": True, "credits": 50, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
+                {"id": "replicate", "name": "Replicate", "free": False, "credits": 0, "platform_cost": 5, "has_direct_api": True, "browser_automation": False},
+                {"id": "veo3", "name": "Google Veo 3", "free": False, "credits": 0, "platform_cost": 25, "has_direct_api": True, "browser_automation": False},
+                # --- Local GPU inference engines (requires GPU node) ---
+                {"id": "mochi", "name": "Mochi", "free": False, "credits": 0, "platform_cost": 15, "has_direct_api": True, "browser_automation": False},
+                {"id": "wan", "name": "Wan 2.2", "free": False, "credits": 0, "platform_cost": 15, "has_direct_api": True, "browser_automation": False},
+                {"id": "cogvideo", "name": "CogVideo", "free": False, "credits": 0, "platform_cost": 20, "has_direct_api": True, "browser_automation": False},
+                {"id": "zeroscope", "name": "ZeroScope", "free": False, "credits": 0, "platform_cost": 10, "has_direct_api": True, "browser_automation": False},
+                {"id": "animatediff", "name": "AnimateDiff", "free": False, "credits": 0, "platform_cost": 15, "has_direct_api": True, "browser_automation": False},
+                {"id": "lite4k", "name": "Lite4K Cinematic", "free": True, "credits": None, "platform_cost": 5, "has_direct_api": True, "browser_automation": False, "note": "No API key required — uses Pollinations.ai + FFmpeg"},
+                # --- Browser-automation only (Playwright-based, no stable API) ---
+                {"id": "leonardo", "name": "Leonardo", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "frameloop", "name": "Frameloop", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "wavespeed", "name": "WaveSpeedAI", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "ltx", "name": "LTX Studio", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "videoany", "name": "VideoAny", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "vidu", "name": "Vidu", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "hailuo", "name": "Hailuo", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "seedance", "name": "Seedance", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "heygen", "name": "HeyGen", "free": True, "credits": 3, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "kaiber", "name": "Kaiber", "free": True, "credits": 20, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "fliki", "name": "Fliki", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "invideo", "name": "InVideo", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "morph", "name": "Morph Studio", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "genmo", "name": "Genmo", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True},
+                {"id": "leiapix", "name": "LeiaPix", "free": True, "credits": 0, "platform_cost": 0, "has_direct_api": False, "browser_automation": True, "note": "Image-to-video depth animation via browser automation"},
             ],
             "content_editor": [
                 {
