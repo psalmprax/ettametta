@@ -142,6 +142,19 @@ async def get_job_details(
             "pika": {"credits": 30, "cost_usd": 3.00, "category": "premium"},
             "ltx-video": {"credits": 10, "cost_usd": 1.00, "category": "local"},
             "hunyuan": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            # Local GPU inference engines
+            "mochi": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            "wan": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            "cogvideo": {"credits": 20, "cost_usd": 2.00, "category": "local"},
+            "zeroscope": {"credits": 10, "cost_usd": 1.00, "category": "local"},
+            "animatediff": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            # Zero-API-key engine
+            "lite4k": {"credits": 5, "cost_usd": 0.50, "category": "local"},
+            # Free daily credit APIs
+            "zsky": {"credits": 0, "cost_usd": 0.00, "category": "free"},
+            "stability": {"credits": 0, "cost_usd": 0.00, "category": "free"},
+            # Paid API
+            "replicate": {"credits": 5, "cost_usd": 0.50, "category": "standard"},
         }
 
         cost_info = cost_mapping.get(

@@ -33,8 +33,20 @@ class CreditService:
         "video_generation_hunyuan": 15,
         "video_generation_veo3": 25,
         "video_generation_runway": 30,
-        "video_generation_free": 0,  # Free daily providers (ZSky, Kling, PixVerse, Replicate, Stability)
-        "video_generation_replicate": 5,  # Replicate paid models ($0.01-0.72 per video - cheapest!)
+        # Local GPU inference engines
+        "video_generation_mochi": 15,
+        "video_generation_wan": 15,
+        "video_generation_cogvideo": 20,
+        "video_generation_zeroscope": 10,
+        "video_generation_animatediff": 15,
+        # Zero-API-key engine (image-gen + FFmpeg parallax)
+        "video_generation_lite4k": 5,
+        # Free daily credit providers
+        "video_generation_free": 0,
+        "video_generation_zsky": 0,
+        "video_generation_stability": 0,
+        # Replicate paid models ($0.01-0.72 per video - cheapest!)
+        "video_generation_replicate": 5,
         "video_transformation": 5,
         "voice_clone": 20,
         "face_swap": 15,

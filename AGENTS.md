@@ -12,11 +12,11 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 ## Technology Stack
 
 ## Languages
-- Python 3.10 - Main application logic, API, services
+- Python 3.11 - Main application logic, API, services
 - TypeScript/JavaScript - Frontend apps (dashboard, remotion-studio), external skills
 - Go - Discovery service (discovery-go)
 ## Runtime
-- Python 3.10-slim - Containerized with Docker
+- Python 3.11-slim - Containerized with Docker
 - Node.js 18-alpine - For frontend/dashboard apps
 - pip - Python dependencies via requirements.txt
 - npm/yarn - Node.js dependencies via package.json
@@ -46,7 +46,7 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 - Docker Compose for service orchestration
 ## Platform Requirements
 - Docker and Docker Compose
-- Python 3.10+
+- Python 3.11+
 - Node.js 18+ for frontend apps
 - Kubernetes/Docker Swarm for orchestration
 - PostgreSQL database

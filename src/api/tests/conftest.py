@@ -67,7 +67,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Set test environment before importing app
 os.environ["ENV"] = "test"
 os.environ["DATABASE_URL"] = "sqlite:///./test_ettametta.db"
-os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+
+# Load Redis credentials from .env and point to host-accessible port
+_project_root = str(Path(__file__).parent.parent.parent)
+_env_path = os.path.join(_project_root, ".env")
+_redis_password = ""
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line.startswith("REDIS_PASSWORD=") and "=" in _line:
+                _redis_password = _line.split("=", 1)[1]
+                break
+os.environ["REDIS_URL"] = f"redis://:{_redis_password}@127.0.0.1:7204/0"
 os.environ["SECRET_KEY"] = "test_secret_key_for_testing_purposes_123"
 os.environ["GROQ_API_KEY"] = "test_groq_key"
 
@@ -138,11 +150,14 @@ def mock_redis():
 def mock_redis_async():
     """Mock async Redis client methods used in auth/routes."""
     from unittest.mock import AsyncMock
-    with patch("src.api.utils.auth.redis_async_client") as mock_client:
-        mock_client.sismember = AsyncMock(return_value=False)
-        mock_client.get = AsyncMock(return_value=None)
-        mock_client.set = AsyncMock(return_value=True)
-        yield mock_client
+    with patch("src.api.utils.redis.get_async_redis", new_callable=AsyncMock) as mock_get_redis:
+        mock_redis = AsyncMock()
+        mock_redis.sismember = AsyncMock(return_value=False)
+        mock_redis.get = AsyncMock(return_value=None)
+        mock_redis.set = AsyncMock(return_value=True)
+        mock_redis.exists = AsyncMock(return_value=False)
+        mock_get_redis.return_value = mock_redis
+        yield mock_redis
 
 
 @pytest.fixture

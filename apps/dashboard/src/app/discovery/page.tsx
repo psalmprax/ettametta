@@ -205,10 +205,11 @@ function DiscoveryContent() {
         ]);
 
         await withRealFallback<any>(
-            async () => {
+            async (signal) => {
                 setActionLogs((prev: string[]) => [`[SCAN] Dispatching live scanners for ${activeRegion}...`, ...prev]);
                 return fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}&region=${activeRegion}`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
+                    signal,
                 });
             },
             {
@@ -235,7 +236,8 @@ function DiscoveryContent() {
         const token = await getAuthToken();
         if (!token) return;
         await withRealFallback<any>((signal) => fetch(`${API_BASE}/discovery/alerts`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                signal,
             }),
             {
                 fallback: [],
@@ -251,7 +253,8 @@ function DiscoveryContent() {
         const token = await getAuthToken();
         if (!token) return;
         await withRealFallback<any>((signal) => fetch(`${API_BASE}/discovery/insights/${encodeURIComponent(activeNiche)}`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                signal,
             }),
             {
                 fallback: null,

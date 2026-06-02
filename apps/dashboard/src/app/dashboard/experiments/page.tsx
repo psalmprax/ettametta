@@ -46,13 +46,13 @@ export default function ExperimentsPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/tests/active`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/tests/active`, { headers, signal }),
                 {
                     fallback: { active_tests: [] },
                     onSuccess: (data) => setActiveTests(data.active_tests || [])
                 }
             ),
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/tests/completed`, { headers }),
+            withRealFallback<any>((signal) => fetch(`${API_BASE}/ab-testing/tests/completed`, { headers, signal }),
                 {
                     fallback: { completed_tests: [] },
                     onSuccess: (data) => setCompletedTests(data.completed_tests || [])

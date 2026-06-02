@@ -137,6 +137,19 @@ class Settings(BaseSettings):
         except (ValueError, TypeError):
             return 0
 
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, v: Any) -> bool:
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            normalized = v.strip().lower()
+            if normalized in ("1", "true", "yes", "on", "release"):
+                return True
+            if normalized in ("0", "false", "no", "off", "production"):
+                return False
+        raise ValueError(f"Invalid boolean value for DEBUG: {v!r}")
+
     # Shopify Configuration
     SHOPIFY_SHOP_URL: str | None = None
     SHOPIFY_ACCESS_TOKEN: str | None = None

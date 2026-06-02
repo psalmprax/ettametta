@@ -105,7 +105,7 @@ export default function SettingsPage() {
             category: "api_key"
         }));
 
-        await withRealFallback((signal) => fetch(`${API_BASE}/settings/user`, {
+        const result = await withRealFallback((signal) => fetch(`${API_BASE}/settings/user`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify(payload),
@@ -113,13 +113,21 @@ export default function SettingsPage() {
             }),
             {
                 fallback: null,
+                errorMessage: "Settings update failed — check connection and try again",
                 onSuccess: () => {
                     toast.success("Protocol Updated");
                     setLogs((prev: string[]) => [`[SUCCESS] Identity synchronized with neural vault.`, ...prev]);
                     reset(data);
+                },
+                onFallback: (err: any) => {
+                    setLogs((prev: string[]) => [`[FAILURE] Sync failed: ${err?.message || 'Unknown error'}`, ...prev]);
                 }
             }
         );
+        if (!result) {
+            setIsSaving(false);
+            return;
+        }
         setIsSaving(false);
     });
 

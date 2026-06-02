@@ -23,7 +23,9 @@ import {
     Video,
     FileText,
     Search,
-    BarChart3
+    BarChart3,
+    Coins,
+    RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -34,6 +36,7 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface ChatMessage {
     id: string;
@@ -53,6 +56,17 @@ interface AgentCapability {
 
 function AgentContent() {
     const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { credits, refreshCredits } = useAuth();
+
+    // Auto-refresh credit balance every 2 minutes
+    const refreshRef = useRef(refreshCredits);
+    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current();
+        const interval = setInterval(() => refreshRef.current(), 120_000);
+        return () => clearInterval(interval);
+    }, []);
+
     const [activeEngine, setActiveEngine] = useState("chat");
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
@@ -192,6 +206,20 @@ function AgentContent() {
             }
             rightPanel={
                 <>
+                    <button
+                        onClick={() => refreshCredits()}
+                        className="w-full p-4 rounded-2xl border border-white/5 bg-white/5 space-y-2 hover:bg-white/10 transition-colors group text-left"
+                        title="Refresh credit balance"
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Credits</span>
+                            <RefreshCw className="h-2.5 w-2.5 text-amber-500/50 group-hover:text-amber-400 group-hover:rotate-180 transition-all" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Coins className="h-4 w-4 text-amber-400" />
+                            <span className="text-lg font-bold text-white tabular-nums">{credits ?? '—'}</span>
+                        </div>
+                    </button>
                     <AgentMatrix agents={agents} />
                     <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
                         <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Workforce Status</h4>

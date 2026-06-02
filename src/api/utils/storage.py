@@ -1,6 +1,9 @@
 import os
+import logging
 import boto3
 from botocore.exceptions import NoCredentialsError
+
+logger = logging.getLogger(__name__)
 
 class StorageService:
     def __init__(self):
@@ -15,7 +18,7 @@ class StorageService:
     async def upload_asset(self, local_path: str, remote_name: str) -> str | None:
         """Uploads a local file to S3 and returns the URL."""
         if not self.bucket_name:
-            print("[StorageService] WARNING: No bucket name provided, skipping upload.")
+            logger.warning("[StorageService] No bucket name provided, skipping upload.")
             return f"local://{local_path}"
             
         try:
@@ -23,10 +26,10 @@ class StorageService:
             url = f"https://{self.bucket_name}.s3.amazonaws.com/{remote_name}"
             return url
         except NoCredentialsError:
-            print("[StorageService] ERROR: AWS credentials not found.")
+            logger.error("[StorageService] AWS credentials not found.")
             return None
         except Exception as e:
-            print(f"[StorageService] ERROR: {e}")
+            logger.error("[StorageService] %s", e)
             return None
 
     async def download_asset(self, remote_name: str, local_path: str) -> bool:
@@ -35,7 +38,7 @@ class StorageService:
             self.s3_client.download_file(self.bucket_name, remote_name, local_path)
             return True
         except Exception as e:
-            print(f"[StorageService] ERROR: {e}")
+            logger.error("[StorageService] %s", e)
             return False
 
 storage_service = StorageService()

@@ -19,11 +19,16 @@ class LeiaPixSkill(PlaywrightVideoSkill):
     create_path = ""
     button_names = ["Animate"]
 
-    async def generate(self, image_uri: str, motion_intensity: int = 5) -> dict:
-        """Convert image to motion video using LeiaPix."""
+    async def generate(self, prompt: str, aspect_ratio: str = "16:9") -> dict:
+        """Convert image to motion video using LeiaPix.
+
+        Args:
+            prompt: Path or URL to the input image (passed as prompt for base-class compatibility).
+            aspect_ratio: Ignored — LeiaPix derives aspect ratio from the uploaded image.
+        """
         try:
             await self.initialize()
-            logger.info(f"[LeiaPix] Converting image to video: {image_uri[:50]}...")
+            logger.info(f"[LeiaPix] Converting image to video: {prompt[:50]}...")
 
             await self.page.goto(self.base_url)
             await self.page.wait_for_load_state("networkidle")
@@ -33,10 +38,11 @@ class LeiaPixSkill(PlaywrightVideoSkill):
             await self.page.get_by_role("button", name="Upload Image").click()
             await asyncio.sleep(0.8)
             file_input = await self.page.query_selector('input[type="file"]')
-            await file_input.set_input_files(image_uri)
+            await file_input.set_input_files(prompt)
             await asyncio.sleep(2 + (1 * os.urandom(1)[0] / 255))
 
-            # Set motion intensity
+            # Use default motion intensity — aspect_ratio isn't applicable here
+            motion_intensity = 5
             await self.page.get_by_role("slider").fill(str(motion_intensity))
             await asyncio.sleep(0.5)
 
@@ -55,7 +61,8 @@ class LeiaPixSkill(PlaywrightVideoSkill):
                 "status": "success" if video_uri else "processing",
                 "video_uri": video_uri or "",
                 "engine": self.engine_name,
-                "input_image": image_uri,
+                "input_image": prompt,
+                "aspect_ratio": aspect_ratio,
             }
         except Exception as e:
             logger.exception(f"[LeiaPix] Generation failed: {str(e)}")

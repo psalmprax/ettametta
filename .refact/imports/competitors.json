@@ -1,9 +1,328 @@
 {
   "version": 1,
-  "entries": [],
+  "entries": [
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/agent-zero",
+      "source_hash": "f2f3a83889bb7a5e8cecb8ac695104ee75ecf883240eac44158bd3bc22924604",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/agent-zero",
+      "dest_hash": "f2f3a83889bb7a5e8cecb8ac695104ee75ecf883240eac44158bd3bc22924604",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.857351202Z",
+      "metadata": {
+        "original_name": "agent-zero",
+        "generated_name": "agent-zero",
+        "original_description": "Debug and troubleshoot Agent Zero — ettametta's autonomous production loop. Use when the loop stalls, state recovery fails, renders crash, or the scouting/screening/brainstorming pipeline breaks.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/ai-gateway",
+      "source_hash": "0021832d87398f9d8358016dbfd7cd599b82f5e4d794418a8bae341ff56d80ba",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/ai-gateway",
+      "dest_hash": "0021832d87398f9d8358016dbfd7cd599b82f5e4d794418a8bae341ff56d80ba",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.863280991Z",
+      "metadata": {
+        "original_name": "ai-gateway",
+        "generated_name": "ai-gateway",
+        "original_description": "Debug and troubleshoot ettametta's AI Gateway — the load-balancing reverse proxy for remote GPU worker nodes. Use when node routing fails, health checks stall, provisioning breaks, or inference requests time out.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/ai-provider-debug",
+      "source_hash": "bc3fd1ea3c1b2c6cc3429521acdc16d340812bbc6de088ebc2ce4a6fd3a68c15",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/ai-provider-debug",
+      "dest_hash": "bc3fd1ea3c1b2c6cc3429521acdc16d340812bbc6de088ebc2ce4a6fd3a68c15",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.873522559Z",
+      "metadata": {
+        "original_name": "ai-provider-debug",
+        "generated_name": "ai-provider-debug",
+        "original_description": "Debug and troubleshoot AI/LLM provider integrations in ettametta. Use when investigating API failures, rate limits, fallback chain issues, model selection problems, or cost anomalies across 17+ providers.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/alembic-workflow",
+      "source_hash": "9bee4dbdf7da3636689b9daf2b2ce89ca02ac2a8c806264e9148e8ef668a60bd",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/alembic-workflow",
+      "dest_hash": "9bee4dbdf7da3636689b9daf2b2ce89ca02ac2a8c806264e9148e8ef668a60bd",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.883693284Z",
+      "metadata": {
+        "original_name": "alembic-workflow",
+        "generated_name": "alembic-workflow",
+        "original_description": "Create and manage Alembic database migrations in ettametta. Use when adding/modifying database tables, resolving migration conflicts, or fixing schema drift. Covers autogenerate, merge heads, introspection-based migrations, and the CI bypass issue.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/celery-monitor",
+      "source_hash": "ff1320f5e163522734bb2cc7c7b9383cf65d114a2f1b521a5b6c4f6e3f96dad7",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/celery-monitor",
+      "dest_hash": "ff1320f5e163522734bb2cc7c7b9383cf65d114a2f1b521a5b6c4f6e3f96dad7",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.891711116Z",
+      "metadata": {
+        "original_name": "celery-monitor",
+        "generated_name": "celery-monitor",
+        "original_description": "Monitor, debug, and troubleshoot Celery tasks and workers in ettametta. Use when investigating task failures, queue bottlenecks, worker health, or beat schedule issues. Covers task tracing, async bridge patterns, retry debugging, and worker architecture.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/cloakbrowser",
+      "source_hash": "99c33dbbb34df90cac5b6ecba2fee7e1ed9f38ed4dacea702b01381f35ec3eb8",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/cloakbrowser",
+      "dest_hash": "99c33dbbb34df90cac5b6ecba2fee7e1ed9f38ed4dacea702b01381f35ec3eb8",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.901910362Z",
+      "metadata": {
+        "original_name": "cloakbrowser",
+        "generated_name": "cloakbrowser",
+        "original_description": "Debug and troubleshoot CloakBrowser stealth scraping in ettametta. Use when investigating scraping failures, platform detection issues, parse errors, fallback chain problems, or discovery-scraper service connectivity.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/content-discovery",
+      "source_hash": "87029bab1266aa7a1e2992c47b4dfa7830d377c1a044d84f034a719fd20e3232",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/content-discovery",
+      "dest_hash": "87029bab1266aa7a1e2992c47b4dfa7830d377c1a044d84f034a719fd20e3232",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.910744311Z",
+      "metadata": {
+        "original_name": "content-discovery",
+        "generated_name": "content-discovery",
+        "original_description": "Debug and troubleshoot ettametta's content discovery and trend scanning system. Use when investigating scan failures, scoring anomalies, platform scanner issues, data normalization problems, or the discovery-to-video pipeline flow.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/db-performance",
+      "source_hash": "8c841772395bb1224b746407b90a37679682ed213cbfcb8fbad776d0f137505b",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/db-performance",
+      "dest_hash": "8c841772395bb1224b746407b90a37679682ed213cbfcb8fbad776d0f137505b",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.923097654Z",
+      "metadata": {
+        "original_name": "db-performance",
+        "generated_name": "db-performance",
+        "original_description": "Debug and troubleshoot database performance in ettametta. Use when investigating slow queries, connection pool issues, migration conflicts, N+1 patterns, or schema drift.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/dep-audit",
+      "source_hash": "ec1b322af59260812fb40d1057768731c6f7d5637560932f6947ceadee1f71b7",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/dep-audit",
+      "dest_hash": "ec1b322af59260812fb40d1057768731c6f7d5637560932f6947ceadee1f71b7",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.939020428Z",
+      "metadata": {
+        "original_name": "dep-audit",
+        "generated_name": "dep-audit",
+        "original_description": "Audit dependencies for vulnerabilities and version conflicts in ettametta. Use when checking for security issues in Python/Node.js packages, resolving version conflicts, or hardening the dependency tree. Covers pip-audit, npm audit, bandit, safety, and Docker image scanning.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/docker-compose",
+      "source_hash": "5ef2453e934dc42cf20030d43085ecd389866c6ddbab31af624624575c6f20a6",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/docker-compose",
+      "dest_hash": "5ef2453e934dc42cf20030d43085ecd389866c6ddbab31af624624575c6f20a6",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.942237499Z",
+      "metadata": {
+        "original_name": "docker-compose",
+        "generated_name": "docker-compose",
+        "original_description": "Debug and manage ettametta's Docker Compose stack. Use when troubleshooting service orchestration, container networking, volume issues, Traefik routing, healthchecks, or multi-container startup failures.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/fastapi-debug",
+      "source_hash": "f3ce29a068f8dbe6eb5100dd39f63d981582d38a173cc81022dee8ad0e524f87",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/fastapi-debug",
+      "dest_hash": "f3ce29a068f8dbe6eb5100dd39f63d981582d38a173cc81022dee8ad0e524f87",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.944859372Z",
+      "metadata": {
+        "original_name": "fastapi-debug",
+        "generated_name": "fastapi-debug",
+        "original_description": "Debug and troubleshoot ettametta's FastAPI application. Use when investigating middleware issues, authentication failures, route errors, dependency injection problems, CORS, rate limiting, or OpenAPI issues.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/humanizer",
+      "source_hash": "7626a001fd65620e1312bf65076791de2131e9519663529231a17a2664d8e3b5",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/humanizer",
+      "dest_hash": "7626a001fd65620e1312bf65076791de2131e9519663529231a17a2664d8e3b5",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.956004581Z",
+      "metadata": {
+        "generated_name": "humanizer",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/nexus-engine",
+      "source_hash": "b172c48908eeac8d2a2bfa585ebbb29a1342d2ceda60ac3b8b81c37eddb148e4",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/nexus-engine",
+      "dest_hash": "b172c48908eeac8d2a2bfa585ebbb29a1342d2ceda60ac3b8b81c37eddb148e4",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.975866649Z",
+      "metadata": {
+        "original_name": "nexus-engine",
+        "generated_name": "nexus-engine",
+        "original_description": "Debug and troubleshoot ettametta's Nexus Engine — the autonomous video production pipeline. Use when investigating compose failures, script generation issues, asset sourcing problems, Remotion render errors, DAG execution failures, style/blueprint issues, or job state machine problems.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/redis-debug",
+      "source_hash": "d1b94fd7f01082bd81ac562dc4735414197b2ed1a74b8c005dcb55820589a024",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/redis-debug",
+      "dest_hash": "d1b94fd7f01082bd81ac562dc4735414197b2ed1a74b8c005dcb55820589a024",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:08.994731523Z",
+      "metadata": {
+        "original_name": "redis-debug",
+        "generated_name": "redis-debug",
+        "original_description": "Debug and troubleshoot Redis usage in ettametta. Use when investigating cache issues, pub/sub problems, connection failures, broker connectivity, memory pressure, or key pattern anomalies.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/remotion-debug",
+      "source_hash": "a1be69c4e59e396154c8a3ca4ea85facea6dc84698dd2382f76609c315f864da",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/remotion-debug",
+      "dest_hash": "a1be69c4e59e396154c8a3ca4ea85facea6dc84698dd2382f76609c315f864da",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:09.012309807Z",
+      "metadata": {
+        "original_name": "remotion-debug",
+        "generated_name": "remotion-debug",
+        "original_description": "Debug Remotion video compositions, rendering pipeline, and the Python-to-React bridge in ettametta. Use when troubleshooting render failures, prop validation errors, composition issues, asset staging, or video output quality. Covers all 3 compositions (ViralClip, CinematicMinimal, HormoziStyle) and 14 components.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/security-sentinel",
+      "source_hash": "561531fd1ef12d13037cddbd586fa8652894c665b9c244f27b6c8ce9e41d354b",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/security-sentinel",
+      "dest_hash": "561531fd1ef12d13037cddbd586fa8652894c665b9c244f27b6c8ce9e41d354b",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:09.020846831Z",
+      "metadata": {
+        "original_name": "security-sentinel",
+        "generated_name": "security-sentinel",
+        "original_description": "Debug and troubleshoot ettametta's SecuritySentinel — system integrity monitoring, threat detection, audit logging, and vulnerability scanning. Use when health scores drop, audits fail, or threat levels spike.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/storage-lifecycle",
+      "source_hash": "9b1a4cb5f8affddca455a9c99c445721fed70af9d8cb1bb73eb81274d3387c5d",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/storage-lifecycle",
+      "dest_hash": "9b1a4cb5f8affddca455a9c99c445721fed70af9d8cb1bb73eb81274d3387c5d",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:09.033603787Z",
+      "metadata": {
+        "original_name": "storage-lifecycle",
+        "generated_name": "storage-lifecycle",
+        "original_description": "Debug and troubleshoot ettametta's storage system — local/S3 provider, lifecycle management, disk threshold enforcement, and cloud migration. Use when uploads fail, disk fills up, or cloud migration stalls.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/video-pipeline",
+      "source_hash": "2c223e715a5bfc6f5fdf4da10795131c18b02f71a029127377c368b201317b0a",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/video-pipeline",
+      "dest_hash": "2c223e715a5bfc6f5fdf4da10795131c18b02f71a029127377c368b201317b0a",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:09.047442533Z",
+      "metadata": {
+        "original_name": "video-pipeline",
+        "generated_name": "video-pipeline",
+        "original_description": "Debug and troubleshoot ettametta's end-to-end video generation pipeline. Use when investigating render failures, asset staging issues, FFmpeg errors, MoviePy hangs, Remotion crashes, or storage problems.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "skill",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/skills/voiceover-tts",
+      "source_hash": "88c6a16e455d4cf399c08cd5035299e71189f947c9b0efecdb9cae1c5312eb05",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/skills/voiceover-tts",
+      "dest_hash": "88c6a16e455d4cf399c08cd5035299e71189f947c9b0efecdb9cae1c5312eb05",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:09.054348316Z",
+      "metadata": {
+        "original_name": "voiceover-tts",
+        "generated_name": "voiceover-tts",
+        "original_description": "Debug and troubleshoot ettametta's voiceover/TTS system — Fish Speech, ElevenLabs fallback, audio mixing, and the voice-to-video pipeline. Use when voiceover generation fails, audio quality degrades, or mixing produces silence.",
+        "rewrote_skill_md": true
+      }
+    },
+    {
+      "competitor": "claude_code",
+      "kind": "subagent",
+      "source_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.claude/agents/humanizer-agricultural.md",
+      "source_hash": "87e6d8d3048e4f4a2745216c7c458b0e9fa7264d6c58891883a593af471c0711",
+      "dest_path": "/home/psalmprax/ALL_PROJECTS/ettametta/.refact/subagents/humanizer-agricultural.yaml",
+      "dest_hash": "94d90f57768abd088f452f8d4e7cefb14003f62f1c33af1a1ea4a1b848426032",
+      "importer_version": "competitor_import_v2",
+      "last_imported_at": "2026-06-01T12:52:09.056913132Z",
+      "metadata": {
+        "source_relative_path": "humanizer-agricultural.md",
+        "original_id": "humanizer-agricultural",
+        "generated_id": "humanizer-agricultural",
+        "defaulted_tools": true
+      }
+    }
+  ],
   "last_report": {
-    "generated_at": "2026-05-28T12:07:47.124932171+00:00",
-    "completed_at": "2026-05-28T12:07:47.254166764+00:00",
+    "generated_at": "2026-06-01T12:52:12.774329495+00:00",
+    "completed_at": "2026-06-01T12:52:12.968448282+00:00",
     "reported_scopes": [
       {
         "scope_kind": "project",
@@ -43,11 +362,24 @@
         "source_label": ".continue"
       }
     ],
-    "discovered_candidates": 0,
+    "discovered_candidates": 20,
     "status_counts": {
-      "unsupported": 2
+      "unchanged": 20,
+      "unsupported": 2,
+      "error": 1
     },
     "competitor_counts": {
+      "claude_code": {
+        "discovered": 20,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 20,
+        "stale": 0,
+        "conflicts": 0,
+        "user_modified": 0,
+        "unsupported": 0,
+        "errors": 1
+      },
       "kilo_code": {
         "discovered": 0,
         "created": 0,
@@ -72,6 +404,28 @@
       }
     },
     "kind_counts": {
+      "skill": {
+        "discovered": 19,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 19,
+        "stale": 0,
+        "conflicts": 0,
+        "user_modified": 0,
+        "unsupported": 0,
+        "errors": 1
+      },
+      "subagent": {
+        "discovered": 1,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 1,
+        "stale": 0,
+        "conflicts": 0,
+        "user_modified": 0,
+        "unsupported": 0,
+        "errors": 0
+      },
       "unsupported_rules": {
         "discovered": 0,
         "created": 0,
@@ -85,6 +439,17 @@
       }
     },
     "top_issues": [
+      {
+        "competitor": "claude_code",
+        "kind": "skill",
+        "scope": {
+          "type": "project",
+          "root": "<redacted>"
+        },
+        "path": "<redacted>/.../SKILL.md",
+        "status": "error",
+        "message": "invalid frontmatter: mapping values are not allowed in this context at line 2 column 233"
+      },
       {
         "competitor": "kilo_code",
         "kind": "unsupported_rules",
