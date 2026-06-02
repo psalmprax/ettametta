@@ -10,6 +10,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 os.environ["ENV"] = "test"
 os.environ["DATABASE_URL"] = "sqlite:///./test_ettametta.db"
 
+# Load Redis credentials from .env and point to host-accessible port (7204)
+_env_path = str(Path(__file__).parent.parent.parent / ".env")
+_redis_password = ""
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line.startswith("REDIS_PASSWORD=") and "=" in _line:
+                _redis_password = _line.split("=", 1)[1]
+                break
+os.environ["REDIS_URL"] = f"redis://:{_redis_password}@127.0.0.1:7204/0"
+
 @pytest.fixture(scope="session")
 def test_db():
     """Create a test database."""

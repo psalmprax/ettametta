@@ -1566,7 +1566,6 @@ jmespath==1.1.0 \
     # via
     #   boto3
     #   botocore
-joserfc==1.6.5 \
     --hash=sha256:1482a7db78fb4602e44ed89e51b599d052e091288c7c532c5b694e20149dec48 \
     --hash=sha256:e9878a0f8243fe7b95e11fdda81374ca9f7a689e302751579d3dfdeec559675e
     # via authlib

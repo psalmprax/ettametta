@@ -40,6 +40,9 @@ def _in_docker() -> bool:
 
 _IN_DOCKER = _in_docker()
 
+ASYNC_MAX_CONNECTIONS = 20
+SYNC_MAX_CONNECTIONS = 10
+
 
 def _build_async_url() -> str:
     """Resolve the Redis URL, swapping localhost for the Docker service name when inside a container."""
