@@ -68,7 +68,7 @@ class ConnectionManager:
         try:
             async for message in pubsub.listen():
                 if message["type"] == "message":
-                    data = message["data"].decode("utf-8")
+                    data = message["data"]
                     try:
                         # Ensure it's valid JSON before broadcasting
                         json.loads(data)

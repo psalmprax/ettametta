@@ -774,8 +774,9 @@ class AutoCreator:
                     raise RuntimeError("Gemini vision audit failed")
             except Exception as e:
                 logger.warning(f"[AutoCreator] Gemini vision failed, falling back to Ollama: {e}")
+                from src.api.config import settings as app_settings
                 audit_result = await unified_llm_service.analyze_image(
-                    frame_path, prompt, provider=LLMProvider.OLLAMA, model="llama3.2-vision"
+                    frame_path, prompt, provider=LLMProvider.OLLAMA, model=app_settings.OLLAMA_MODEL
                 )
             
             content = audit_result.get("content", "YES").upper()

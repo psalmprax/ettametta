@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     # Neural Asset Keys
     ELEVENLABS_API_KEY: str | None = None
     FISH_SPEECH_ENDPOINT: str = "http://voiceover:8080"
-    VOICE_ENGINE: str = "fish_speech"  # Options: elevenlabs, fish_speech
+    VOICE_ENGINE: str = "gtts"  # Options: elevenlabs, fish_speech, gtts (gtts works without API key)
     MONETIZATION_MODE: str = "selective"  # Options: selective, all
     PEXELS_API_KEY: str | None = None
     GOOGLE_API_KEY: str | None = None
