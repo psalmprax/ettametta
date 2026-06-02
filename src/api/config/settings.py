@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     CPU_AUTODETECT_THREADS: bool = True
     RESOURCE_CONSTRAINED_MODE: bool = False  # Set to True for small VPS (e.g. 2GB RAM)
     REMOTION_STUDIO_PATH: str = "apps/remotion-studio"
-    REMOTION_CONCURRENCY_LIMIT: int = 2  # Max simultaneous rendering processes
+    REMOTION_CONCURRENCY_LIMIT: int = 1  # Max simultaneous rendering processes (reduced for resource-constrained servers)
     
     # Resilience Settings (Global Hardening)
     DEFAULT_TIMEOUT: int = 60
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     STOCK_TIMEOUT: int = 30
     REMOTION_TIMEOUT_SECONDS: int = 900
     MAX_RENDER_FRAMES: int = 2700  # Cap total frames for CPU Remotion render (~90s @ 30fps)
-    NEXUS_COMPOSE_TIMEOUT: int = 3600  # 60 min global timeout for compose background task
+    NEXUS_COMPOSE_TIMEOUT: int = 600  # 10 min global timeout for compose background task
     DEFAULT_RETRY_COUNT: int = 3
     RETRY_MULTIPLIER: int = 1
     RETRY_MIN_WAIT: int = 2
@@ -86,8 +86,8 @@ class Settings(BaseSettings):
 
     # Neural Asset Keys
     ELEVENLABS_API_KEY: str | None = None
-    FISH_SPEECH_ENDPOINT: str = "http://voiceover:8080"
-    VOICE_ENGINE: str = "fish_speech"  # Options: elevenlabs, fish_speech
+    FISH_SPEECH_ENDPOINT: str = "http://voiceover:8080"  # Not deployed — VOICE_ENGINE defaults to gtts
+    VOICE_ENGINE: str = "gtts"  # Options: elevenlabs, fish_speech, gtts (gtts works without API key)
     MONETIZATION_MODE: str = "selective"  # Options: selective, all
     PEXELS_API_KEY: str | None = None
     GOOGLE_API_KEY: str | None = None

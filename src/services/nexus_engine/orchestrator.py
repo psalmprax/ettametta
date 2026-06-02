@@ -334,11 +334,12 @@ class NexusOrchestrator:
             self.logger.warning(
                 f"[Nexus] Gemini vision failed, falling back to Ollama: {e}"
             )
+            from src.api.config import settings as app_settings
             audit_result = await unified_llm_service.analyze_image(
                 frame_path,
                 prompt,
                 provider=LLMProvider.OLLAMA,
-                model="llama3.2-vision",
+                model=app_settings.OLLAMA_MODEL,
             )
         return audit_result.get("content", "YES").upper()
 
