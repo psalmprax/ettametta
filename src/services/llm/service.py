@@ -363,7 +363,7 @@ class UnifiedLLMService:
             
             headers = {"Content-Type": CONTENT_TYPE_JSON}
             payload = {
-                "model": model or "llama3.2-vision",
+                "model": model or settings.OLLAMA_MODEL,
                 "messages": [
                     {
                         "role": "user",
