@@ -364,9 +364,18 @@ class DiscoveryService:
         )
         all_candidates = []
         async with async_session_factory() as db:
+            # Build region filter: treat NULL as US for backward compatibility
+            if region == 'US':
+                region_condition = or_(
+                    ContentCandidateDB.region == 'US',
+                    ContentCandidateDB.region.is_(None)
+                )
+            else:
+                region_condition = ContentCandidateDB.region == region
+
             stmt = (
                 select(ContentCandidateDB)
-                .where(and_(ContentCandidateDB.niche == niche, ContentCandidateDB.region == region))
+                .where(and_(ContentCandidateDB.niche == niche, region_condition))
                 .order_by(ContentCandidateDB.view_count.desc())
                 .limit(50)
             )
@@ -908,7 +917,14 @@ class DiscoveryService:
                     conditions.append(ContentCandidateDB.published_at <= date_to)
 
                 if region:
-                    conditions.append(ContentCandidateDB.region == region)
+                    # Treat NULL region as equivalent to 'US' for backward compatibility
+                    # (pre-migration rows had no region set)
+                    if region == 'US':
+                        conditions.append(
+                            or_(ContentCandidateDB.region == 'US', ContentCandidateDB.region.is_(None))
+                        )
+                    else:
+                        conditions.append(ContentCandidateDB.region == region)
 
                 if conditions:
                     stmt = stmt.where(and_(*conditions))
@@ -1050,7 +1066,16 @@ class DiscoveryService:
                 stmt = stmt.where(ContentCandidateDB.viral_score >= min_viral_score)
             
             if region:
-                stmt = stmt.where(ContentCandidateDB.region == region)
+                # Treat NULL region as equivalent to 'US' for backward compatibility
+                if region == 'US':
+                    stmt = stmt.where(
+                        or_(
+                            ContentCandidateDB.region == 'US',
+                            ContentCandidateDB.region.is_(None)
+                        )
+                    )
+                else:
+                    stmt = stmt.where(ContentCandidateDB.region == region)
 
             stmt = stmt.order_by(ContentCandidateDB.viral_score.desc()).limit(limit)
             result = await db.execute(stmt)
