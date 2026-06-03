@@ -6,8 +6,7 @@ import time
 from datetime import datetime, timedelta
 from src.api.utils.redis import get_async_redis, get_sync_redis
 from src.api.config import settings
-from src.services.analytics.signal_bus import base_signal_bus
-from src.services.analytics.drift_monitor import base_monitor_service
+
 
 router = APIRouter(prefix="/ws", tags=["websockets"])
 
@@ -185,6 +184,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
             pass
         return
 
+    # Lazy-load heavy imports AFTER websocket.accept() to avoid blocking handshake
     from src.shared.enums import SystemJobStatus
     from src.api.utils.models import (
         VideoJobDB,
@@ -193,7 +193,8 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     )
     from sqlalchemy import select, func
     from src.api.utils.database import async_session_factory
-    import psutil
+    from src.services.analytics.signal_bus import base_signal_bus
+    from src.services.analytics.drift_monitor import base_monitor_service
 
     try:
         while True:
@@ -255,8 +256,6 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
 
             # Derive metrics from real system state
             try:
-                psutil.cpu_percent(interval=None)
-
                 # 10/10 INTELLIGENCE BRIDGE: Pull real metrics from the Signal Bus
                 drift_report = base_monitor_service.audit_system_honesty()
 
