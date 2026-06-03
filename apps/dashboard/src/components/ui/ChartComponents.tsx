@@ -91,8 +91,8 @@ export const AreaChartCustom = ({
     gradientId = "chartGradient"
 }: AreaChartProps) => {
     return (
-        <div style={{ width: "100%", height }}>
-            <RechartsResponsiveContainer width="100%" height="100%">
+        <div style={{ width: "100%", height, minWidth: 0, minHeight: 0 }}>
+            <RechartsResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <RechartsAreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -123,8 +123,8 @@ export const AreaChartCustom = ({
 
 export const MiniAreaChart = ({ data, color = "#22d3ee", height = 40 }: { data: any[], color?: string, height?: number }) => {
     return (
-        <div style={{ width: "100%", height }}>
-            <RechartsResponsiveContainer width="100%" height="100%">
+        <div style={{ width: "100%", height, minWidth: 0, minHeight: 0 }}>
+            <RechartsResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <RechartsAreaChart data={data}>
                     <defs>
                         <linearGradient id="miniGradient" x1="0" y1="0" x2="0" y2="1">
