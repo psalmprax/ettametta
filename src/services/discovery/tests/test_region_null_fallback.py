@@ -13,7 +13,6 @@ Covers:
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.discovery.service import DiscoveryService
-from src.services.discovery.models import ContentCandidate
 
 
 def make_mock_db_row(id_val, title, niche, region, view_count=1000):
