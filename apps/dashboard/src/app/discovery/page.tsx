@@ -332,7 +332,7 @@ function DiscoveryContent() {
         } else {
             fetchTrends();
         }
-    }, [fetchSearch, fetchTrends, isKeywordSearch]);
+    }, [fetchSearch, fetchTrends, isKeywordSearch, activeNiche, activeRegion]);
 
     useEffect(() => {
         if (activeEngine === "alerts") fetchAlerts();
