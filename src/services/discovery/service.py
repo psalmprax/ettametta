@@ -879,9 +879,14 @@ class DiscoveryService:
         limit: int = 50,
         offset: int = 0,
         region: str | None = "US",
+        use_live_fallback: bool = True,
     ) -> list[ContentCandidate]:
         """
         Comprehensive search for content candidates across DB and Live Scanners.
+
+        Args:
+            use_live_fallback: If True, runs live scanner fallbacks when DB results are sparse.
+                               Set to False for fast keyword-only searches (e.g. from /discovery/search endpoint).
         """
         from sqlalchemy import and_, select
 
@@ -970,14 +975,14 @@ class DiscoveryService:
                         )
                     )
 
-                # 2. Live Fallback (If query provided and DB results are sparse)
-                if query and len(candidates) < 10:
+                # 2. Live Fallback — only run if use_live_fallback=True (skip for fast keyword search)
+                if use_live_fallback and query and len(candidates) < 10:
                     logger.info(
                         f"[Discovery] Search results sparse for '{query}', triggering live fallback..."
                     )
                     live_results = await self.find_trending_content(
                         niche=query,
-                        tier="premium",  # Elevate for targeted search
+                        tier="premium",
                         min_viral_score=int(min_viral_score or 0),
                         region=region,
                     )
@@ -988,9 +993,8 @@ class DiscoveryService:
                             candidates.append(lc)
                             seen_urls.add(lc.source_uri)
 
-                # 3. CloakBrowser Direct Fallback — run when no CloakBrowser results present
-                #    (DB may have results from other scanners, but user expects live CloakBrowser data)
-                if query:
+                # 3. CloakBrowser Direct Fallback — only run if use_live_fallback=True
+                if use_live_fallback and query:
                     has_cloak_results = any(
                         c.metadata_json.get("source") == "cloakbrowser" or
                         c.platform.lower() in ("cloakyoutube", "cloaktiktok", "cloakweb")
