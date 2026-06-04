@@ -1485,6 +1485,7 @@ scout.on("VIRAL_DETECT", async (data) => {
                                                 ))}
                                             </div>
                                         </div>
+                                    </div>
 
                                         {/* Modulator Sliders */}
                                         <div className="space-y-4 pt-2">
@@ -1540,6 +1541,21 @@ scout.on("VIRAL_DETECT", async (data) => {
                                                     onChange={e => setKenBurnsSpeed(Number(e.target.value))}
                                                     className="w-full accent-cyan-400 h-1 bg-white/5 rounded-lg appearance-none cursor-pointer"
                                                 />
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                                {availableCategories.map(cat => (
+                                                    <button
+                                                        key={cat}
+                                                        onClick={() => setActiveCategory(cat)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest whitespace-nowrap transition-all",
+                                                            activeCategory === cat ? "bg-cyan-500 text-black" : "bg-white/5 text-zinc-500 hover:text-zinc-300"
+                                                        )}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
 
