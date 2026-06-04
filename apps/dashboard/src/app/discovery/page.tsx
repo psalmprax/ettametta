@@ -61,6 +61,8 @@ function DiscoveryContent() {
     const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "Motivation");
     const [activeRegion, setActiveRegion] = useState(searchParams.get("region") || "US");
     const [isScanning, setIsScanning] = useState(false);
+    // Track whether current query is a keyword search (from ?q= URL param) vs niche scan
+    const [isKeywordSearch, setIsKeywordSearch] = useState(!!searchParams.get("q"));
     const [actionLogs, setActionLogs] = useState<string[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
     const [intelData, setIntelData] = useState<any>(null);
@@ -68,6 +70,9 @@ function DiscoveryContent() {
     const pollingRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
     const handleAnalyze = async (candidate: ContentCandidate) => {
+        // Switch to niche scan mode for analysis (don't stay in keyword search mode)
+        setIsKeywordSearch(false);
+
         const token = await getAuthToken();
         if (!token) return;
         
@@ -190,13 +195,71 @@ function DiscoveryContent() {
     useEffect(() => {
         const engine = searchParams.get("engine");
         if (engine) setActiveEngine(engine);
+        const qParam = searchParams.get("q");
+        if (qParam) {
+            setIsKeywordSearch(true);
+            setActiveNiche(qParam);
+        }
     }, [searchParams]);
 
+    // Keyword search via /discovery/search (used when user types in SearchBar and lands on ?q=)
+    const fetchSearch = useCallback(async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        if (!activeNiche.trim()) return;
+
+        setIsScanning(true);
+        setCandidates([]);
+        setActionLogs((prev: string[]) => [
+            `[SEARCH] Searching for: "${activeNiche}"`,
+            `[SEARCH] Target Region: ${activeRegion}`,
+            `[SEARCH] Querying database index...`,
+            ...prev
+        ]);
+
+        await withRealFallback<any>(
+            async (signal) => {
+                setActionLogs((prev: string[]) => [`[SEARCH] Fetching live results for "${activeNiche}"...`, ...prev]);
+                return fetch(
+                    `${API_BASE}/discovery/search?query=${encodeURIComponent(activeNiche)}&region=${activeRegion}&limit=50`,
+                    { headers: { Authorization: `Bearer ${token}` }, signal }
+                );
+            },
+            {
+                fallback: [],
+                onSuccess: (data) => {
+                    const results = Array.isArray(data) ? data : (data?.results || data?.items || []);
+                    setCandidates(results);
+                    if (results.length === 0) {
+                        setActionLogs((prev: string[]) => [
+                            `[SEARCH] No results found for "${activeNiche}" in ${activeRegion}.`,
+                            `[SEARCH] Try a different keyword or browse trending content.`,
+                            ...prev
+                        ]);
+                    } else {
+                        setActionLogs((prev: string[]) => [
+                            `[SUCCESS] Search complete: ${results.length} candidates found for "${activeNiche}" in ${activeRegion}.`,
+                            `[DATA] Results indexed from database and live scanners.`,
+                            ...prev
+                        ]);
+                    }
+                    setIsScanning(false);
+                },
+                onFallback: (err) => {
+                    setActionLogs((prev: string[]) => [`[ERROR] Search failed: ${err.message}`, ...prev]);
+                    setIsScanning(false);
+                }
+            }
+        );
+    }, [activeNiche, activeRegion]);
+
+    // Niche scanning via /discovery/trends (used for browsing specific niches)
     const fetchTrends = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
 
         setIsScanning(true);
+        setCandidates([]);
         setActionLogs((prev: string[]) => [
             `[SCAN] Initiating Trend Analysis: ${activeNiche}`,
             `[SCAN] Target Region: ${activeRegion}`,
@@ -264,8 +327,12 @@ function DiscoveryContent() {
     }, [activeNiche]);
 
     useEffect(() => {
-        fetchTrends();
-    }, [fetchTrends]);
+        if (isKeywordSearch) {
+            fetchSearch();
+        } else {
+            fetchTrends();
+        }
+    }, [fetchSearch, fetchTrends, isKeywordSearch]);
 
     useEffect(() => {
         if (activeEngine === "alerts") fetchAlerts();
@@ -377,26 +444,45 @@ function DiscoveryContent() {
                                     <div className="relative flex-1">
                                         <input
                                             type="text"
-                                            placeholder="SCAN_NICHE_FOR_VIRALITY..."
+                                            placeholder={isKeywordSearch ? "SEARCH_KEYWORD_FOR_CANDIDATES..." : "SCAN_NICHE_FOR_VIRALITY..."}
                                             value={activeNiche}
-                                            onChange={(e) => setActiveNiche(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && fetchTrends()}
+                                            onChange={(e) => {
+                                                setActiveNiche(e.target.value);
+                                                setIsKeywordSearch(false); // User typed manually = niche scan mode
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    if (isKeywordSearch && activeNiche.trim()) {
+                                                        router.replace(`/discovery?q=${encodeURIComponent(activeNiche.trim())}`);
+                                                        fetchSearch();
+                                                    } else {
+                                                        fetchTrends();
+                                                    }
+                                                }
+                                            }}
                                             className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 pl-14 text-white font-mono text-lg focus:outline-none focus:border-primary/50"
                                         />
                                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
                                     </div>
                                     <Button 
-                                        onClick={fetchTrends} 
+                                        onClick={() => {
+                                            if (isKeywordSearch && activeNiche.trim()) {
+                                                router.replace(`/discovery?q=${encodeURIComponent(activeNiche.trim())}`);
+                                                fetchSearch();
+                                            } else {
+                                                fetchTrends();
+                                            }
+                                        }} 
                                         disabled={isScanning}
                                         className="h-20 px-10 bg-primary text-black font-bold text-lg rounded-2xl uppercase tracking-widest flex items-center gap-3"
                                     >
                                         {isScanning ? (
                                             <>
                                                 <Loader2 className="h-6 w-6 animate-spin" />
-                                                Scanning...
+                                                {isKeywordSearch ? "Searching..." : "Scanning..."}
                                             </>
                                         ) : (
-                                            "Initiate Scan"
+                                            isKeywordSearch ? "Search" : "Initiate Scan"
                                         )}
                                     </Button>
                                 </div>
@@ -444,12 +530,17 @@ function DiscoveryContent() {
                                         { id: "AU", label: "Australia", flag: "🇦🇺" },
                                     ].map((reg) => (
                                         <button
-                                            key={reg.id}
-                                            onClick={() => {
-                                                setActiveRegion(reg.id);
-                                                // Trigger scan immediately on region change for better UX
-                                                setTimeout(fetchTrends, 100);
-                                            }}
+                                            key={reg.id}                    onClick={() => {
+                        setActiveRegion(reg.id);
+                        // Trigger re-fetch immediately on region change
+                        setTimeout(() => {
+                            if (isKeywordSearch) {
+                                fetchSearch();
+                            } else {
+                                fetchTrends();
+                            }
+                        }, 100);
+                    }}
                                             disabled={isScanning}
                                             className={cn(
                                                 "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all shrink-0",
@@ -466,6 +557,21 @@ function DiscoveryContent() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar p-1">
+                                    {candidates.length === 0 && !isScanning && (
+                                        <div className="col-span-full flex flex-col items-center justify-center py-24 opacity-40 gap-4">
+                                            <Search className="h-16 w-16 text-zinc-600" />
+                                            <div className="text-center space-y-2">
+                                                <p className="text-lg font-bold text-white uppercase tracking-widest">
+                                                    {isKeywordSearch ? `No results for "${activeNiche}"` : "Scan a niche to discover viral content"}
+                                                </p>
+                                                <p className="text-sm text-zinc-500 font-mono">
+                                                    {isKeywordSearch
+                                                        ? "Try a different keyword, or browse trending niches below."
+                                                        : "Type a niche name above and press Enter or click Initiate Scan."}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                     {candidates.map((c, i) => (
                                         <DesignCard
                                             key={c.id}
