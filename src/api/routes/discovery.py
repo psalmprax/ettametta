@@ -115,6 +115,7 @@ async def search_discovery(
             limit=limit,
             offset=offset,
             region=region,
+            use_live_fallback=False,  # Fast DB-only search for keyword queries
         )
         paginated = paginate_list(results, page=page, page_size=limit)
         paginated["results"] = paginated["items"]
