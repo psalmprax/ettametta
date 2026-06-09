@@ -1,0 +1,272 @@
+diff --git a/apps/dashboard/src/app/nexus/page.tsx b/apps/dashboard/src/app/nexus/page.tsx
+index b6db41b3..b50d2426 100644
+--- a/apps/dashboard/src/app/nexus/page.tsx
++++ b/apps/dashboard/src/app/nexus/page.tsx
+@@ -103,6 +103,25 @@ function NexusContent() {
+ 
+     // Interactive Style Customizer States
+     const [selectedStylePreset, setSelectedStylePreset] = useState<'NEON_CYBER' | 'AMBER_WARM' | 'MONOCHROME_DARK' | 'EMERALD_MATRIX'>('NEON_CYBER');
++    
++    // Sandbox script content as a useMemo to avoid template literal in JSX child expression
++    const sandboxScript = useMemo(() => {
++        return `/* Initialize Intelligence Bridge */
++const nexus = await Nexus.connect();
++
++/* Spawn autonomous scout */
++const scout = await nexus.spawnAgent("SCOUT_01", {
++    role: "Discovery",
++    niche: "${selectedNiche || 'Global'}",
++    behavior: "Aggressive"
++});
++
++/* Await viral triggers */
++scout.on("VIRAL_DETECT", async (data) => {
++    console.log("[NEXUS] Outbreak detected:", data.id);
++    await nexus.dispatchPipeline("AUTO_SYNTH_V1", data);
++});`;
++    }, [selectedNiche]);
+     const [colorTemp, setColorTemp] = useState<number>(50);
+     const [grainDensity, setGrainDensity] = useState<number>(20);
+     const [contrast, setContrast] = useState<number>(50);
+@@ -420,6 +439,48 @@ function NexusContent() {
+         return merged;
+     }, [actionLogs, systemLogs]);
+ 
++    // ── DAG Layout Helpers ──────────────────────────────────────
++    // Default cinema-mode pipeline when no blueprint is selected
++    const DEFAULT_CINEMA_NODES = useMemo(() => [
++        { type: "ingress", label: "Deep Discovery", desc: "Scanning viral clusters across platforms." },
++        { type: "cognition", label: "Viral DNA Match", desc: "AI analysis of trending patterns." },
++        { type: "synthesis", label: "Neural Remix", desc: "Applying cinematic overlays with Remotion." },
++        { type: "egress", label: "Global Sync", desc: "Multi-platform publishing dispatch." },
++    ], []);
++
++    const dagNodes = useMemo(() => {
++        const nodes = activeBlueprint?.nodes;
++        if (nodes && nodes.length > 0) return nodes;
++        return creationMode === 'cinema' ? DEFAULT_CINEMA_NODES : [];
++    }, [activeBlueprint, creationMode, DEFAULT_CINEMA_NODES]);
++
++    // Shared coordinate calculator — always produces branching layouts, never straight lines
++    const getDagCoords = useCallback((idx: number, total: number) => {
++        if (total <= 1) return { x: 50, y: 50 };
++        if (total === 2) return idx === 0 ? { x: 20, y: 35 } : { x: 75, y: 65 };
++        // 3 nodes: gentle S-curve (linear chain with slight vertical offset)
++        if (total === 3) {
++            const positions = [{ x: 12, y: 45 }, { x: 50, y: 30 }, { x: 88, y: 55 }];
++            return positions[idx];
++        }
++        // 4+ nodes: proper fork-join DAG
++        if (idx === 0) return { x: 10, y: 50 };
++        if (idx === total - 1) return { x: 85, y: 50 };
++        const mid = total - 2;
++        const mi = idx - 1;
++        const x = mid === 1 ? 45 : 30 + (mi / (mid - 1)) * 40;
++        const y = mi % 2 === 0 ? 25 : 75;
++        return { x, y };
++    }, []);
++
++    const getDagParents = useCallback((idx: number, total: number) => {
++        if (idx === 0) return [] as number[];
++        if (total <= 3) return [idx - 1];
++        if (idx === 1 || idx === 2) return [0];
++        if (idx === 3) return [1, 2];
++        return [idx - 1];
++    }, []);
++
+     return (
+         <CommandCenterLayout
+             title="NEXUS ENGINE"
+@@ -710,91 +771,69 @@ function NexusContent() {
+                                                 </filter>
+                                             </defs>
+                                             
+-                                            {/* Generate connections based on parallel branch coordinates */}
+-                                            {activeBlueprint?.nodes?.map((node, idx) => {
+-                                                if (idx === 0) return null;
+-                                                const listLength = activeBlueprint?.nodes?.length || 0;
+-                                                
+-                                                // Dynamic Coordinates logic
+-                                                const getCoords = (i: number) => {
+-                                                    let x = 15 + (i / Math.max(listLength - 1, 1)) * 70;
+-                                                    let y = 50;
+-                                                    if (listLength >= 4) {
+-                                                        if (i === 0) { x = 15; y = 50; }
+-                                                        else if (i === 1) { x = 45; y = 25; } // Branch 1: Script Cognition
+-                                                        else if (i === 2) { x = 45; y = 75; } // Branch 2: Asset Discovery
+-                                                        else if (i === 3) { x = 75; y = 50; } // Merge: Synthesis
+-                                                        else if (i >= 4) { x = 90; y = 50; }
+-                                                    }
+-                                                    return { x, y };
+-                                                };
+-                                                
+-                                                let parentIndices = [idx - 1];
+-                                                if (listLength >= 4) {
+-                                                    if (idx === 1) parentIndices = [0];
+-                                                    if (idx === 2) parentIndices = [0];
+-                                                    if (idx === 3) parentIndices = [1, 2]; // Merge node
+-                                                    if (idx === 4) parentIndices = [3];
+-                                                }
+-                                                
+-                                                return parentIndices.map((parentIdx, pI) => {
+-                                                    const start = getCoords(parentIdx);
+-                                                    const end = getCoords(idx);
+-                                                    
+-                                                    const isPathActive = activePipelineJob?.status === "Active" && 
+-                                                                         (selectedNodeIndex === idx || selectedNodeIndex === parentIdx);
+-                                                    
+-                                                    // Beautiful Bezier path representing parallel pipelines
+-                                                    const pathD = `M ${start.x} ${start.y} C ${(start.x + end.x)/2} ${start.y}, ${(start.x + end.x)/2} ${end.y}, ${end.x} ${end.y}`;
+-                                                    
+-                                                    return (
+-                                                        <g key={`${parentIdx}-${idx}-${pI}`}>
+-                                                            <path 
+-                                                                d={pathD} 
+-                                                                stroke="rgba(255,255,255,0.03)" 
+-                                                                strokeWidth="2.5" 
+-                                                                fill="none" 
+-                                                            />
+-                                                            <path 
+-                                                                d={pathD} 
+-                                                                stroke="url(#glowGrad)" 
+-                                                                strokeWidth={isPathActive ? "2.5" : "1"} 
+-                                                                fill="none"
+-                                                                filter="url(#glowFilter)"
+-                                                                className={cn(
+-                                                                    "opacity-40 transition-all duration-500",
+-                                                                    isPathActive ? "opacity-100" : "opacity-20"
+-                                                                )}
+-                                                                strokeDasharray={isPathActive ? "4, 4" : undefined}
+-                                                            />
+-                                                        </g>
+-                                                    );
+-                                                });
+-                                            })}
++                                    {/* Generate connections using shared DAG layout */}
++                                    {dagNodes.map((node, idx) => {
++                                        const total = dagNodes.length;
++                                        const parentIndices = getDagParents(idx, total);
++                                        if (parentIndices.length === 0) return null;
++                                        
++                                        return parentIndices.map((parentIdx, pI) => {
++                                            const start = getDagCoords(parentIdx, total);
++                                            const end = getDagCoords(idx, total);
++                                            
++                                            const isPathActive = activePipelineJob?.status === "Active" && 
++                                                                 (selectedNodeIndex === idx || selectedNodeIndex === parentIdx);
++                                            
++                                            const pathD = `M ${start.x} ${start.y} C ${(start.x + end.x)/2} ${start.y}, ${(start.x + end.x)/2} ${end.y}, ${end.x} ${end.y}`;
++                                            
++                                            return (
++                                                <g key={`${parentIdx}-${idx}-${pI}`}>
++                                                    <path 
++                                                        d={pathD} 
++                                                        stroke="rgba(255,255,255,0.03)" 
++                                                        strokeWidth="2.5" 
++                                                        fill="none" 
++                                                    />
++                                                    <path 
++                                                        d={pathD} 
++                                                        stroke="url(#glowGrad)" 
++                                                        strokeWidth={isPathActive ? "2.5" : "1"} 
++                                                        fill="none"
++                                                        filter="url(#glowFilter)"
++                                                        className={cn(
++                                                            "opacity-40 transition-all duration-500",
++                                                            isPathActive ? "opacity-100" : "opacity-20"
++                                                        )}
++                                                        strokeDasharray={isPathActive ? "4, 4" : undefined}
++                                                    />
++                                                    {/* Animated flow particle on active paths */}
++                                                    {isPathActive && (
++                                                        <circle r="1.5" fill="#22d3ee" opacity="0.9" filter="url(#glowFilter)">
++                                                            <animateMotion dur="2s" repeatCount="indefinite" path={pathD} />
++                                                        </circle>
++                                                    )}
++                                                </g>
++                                            );
++                                        });
++                                    })}
+                                         </svg>
+                                     </div>
+ 
+-                                    {/* Position Nodes based on branch coordinates */}
++                                    {/* Position Nodes using shared DAG layout */}
+                                     <div className="absolute inset-0 z-10">
+-                                        {activeBlueprint?.nodes?.map((node, idx) => {
++                                        {dagNodes.map((node, idx) => {
++                                            const total = dagNodes.length;
++                                            const { x, y } = getDagCoords(idx, total);
+                                             const isProcessing = activePipelineJob?.status === "Active" && idx === selectedNodeIndex;
+                                             const isComplete = activePipelineJob?.status === "Completed" || idx < selectedNodeIndex;
+-                                            const listLength = activeBlueprint?.nodes?.length || 0;
+-                                            
+-                                            let x = 15 + (idx / Math.max(listLength - 1, 1)) * 70;
+-                                            let y = 50;
+-                                            if (listLength >= 4) {
+-                                                if (idx === 0) { x = 15; y = 50; }
+-                                                else if (idx === 1) { x = 45; y = 25; }
+-                                                else if (idx === 2) { x = 45; y = 75; }
+-                                                else if (idx === 3) { x = 75; y = 50; }
+-                                                else if (idx >= 4) { x = 90; y = 50; }
+-                                            }
+                                             
+                                             return (
+-                                                <div 
++                                                <motion.div 
+                                                     key={idx} 
+                                                     className="absolute"
++                                                    initial={{ opacity: 0, scale: 0.8 }}
++                                                    animate={{ opacity: 1, scale: 1 }}
++                                                    transition={{ delay: idx * 0.12, duration: 0.4 }}
+                                                     style={{ 
+                                                         left: `${x}%`, 
+                                                         top: `${y}%`, 
+@@ -806,11 +845,11 @@ function NexusContent() {
+                                                         label={node.label}
+                                                         description={node.desc}
+                                                         status={isComplete ? "complete" : isProcessing ? "processing" : "pending"}
+-                                                        progress={isProcessing ? activePipelineJob.progress : undefined}
++                                                        progress={isProcessing ? activePipelineJob?.progress : undefined}
+                                                         active={selectedNodeIndex === idx}
+                                                         onClick={() => setSelectedNodeIndex(idx)}
+                                                     />
+-                                                </div>
++                                                </motion.div>
+                                             );
+                                         })}
+                                     </div>
+@@ -1018,7 +1057,7 @@ function NexusContent() {
+                                                             "Content-Type": "application/json",
+                                                             Authorization: `Bearer ${token}`
+                                                         },
+-                                                        body: JSON.stringify({ code: "// Nexus Sandbox Logic" })
++                                                        body: JSON.stringify({ code: "/* Nexus Sandbox Logic */" })
+                                                     }),
+                                                     {
+                                                         fallback: null,
+@@ -1044,23 +1083,7 @@ function NexusContent() {
+                                                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Script</span>
+                                             </div>
+                                             <div className="flex-1 p-8 font-mono text-sm text-cyan-400/80 overflow-y-auto custom-scrollbar">
+-                                                <pre>
+-{`// Initialize Intelligence Bridge
+-const nexus = await Nexus.connect();
+-
+-// Spawn autonomous scout
+-const scout = await nexus.spawnAgent("SCOUT_01", {
+-    role: "Discovery",
+-    niche: "${selectedNiche || 'Global'}",
+-    behavior: "Aggressive"
+-});
+-
+-// Await viral triggers
+-scout.on("VIRAL_DETECT", async (data) => {
+-    console.log("[NEXUS] Outbreak detected:", data.id);
+-    await nexus.dispatchPipeline("AUTO_SYNTH_V1", data);
+-});`}
+-                                                </pre>
++                                                <pre>{sandboxScript}</pre>
+                                             </div>
+                                         </div>
+                                         <div className="flex-1 flex flex-col h-full bg-[#0F0F11]/60 rounded-r-[32px] border-l border-white/5 overflow-hidden">
