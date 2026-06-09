@@ -18,6 +18,7 @@ from src.api.utils.database import get_db
 from src.api.utils.models import ScheduledPostDB
 from src.api.utils.api_responses import success_response
 from src.api.utils.subscription import credits_required
+from src.shared.enums import ContentPublishStatus
 from src.services.payment.credit_service import credit_service
 from src.services.optimization.service import base_optimization_service
 from src.services.optimization.scheduler import smart_scheduler
@@ -95,7 +96,7 @@ async def schedule_post(
             video_path=request.video_path,
             platform=request.platform,
             scheduled_time=scheduled_time,
-            status="PENDING",
+            status=ContentPublishStatus.PENDING,
             parallel_allowed=parallel_allowed,
             user_timezone=user_timezone,
             engagement_prediction=prediction,

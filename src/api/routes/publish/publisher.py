@@ -17,9 +17,8 @@ from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
 from src.api.utils.models import PublishedContentDB, ABTestDB, AffiliateLinkDB, VideoJobDB
-from src.shared.enums import SystemJobStatus
+from src.shared.enums import SystemJobStatus, ContentPublishStatus, ABTestStatus
 from src.api.utils.api_responses import success_response
-from src.shared.enums import ContentPublishStatus
 from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from src.services.optimization.service import base_optimization_service
@@ -375,7 +374,7 @@ async def publish_video(
                 variant_b_click_count=0,
                 variant_a_conversion_count=0,
                 variant_b_conversion_count=0,
-                status="active",
+                status=ABTestStatus.ACTIVE,
             )
             db.add(new_test)
             await db.commit()
