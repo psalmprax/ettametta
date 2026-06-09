@@ -18,7 +18,7 @@ from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.models import SocialAccount, PublishedContentDB
-from src.shared.enums import ContentPublishStatus, CreditAction
+from src.shared.enums import ContentPublishStatus, CreditAction, ABTestStatus
 from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 import datetime
@@ -1334,7 +1334,7 @@ async def schedule_post(
             video_path=request.video_path,
             platform=request.platform,
             scheduled_time=scheduled_time,
-            status="PENDING",
+            status=ContentPublishStatus.PENDING,
             parallel_allowed=parallel_allowed,
             user_timezone=user_timezone,
             engagement_prediction=prediction,
@@ -1612,7 +1612,7 @@ async def publish_video(
         new_post = PublishedContentDB(
             title=metadata.title or "Viral Post",
             platform=request.platform,
-            status="Published" if url else "Failed",
+            status=ContentPublishStatus.PUBLISHED if url else ContentPublishStatus.FAILED,
             url=url,
             account_id=request.account_id,
             user_id=current_user.id,
@@ -1633,16 +1633,11 @@ async def publish_video(
                 variant_b_click_count=0,
                 variant_a_conversion_count=0,
                 variant_b_conversion_count=0,
-                status="active",
+                status=ABTestStatus.ACTIVE,
             )
             db.add(new_test)
             await db.commit()
             logger.info(f"[A/B Testing] Initialized test for post {new_post.id}")
-
-            # Record initial view event for variant A (assuming it gets shown first)
-            from src.api.routes.ab_testing import router as ab_router
-            # We'll use the existing event recording endpoint
-            # For now, just initialize the counters - real tracking would need frontend integration
 
         return success_response(
             data={"status": "success", "url": url, "metadata": metadata}
@@ -1783,7 +1778,7 @@ async def publish_multi_platform(
                         new_post = PublishedContentDB(
                             title=metadata.title or "Viral Post",
                             platform=platform_name,
-                            status="Published",
+                            status=ContentPublishStatus.PUBLISHED,
                             url=url,
                             user_id=current_user.id,
                             niche=request.niche,
@@ -1910,7 +1905,7 @@ async def opencli_post(
                 post = PublishedContentDB(
                     title=request.content[:100],
                     platform=platform,
-                    status="Published",
+                    status=ContentPublishStatus.PUBLISHED,
                     url=result.get("url", ""),
                     account_id=0,  # opencli posts don't use OAuth accounts
                     user_id=current_user.id,

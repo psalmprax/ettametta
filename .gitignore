@@ -173,3 +173,39 @@ certs/
 certs_fixed/
 sessions/
 tokens/
+
+# --- Large files to purge from history ---
+# Go compiled binaries
+services/discovery-go/discovery-service
+services/discovery-go/discovery-go
+src/services/discovery-go/discovery-service
+src/services/discovery-go/discovery-go
+src/services/discovery-go/main
+src/services/discovery-go/discovery
+
+# Binary tools
+bin/ngrok
+ngrok-v3.tgz
+*.tar.gz
+
+# Generated/stale database files
+*.db
+data/db/
+data/analytics/signal_vault.db
+data/runtime/
+src/data/
+src/engines/remote_ai_setup/gateway_state.db
+remote_ai_setup/gateway_state.db
+
+# IDE cache
+.refact/buddy/
+
+# Generated graph outputs
+graphify-out/
+
+# Other large artifacts
+bias_search.txt
+src/engines/remote_ai_setup/davido_b64.txt
+deploy_key
+deploy_key.pub
+key_raw.txt
