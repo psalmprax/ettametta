@@ -3,6 +3,7 @@ from fastapi.security import APIKeyHeader
 from src.api.utils.database import get_db
 from src.api.utils.models import VideoJobDB
 from src.api.config import settings
+from src.services.video_engine.job_service import VideoJobService, get_video_job_service
 from pydantic import BaseModel
 from typing import Any
 from src.shared.enums import SystemJobStatus
@@ -36,18 +37,17 @@ class InternalJobUpdate(BaseModel):
 @router.post("/jobs", dependencies=[Depends(verify_internal_token)])
 async def create_internal_job(
     body: InternalJobCreate,
-    db=Depends(get_db)
+    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """Allows internal services to register jobs without direct DB access."""
-    new_job = VideoJobDB(
-        id=body.id,
-        title=body.title,
+    await job_service.create_job(
         user_id=body.user_id,
+        title=body.title,
+        engine="internal",
+        job_id=body.id,
         status=SystemJobStatus.QUEUED,
-        job_metadata=body.metadata or {}
+        extra_metadata=body.metadata,
     )
-    db.add(new_job)
-    await db.commit()
     return {"status": "ok", "job_id": body.id}
 
 @router.patch("/jobs/{job_id}", dependencies=[Depends(verify_internal_token)])

@@ -102,6 +102,7 @@ async def generate_single_video(
         parent_job_id = str(uuid.uuid4())
         task_ids = []
         variant_info = []
+        job_service: VideoJobService = VideoJobService(db)
 
         # 1. Consume credits and create job entries first in a single transaction
         try:
@@ -124,25 +125,25 @@ async def generate_single_video(
                         detail=f"Credit failure for variant {i}: {msg}"
                     )
 
-                # Create Job for each variant
-                new_job = VideoJobDB(
-                    id=task_id,
+                # Create Job for each variant via service layer
+                await job_service.create_job(
+                    user_id=current_user.id,
                     title=f"Variant {i}: {variant.get('variant_name', 'Original')}",
+                    engine=body.engine,
+                    prompt=variant.get("modified_prompt", body.prompt),
+                    style=variant.get("suggested_style", body.style),
                     status=SystemJobStatus.QUEUED,
+                    job_id=task_id,
                     progress=0,
                     source_uri="Generation Prompt",
-                    job_metadata={
-                        "prompt": variant.get("modified_prompt", body.prompt),
-                        "engine": body.engine,
-                        "style": variant.get("suggested_style", body.style),
+                    auto_commit=False,
+                    extra_metadata={
                         "parent_id": parent_job_id,
                         "variant_index": i,
                         "variant_logic": variant.get("logic", "N/A"),
                         "hook_text": variant.get("hook_text", "N/A"),
                     },
-                    user_id=current_user.id,
                 )
-                db.add(new_job)
                 variant_info.append((task_id, variant, i))
 
             await db.commit()
@@ -238,6 +239,7 @@ async def start_story_generation(
         # daily_limit_reached dependency already checked via Depends
 
         task_id = str(uuid.uuid4())
+        job_service: VideoJobService = VideoJobService(db)
 
         # 1. Consume Credits and save to DB in a single transaction first
         try:
@@ -253,19 +255,17 @@ async def start_story_generation(
             if not success:
                 raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
 
-            # 2. Job Entry
-            new_job = VideoJobDB(
-                id=task_id,
-                title=f"Storytelling - {body.style}",
-                status=SystemJobStatus.QUEUED,
-                job_metadata={
-                    "prompt": body.prompt,
-                    "engine": body.engine,
-                    "style": body.style,
-                },
+            # 2. Job Entry via service layer
+            await job_service.create_job(
                 user_id=current_user.id,
+                title=f"Storytelling - {body.style}",
+                engine=body.engine,
+                prompt=body.prompt,
+                style=body.style,
+                status=SystemJobStatus.QUEUED,
+                job_id=task_id,
+                auto_commit=False,
             )
-            db.add(new_job)
             await db.commit()
         except Exception as e:
             await db.rollback()

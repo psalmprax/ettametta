@@ -1,6 +1,7 @@
 import logging
 from src.services.discovery.service import base_discovery_service
 from src.services.video_engine.tasks import download_and_process_task
+from src.services.video_engine.job_service import VideoJobService
 from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from src.shared.enums import SystemJobStatus
@@ -51,22 +52,21 @@ class ViralLoopController:
                 # 3. Dispatch to Video Engine
                 task = download_and_process_task.delay(winner.source_uri, niche, platform)
 
-                # 4. Record the job entry
+                # 4. Record the job entry via service layer
                 from src.api.utils.user_models import UserDB, UserRole
                 stmt_admin = select(UserDB).where(UserDB.role == UserRole.ADMIN)
                 result_admin = await db.execute(stmt_admin)
                 admin = result_admin.scalar_one_or_none()
 
-                new_job = VideoJobDB(
-                    id=task.id,
+                await VideoJobService(db).create_job(
+                    user_id=admin.id if admin else 1,  # Fallback to user 1
                     title=f"AUTO: {winner.title[:40]}...",
+                    engine="viral_loop",
                     status=SystemJobStatus.QUEUED,
+                    job_id=task.id,
                     progress=0,
                     source_uri=winner.source_uri,
-                    user_id=admin.id if admin else 1,  # Fallback to user 1
                 )
-                db.add(new_job)
-                await db.commit()
 
                 self.logger.info(
                     f"[ViralLoop] Task {task.id} dispatched successfully for {niche}."
@@ -135,22 +135,21 @@ class ViralLoopController:
                 )
 
                 if success:
-                    # 4. Record the job
+                    # 4. Record the job via service layer
                     from src.api.utils.user_models import UserDB, UserRole
                     stmt_admin = select(UserDB).where(UserDB.role == UserRole.ADMIN)
                     result_admin = await db.execute(stmt_admin)
                     admin = result_admin.scalar_one_or_none()
 
-                    new_job = VideoJobDB(
-                        id=f"loop_{uuid.uuid4().hex[:8]}",
+                    await VideoJobService(db).create_job(
+                        user_id=admin.id if admin else 1,
                         title=f"COMPILATION: {niche}",
+                        engine="viral_loop",
                         status=SystemJobStatus.COMPLETED,
+                        job_id=f"loop_{uuid.uuid4().hex[:8]}",
                         progress=100,
                         source_uri=final_video,
-                        user_id=admin.id if admin else 1,
                     )
-                    db.add(new_job)
-                    await db.commit()
                     self.logger.info(f"[ViralLoop] Compilation cycle successful: {final_video}")
                 
             except Exception as e:

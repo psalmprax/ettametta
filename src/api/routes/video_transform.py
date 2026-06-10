@@ -10,6 +10,7 @@ from src.api.utils.user_models import UserDB
 from src.api.utils.subscription import check_daily_limit, credits_required
 from src.services.video_engine.tasks import download_and_process_task
 from src.services.payment.credit_service import credit_service
+from src.services.video_engine.job_service import VideoJobService, get_video_job_service
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response
@@ -49,6 +50,7 @@ async def start_transformation(
         await check_daily_limit(current_user, db)
 
         task_id = str(uuid.uuid4())
+        job_service: VideoJobService = VideoJobService(db)
 
         # 1. Consume credits and create job entry first in a single transaction
         try:
@@ -67,26 +69,27 @@ async def start_transformation(
                     status_code=402, detail=f"Credit consumption failed: {msg}"
                 )
 
-            # Create Job Entry
-            new_job = VideoJobDB(
-                id=task_id,
+            # Create Job Entry via service layer (auto_commit=False to share transaction with credits)
+            await job_service.create_job(
+                user_id=current_user.id,
                 title=f"Viral Transform - {body.niche}",
+                engine="video_transform",
+                niche=body.niche,
+                style=body.style,
                 status=SystemJobStatus.QUEUED,
+                job_id=task_id,
                 progress=0,
                 source_uri=body.source_uri,
-                user_id=current_user.id,
-                job_metadata={
-                    "niche": body.niche,
+                auto_commit=False,
+                extra_metadata={
                     "platform": body.platform,
-                    "style": body.style,
                     "quality_tier": body.quality_tier,
                     "sound_design": body.sound_design,
                     "motion_graphics": body.motion_graphics,
                     "generate_thumbnail": body.generate_thumbnail,
                     "analysis_data": body.analysis_data,
-                }
+                },
             )
-            db.add(new_job)
             await db.commit()
 
         except Exception as e:
@@ -192,24 +195,26 @@ async def test_drive(
             raise HTTPException(status_code=404, detail="No viral candidates found")
 
         task_id = str(uuid.uuid4())
+        job_service: VideoJobService = VideoJobService(db)
 
         # 1. Save job record first in DB
         try:
-            new_job = VideoJobDB(
-                id=task_id,
-                title=f"Test Drive - {request.niche}",
-                status=SystemJobStatus.QUEUED,
-                source_uri=candidate.source_uri,
+            await job_service.create_job(
                 user_id=current_user.id,
-                job_metadata={
-                    "niche": request.niche,
-                    "style": request.style,
+                title=f"Test Drive - {request.niche}",
+                engine="video_transform",
+                niche=request.niche,
+                style=request.style,
+                status=SystemJobStatus.QUEUED,
+                job_id=task_id,
+                source_uri=candidate.source_uri,
+                auto_commit=False,
+                extra_metadata={
                     "preview_only": True,
                     "platform": "YouTube Shorts",
-                    "candidate_id": candidate.id
-                }
+                    "candidate_id": candidate.id,
+                },
             )
-            db.add(new_job)
             await db.commit()
         except Exception as e:
             await db.rollback()
