@@ -25,25 +25,56 @@ class VideoJobService:
         user_id: str,
         title: str,
         engine: str,
-        prompt: str,
+        prompt: str = "",
         niche: str = "general",
         style: str | None = None,
         status: str = SystemJobStatus.QUEUED,
+        job_id: str | None = None,
+        progress: int = 0,
+        source_uri: str | None = None,
+        extra_metadata: dict | None = None,
+        auto_commit: bool = True,
     ) -> VideoJobDB:
-        """Create a new video job"""
+        """Create a new video job
+
+        Args:
+            user_id: Owner of the job
+            title: Display title
+            engine: Engine name (e.g. video_transform)
+            prompt: Original prompt text (used as source_uri if no explicit source_uri given)
+            niche: Content niche
+            style: Visual style
+            status: Initial job status
+            job_id: Explicit job ID (e.g. Celery task ID). Auto-generated if None.
+            progress: Initial progress percentage
+            source_uri: Source URL. Falls back to prompt if not provided.
+            extra_metadata: Additional metadata fields merged into base engine/style/niche dict
+            auto_commit: If True (default), commits the transaction. If False, flushes
+                to the session so the caller can commit as part of a larger atomic
+                transaction (matches CreditService.consume_credits convention).
+        """
+        metadata = {
+            "engine": engine,
+            "style": style,
+            "niche": niche,
+        }
+        if extra_metadata:
+            metadata.update(extra_metadata)
+
         job = VideoJobDB(
+            id=job_id,
             title=title,
             status=status,
-            source_uri=prompt,
+            progress=progress,
+            source_uri=source_uri or prompt,
             user_id=user_id,
-            metadata={
-                "engine": engine,
-                "style": style,
-                "niche": niche
-            }
+            job_metadata=metadata,
         )
         self.db.add(job)
-        await self.db.commit()
+        if auto_commit:
+            await self.db.commit()
+        else:
+            await self.db.flush()
         await self.db.refresh(job)
         return job
 

@@ -29,6 +29,7 @@ from src.shared.enums import SystemJobStatus, CreditAction, ScanStatus
 from src.api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from src.services.video_engine.job_service import VideoJobService, get_video_job_service
 
 logger = logging.getLogger(__name__)
 
@@ -482,13 +483,13 @@ async def create_video_from_analysis(
     current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("video_transformation")),
     db=Depends(get_db),
+    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """
     Create a video transformation from completed analysis.
     """
     from src.api.utils.celery import celery_app
     from src.services.video_engine.tasks import download_and_process_task
-    from src.api.utils.models import VideoJobDB
 
     try:
         # Check if task is complete
@@ -544,25 +545,24 @@ async def create_video_from_analysis(
                 status_code=402, detail="Insufficient credits for this operation"
             )
 
-        # Create job record
-        new_job = VideoJobDB(
-            id=task.id,
+        # Create job record via service layer
+        await job_service.create_job(
+            user_id=current_user.id,
             title=f"From Analysis - {request.niche}",
+            engine="video_transform",
+            niche=request.niche,
+            style=request.style,
             status=SystemJobStatus.QUEUED,
+            job_id=task.id,
             progress=0,
             source_uri=candidate_url,
-            user_id=current_user.id,
-            job_metadata={
-                "niche": request.niche,
+            extra_metadata={
                 "platform": request.platform,
-                "style": request.style,
                 "quality_tier": request.quality_tier,
                 "generate_thumbnail": request.generate_thumbnail,
-                "analysis_task_id": task_id
-            }
+                "analysis_task_id": task_id,
+            },
         )
-        db.add(new_job)
-        await db.commit()
 
         # Agentic Intelligence Injection (Official Skill Integration)
         try:
@@ -607,16 +607,13 @@ class AutoTransformRequest(BaseModel):
 async def auto_transform(
     request: AutoTransformRequest,
     current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """
     One-shot pipeline: Discover best content → Create video transformation.
     Combines discovery and video creation into 1 call for autonomous operation.
     """
     from src.services.video_engine.tasks import download_and_process_task
-    from src.api.utils.models import VideoJobDB
-    from shared.enums import SystemJobStatus
-
 
     try:
         # Step 1: Discover top content for the niche
@@ -660,26 +657,25 @@ async def auto_transform(
             user_id=current_user.id,
         )
 
-        # Create job record
-        new_job = VideoJobDB(
-            id=task.id,
+        # Create job record via service layer
+        await job_service.create_job(
+            user_id=current_user.id,
             title=f"Auto-Transform: {best.title[:50]}",
+            engine="video_transform",
+            niche=request.niche,
+            style=request.style,
             status=SystemJobStatus.QUEUED,
+            job_id=task.id,
             progress=0,
             source_uri=source_uri,
-            user_id=current_user.id,
-            job_metadata={
-                "niche": request.niche,
+            extra_metadata={
                 "platform": request.platform,
-                "style": request.style,
                 "quality_tier": request.quality_tier,
                 "generate_thumbnail": request.generate_thumbnail,
                 "min_viral_score": request.min_viral_score,
-                "discovery_method": "auto-transform"
-            }
+                "discovery_method": "auto-transform",
+            },
         )
-        db.add(new_job)
-        await db.commit()
 
         return success_response(
             data={
