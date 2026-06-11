@@ -7,11 +7,14 @@
 - [x] **Phase 3: Basic Video Generation** - AI-powered video creation and transformation
 - [x] **Phase 4: Advanced Video Generation** - Multi-scene storytelling video creation
 - [x] **Phase 5: Multi-Platform Publishing** - Social media content distribution
-- [ ] **Phase 6: Automated Scheduling Publishing** - Campaign automation for publishing
+- [x] **Phase 6: Automated Scheduling Publishing** - Campaign automation for publishing
 - [x] **Phase 7: Monetization** - Revenue generation and credit management
 - [x] **Phase 8: Analytics** - Performance metrics and insights
 - [ ] **Phase 9: Enterprise Hardening** - Strategic scaling and technical resilience
     - [x] 09-01-PLAN.md — Unified Observability and Request Tracing
+- [ ] **Phase 10: Discovery → Analysis → Video Pipeline Fix** - Repair the broken core user journey end-to-end
+    - Promoted from `.planning/BACKLOG.md` item 999.1 (P0)
+    - [ ] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract (in progress)
 
 ## Phase Details
 
@@ -127,6 +130,19 @@
 - [x] 09-01-PLAN.md — Unified Observability and Request Tracing
 - [ ] 09-02-PLAN.md — Verify enterprise infrastructure capabilities
 
+### Phase 10: Discovery → Analysis → Video Pipeline Fix
+**Goal**: Repair the broken core user journey end-to-end (Discovery → Analysis → Video)
+**Depends on**: Phase 2 (Content Discovery), Phase 3 (Basic Video Generation)
+**Requirements**: DISC-03, VIDEO-01
+**Success Criteria** (what must be TRUE):
+  1. User can click "Analyze" on a real candidate and receive a structured, persisted report
+  2. Analysis survives a page refresh and can be looked up by `content_id` directly from the DB
+  3. "Create Video" button uses the analysis insights (hook, pacing, structure, style) to inform the video job
+  4. The video job record carries a snapshot of the originating analysis in `job_metadata.analysis_snapshot`
+  5. Old behavior (in-memory Celery results) still works behind a feature flag (`ENABLE_PERSISTED_ANALYSIS`)
+**Plans**: 1 plans (this phase ships in a single plan; sub-plans split if scope grows)
+- [ ] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
+
 **Recent Hardening Work (2026-04-17 to 2026-05-29):**
 - 14+ operational/debugging skills created (ai-provider-debug, celery-monitor, cloakbrowser, content-discovery, db-performance, dep-audit, docker-compose, fastapi-debug, nexus-engine, redis-debug, remotion-debug, security-sentinel, social-api, storage-lifecycle, video-pipeline, voiceover-tts)
 - OpenClaw hardened: asyncio offload, PEP 8 compliance, type safety, GC management
@@ -148,6 +164,7 @@
 | 7. Monetization | 1/2 | In Progress | - |
 | 8. Analytics | 1/2 | In Progress | - |
 | 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
+| 10. Discovery → Analysis → Video Pipeline Fix | 0/1 | Not Started | - |
 
 ---
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29*
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1)*
