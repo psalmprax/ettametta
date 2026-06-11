@@ -123,8 +123,36 @@ class ContentCandidateDB(Base):
     # Analysis fields for viral pattern detection
     analysis_results = Column(
         JSON, nullable=True
-    )  # topics, sentiment, viral_potential, keywords
+    )  # topics, sentiment, viral_potential, keywords (legacy; see analysis_payload)
     analyzed_at = Column(DateTime, nullable=True)  # When content was analyzed
+
+    # Analysis persistence (Phase 10 — Discovery → Analysis → Video pipeline fix)
+    # ------------------------------------------------------------------
+    # `analysis_results` (above) is a free-form JSON blob produced by the legacy
+    # extract_content_patterns() helper. It is *not* a stable contract.
+    #
+    # `analysis_payload` (below) is the NEW, persisted shape: a serialized
+    # AnalysisReport (see src/services/discovery/schemas.py). It is the single
+    # source of truth for the Discovery → Video pipeline. The other new columns
+    # are denormalized hot fields for fast list rendering and task lookup.
+    analysis_task_id = Column(
+        String(64), nullable=True, index=True
+    )  # Celery task ID; lets the status endpoint look the task up directly
+    analysis_status = Column(
+        String(16), nullable=True
+    )  # PENDING | RUNNING | COMPLETED | FAILED (mirrors AnalysisStatus)
+    analysis_payload = Column(
+        JSON, nullable=True
+    )  # AnalysisReport.to_db_payload() — see src/services/discovery/schemas.py
+    analysis_persisted_at = Column(
+        DateTime, nullable=True
+    )  # When we wrote analysis_payload to the DB
+    viral_score_velocity = Column(
+        Float, nullable=True
+    )  # Denormalized: AnalysisReport.viral_score_velocity(); sort key for trends
+    recommended_style = Column(
+        String(64), nullable=True
+    )  # Denormalized: AnalysisReport.recommended_style(); used by Transform button
 
     # Nexus Integration
     nexus_job_id = Column(String(36), ForeignKey("nexus_jobs.id"), nullable=True)

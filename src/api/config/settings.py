@@ -290,6 +290,17 @@ class Settings(BaseSettings):
     AI_VIDEO_PROVIDER: str = (
         "none"  # none, zsky, kling, pixverse, replicate, runway, pika, stability
     )
+
+    # Discovery → Analysis → Video Pipeline (Phase 10)
+    # ------------------------------------------------------------------
+    # When True, analyze_viral_pattern_task persists the AnalysisReport to
+    # ContentCandidateDB.analysis_payload so it survives page refreshes and
+    # can be read directly by the /discovery/analysis/{content_id} endpoint
+    # and the create_video_from_analysis dispatcher.
+    # When False (default), the legacy Celery-in-memory result path is used.
+    # Default is intentionally False during 10-01 (Foundation); it is flipped
+    # to True in 10-02 once the rewrite of the Celery task is verified.
+    ENABLE_PERSISTED_ANALYSIS: bool = False
     AI_VIDEO_FALLBACKS: str = ""
     RUNWAY_API_KEY: str | None = None
     PIKA_API_KEY: str | None = None
