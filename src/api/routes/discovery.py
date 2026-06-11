@@ -969,6 +969,94 @@ async def get_content_analysis(
         return handle_exception(e)
 
 
+# ─── Read-Side AnalysisReport Endpoint (Phase 10-03) ─────────────────────────
+# Public read contract for the persisted AnalysisReport written by the Celery
+# task in 10-02. Returns 404 if no report has been persisted yet, which lets
+# the Transform → Video button poll until the analyze task is done. This is
+# the contract the video job dispatcher (10-04) will also consume.
+
+
+@router.get("/analysis/{content_id}")
+async def get_persisted_analysis(
+    content_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Read-only endpoint that returns the persisted AnalysisReport for a
+    content candidate. Returns 404 in two distinct cases so the UI can
+    show different messages:
+
+    1. Content row does not exist  → ``Content not found: <id>``
+    2. Content row exists, but no report has been persisted yet
+       (Celery task still running, or analysis was never kicked off)
+       → ``No analysis persisted for content_id``
+    """
+    from pydantic import ValidationError
+
+    from src.services.discovery.schemas import AnalysisReport
+
+    try:
+        # 1. Look up the content row.
+        stmt = select(ContentCandidateDB).filter(
+            ContentCandidateDB.id == content_id
+        )
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        if not content:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Content not found: {content_id}",
+            )
+
+        # 2. Pull the persisted payload (10-01 added this JSONB column).
+        payload = getattr(content, "analysis_payload", None)
+        if not payload:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No analysis persisted for content_id={content_id}",
+            )
+
+        # 3. Rehydrate the Pydantic-validated report. A corrupt payload
+        #    (e.g. partial write from an interrupted Celery task) should
+        #    surface as 404 to the UI, not 500 — log and bail.
+        try:
+            report = AnalysisReport.from_db_payload(payload)
+        except ValidationError as ve:
+            logger.warning(
+                f"[Discovery] analysis/{content_id} payload failed validation: {ve}"
+            )
+            raise HTTPException(
+                status_code=404,
+                detail=f"Persisted analysis is malformed for content_id={content_id}",
+            )
+
+        # 4. Build persisted_at: prefer the dedicated column written by 10-02,
+        #    fall back to the older analyzed_at for legacy rows.
+        persisted_at = (
+            getattr(content, "analysis_persisted_at", None) or content.analyzed_at
+        )
+
+        return success_response(
+            data={
+                "analysis": report.model_dump(mode="json"),
+                "persisted_at": persisted_at.isoformat()
+                if persisted_at is not None
+                else None,
+                "status": getattr(report, "status", None),
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(
+            f"[Discovery] GET /analysis/{content_id} failed: {e}"
+        )
+        return handle_exception(e)
+
+
 # ─── Velocity & Reupload Tracking Endpoints ───────────────────────────────────
 
 

@@ -23,7 +23,10 @@
     - [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
 - [ ] **Phase 13: Rewrite Luma API to Luma Ray** - Replace the deprecated `dream-machine` endpoint with the current Luma Ray API (`https://api.lumalabs.ai/v1/generations`) and add `LUMA_API_KEY` to settings
     - Promoted from `.planning/BACKLOG.md` item 999.4 (P0)
-    - [ ] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
+    - [x] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
+- [ ] **Phase 14: Affiliate Auto-Insert** - Wire up the Transformation page's "Auto-Inject Affiliate Nodes" button so it actually burns affiliate URLs into the rendered video via FFmpeg drawtext, with per-link impression tracking
+    - Promoted from `.planning/BACKLOG.md` item 999.5 (P1)
+    - [ ] 14-01-PLAN.md — drawtext URL burn-in + impression_count + tests
 
 ## Phase Details
 
@@ -178,7 +181,20 @@
   6. `LUMA_API_KEY` is documented in `.env.example`
   7. Unit tests cover: key-missing skip, Ray-format POST payload, immediate `video` field, async poll loop, failed-state handling
 **Plans**: 1 plans (single commit)
-- [ ] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
+- [x] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
+
+### Phase 14: Affiliate Auto-Insert
+**Goal**: Make the Transformation page's "Auto-Inject Affiliate Nodes" button actually burn affiliate URLs into the rendered video via FFmpeg drawtext, with per-link impression tracking
+**Depends on**: Phase 3 (Basic Video Generation)
+**Requirements**: MONET-01
+**Success Criteria** (what must be TRUE):
+  1. `POST /api/v1/video/auto-insert-links` with `{job_id}` calls `MonetizationEngine.process_video_with_links` and actually invokes FFmpeg `drawtext` with the affiliate URL visible in the rendered text
+  2. `script_addition` for each insertion always includes the actual `link` URL (not just the LLM's narrative text), sanitized for FFmpeg's `drawtext` filter
+  3. `_plan_link_insertion` reads `AffiliateLinkDB.link` (not the non-existent `url` field) so the LLM prompt contains real URLs
+  4. After a successful render, each linked `AffiliateLinkDB.impression_count` is incremented (a new nullable column added via batch_alter_table)
+  5. Unit tests cover: URL burn-in (FFmpeg drawtext filter contains the URL), impression_count increments, sanitization, missing-link fallback
+**Plans**: 1 plans (single commit)
+- [ ] 14-01-PLAN.md — drawtext URL burn-in + impression_count + tests
 
 ### Phase 11: Remove Veo3 Stub (Credit-Scam Fix)
 **Goal**: Stop users from being charged 25 credits for a fake Veo3 (the synthesis path silently falls through to a Pollinations.ai image+parallax)
@@ -218,7 +234,8 @@
 | 10. Discovery → Analysis → Video Pipeline Fix | 1/1 | In Progress | 2026-05-29 (10-01 Foundation complete) |
 | 11. Remove Veo3 Stub | 1/1 | Complete | 2026-05-29 (6a790f10) |
 | 12. Wire Up Runway + Pika | 0/1 | Not Started | - |
-| 13. Rewrite Luma API to Luma Ray | 0/1 | Not Started | - |
+| 13. Rewrite Luma API to Luma Ray | 1/1 | Complete | 2026-05-29 (f568a097) |
+| 14. Affiliate Auto-Insert | 0/1 | Not Started | - |
 
 ---
 ## Related Documents
@@ -246,4 +263,4 @@
 
 ---
 
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10/11/12/13 promoted from BACKLOG.md 999.1/999.2/999.3/999.4; Related Documents section added)*
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10/11/12/13/14 promoted from BACKLOG.md 999.1/999.2/999.3/999.4/999.5; Related Documents section added)*

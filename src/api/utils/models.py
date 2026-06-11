@@ -341,6 +341,14 @@ class AffiliateLinkDB(Base):
     cta_text = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
+    # Phase 14: per-link impression tracking. Bumped every time the
+    # auto-insert pipeline successfully burns this link into a rendered
+    # video (so one render = one impression per link, regardless of how
+    # many times the overlay text appears on screen). Use ``click_count``
+    # for actual click-throughs; this is the "view-through" counter.
+    impression_count = Column(Integer, default=0, nullable=False)
+    last_impression_at = Column(DateTime, nullable=True)
+
 
 class RevenueLogDB(Base):
     __tablename__ = "revenue_logs"

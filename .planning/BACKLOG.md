@@ -135,7 +135,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ## P1 — High Value (Core User Journeys)
 
-### 999.5 — Auto-Insert Affiliate Links into Videos
+### ~~999.5 — Auto-Insert Affiliate Links into Videos~~ ⮕ **PROMOTED → Phase 14 (2026-05-29)**
 **Source:** `docs/comprehensive_gap_analysis.md` §1.2, current `transformation/page.tsx` shows button but it doesn't work
 **Impact:** Monetization is broken end-to-end
 **Files:**
@@ -152,6 +152,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Tests for overlay positioning + persistence
 
 **Acceptance:** User clicks "Auto-Inject Affiliate Nodes" in transformation page → links appear on rendered video → impression count increments per view.
+**Status:** Promoted to Phase 14 in ROADMAP.md. Execution plan: `.planning/phases/14-affiliate-auto-insert/14-01-PLAN.md`.
 
 ---
 

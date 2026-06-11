@@ -679,3 +679,251 @@ class TestAnalyzeViralPatternTaskGating:
         # New keys
         assert "persisted" in result
         assert "analysis" in result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 10-03 tests: GET /api/v1/discovery/analysis/{content_id} read endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _FakeContentCandidate:
+    """Drop-in stand-in for ``ContentCandidateDB`` that exposes the 10-01
+    persistence columns as plain attributes. The route only reads these
+    five attributes, so we don't need a real SQLAlchemy model."""
+
+    def __init__(
+        self,
+        content_id: str,
+        *,
+        analysis_payload=None,
+        analysis_persisted_at=None,
+        analyzed_at=None,
+    ):
+        self.id = content_id
+        self.analysis_payload = analysis_payload
+        self.analysis_persisted_at = analysis_persisted_at
+        self.analyzed_at = analyzed_at
+
+
+def _build_fake_session(content: _FakeContentCandidate | None):
+    """Build a minimal AsyncSession-like object that returns ``content``
+    from a ``select(ContentCandidateDB).filter(id=...)`` query."""
+
+    class _ScalarResult:
+        def __init__(self, value):
+            self._value = value
+
+        def scalar_one_or_none(self):
+            return self._value
+
+    class _FakeSession:
+        async def execute(self, stmt):  # noqa: ARG002 - stmt ignored
+            return _ScalarResult(content)
+
+        async def commit(self):
+            pass
+
+        async def rollback(self):
+            pass
+
+    return _FakeSession()
+
+
+def _override_dependencies(
+    app, *, db_session, current_user=None
+):  # noqa: ANN001
+    """Override ``get_db`` and ``get_current_user`` on the FastAPI app with
+    in-memory fakes so we can hit the endpoint without a real database or
+    auth backend."""
+    from src.api.utils.auth import get_current_user
+    from src.api.utils.database import get_db
+    from src.api.utils.user_models import UserDB
+
+    if current_user is None:
+        current_user = UserDB(
+            id=1, email="test@example.com", subscription="free", is_active=True
+        )
+
+    async def _fake_db():
+        yield db_session
+
+    def _fake_user():
+        return current_user
+
+    app.dependency_overrides[get_db] = _fake_db
+    app.dependency_overrides[get_current_user] = _fake_user
+
+
+def _build_test_app():
+    """Build a minimal FastAPI app that mounts the discovery router.
+    Avoids importing ``src.api.main`` (which needs SECRET_KEY, Redis, etc.)
+    by mounting only the router we want to test."""
+    from fastapi import FastAPI
+
+    from src.api.routes.discovery import router as discovery_router
+
+    app = FastAPI()
+    app.include_router(discovery_router, prefix="/api/v1")
+    return app
+
+
+class TestAnalysisReadEndpoint:
+    """GET /api/v1/discovery/analysis/{content_id} read-side endpoint
+    (Phase 10-03)."""
+
+    def test_200_returns_persisted_report(self):
+        from fastapi.testclient import TestClient
+
+        from src.services.discovery.schemas import AnalysisReport
+
+        report = _sample_report(candidate_id="cand_xyz789")
+        payload = report.to_db_payload()
+
+        content = _FakeContentCandidate(
+            "cand_xyz789",
+            analysis_payload=payload,
+            analysis_persisted_at=__import__("datetime").datetime(
+                2026, 5, 29, 12, 0, 0, tzinfo=__import__("datetime").timezone.utc
+            ),
+        )
+        app = _build_test_app()
+        _override_dependencies(app, db_session=_build_fake_session(content))
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_xyz789")
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "data" in body
+        data = body["data"]
+        assert data["status"] == "COMPLETED"
+        assert data["analysis"]["candidate_id"] == "cand_xyz789"
+        assert data["analysis"]["viral_score"] == 78.5
+        assert data["analysis"]["hook"]["scroll_stopper"] is True
+        assert data["persisted_at"] is not None
+        assert "2026-05-29" in data["persisted_at"]
+
+    def test_404_when_content_row_missing(self):
+        from fastapi.testclient import TestClient
+
+        app = _build_test_app()
+        _override_dependencies(
+            app, db_session=_build_fake_session(content=None)
+        )
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_does_not_exist")
+
+        assert resp.status_code == 404
+        assert "Content not found" in resp.json()["detail"]
+        assert "cand_does_not_exist" in resp.json()["detail"]
+
+    def test_404_when_payload_is_null(self):
+        from fastapi.testclient import TestClient
+
+        content = _FakeContentCandidate(
+            "cand_unanalyzed", analysis_payload=None
+        )
+        app = _build_test_app()
+        _override_dependencies(app, db_session=_build_fake_session(content))
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_unanalyzed")
+
+        assert resp.status_code == 404
+        assert "No analysis persisted" in resp.json()["detail"]
+        assert "cand_unanalyzed" in resp.json()["detail"]
+
+    def test_persisted_at_prefers_analysis_persisted_at(self):
+        """When both columns are set, the 10-01 column wins (newer, more
+        precise timestamp)."""
+        import datetime
+
+        from fastapi.testclient import TestClient
+
+        from src.services.discovery.schemas import AnalysisReport
+
+        report = _sample_report(candidate_id="cand_both_dates")
+        newer = datetime.datetime(2026, 5, 29, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        older = datetime.datetime(2025, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        content = _FakeContentCandidate(
+            "cand_both_dates",
+            analysis_payload=report.to_db_payload(),
+            analysis_persisted_at=newer,
+            analyzed_at=older,
+        )
+        app = _build_test_app()
+        _override_dependencies(app, db_session=_build_fake_session(content))
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_both_dates")
+        assert resp.status_code == 200
+        assert "2026-05-29" in resp.json()["data"]["persisted_at"]
+        assert "2025-01-01" not in resp.json()["data"]["persisted_at"]
+
+    def test_persisted_at_falls_back_to_analyzed_at(self):
+        """Legacy rows written before 10-01 only have analyzed_at; the
+        endpoint must still return a usable persisted_at."""
+        import datetime
+
+        from fastapi.testclient import TestClient
+
+        from src.services.discovery.schemas import AnalysisReport
+
+        report = _sample_report(candidate_id="cand_legacy")
+        legacy = datetime.datetime(2025, 6, 15, 9, 30, 0, tzinfo=datetime.timezone.utc)
+        content = _FakeContentCandidate(
+            "cand_legacy",
+            analysis_payload=report.to_db_payload(),
+            analysis_persisted_at=None,
+            analyzed_at=legacy,
+        )
+        app = _build_test_app()
+        _override_dependencies(app, db_session=_build_fake_session(content))
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_legacy")
+        assert resp.status_code == 200
+        assert "2025-06-15" in resp.json()["data"]["persisted_at"]
+
+    def test_corrupt_payload_returns_404_not_500(self):
+        """A partially-written payload (e.g. interrupted Celery task) must
+        surface as 404, not 500 — the UI should treat it as 'analyze again'."""
+        from fastapi.testclient import TestClient
+
+        # Missing required nested fields — Pydantic will reject.
+        corrupt = {
+            "candidate_id": "cand_corrupt",
+            "source_uri": "https://example.com",
+            # missing hook, pacing, structure, style, sentiment, summary,
+            # viral_score, confidence
+        }
+        content = _FakeContentCandidate("cand_corrupt", analysis_payload=corrupt)
+        app = _build_test_app()
+        _override_dependencies(app, db_session=_build_fake_session(content))
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_corrupt")
+
+        assert resp.status_code == 404
+        assert "malformed" in resp.json()["detail"].lower()
+
+    def test_persisted_at_is_null_when_both_columns_missing(self):
+        from fastapi.testclient import TestClient
+
+        from src.services.discovery.schemas import AnalysisReport
+
+        report = _sample_report(candidate_id="cand_no_dates")
+        content = _FakeContentCandidate(
+            "cand_no_dates",
+            analysis_payload=report.to_db_payload(),
+            analysis_persisted_at=None,
+            analyzed_at=None,
+        )
+        app = _build_test_app()
+        _override_dependencies(app, db_session=_build_fake_session(content))
+
+        client = TestClient(app)
+        resp = client.get("/api/v1/discovery/analysis/cand_no_dates")
+        assert resp.status_code == 200
+        assert resp.json()["data"]["persisted_at"] is None
