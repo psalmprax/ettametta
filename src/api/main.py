@@ -116,6 +116,7 @@ from src.api.routes import (
     llm,
     reasoning,
     notifications,
+    engines,
 )
 from src.api.routes.publish import router as publish_router
 
@@ -238,6 +239,7 @@ v1_router.include_router(video_preview.router, tags=["Video Preview/Download"])
 v1_router.include_router(publishing.router, tags=["Publishing"])
 v1_router.include_router(monetization_dashboard.router, tags=["Monetization Dashboard"])
 v1_router.include_router(notifications.router, tags=["Notifications"])
+v1_router.include_router(engines.router, tags=["Engines"])
 
 app.include_router(v1_router, prefix="/api")
 app.include_router(health.router)
