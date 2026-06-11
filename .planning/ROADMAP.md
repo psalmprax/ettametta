@@ -185,4 +185,29 @@
 | 11. Remove Veo3 Stub | 0/1 | Not Started | - |
 
 ---
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1; Phase 11 promoted from BACKLOG.md 999.2)*
+## Related Documents
+
+| Document | Purpose | When to use |
+|----------|---------|-------------|
+| [`.planning/ROADMAP.md`](./ROADMAP.md) | Active phase tracker with plan pointers (this file) | "What's being worked on right now?" |
+| [`.planning/BACKLOG.md`](./BACKLOG.md) | Prioritized missing-feature list (37 items, `999.x` numbering) | "What's still TODO and unprioritized?" — check here BEFORE planning a new phase |
+| [`.planning/STATE.md`](./STATE.md) | Current position, progress %, pending todos | "Where are we, what was I doing?" |
+| [`.planning/PROJECT.md`](./PROJECT.md) | Validated + active requirements, key decisions | "What does this project do and why?" |
+| [`.planning/REQUIREMENTS.md`](./REQUIREMENTS.md) | Requirement-level tracking | "Has requirement X been validated?" |
+| [`.planning/HARDENING_ROADMAP.md`](./HARDENING_ROADMAP.md) | Phase 9 enterprise-hardening work | "What hardening is done / pending?" |
+| `.planning/phases/<NN>-*/<NN>-*-PLAN.md` | Per-plan execution contract (YAML frontmatter + tasks) | "How do I execute plan X?" |
+| `.planning/phases/<NN>-*/<NN>-*-SUMMARY.md` | Per-plan completion record | "What shipped in plan X?" |
+
+### Planning-cycle workflow
+
+1. **Before** drafting a new phase plan, skim `.planning/BACKLOG.md` for any
+   `999.x` item that already covers the work — promote it (don't duplicate).
+2. After a phase ships, add any newly-discovered work to `.planning/BACKLOG.md`
+   under the appropriate priority tier (P0–P3) and assign the next free
+   `999.x` number.
+3. Use `/gsd-add-phase` to promote a `999.x` item into a real numbered phase
+   here, or `/gsd-insert-phase` to slip urgent work between existing phases.
+
+---
+
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1; Phase 11 promoted from BACKLOG.md 999.2; Related Documents section added)*
