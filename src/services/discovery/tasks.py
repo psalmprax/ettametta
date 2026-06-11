@@ -1,7 +1,16 @@
 from src.api.utils.celery import celery_app
 from src.api.utils.models import MonitoredNiche
+from src.api.config.settings import settings
 from src.services.discovery.service import base_discovery_service
-from datetime import datetime
+from src.services.discovery.schemas import (
+    AnalysisReport,
+    AnalysisStatus,
+    llm_output_to_analysis_report,
+)
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import ContentCandidateDB
+from sqlalchemy import select
+from datetime import datetime, timezone
 import asyncio
 import logging
 
@@ -78,27 +87,181 @@ def scan_trends_task(niche: str, horizon: str = "30d"):
     return {"status": "success", "niche": niche, "found_count": len(candidates)}
 
 
-@celery_app.task(name="discovery.analyze_pattern")
-def analyze_viral_pattern_task(candidate_data: dict):
+@celery_app.task(name="discovery.analyze_pattern", bind=True)
+def analyze_viral_pattern_task(self, candidate_data: dict):
     """
     Background task for deep AI deconstruction of a viral candidate.
+
+    Behavior matrix (Phase 10-02):
+
+    +-----------------------------------------+----------------------------------+
+    | ENABLE_PERSISTED_ANALYSIS (default off) | Effect                           |
+    +=========================================+==================================+
+    | False (default)                         | Returns dict (legacy behavior).  |
+    |                                         | No DB write.                     |
+    +-----------------------------------------+----------------------------------+
+    | True                                    | Returns dict AND persists the    |
+    |                                         | mapped AnalysisReport to         |
+    |                                         | ContentCandidateDB.analysis_     |
+    |                                         | payload. Sets denormalized       |
+    |                                         | fields: analysis_status,         |
+    |                                         | analysis_task_id,                |
+    |                                         | analysis_persisted_at,           |
+    |                                         | viral_score_velocity,            |
+    |                                         | recommended_style.               |
+    +-----------------------------------------+----------------------------------+
+
+    The mapper is :func:`llm_output_to_analysis_report` (see
+    ``src/services/discovery/schemas.py``). It converts the narrow
+    ``ViralPattern`` returned by the deconstructor into the persisted
+    ``AnalysisReport`` contract. A richer LLM prompt can pass ``raw=...``
+    in the future to override specific fields; today the raw dict is just
+    stashed in ``raw_model_output`` for debugging.
     """
     from src.services.discovery.models import ContentCandidate
 
     candidate = ContentCandidate(**candidate_data)
 
-    logger.info(f"[Discovery Task] Async analysis for: {candidate.source_uri}")
+    logger.info(
+        f"[Discovery Task] Async analysis for: {candidate.source_uri} "
+        f"(persist={settings.ENABLE_PERSISTED_ANALYSIS})"
+    )
     pattern = asyncio.run(base_discovery_service.deep_analyze_viral_patterns(candidate))
 
+    # Map the narrow ViralPattern into the persisted AnalysisReport contract.
+    try:
+        report: AnalysisReport | None = llm_output_to_analysis_report(pattern, candidate)
+    except Exception as map_err:  # pragma: no cover - defensive
+        logger.exception(
+            f"[Discovery Task] Failed to map LLM output to AnalysisReport: {map_err}"
+        )
+        report = None
+
     # Use model_dump(mode='json') for safe JSON serialization with datetime handling
-    return {
+    pattern_dump = (
+        pattern.model_dump(mode="json")
+        if hasattr(pattern, "model_dump")
+        else pattern.dict()
+    )
+
+    result: dict = {
         "status": "success",
         "candidate_id": candidate.id,
         "source_uri": candidate.source_uri,
-        "pattern": pattern.model_dump(mode="json")
-        if hasattr(pattern, "model_dump")
-        else pattern.dict(),
+        "pattern": pattern_dump,
+        "persisted": False,
     }
+
+    if report is not None:
+        result["analysis"] = report.model_dump(mode="json")
+
+    # ── Persist when the feature flag is on ────────────────────────────────
+    if not settings.ENABLE_PERSISTED_ANALYSIS:
+        return result
+
+    if not candidate.id:
+        logger.warning(
+            f"[Discovery Task] Cannot persist analysis: candidate.id is empty "
+            f"(source_uri={candidate.source_uri})"
+        )
+        return result
+
+    if report is None:
+        # Mapping failed — write a FAILED status row so the UI doesn't hang.
+        asyncio.run(
+            _persist_status_only(
+                candidate_id=candidate.id,
+                task_id=self.request.id,
+                status=AnalysisStatus.FAILED,
+            )
+        )
+        result["persisted"] = False
+        result["persistence_error"] = "mapping_failed"
+        return result
+
+    persisted = asyncio.run(
+        _persist_analysis_report(
+            candidate_id=candidate.id,
+            task_id=self.request.id,
+            report=report,
+        )
+    )
+    result["persisted"] = persisted
+    if persisted:
+        result["analysis_task_id"] = self.request.id
+    return result
+
+
+async def _persist_analysis_report(
+    *,
+    candidate_id: str,
+    task_id: str | None,
+    report: AnalysisReport,
+) -> bool:
+    """Write the AnalysisReport to ContentCandidateDB.analysis_payload.
+
+    Returns True on success, False otherwise. Never raises — failures are
+    logged and the task continues (the in-memory result is still returned to
+    the caller).
+    """
+    try:
+        async with async_session_factory() as db:
+            stmt = select(ContentCandidateDB).where(ContentCandidateDB.id == candidate_id)
+            result = await db.execute(stmt)
+            row = result.scalar_one_or_none()
+            if row is None:
+                logger.warning(
+                    f"[Discovery Task] Persist: candidate {candidate_id} not in DB, "
+                    f"skipping write."
+                )
+                return False
+
+            row.analysis_task_id = task_id
+            row.analysis_status = AnalysisStatus.COMPLETED.value
+            row.analysis_payload = report.to_db_payload()
+            row.analysis_persisted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            row.viral_score_velocity = report.viral_score_velocity()
+            row.recommended_style = report.recommended_style()
+
+            await db.commit()
+            logger.info(
+                f"[Discovery Task] Persisted analysis for {candidate_id} "
+                f"(viral_score={report.viral_score:.0f}, "
+                f"velocity={row.viral_score_velocity:.2f})"
+            )
+            return True
+    except Exception as e:  # pragma: no cover - defensive
+        logger.exception(
+            f"[Discovery Task] Failed to persist analysis for {candidate_id}: {e}"
+        )
+        return False
+
+
+async def _persist_status_only(
+    *,
+    candidate_id: str,
+    task_id: str | None,
+    status: AnalysisStatus,
+) -> bool:
+    """Write a status row without the payload (e.g. when mapping fails)."""
+    try:
+        async with async_session_factory() as db:
+            stmt = select(ContentCandidateDB).where(ContentCandidateDB.id == candidate_id)
+            result = await db.execute(stmt)
+            row = result.scalar_one_or_none()
+            if row is None:
+                return False
+            row.analysis_task_id = task_id
+            row.analysis_status = status.value
+            row.analysis_persisted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            await db.commit()
+            return True
+    except Exception as e:  # pragma: no cover - defensive
+        logger.exception(
+            f"[Discovery Task] Failed to persist status={status.value} for "
+            f"{candidate_id}: {e}"
+        )
+        return False
 
 
 @celery_app.task(name="discovery.deep_scan")

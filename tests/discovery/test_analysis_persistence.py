@@ -229,3 +229,453 @@ class TestContentCandidateDBSchema:
         # Legacy columns from the original Phase 2 work — must still be there
         assert "analysis_results" in col_names
         assert "analyzed_at" in col_names
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 10-02 tests: LLM-output mapper + Celery task rewrite
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _candidate(**overrides) -> "ContentCandidate":
+    """Build a minimal ContentCandidate for mapper tests."""
+    from src.services.discovery.models import ContentCandidate
+
+    payload = {
+        "id": "cand_test_001",
+        "platform": "youtube",
+        "source_uri": "https://youtube.com/watch?v=abc123",
+        "title": "The 3-step framework that went viral in 48 hours",
+        "creator_name": "Test Creator",
+        "duration_seconds": 45.0,
+        "niche": "ai-productivity",
+    }
+    payload.update(overrides)
+    return ContentCandidate(**payload)
+
+
+def _viral_pattern(**overrides) -> "ViralPattern":
+    """Build a minimal ViralPattern as the deconstructor would return."""
+    from src.services.discovery.models import ViralPattern
+
+    payload = {
+        "id": "groq_cand_test_001",
+        "hook_score": 0.82,
+        "retention_estimate": 0.68,
+        "pacing_bpm": 132,
+        "style_keywords": ["educational", "zoom-pulse", "lower-third", "b-roll"],
+        "emotional_triggers": ["curiosity", "validation"],
+    }
+    payload.update(overrides)
+    return ViralPattern(**payload)
+
+
+class TestFromLLMOutput:
+    """``AnalysisReport.from_llm_output`` mapper behavior (Phase 10-02)."""
+
+    def test_minimal_viralpattern_produces_valid_report(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        report = llm_output_to_analysis_report(_viral_pattern(), _candidate())
+        assert report.candidate_id == "cand_test_001"
+        assert report.source_uri == "https://youtube.com/watch?v=abc123"
+        # Derived fields are populated and pass Pydantic validation
+        assert report.hook.first_3_seconds
+        assert report.hook.emotional_angle == "curiosity"
+        assert report.hook.scroll_stopper is True  # 0.82 >= 0.7
+        assert report.pacing.bpm == 132
+        assert report.pacing.cuts_per_minute == round(132 / 12, 2)
+        assert report.pacing.recommended_duration_s == 45
+        assert report.structure.arc == ["setup", "build", "payoff"]  # retention >= 0.5
+        assert report.structure.act_breaks == [15, 30]
+        assert report.structure.retention_curve == [1.0, 0.8, 0.68, 0.5]
+        assert report.style.recommended_style == "educational"
+        assert report.style.motion_graphics == ["zoom-pulse", "lower-third", "b-roll"]
+        assert report.sentiment.overall == "positive"  # hook_score >= 0.5
+        assert report.sentiment.target_audience == "ai-productivity"
+        assert report.sentiment.emotional_triggers == ["curiosity", "validation"]
+        assert "3-step framework" in report.summary
+        assert report.viral_score == 82.0
+        assert report.confidence == 0.85  # not a fallback id
+
+    def test_fills_defaults_for_empty_arrays(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(style_keywords=[], emotional_triggers=[])
+        report = llm_output_to_analysis_report(pattern, _candidate(niche=None, title=None))
+        # Defaults kick in
+        assert report.hook.first_3_seconds == "Visual hook"
+        assert report.hook.emotional_angle == "curiosity"
+        assert report.style.recommended_style == "educational"
+        assert report.style.motion_graphics == []
+        assert report.sentiment.target_audience == "creators"
+        assert report.summary == "Viral pattern analysis"
+
+    def test_low_retention_yields_two_act_structure(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(retention_estimate=0.4)
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        assert report.structure.arc == ["hook", "payoff"]
+        assert report.sentiment.overall == "positive"  # hook_score still high
+
+    def test_low_hook_score_yields_neutral_sentiment(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(hook_score=0.3)
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        assert report.sentiment.overall == "neutral"
+        assert report.hook.scroll_stopper is False
+        assert report.viral_score == 30.0
+
+    def test_fallback_pattern_id_lowers_confidence(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(id="os_pattern_fallback_xyz")
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        assert report.confidence == 0.5
+
+    def test_fallback_pattern_id_prefix_lowers_confidence(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(id="fallback_no_transcript")
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        assert report.confidence == 0.5
+
+    def test_pacing_bpm_defaulted_when_none(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(pacing_bpm=None)
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        assert report.pacing.bpm == 120
+        assert report.pacing.cuts_per_minute == 10.0
+
+    def test_pacing_bpm_clamps_to_upper_bound(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(pacing_bpm=9999)
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        assert report.pacing.bpm == 400  # PacingInsights bound
+
+    def test_recommended_duration_clamped(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        # Too short
+        report = llm_output_to_analysis_report(
+            _viral_pattern(), _candidate(duration_seconds=1.0)
+        )
+        assert report.pacing.recommended_duration_s == 5  # clamped to 5
+
+        # Too long
+        report = llm_output_to_analysis_report(
+            _viral_pattern(), _candidate(duration_seconds=1000.0)
+        )
+        assert report.pacing.recommended_duration_s == 180  # clamped to 180
+
+        # Missing
+        report = llm_output_to_analysis_report(
+            _viral_pattern(), _candidate(duration_seconds=0.0)
+        )
+        assert report.pacing.recommended_duration_s == 30  # default
+
+    def test_raw_dict_overrides_derived_scalar(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        report = llm_output_to_analysis_report(
+            _viral_pattern(),
+            _candidate(),
+            raw={"summary": "Overridden by rich LLM prompt", "viral_score": 95.5},
+        )
+        assert report.summary == "Overridden by rich LLM prompt"
+        assert report.viral_score == 95.5
+
+    def test_raw_dict_overrides_derived_nested_model(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        report = llm_output_to_analysis_report(
+            _viral_pattern(),
+            _candidate(),
+            raw={
+                "style": {
+                    "recommended_style": "cinematic-dark",
+                    "color_palette": ["#000000", "#ff0066"],
+                    "music_genre": "dark-ambient",
+                }
+            },
+        )
+        # style.recommended_style + color_palette + music_genre overridden;
+        # motion_graphics keeps the derived value
+        assert report.style.recommended_style == "cinematic-dark"
+        assert report.style.color_palette == ["#000000", "#ff0066"]
+        assert report.style.music_genre == "dark-ambient"
+        assert report.style.motion_graphics == ["zoom-pulse", "lower-third", "b-roll"]
+
+    def test_raw_model_output_is_stashed_for_debug(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        report = llm_output_to_analysis_report(
+            _viral_pattern(),
+            _candidate(),
+            raw={"hook_score": 0.9, "llm_model": "llama-3.3-70b-versatile"},
+        )
+        assert report.raw_model_output is not None
+        assert report.raw_model_output["llm_model"] == "llama-3.3-70b-versatile"
+        assert report.raw_model_output["hook_score"] == 0.9
+
+    def test_to_db_payload_roundtrips_through_from_db_payload(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        report = llm_output_to_analysis_report(_viral_pattern(), _candidate())
+        rehydrated = AnalysisReport.from_db_payload(report.to_db_payload())
+        assert rehydrated.id == report.id
+        assert rehydrated.candidate_id == report.candidate_id
+        assert rehydrated.viral_score == report.viral_score
+        assert rehydrated.confidence == report.confidence
+        assert rehydrated.style.recommended_style == report.style.recommended_style
+        assert rehydrated.structure.arc == report.structure.arc
+
+    def test_emotional_triggers_bounded_to_20(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        pattern = _viral_pattern(
+            emotional_triggers=[f"trigger_{i}" for i in range(50)]
+        )
+        report = llm_output_to_analysis_report(pattern, _candidate())
+        # Pydantic will accept up to 20 (max_length), so we expect 20 here.
+        assert len(report.sentiment.emotional_triggers) == 20
+
+    def test_summary_truncated_to_200_chars(self):
+        from src.services.discovery.schemas import llm_output_to_analysis_report
+
+        long_title = "x" * 500
+        report = llm_output_to_analysis_report(
+            _viral_pattern(), _candidate(title=long_title)
+        )
+        # _derive_from_pattern truncates to 200, then Pydantic max_length=1000
+        # so the 200-char truncation is what we verify.
+        assert len(report.summary) == 200
+
+
+class TestAnalyzeViralPatternTaskGating:
+    """``analyze_viral_pattern_task`` Celery task behavior (Phase 10-02)."""
+
+    def _stub_deconstructor(self, monkeypatch, return_value=None):
+        """Patch ``base_discovery_service.deep_analyze_viral_patterns`` with
+        an async function that returns ``return_value`` (default: a fresh
+        ``_viral_pattern()``).
+
+        Note: when setattr-ing a function on an INSTANCE, Python binds it as
+        a bound method, so ``self`` is implicit. The stub therefore takes
+        only ``candidate``.
+        """
+        from src.services.discovery import tasks as _tasks
+
+        if return_value is None:
+            return_value = _viral_pattern()
+
+        async def _fake(candidate):  # self is implicit when set on an instance
+            return return_value
+
+        monkeypatch.setattr(
+            _tasks.base_discovery_service,
+            "deep_analyze_viral_patterns",
+            _fake,
+        )
+
+    def test_flag_off_does_not_open_db_session(self, monkeypatch):
+        from src.services.discovery import tasks
+
+        # Force flag off
+        monkeypatch.setattr(tasks.settings, "ENABLE_PERSISTED_ANALYSIS", False)
+
+        # Track if any DB session is opened
+        opened = {"count": 0}
+
+        def _no_session():
+            opened["count"] += 1
+            raise AssertionError("async_session_factory should not be called")
+
+        # Patch on the tasks module
+        monkeypatch.setattr(tasks, "async_session_factory", _no_session)
+        self._stub_deconstructor(monkeypatch)
+
+        cand = _candidate()
+        task = tasks.analyze_viral_pattern_task
+        task.push_request(id="task-test-001")
+        try:
+            result = task.run(cand.model_dump(mode="json"))
+        finally:
+            task.pop_request()
+
+        assert result["status"] == "success"
+        assert result["candidate_id"] == "cand_test_001"
+        assert result["persisted"] is False
+        assert "analysis" in result  # mapper ran
+        assert opened["count"] == 0  # never opened a session
+
+    def test_flag_on_persists_payload_to_db(self, monkeypatch):
+        """With the flag on, the task must write a valid AnalysisReport
+        to ContentCandidateDB.analysis_payload."""
+        from src.services.discovery import tasks
+
+        monkeypatch.setattr(tasks.settings, "ENABLE_PERSISTED_ANALYSIS", True)
+
+        # Build a fake session that records writes
+        class _Row:
+            analysis_task_id = None
+            analysis_status = None
+            analysis_payload = None
+            analysis_persisted_at = None
+            viral_score_velocity = None
+            recommended_style = None
+            id = "cand_test_001"
+
+        class _Result:
+            def __init__(self, row):
+                self._row = row
+
+            def scalar_one_or_none(self):
+                return self._row
+
+        class _Session:
+            def __init__(self, row):
+                self._row = row
+                self.committed = False
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *a):
+                return False
+
+            async def execute(self, stmt):
+                return _Result(self._row)
+
+            async def commit(self):
+                self.committed = True
+
+            async def rollback(self):
+                pass
+
+        # Capture the row that the task actually mutates
+        row_holder = {"row": _Row(), "commit_called": False}
+
+        def _factory():
+            s = _Session(row_holder["row"])
+
+            # Wrap commit to mark it for the test
+            original_commit = s.commit
+
+            async def _commit():
+                await original_commit()
+                row_holder["commit_called"] = True
+
+            s.commit = _commit
+            return s
+
+        monkeypatch.setattr(tasks, "async_session_factory", _factory)
+        self._stub_deconstructor(monkeypatch)
+
+        cand = _candidate()
+        task = tasks.analyze_viral_pattern_task
+        task.push_request(id="task-persist-001")
+        try:
+            result = task.run(cand.model_dump(mode="json"))
+        finally:
+            task.pop_request()
+
+        assert result["persisted"] is True
+        assert result["analysis_task_id"] == "task-persist-001"
+        # Row was mutated
+        row = row_holder["row"]
+        assert row.analysis_task_id == "task-persist-001"
+        assert row.analysis_status == "COMPLETED"
+        assert row.analysis_payload is not None
+        assert row.analysis_payload["viral_score"] == 82.0
+        assert row.analysis_payload["hook"]["scroll_stopper"] is True
+        assert row.viral_score_velocity is not None
+        assert row.recommended_style == "educational"
+        assert row_holder["commit_called"] is True
+
+    def test_flag_on_candidate_not_in_db_skips_persistence(self, monkeypatch):
+        from src.services.discovery import tasks
+
+        monkeypatch.setattr(tasks.settings, "ENABLE_PERSISTED_ANALYSIS", True)
+
+        # Empty result
+        class _Result:
+            def scalar_one_or_none(self):
+                return None
+
+        class _Session:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *a):
+                return False
+
+            async def execute(self, stmt):
+                return _Result()
+
+            async def commit(self):
+                pass
+
+            async def rollback(self):
+                pass
+
+        monkeypatch.setattr(tasks, "async_session_factory", lambda: _Session())
+        self._stub_deconstructor(monkeypatch)
+
+        cand = _candidate()
+        task = tasks.analyze_viral_pattern_task
+        task.push_request(id="task-missing-cand-001")
+        try:
+            result = task.run(cand.model_dump(mode="json"))
+        finally:
+            task.pop_request()
+
+        assert result["persisted"] is False
+        assert result["status"] == "success"
+        assert result["candidate_id"] == "cand_test_001"
+
+    def test_missing_candidate_id_does_not_crash_persistence(self, monkeypatch):
+        from src.services.discovery import tasks
+
+        monkeypatch.setattr(tasks.settings, "ENABLE_PERSISTED_ANALYSIS", True)
+        self._stub_deconstructor(monkeypatch)
+
+        cand = _candidate(id="")  # missing
+        task = tasks.analyze_viral_pattern_task
+        task.push_request(id="task-no-id-001")
+        try:
+            result = task.run(cand.model_dump(mode="json"))
+        finally:
+            task.pop_request()
+
+        assert result["persisted"] is False
+        assert result["status"] == "success"
+
+    def test_returned_dict_is_backward_compatible(self, monkeypatch):
+        """Legacy callers (Celery AsyncResult checks) only depend on
+        ``status``, ``candidate_id``, ``source_uri``, ``pattern`` — make
+        sure those keys are still there."""
+        from src.services.discovery import tasks
+
+        monkeypatch.setattr(tasks.settings, "ENABLE_PERSISTED_ANALYSIS", False)
+        self._stub_deconstructor(monkeypatch)
+
+        cand = _candidate()
+        task = tasks.analyze_viral_pattern_task
+        task.push_request(id="task-compat-001")
+        try:
+            result = task.run(cand.model_dump(mode="json"))
+        finally:
+            task.pop_request()
+
+        # Legacy keys
+        assert result["status"] == "success"
+        assert result["candidate_id"] == "cand_test_001"
+        assert result["source_uri"] == "https://youtube.com/watch?v=abc123"
+        assert "pattern" in result
+        # New keys
+        assert "persisted" in result
+        assert "analysis" in result
