@@ -31,7 +31,7 @@ async def test_trigger():
             progress=0,
             source_uri=prompt,
             user_id=user_id,
-            job_metadata={"prompt": prompt, "engine": "veo3"}
+            job_metadata={"prompt": prompt, "engine": "ltx-video"}
         )
         session.add(new_job)
         await session.commit()
@@ -42,7 +42,7 @@ async def test_trigger():
     task = generate_video_task.apply_async(
         kwargs={
             "prompt": prompt,
-            "engine": "veo3",
+            "engine": "ltx-video",
             "style": "Cinematic",
             "aspect_ratio": "9:16",
             "user_id": user_id,

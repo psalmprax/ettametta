@@ -116,7 +116,7 @@ async def get_providers(
                 {"id": "stability", "name": "Stability AI", "free": True, "credits": 25, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
                 {"id": "zsky", "name": "ZSky AI", "free": True, "credits": 50, "platform_cost": 0, "has_direct_api": True, "browser_automation": False},
                 {"id": "replicate", "name": "Replicate", "free": False, "credits": 0, "platform_cost": 5, "has_direct_api": True, "browser_automation": False},
-                {"id": "veo3", "name": "Google Veo 3", "free": False, "credits": 0, "platform_cost": 25, "has_direct_api": True, "browser_automation": False},
+
                 # --- Local GPU inference engines (requires GPU node) ---
                 {"id": "mochi", "name": "Mochi", "free": False, "credits": 0, "platform_cost": 15, "has_direct_api": True, "browser_automation": False},
                 {"id": "wan", "name": "Wan 2.2", "free": False, "credits": 0, "platform_cost": 15, "has_direct_api": True, "browser_automation": False},

@@ -137,7 +137,7 @@ async def get_job_details(
 
         # Simple cost mapping (consistent with original)
         cost_mapping = {
-            "veo3": {"credits": 25, "cost_usd": 2.50, "category": "premium"},
+
             "runway": {"credits": 30, "cost_usd": 3.00, "category": "premium"},
             "pika": {"credits": 30, "cost_usd": 3.00, "category": "premium"},
             "ltx-video": {"credits": 10, "cost_usd": 1.00, "category": "local"},
@@ -232,7 +232,7 @@ async def retry_job(
                 details = audit_log.details
                 task = generate_video_task.delay(
                     prompt=job.title.split(" - ")[-1],
-                    engine=details.get("engine", "veo3"),
+                    engine=details.get("engine", "ltx-video"),
                     style=details.get("style", "Cinematic"),
                     aspect_ratio="9:16",
                     user_id=current_user.id,

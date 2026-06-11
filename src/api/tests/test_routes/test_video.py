@@ -133,15 +133,15 @@ class TestVideoGeneration:
         assert response.status_code in [200, 402, 500]
     
     @patch("src.services.video_engine.tasks.generate_video_task.delay")
-    def test_generate_veo3(self, mock_task, client: TestClient, auth_token):
-        """Test Veo3 video generation."""
-        mock_task.return_value = MagicMock(id="veo3-task-123")
+    def test_generate_ltx_video(self, mock_task, client: TestClient, auth_token):
+        """Test LTX-Video video generation."""
+        mock_task.return_value = MagicMock(id="ltx-video-task-123")
         
         response = client.post(
             "/api/v1/video/generate",
             json={
                 "prompt": "A bird flying over mountains",
-                "engine": "veo3",
+                "engine": "ltx-video",
                 "style": "Cinematic"
             },
             headers={"Authorization": f"Bearer {auth_token}"}

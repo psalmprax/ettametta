@@ -45,7 +45,7 @@ SUBSCRIPTION_TIERS = {
         "name": "Studio",
         "price_id": "price_studio_monthly",
         "price_cents": 29900,
-        "features": ["Runway/Pika/Veo3/Wan2.2", "1000 videos/month", "Studio Quality"],
+        "features": ["Runway/Pika/Wan2.2", "1000 videos/month", "Studio Quality"],
         "limit_videos": 1000,
     },
 }

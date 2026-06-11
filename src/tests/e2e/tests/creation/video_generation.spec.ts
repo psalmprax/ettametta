@@ -94,7 +94,7 @@ test.describe('Video Generation - AI Generate from Text', () => {
         await page.goto('/creation');
         await page.click('text=AI Generation');
         await page.fill('textarea[name="prompt"]', 'Test');
-        await page.selectOption('select[name="engine"]', 'veo3');
+        await page.selectOption('select[name="engine"]', 'ltx-video');
         await page.click('button[type="submit"]');
         await expect(page.locator('[data-testid="upgrade-prompt"]')).toBeVisible({ timeout: 10000 });
     });

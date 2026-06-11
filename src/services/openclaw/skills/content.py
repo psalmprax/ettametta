@@ -16,7 +16,7 @@ class ContentSkill(OpenClawBaseSkill):
         action: str = "transform",
         source_uri: str = "",
         prompt: str = "",
-        engine: str = "veo3",
+        engine: str = "ltx-video",
         niche: str = "Motivation",
         platform: str = "YouTube Shorts",
         **kwargs,
@@ -39,7 +39,7 @@ class ContentSkill(OpenClawBaseSkill):
         action: str = "transform",
         source_uri: str = "",
         prompt: str = "",
-        engine: str = "veo3",
+        engine: str = "ltx-video",
         niche: str = "Motivation",
         platform: str = "YouTube Shorts",
     ) -> str:

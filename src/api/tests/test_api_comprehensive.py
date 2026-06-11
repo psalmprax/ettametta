@@ -35,7 +35,7 @@ def clear_dependency_overrides():
 @pytest.fixture
 def test_user(db_session):
     """Create a test user and seed their credit balance"""
-    # Create the user with STUDIO tier to allow full access to veo3 and studio-grade endpoints
+    # Create the user with STUDIO tier to allow full access to premium engines and studio-grade endpoints
     user = UserDB(
         email="test@example.com",
         username="testuser",
@@ -112,7 +112,7 @@ class TestAPIRoutes:
 
         video_data = {
             "prompt": "A beautiful sunset over mountains",
-            "engine": "veo3",
+            "engine": "ltx-video",
             "style": "Cinematic",
             "aspect_ratio": "9:16",
             "quality_tier": "premium",

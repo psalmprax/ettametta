@@ -23,21 +23,21 @@ class TestVideoGeneration:
     """Test suite for video generation engines."""
 
     @pytest.mark.asyncio
-    async def test_veo3_generation(self):
+    async def test_ltx_video_generation(self):
         if not GENERATIVE_SERVICE_AVAILABLE:
             pytest.skip("Generative service not available")
-        """Test Veo3 engine with basic prompt."""
-        """Test Veo3 engine with basic prompt."""
+        """Test LTX-Video engine with basic prompt."""
+        """Test LTX-Video engine with basic prompt."""
         prompt = "A beautiful sunset over mountains"
         result = await base_generative_service.synthesize_video(
-            prompt=prompt, engine="veo3", aspect_ratio="16:9", style="Cinematic"
+            prompt=prompt, engine="ltx-video", aspect_ratio="16:9", style="Cinematic"
         )
 
         if result:
-            print(f"✅ Veo3 generation successful: {result}")
+            print(f"✅ LTX-Video generation successful: {result}")
             assert isinstance(result, str)
         else:
-            print("⚠️ Veo3 generation returned None (expected fallback)")
+            print("⚠️ LTX-Video generation returned None (expected fallback)")
             assert result is None  # Expected for no API keys
 
     @pytest.mark.asyncio
@@ -148,13 +148,13 @@ class TestVideoGeneration:
     async def test_aspect_ratios(self):
         if not GENERATIVE_SERVICE_AVAILABLE:
             pytest.skip("Generative service not available")
-        """Test different aspect ratios with Veo3."""
+        """Test different aspect ratios with LTX-Video."""
         prompt = "A test scene"
         ratios = ["9:16", "16:9", "1:1"]
 
         for ratio in ratios:
             result = await base_generative_service.synthesize_video(
-                prompt=prompt, engine="veo3", aspect_ratio=ratio, style="Cinematic"
+                prompt=prompt, engine="ltx-video", aspect_ratio=ratio, style="Cinematic"
             )
 
             if result:
@@ -183,7 +183,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test with empty prompt."""
         result = await base_generative_service.synthesize_video(
-            prompt="", engine="veo3", aspect_ratio="9:16", style="Cinematic"
+            prompt="", engine="ltx-video", aspect_ratio="9:16", style="Cinematic"
         )
 
         # Should handle empty prompt gracefully
@@ -202,7 +202,7 @@ if __name__ == "__main__":
             return
         try:
             result = await base_generative_service.synthesize_video(
-                prompt="Test video generation", engine="veo3", aspect_ratio="9:16"
+                prompt="Test video generation", engine="ltx-video", aspect_ratio="9:16"
             )
             if result:
                 print(f"✅ Smoke test passed: {result}")

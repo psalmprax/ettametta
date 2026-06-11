@@ -115,7 +115,6 @@ def engine_access_required(engine: str):
             "mochi": SubscriptionTier.SOVEREIGN,
             "cogvideo": SubscriptionTier.SOVEREIGN,
             "wan": SubscriptionTier.SOVEREIGN,
-            "veo3": SubscriptionTier.STUDIO,
             "wan2.2": SubscriptionTier.STUDIO,
             # Free tier engines (browser automation)
             "kling": SubscriptionTier.FREE,
@@ -225,7 +224,6 @@ def get_provider_quota_info(engine: str) -> dict:
     Get quota information for a specific AI video engine.
     """
     quota_mapping = {
-        "veo3": {"daily_limit": 5, "premium": True, "provider": "Google"},
         "runway": {"daily_limit": 5, "premium": True, "provider": "RunwayML"},
         "pika": {"daily_limit": 10, "premium": True, "provider": "Pika Labs"},
         "ltx-video": {"daily_limit": 20, "premium": False, "provider": "Lightbox"},

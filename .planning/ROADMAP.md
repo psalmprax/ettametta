@@ -14,7 +14,10 @@
     - [x] 09-01-PLAN.md — Unified Observability and Request Tracing
 - [ ] **Phase 10: Discovery → Analysis → Video Pipeline Fix** - Repair the broken core user journey end-to-end
     - Promoted from `.planning/BACKLOG.md` item 999.1 (P0)
-    - [ ] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract (in progress)
+    - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
+- [ ] **Phase 11: Remove Veo3 Stub (Credit-Scam Fix)** - Stop the fake-Veo3 from charging 25 credits for a Pollinations.ai image
+    - Promoted from `.planning/BACKLOG.md` item 999.2 (P0)
+    - [ ] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
 
 ## Phase Details
 
@@ -141,7 +144,21 @@
   4. The video job record carries a snapshot of the originating analysis in `job_metadata.analysis_snapshot`
   5. Old behavior (in-memory Celery results) still works behind a feature flag (`ENABLE_PERSISTED_ANALYSIS`)
 **Plans**: 1 plans (this phase ships in a single plan; sub-plans split if scope grows)
-- [ ] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
+- [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
+
+### Phase 11: Remove Veo3 Stub (Credit-Scam Fix)
+**Goal**: Stop users from being charged 25 credits for a fake Veo3 (the synthesis path silently falls through to a Pollinations.ai image+parallax)
+**Depends on**: Phase 3 (Basic Video Generation)
+**Requirements**: VIDEO-01
+**Success Criteria** (what must be TRUE):
+  1. `grep -ri "veo3" src/ apps/ scripts/` returns no engine references
+  2. Engine selector in `apps/dashboard/src/app/creation/page.tsx` no longer shows "Veo3"
+  3. `ENGINE_ACTION_MAP` and `PREMIUM_ENGINES` in `engine_config.py` no longer mention `veo3`
+  4. Default `engine` field in Pydantic schemas and route signatures is `"ltx-video"` (not `"veo3"`)
+  5. User cannot trigger a video job with `engine="veo3"` (endpoint returns 400)
+  6. No documentation still claims Veo3 is supported
+**Plans**: 1 plans (single-commit removal)
+- [ ] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
 
 **Recent Hardening Work (2026-04-17 to 2026-05-29):**
 - 14+ operational/debugging skills created (ai-provider-debug, celery-monitor, cloakbrowser, content-discovery, db-performance, dep-audit, docker-compose, fastapi-debug, nexus-engine, redis-debug, remotion-debug, security-sentinel, social-api, storage-lifecycle, video-pipeline, voiceover-tts)
@@ -164,7 +181,8 @@
 | 7. Monetization | 1/2 | In Progress | - |
 | 8. Analytics | 1/2 | In Progress | - |
 | 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
-| 10. Discovery → Analysis → Video Pipeline Fix | 0/1 | Not Started | - |
+| 10. Discovery → Analysis → Video Pipeline Fix | 1/1 | In Progress | 2026-05-29 (10-01 Foundation complete) |
+| 11. Remove Veo3 Stub | 0/1 | Not Started | - |
 
 ---
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1)*
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1; Phase 11 promoted from BACKLOG.md 999.2)*
