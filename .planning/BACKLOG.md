@@ -89,7 +89,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.3 — Wire Up Runway + Pika API Keys
+### ~~999.3 — Wire Up Runway + Pika API Keys~~ ⮕ **PROMOTED → Phase 12 (2026-05-29)**
 **Source:** Code investigation
 **Impact:** Real, production-quality API integration code exists but is dormant because env vars are never set
 **Root cause:** `AIVideoGeneratorService` gates itself on `AI_VIDEO_PROVIDER` and `_get_api_key()` returns empty string by default
@@ -110,6 +110,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Add tests verifying the service correctly uses settings-based keys
 
 **Acceptance:** With valid `RUNWAY_API_KEY` set, `POST /video/generate {engine: "runway"}` returns a real Runway video URI (not None).
+**Status:** Promoted to Phase 12 in ROADMAP.md. Execution plan: `.planning/phases/12-wire-runway-pika/12-01-PLAN.md`.
 
 ---
 

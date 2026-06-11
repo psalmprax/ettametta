@@ -17,7 +17,10 @@
     - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
 - [ ] **Phase 11: Remove Veo3 Stub (Credit-Scam Fix)** - Stop the fake-Veo3 from charging 25 credits for a Pollinations.ai image
     - Promoted from `.planning/BACKLOG.md` item 999.2 (P0)
-    - [ ] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
+    - [x] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
+- [ ] **Phase 12: Wire Up Runway + Pika API Keys** - Activate the dormant Runway/Pika API integration by reading keys from settings and exposing /engines/availability
+    - Promoted from `.planning/BACKLOG.md` item 999.3 (P0)
+    - [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
 
 ## Phase Details
 
@@ -146,6 +149,19 @@
 **Plans**: 1 plans (this phase ships in a single plan; sub-plans split if scope grows)
 - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
 
+### Phase 12: Wire Up Runway + Pika API Keys
+**Goal**: Activate the dormant Runway/Pika API integration by reading keys from `settings` (not `os.getenv`) and expose a `/engines/availability` endpoint so the UI can hide non-working engines
+**Depends on**: Phase 3 (Basic Video Generation)
+**Requirements**: VIDEO-01
+**Success Criteria** (what must be TRUE):
+  1. `AIVideoGeneratorService._get_api_key()` reads from `settings.RUNWAY_API_KEY` and `settings.PIKA_API_KEY` (not `os.getenv`)
+  2. With `AI_VIDEO_PROVIDER=runway` + `RUNWAY_API_KEY` set in env, the service is `enabled=True` and `_get_api_key()` returns a non-empty string
+  3. `GET /engines/availability` returns per-engine status: `key_set`, `circuit_closed`, `enabled`, `provider` (for Runway, Pika, and the existing engines)
+  4. `RUNWAY_API_KEY` and `PIKA_API_KEY` are documented in `.env.example`
+  5. Unit tests verify settings-based key resolution and the availability endpoint
+**Plans**: 1 plans (single commit)
+- [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
+
 ### Phase 11: Remove Veo3 Stub (Credit-Scam Fix)
 **Goal**: Stop users from being charged 25 credits for a fake Veo3 (the synthesis path silently falls through to a Pollinations.ai image+parallax)
 **Depends on**: Phase 3 (Basic Video Generation)
@@ -182,7 +198,8 @@
 | 8. Analytics | 1/2 | In Progress | - |
 | 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
 | 10. Discovery → Analysis → Video Pipeline Fix | 1/1 | In Progress | 2026-05-29 (10-01 Foundation complete) |
-| 11. Remove Veo3 Stub | 0/1 | Not Started | - |
+| 11. Remove Veo3 Stub | 1/1 | Complete | 2026-05-29 (6a790f10) |
+| 12. Wire Up Runway + Pika | 0/1 | Not Started | - |
 
 ---
 ## Related Documents
@@ -210,4 +227,4 @@
 
 ---
 
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1; Phase 11 promoted from BACKLOG.md 999.2; Related Documents section added)*
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10/11/12 promoted from BACKLOG.md 999.1/999.2/999.3; Related Documents section added)*

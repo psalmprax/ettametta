@@ -3,11 +3,15 @@ AI Video Generation Service - Any Tier 3 Enhancement
 
 Integrates with AI video generation APIs (Runway, Pika) for creating clips.
 Disabled by default - enable via AI_VIDEO_PROVIDER=runway or AI_VIDEO_PROVIDER=pika
+
+Phase 12: Reads keys from `src.api.config.settings` (singleton), not os.getenv, so
+the values can come from .env, environment, or any Pydantic-Settings source.
 """
 
-import os
 import logging
 import asyncio
+
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +36,14 @@ class AIVideoGeneratorService:
     }
 
     def __init__(self):
-        self.provider = os.getenv("AI_VIDEO_PROVIDER", "none").lower()
+        # Phase 12: Read keys from settings (singleton) rather than os.getenv so
+        # they can come from .env, environment, or any Pydantic-Settings source.
+        self.provider = (settings.AI_VIDEO_PROVIDER or "none").lower()
         self.enabled = self.provider != "none"
 
-        # API keys from config
-        self.runway_key = os.getenv("RUNWAY_API_KEY", "")
-        self.pika_key = os.getenv("PIKA_API_KEY", "")
+        # API keys from settings (None → "" so _get_api_key() is uniform)
+        self.runway_key = settings.RUNWAY_API_KEY or ""
+        self.pika_key = settings.PIKA_API_KEY or ""
 
         logger.info(
             f"[AIGenerator] Initialized - Provider: {self.provider}, Enabled: {self.enabled}"
