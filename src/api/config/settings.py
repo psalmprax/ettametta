@@ -304,6 +304,7 @@ class Settings(BaseSettings):
     AI_VIDEO_FALLBACKS: str = ""
     RUNWAY_API_KEY: str | None = None
     PIKA_API_KEY: str | None = None
+    LUMA_API_KEY: str | None = None  # Luma Ray API key (Phase 13 — replaces deprecated dream-machine auth)
     ZSKY_API_KEY: str | None = None  # ~50 credits/day
     KLING_API_KEY: str | None = None  # ~100 credits/day
     PIXVERSE_API_KEY: str | None = None  # ~20 credits/day

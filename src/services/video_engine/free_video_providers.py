@@ -149,12 +149,16 @@ class FreeVideoProviderService:
             "supports_audio": True,
         },
         "luma": {
-            "api_url": "https://api.lumalabs.ai/dream-machine/v1",
+            # Phase 13: migrated from the deprecated Dream Machine endpoint
+            # (https://api.lumalabs.ai/dream-machine/v1) to the current
+            # Luma Ray API (https://api.lumalabs.ai/v1).
+            "api_url": "https://api.lumalabs.ai/v1",
             "free_credits": 15,  # Daily
-            "max_duration": 7,
-            "default_aspect": "9:16",
+            "max_duration": 9,
+            "default_aspect": "16:9",
             "supports_image2video": True,
             "supports_audio": False,
+            "model_default": "ray-2",  # Luma Ray 2
         },
         "kaiber": {
             "api_url": "https://api.kaiber.ai/v1",
@@ -293,14 +297,24 @@ class FreeVideoProviderService:
             else []
         )
 
-        # Get API keys
+        # Get API keys — Phase 12 wired Runway/Pika through settings;
+        # Phase 13 does the same for Luma. We fall back to os.getenv for
+        # backward compatibility with deployments that still pass keys
+        # via env-only.
+        try:
+            from src.api.config.settings import settings as _api_settings
+            self.runway_key = _api_settings.RUNWAY_API_KEY or os.getenv("RUNWAY_API_KEY", "")
+            self.pika_key = _api_settings.PIKA_API_KEY or os.getenv("PIKA_API_KEY", "")
+            self.luma_key = _api_settings.LUMA_API_KEY or os.getenv("LUMA_API_KEY", "")
+        except Exception:
+            self.runway_key = os.getenv("RUNWAY_API_KEY", "")
+            self.pika_key = os.getenv("PIKA_API_KEY", "")
+            self.luma_key = os.getenv("LUMA_API_KEY", "")
         self.zsky_key = os.getenv("ZSKY_API_KEY", "")
         self.kling_key = os.getenv("KLING_API_KEY", "")
         self.pixverse_key = os.getenv("PIXVERSE_API_KEY", "")
         self.replicate_key = os.getenv("REPLICATE_API_KEY", "")
         self.stability_key = os.getenv("STABILITY_API_KEY", "")
-        self.runway_key = os.getenv("RUNWAY_API_KEY", "")
-        self.pika_key = os.getenv("PIKA_API_KEY", "")
 
         # Track available free credits (for logging)
         self._available_providers = []
@@ -351,6 +365,7 @@ class FreeVideoProviderService:
             "stability": self.stability_key,
             "runway": self.runway_key,
             "pika": self.pika_key,
+            "luma": self.luma_key,
         }
         return key_map.get(provider, "")
 
@@ -701,22 +716,54 @@ class FreeVideoProviderService:
         api_key: str,
         config: dict,
     ) -> dict[str, Any] | None:
-        """Generate video using Luma Dream Machine"""
+        """Generate video using Luma Ray API (Phase 13).
+
+        Endpoint: POST {api_url}/generations
+        Auth:     Authorization: Bearer luma-XXXXX
+        Schema:   {
+            "prompt": str,
+            "model": "ray-2",        # Luma Ray 2
+            "aspect_ratio": "16:9",  # "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "21:9" | "9:21"
+            "duration": "5s",        # string in seconds with "s" suffix
+            "loop": false,
+            "keyframes": {            # only for image-to-video
+                "frame0": {"type": "image", "url": "..."}
+            }
+        }
+        Response: {"id": str, "state": "queued", ...}
+        Poll:     GET {api_url}/generations/{id} → {"id", "state", "assets": {"video": "https://..."}}
+        States:   "queued" | "dreaming" | "completed" | "failed"
+        """
         import httpx
 
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": JSON_CONTENT_TYPE,
+            "Accept": "application/json",
         }
 
-        payload = {
+        # Map our standard aspect ratios to Luma Ray's accepted set.
+        # If the caller passes something Luma doesn't accept, fall back to 16:9.
+        luma_aspects = {"1:1", "16:9", "9:16", "4:3", "3:4", "21:9", "9:21"}
+        luma_aspect = aspect_ratio if aspect_ratio in luma_aspects else "16:9"
+
+        # Luma Ray 2 wants duration as a string with "s" suffix, capped to
+        # config["max_duration"] seconds.
+        luma_duration = f"{min(int(duration), int(config.get('max_duration', 9)))}s"
+
+        payload: dict[str, Any] = {
             "prompt": prompt,
-            "aspect_ratio": aspect_ratio,
-            "duration": min(duration, config["max_duration"]),
+            "model": config.get("model_default", "ray-2"),
+            "aspect_ratio": luma_aspect,
+            "loop": False,
+            "duration": luma_duration,
         }
 
+        # Image-to-video: Luma Ray uses keyframes.frame0.url.
         if image_uri and config.get("supports_image2video"):
-            payload["image_uri"] = image_uri
+            payload["keyframes"] = {
+                "frame0": {"type": "image", "url": image_uri}
+            }
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -726,39 +773,116 @@ class FreeVideoProviderService:
                     json=payload,
                 )
 
-                if response.status_code != 200:
+                if response.status_code != 200 and response.status_code != 201:
                     logger.error(
-                        f"[FreeVideoProvider] Luma error {response.status_code}: {response.text}"
+                        f"[FreeVideoProvider] Luma Ray error {response.status_code}: "
+                        f"{response.text[:300]}"
                     )
                     return None
 
                 data = response.json()
 
-                if "video_uri" in data:
-                    return {
-                        "video_uri": data["video_uri"],
-                        "metadata": {"model": "luma"},
-                    }
-                elif "id" in data:
+                # Immediate sync result (rare; Luma usually returns a job id).
+                if "assets" in data and isinstance(data["assets"], dict):
+                    video_url = data["assets"].get("video")
+                    if video_url:
+                        return {
+                            "video_uri": video_url,
+                            "metadata": {
+                                "model": payload["model"],
+                                "aspect_ratio": luma_aspect,
+                            },
+                        }
+
+                # Standard async path: poll the job.
+                if "id" in data:
                     return await self._poll_luma_job(
                         data["id"], api_key, config
                     )
-                else:
-                    logger.info("[Luma] API unavailable, falling back to browser automation")
-                    from src.services.openclaw.skills.luma import luma_skill
-                    return await luma_skill.generate(prompt, aspect_ratio)
 
+                # Unknown response shape — log and return None (no Playwright
+                # fallback for the API code path; user must have a real key).
+                logger.warning(
+                    f"[Luma Ray] Unexpected response shape (no id, no assets.video): "
+                    f"{str(data)[:200]}"
+                )
                 return None
 
         except Exception:
-            logger.exception("[FreeVideoProvider] Luma request failed")
-            logger.info("[Luma] Falling back to browser automation")
-            try:
-                from src.services.openclaw.skills.luma import luma_skill
-                return await luma_skill.generate(prompt, aspect_ratio)
-            except Exception:
-                logger.exception("[FreeVideoProvider] Luma browser fallback failed")
-                return None
+            logger.exception("[FreeVideoProvider] Luma Ray request failed")
+            return None
+
+    async def _poll_luma_job(
+        self,
+        job_id: str,
+        api_key: str,
+        config: dict,
+        max_attempts: int = 60,
+        delay: int = 5,
+    ) -> dict[str, Any] | None:
+        """Poll a Luma Ray generation job until completion.
+
+        GET {api_url}/generations/{id}  →  {
+            "id": str,
+            "state": "queued" | "dreaming" | "completed" | "failed",
+            "assets": {"video": "https://...", "thumbnail": "..."},
+            "failure_reason": "..."  # when state == "failed"
+        }
+        """
+        import httpx
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+        }
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            for _ in range(max_attempts):
+                try:
+                    response = await client.get(
+                        f"{config['api_url']}/generations/{job_id}",
+                        headers=headers,
+                    )
+
+                    if response.status_code != 200:
+                        await asyncio.sleep(delay)
+                        continue
+
+                    data = response.json()
+                    state = (data.get("state") or "").lower()
+
+                    if state == "completed":
+                        assets = data.get("assets") or {}
+                        video_url = assets.get("video") if isinstance(assets, dict) else None
+                        if not video_url:
+                            logger.warning(
+                                f"[Luma Ray] job {job_id} completed but no assets.video URL"
+                            )
+                            return None
+                        return {
+                            "video_uri": video_url,
+                            "metadata": {
+                                "model": data.get("model") or config.get("model_default", "ray-2"),
+                                "aspect_ratio": data.get("aspect_ratio"),
+                            },
+                        }
+
+                    if state == "failed":
+                        logger.error(
+                            f"[Luma Ray] job {job_id} failed: "
+                            f"{data.get('failure_reason') or 'unknown'}"
+                        )
+                        return None
+
+                    # queued | dreaming (or anything else) — keep polling.
+                except Exception as e:
+                    logger.warning(f"[FreeVideoProvider] Luma poll error for {job_id}: {e}")
+                    # fall through to sleep + retry
+
+                await asyncio.sleep(delay)
+
+        logger.error(f"[Luma Ray] job {job_id} did not complete within {max_attempts * delay}s")
+        return None
 
     async def _generate_browser_automation(
         self,
