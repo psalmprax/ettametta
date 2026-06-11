@@ -170,7 +170,7 @@ class TestGenerativeServiceSynthesizeVideo:
             
             await generative_service.synthesize_video(
                 prompt="test prompt",
-                engine="veo3"
+                engine="ltx-video"
             )
             
             # Verify success was recorded

@@ -31,7 +31,6 @@ class CreditService:
     DEFAULT_COSTS = {
         "video_generation_ltx": 10,
         "video_generation_hunyuan": 15,
-        "video_generation_veo3": 25,
         "video_generation_runway": 30,
         # Local GPU inference engines
         "video_generation_mochi": 15,

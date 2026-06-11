@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class GenerationRequest(BaseModel):
     prompt: str
-    engine: str = "veo3"
+    engine: str = "ltx-video"
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
     custom_image_uri: str | None = None
@@ -40,7 +40,7 @@ class GenerationRequest(BaseModel):
 
 class StoryRequest(BaseModel):
     prompt: str
-    engine: str = "veo3"
+    engine: str = "ltx-video"
     style: str = "Cinematic"
 
 
@@ -378,7 +378,7 @@ async def retry_failed_job(
 
             task = generate_video_task.delay(
                 prompt=params.get("prompt", "Retried synthesis"),
-                engine=params.get("engine", "veo3"),
+                engine=params.get("engine", "ltx-video"),
                 style=params.get("style", "Cinematic"),
                 aspect_ratio=params.get("aspect_ratio", "9:16"),
                 user_id=current_user.id,
@@ -391,7 +391,7 @@ async def retry_failed_job(
 
             task = generate_story_task.delay(
                 prompt=params.get("prompt", "Retried story"),
-                engine=params.get("engine", "veo3"),
+                engine=params.get("engine", "ltx-video"),
                 style=params.get("style", "Cinematic"),
                 user_id=current_user.id,
                 request_id=get_request_id(),

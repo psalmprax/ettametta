@@ -9,7 +9,6 @@ from typing import Set
 ENGINE_ACTION_MAP: dict[str, str] = {
     "ltx-video": "video_generation_ltx",
     "hunyuan": "video_generation_hunyuan",
-    "veo3": "video_generation_veo3",
     "runway": "video_generation_runway",
     "kling": "video_generation_kling",
     "pika": "video_generation_pika",
@@ -58,7 +57,7 @@ FREE_ENGINES: Set[str] = {
 
 # Premium engines (require subscription) — local GPU inference + high-cost cloud APIs
 PREMIUM_ENGINES: Set[str] = {
-    "veo3", "hunyuan", "ltx-video",
+    "hunyuan", "ltx-video",
     "mochi", "wan", "cogvideo", "zeroscope", "animatediff",
 }
 

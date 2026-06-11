@@ -117,7 +117,7 @@ test.describe('AI Video Generation', () => {
         await page.click('text=AI Generation');
 
         await page.fill('textarea[name="prompt"]', 'Test');
-        await page.selectOption('select[name="engine"]', 'veo3');
+        await page.selectOption('select[name="engine"]', 'ltx-video');
 
         await page.click('button[type="submit"]');
 

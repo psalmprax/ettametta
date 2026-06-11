@@ -287,7 +287,6 @@ const AI_ENGINES = [
     { id: "luma", name: "Luma Dream Machine", free: true, needsKey: true, credits: 0, description: "15 free credits/day + browser fallback" },
     { id: "replicate", name: "Replicate (WAN/Seedance/Hailuo)", free: false, needsKey: true, credits: 5, description: "Pay-per-use, ~$0.02-0.40/video" },
     // GPU node required
-    { id: "veo3", name: "Google Veo 3", free: false, needsKey: false, credits: 25, description: "Requires GPU node or Gemini API key" },
     { id: "mochi", name: "Mochi", free: false, needsKey: false, credits: 15, description: "Requires GPU node (Genmo open model, 30GB VRAM)" },
     { id: "wan", name: "WAN 2.1", free: false, needsKey: false, credits: 15, description: "Requires GPU node (open weights, 16GB VRAM)" },
     { id: "wan2.2", name: "Wan 2.2", free: false, needsKey: false, credits: 15, description: "Requires GPU node or SiliconFlow key" },

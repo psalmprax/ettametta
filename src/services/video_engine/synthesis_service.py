@@ -471,7 +471,7 @@ class GenerativeService:
     async def synthesize_video(
         self,
         prompt: str,
-        engine: str = "veo3",
+        engine: str = "ltx-video",
         aspect_ratio: str = "9:16",
         style: str = "Cinematic",
         custom_image_uri: str = None,
@@ -501,7 +501,7 @@ class GenerativeService:
             logging.warning(
                 f"[GenerativeService] Failed to get engine params for {engine}: {e}, using defaults"
             )
-            params = self._get_engine_params("veo3")  # fallback
+            params = self._get_engine_params("ltx-video")  # fallback
 
         logging.info(
             f"[GenerativeService] Synthesizing video with engine: {engine} (Steps: {params['steps']}, CFG: {params['cfg']}), prompt: {optimized_prompt[:50]}..."
@@ -594,9 +594,6 @@ class GenerativeService:
         custom_image_uri: str | None,
     ) -> str | None:
         """Executes the specific synthesis engine logic."""
-        if engine == "veo3":
-            return await self._synthesize_veo3(prompt, aspect_ratio)
-
         # Handle local heavy ML inference engines with dynamic imports
         local_ml_configs = {
             "wan": ("wan_inference", "generate_wan_t2v"),
@@ -826,7 +823,7 @@ class GenerativeService:
         return video_path
 
     async def synthesize_scene_batch(
-        self, scenes: list[dict], engine: str = "veo3", style: str = "Cinematic"
+        self, scenes: list[dict], engine: str = "ltx-video", style: str = "Cinematic"
     ) -> list[dict]:
         """
         Synthesizes multiple scenes for storytelling.
@@ -876,68 +873,6 @@ class GenerativeService:
             synthesized_scenes.append({**scenes[i], "video_uri": url})
 
         return synthesized_scenes
-
-    async def _synthesize_veo3(self, prompt: str, aspect_ratio: str) -> str | None:
-        """
-        Google Veo 3 (Gemini 1.5/Veo API) Integration.
-        Falls back to remote GPU node, then to Lite4K image+parallax approach.
-        """
-        import uuid
-        import os
-
-        job_id = f"veo3_{uuid.uuid4().hex[:8]}"
-        output_dir = settings.REMOTE_STORAGE_OUTPUT_DIR
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, f"{job_id}.mp4")
-
-        # Try Gemini API if key is available
-        if self.gemini_api_key:
-            try:
-                from google import genai
-
-                gemini_client = genai.Client(api_key=self.gemini_api_key)
-                response = gemini_client.models.generate_content(
-                    model="gemini-1.5-pro",
-                    contents=f"Generate a detailed video scene description for: {prompt}. "
-                    f"Aspect ratio: {aspect_ratio}. Return a vivid visual description only.",
-                )
-                logging.info(
-                    f"[GenerativeService] Veo3 Gemini prompt optimized: {response.text[:100]}"
-                )
-            except Exception as e:
-                logging.warning(f"[GenerativeService] Gemini API failed: {e}")
-
-        # Try remote GPU node
-        render_node_url = settings.RENDER_NODE_URL
-        if render_node_url:
-            try:
-                payload = {
-                    "prompt": prompt,
-                    "model": "veo3",
-                    "resolution": "720p",
-                    "aspect_ratio": aspect_ratio,
-                }
-                headers = {"x-worker-token": settings.AI_CLUSTER_SECRET}
-                async with httpx.AsyncClient(timeout=300) as client:
-                    response = await client.post(
-                        f"{render_node_url.rstrip('/')}/generate", json=payload, headers=headers
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        dl_url = data.get("download_url") or data.get("url")
-                        if dl_url:
-                            dl_resp = await client.get(dl_url, timeout=120)
-                            with open(output_path, "wb") as f:
-                                f.write(dl_resp.content)
-                            return output_path
-            except Exception as e:
-                logging.warning(
-                    f"[GenerativeService] Remote GPU node failed for Veo3: {e}"
-                )
-
-        # Fallback to Lite4K image+parallax
-        logging.info("[GenerativeService] Veo3 falling back to Lite4K image+parallax")
-        return await self._synthesize_lite_4k(prompt, aspect_ratio)
 
     async def _synthesize_wan(self, prompt: str, aspect_ratio: str) -> str | None:
         """
@@ -1057,7 +992,7 @@ class GenerativeService:
         return None
 
     def optimize_prompt(
-        self, user_prompt: str, style: str = "Cinematic", engine: str = "veo3"
+        self, user_prompt: str, style: str = "Cinematic", engine: str = "ltx-video"
     ) -> str:
         """
         Refines a simple user prompt into a high-fidelity director's prompt tailored for the specific engine.
@@ -1069,7 +1004,6 @@ class GenerativeService:
             "zeroscope": "8k, high quality, masterpiece, sharp focus, highly detailed.",
             "mochi": "Realistic physics, complex motion, fluid movement, high-energy action.",
             "cogvideo": "3D causal convolution, deep semantic consistency, cinematic realism.",
-            "veo3": "Google DeepMind aesthetics, ultra-high definition, artistic masterpiece.",
             "lite4k": "4k resolution, cinematic parallax, sharpest details, stunning clarity.",
             # Free daily providers
             "zsky": "High-fidelity, WAN 2.2 model, RTX 5090 quality, smooth motion.",

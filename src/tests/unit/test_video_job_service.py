@@ -95,7 +95,7 @@ class TestCreateJobSignature:
             job = await service.create_job(
                 user_id=user_id,
                 title="Prompt Fallback",
-                engine="veo3",
+                engine="ltx-video",
                 job_id=str(uuid.uuid4()),
                 prompt="A majestic falcon over snow-capped mountains",
             )
@@ -114,7 +114,7 @@ class TestCreateJobSignature:
             job = await service.create_job(
                 user_id=user_id,
                 title="Precedence Test",
-                engine="veo3",
+                engine="ltx-video",
                 job_id=str(uuid.uuid4()),
                 prompt="this-is-the-prompt",
                 source_uri="https://example.com/override.mp4",
