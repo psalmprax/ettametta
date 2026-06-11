@@ -114,7 +114,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.4 — Rewrite Luma API to Ray (Current API is Dead)
+### ~~999.4 — Rewrite Luma API to Ray (Current API is Dead)~~ ⮕ **PROMOTED → Phase 13 (2026-05-29)**
 **Source:** Code investigation
 **Impact:** `_generate_luma` calls `https://api.lumalabs.ai/dream-machine/v1/generations` which was deprecated in 2024; always 404s and falls back to Playwright (which needs auth)
 **Files:**
@@ -129,6 +129,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Test with real key
 
 **Acceptance:** With valid `LUMA_API_KEY`, Luma engine returns a real video URI without falling back to Playwright.
+**Status:** Promoted to Phase 13 in ROADMAP.md. Execution plan: `.planning/phases/13-luma-ray-rewrite/13-01-PLAN.md`.
 
 ---
 

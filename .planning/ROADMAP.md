@@ -17,7 +17,13 @@
     - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
 - [ ] **Phase 11: Remove Veo3 Stub (Credit-Scam Fix)** - Stop the fake-Veo3 from charging 25 credits for a Pollinations.ai image
     - Promoted from `.planning/BACKLOG.md` item 999.2 (P0)
-    - [ ] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
+    - [x] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
+- [ ] **Phase 12: Wire Up Runway + Pika API Keys** - Activate the dormant Runway/Pika API integration by reading keys from settings and exposing /engines/availability
+    - Promoted from `.planning/BACKLOG.md` item 999.3 (P0)
+    - [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
+- [ ] **Phase 13: Rewrite Luma API to Luma Ray** - Replace the deprecated `dream-machine` endpoint with the current Luma Ray API (`https://api.lumalabs.ai/v1/generations`) and add `LUMA_API_KEY` to settings
+    - Promoted from `.planning/BACKLOG.md` item 999.4 (P0)
+    - [ ] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
 
 ## Phase Details
 
@@ -146,6 +152,34 @@
 **Plans**: 1 plans (this phase ships in a single plan; sub-plans split if scope grows)
 - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
 
+### Phase 12: Wire Up Runway + Pika API Keys
+**Goal**: Activate the dormant Runway/Pika API integration by reading keys from `settings` (not `os.getenv`) and expose a `/engines/availability` endpoint so the UI can hide non-working engines
+**Depends on**: Phase 3 (Basic Video Generation)
+**Requirements**: VIDEO-01
+**Success Criteria** (what must be TRUE):
+  1. `AIVideoGeneratorService._get_api_key()` reads from `settings.RUNWAY_API_KEY` and `settings.PIKA_API_KEY` (not `os.getenv`)
+  2. With `AI_VIDEO_PROVIDER=runway` + `RUNWAY_API_KEY` set in env, the service is `enabled=True` and `_get_api_key()` returns a non-empty string
+  3. `GET /engines/availability` returns per-engine status: `key_set`, `circuit_closed`, `enabled`, `provider` (for Runway, Pika, and the existing engines)
+  4. `RUNWAY_API_KEY` and `PIKA_API_KEY` are documented in `.env.example`
+  5. Unit tests verify settings-based key resolution and the availability endpoint
+**Plans**: 1 plans (single commit)
+- [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
+
+### Phase 13: Rewrite Luma API to Luma Ray
+**Goal**: Replace the deprecated Luma Dream Machine endpoint with the current Luma Ray API so the Luma engine actually works end-to-end (no more silent 404 → Playwright fallback)
+**Depends on**: Phase 3 (Basic Video Generation)
+**Requirements**: VIDEO-01
+**Success Criteria** (what must be TRUE):
+  1. `PROVIDER_CONFIGS["luma"]["api_url"]` is `https://api.lumalabs.ai/v1` (Luma Ray, not the deprecated `dream-machine/v1`)
+  2. `_generate_luma` posts to `/generations` with the Ray payload schema: `{"prompt": ..., "model": "ray-2", "aspect_ratio": "16:9", "loop": false, "duration": "5s"}` and an `Authorization: Bearer luma-...` header
+  3. `_poll_luma_job` polls `/generations/{id}` and reads the new response shape (`state`: `queued`|`dreaming`|`completed`|`failed`; `assets.video`: URL on completion)
+  4. `LUMA_API_KEY` is defined on `src.api.config.settings.Settings` AND `src.services.video_engine.settings.Settings` (so both the API service and the worker process see it)
+  5. `_get_api_key("luma")` in `free_video_providers.py` returns `settings.LUMA_API_KEY` (replacing the old browser-automation-only path)
+  6. `LUMA_API_KEY` is documented in `.env.example`
+  7. Unit tests cover: key-missing skip, Ray-format POST payload, immediate `video` field, async poll loop, failed-state handling
+**Plans**: 1 plans (single commit)
+- [ ] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
+
 ### Phase 11: Remove Veo3 Stub (Credit-Scam Fix)
 **Goal**: Stop users from being charged 25 credits for a fake Veo3 (the synthesis path silently falls through to a Pollinations.ai image+parallax)
 **Depends on**: Phase 3 (Basic Video Generation)
@@ -158,7 +192,7 @@
   5. User cannot trigger a video job with `engine="veo3"` (endpoint returns 400)
   6. No documentation still claims Veo3 is supported
 **Plans**: 1 plans (single-commit removal)
-- [ ] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
+- [x] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
 
 **Recent Hardening Work (2026-04-17 to 2026-05-29):**
 - 14+ operational/debugging skills created (ai-provider-debug, celery-monitor, cloakbrowser, content-discovery, db-performance, dep-audit, docker-compose, fastapi-debug, nexus-engine, redis-debug, remotion-debug, security-sentinel, social-api, storage-lifecycle, video-pipeline, voiceover-tts)
@@ -182,7 +216,34 @@
 | 8. Analytics | 1/2 | In Progress | - |
 | 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
 | 10. Discovery → Analysis → Video Pipeline Fix | 1/1 | In Progress | 2026-05-29 (10-01 Foundation complete) |
-| 11. Remove Veo3 Stub | 0/1 | Not Started | - |
+| 11. Remove Veo3 Stub | 1/1 | Complete | 2026-05-29 (6a790f10) |
+| 12. Wire Up Runway + Pika | 0/1 | Not Started | - |
+| 13. Rewrite Luma API to Luma Ray | 0/1 | Not Started | - |
 
 ---
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10 promoted from BACKLOG.md 999.1; Phase 11 promoted from BACKLOG.md 999.2)*
+## Related Documents
+
+| Document | Purpose | When to use |
+|----------|---------|-------------|
+| [`.planning/ROADMAP.md`](./ROADMAP.md) | Active phase tracker with plan pointers (this file) | "What's being worked on right now?" |
+| [`.planning/BACKLOG.md`](./BACKLOG.md) | Prioritized missing-feature list (37 items, `999.x` numbering) | "What's still TODO and unprioritized?" — check here BEFORE planning a new phase |
+| [`.planning/STATE.md`](./STATE.md) | Current position, progress %, pending todos | "Where are we, what was I doing?" |
+| [`.planning/PROJECT.md`](./PROJECT.md) | Validated + active requirements, key decisions | "What does this project do and why?" |
+| [`.planning/REQUIREMENTS.md`](./REQUIREMENTS.md) | Requirement-level tracking | "Has requirement X been validated?" |
+| [`.planning/HARDENING_ROADMAP.md`](./HARDENING_ROADMAP.md) | Phase 9 enterprise-hardening work | "What hardening is done / pending?" |
+| `.planning/phases/<NN>-*/<NN>-*-PLAN.md` | Per-plan execution contract (YAML frontmatter + tasks) | "How do I execute plan X?" |
+| `.planning/phases/<NN>-*/<NN>-*-SUMMARY.md` | Per-plan completion record | "What shipped in plan X?" |
+
+### Planning-cycle workflow
+
+1. **Before** drafting a new phase plan, skim `.planning/BACKLOG.md` for any
+   `999.x` item that already covers the work — promote it (don't duplicate).
+2. After a phase ships, add any newly-discovered work to `.planning/BACKLOG.md`
+   under the appropriate priority tier (P0–P3) and assign the next free
+   `999.x` number.
+3. Use `/gsd-add-phase` to promote a `999.x` item into a real numbered phase
+   here, or `/gsd-insert-phase` to slip urgent work between existing phases.
+
+---
+
+*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10/11/12/13 promoted from BACKLOG.md 999.1/999.2/999.3/999.4; Related Documents section added)*
