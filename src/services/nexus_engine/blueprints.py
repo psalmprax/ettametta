@@ -309,7 +309,7 @@ class TopicFusionSynthesisHandler:
         )
         
         # 2. AI Fallback: If fusion failed because no assets were found, generate using AI
-        if not fusion_result.get("success") and fusion_result.get("reason") == "No compatible video files found or processing failed":
+        if not fusion_result.get("success"):
             logger.warning("🔄 [Blueprint] Discovery failed. Triggering AI Video Generation fallback...")
             
             # Use the first scene's prompt for a short AI video

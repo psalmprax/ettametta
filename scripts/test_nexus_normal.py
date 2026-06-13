@@ -22,14 +22,14 @@ async def test_normal_fusion():
     scenes = [
         {
             "scene": "Introduction",
-            "text": "Welcome to the future of AI production.",
-            "visual_prompt": "Futuristic city landscape cinematic",
+            "text": "The world's greatest tournament is coming to America.",
+            "visual_prompt": "Soccer stadium in USA packed with fans cinematic wide shot",
             "duration": 5
         },
         {
             "scene": "Capability",
-            "text": "Ettametta orchestrates high-quality video pipelines.",
-            "visual_prompt": "Neural network digital animation",
+            "text": "Get ready for the Football World Cup across the United States.",
+            "visual_prompt": "World cup soccer ball on pitch slow motion cinematic",
             "duration": 5
         }
     ]
@@ -44,7 +44,7 @@ async def test_normal_fusion():
     from src.services.nexus_engine.blueprints import TopicFusionSynthesisHandler
     handler = TopicFusionSynthesisHandler()
     
-    inputs = {"topic": "The future of AI", "niche": "Technology"}
+    inputs = {"topic": "Football World Cup in America", "niche": "Sports"}
     # Mock previous results (Cognition phase)
     previous_results = {
         "cognition": {

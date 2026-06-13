@@ -114,6 +114,7 @@ class SceneBasedVideoOrchestrator:
                 "success": False,
                 "error": "Video fusion failed",
                 "fusion_error": fusion_result.get("error"),
+                "reason": fusion_result.get("reason"),
                 "production_plan": production_plan,
             }
 
@@ -156,11 +157,11 @@ class SceneBasedVideoOrchestrator:
                 for videos in production_plan.get("scene_videos", {}).values()
             ),
             "platforms_used": list(
-                set(
+                {
                     video.platform
                     for videos in production_plan.get("scene_videos", {}).values()
                     for video in videos[:1]  # Only count selected videos
-                )
+                }
             ),
             "upload_specs": production_plan.get("upload_specs"),
             "monetization_plan": monetization_plan,
@@ -283,7 +284,11 @@ class SceneBasedVideoOrchestrator:
             logger.info(f"Successfully acquired {len(video_files)} / {len(segments)} video assets.")
             
             if not video_files:
-                return {"success": False, "error": "No source videos could be acquired (all sources exhausted)"}
+                return {
+                    "success": False, 
+                    "error": "No source videos could be acquired (all sources exhausted)",
+                    "reason": "No compatible video files found or processing failed"
+                }
 
             # 2. Production Assembly (MoviePy 2.x)
             try:
