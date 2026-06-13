@@ -367,8 +367,21 @@ class SceneBasedVideoOrchestrator:
                         logger.exception(f"Error processing clip {video_path}: {clip_err}")
 
                 if normalized_clips:
-                    # 3. Add Engagement CTA (Like/Follow)
-                    normalized_clips = await self._add_engagement_cta(normalized_clips)
+                    # Collect paths for FFmpeg concatenation
+                    norm_paths = [f"{v_path}_norm.mp4" for v_path, _ in video_files]
+                    
+                    # Add Intro
+                    title = production_plan.get("niche") or "Viral Content"
+                    intro_path = str(self.output_dir / f"intro_{int(time.time())}.mp4")
+                    intro_res = await self._add_intro_clip(target_w, target_h, title.upper(), intro_path)
+                    if intro_res:
+                        norm_paths.insert(0, intro_res)
+
+                    # Add Engagement CTA (Like/Follow)
+                    outro_path = str(self.output_dir / f"outro_{int(time.time())}.mp4")
+                    outro_res = await self._add_engagement_cta(target_w, target_h, outro_path)
+                    if outro_res:
+                        norm_paths.append(outro_res)
 
                     # 4. Final Render & Audio Ducking (Elite FFmpeg Path)
                     temp_output = str(output_path.parent / f"temp_no_audio_{output_path.name}")
@@ -376,9 +389,6 @@ class SceneBasedVideoOrchestrator:
                     # Close clips to free file handles for FFmpeg
                     for clip in normalized_clips:
                         clip.close()
-                    
-                    # Collect paths for FFmpeg concatenation
-                    norm_paths = [f"{v_path}_norm.mp4" for v_path, _ in video_files]
                     
                     transformer = self.video_processor.base_ffmpeg_service
                     concat_success = transformer.concatenate_videos(norm_paths, temp_output)
@@ -710,63 +720,90 @@ class SceneBasedVideoOrchestrator:
             return {"error": str(e)}
 
 
-    async def _add_engagement_cta(self, clips: list) -> list:
-        """Appends a high-energy CTA segment using Pillow (no ImageMagick dependency)."""
+    async def _add_intro_clip(self, w: int, h: int, title: str, output_path: str) -> str | None:
+        """Appends a branded intro segment using Pillow, renders to file and returns path."""
         try:
-            from moviepy import ImageClip, ColorClip, CompositeVideoClip
+            from moviepy import ColorClip, CompositeVideoClip, ImageClip
             from PIL import Image, ImageDraw, ImageFont
             import numpy as np
             
-            logger.info("Injecting Engagement CTA segment (Pillow-based)...")
+            logger.info("Injecting Branded Intro segment (Pillow-based)...")
+            duration = 3.0
             
-            w, h = 1080, 1920
-            if clips:
-                w, h = clips[0].size
-
-            duration = 4.0
-            
-            # 1. Create Background via MoviePy
             bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
             
-            # 2. Create Text Overlay via Pillow
             img = Image.new('RGB', (w, h), color=(15, 15, 15))
             draw = ImageDraw.Draw(img)
             
             try:
-                # Try to load a bold font
+                font_size = h // 20
+                font = ImageFont.truetype(self.video_processor.font_path, font_size)
+            except Exception:
+                font = ImageFont.load_default()
+
+            cta_lines = ["ETTAMETTA PRESENTS", "", title]
+            total_h = len(cta_lines) * (font_size * 1.5)
+            current_y = (h - total_h) // 2
+            
+            for i, line in enumerate(cta_lines):
+                bbox = draw.textbbox((0, 0), line, font=font)
+                line_w = bbox[2] - bbox[0]
+                color = (255, 255, 255) if i != 0 else (100, 200, 255)
+                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=color)
+                current_y += font_size * 1.5
+            
+            img_array = np.array(img)
+            txt_clip = ImageClip(img_array).with_duration(duration)
+            
+            intro_segment = CompositeVideoClip([bg, txt_clip])
+            intro_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
+            intro_segment.close()
+            return output_path
+        except Exception as e:
+            logger.exception(f"Failed to inject Intro: {e}")
+            return None
+
+    async def _add_engagement_cta(self, w: int, h: int, output_path: str) -> str | None:
+        """Appends a high-energy CTA segment using Pillow, renders to file and returns path."""
+        try:
+            from moviepy import ColorClip, CompositeVideoClip, ImageClip
+            from PIL import Image, ImageDraw, ImageFont
+            import numpy as np
+            
+            logger.info("Injecting Engagement CTA segment (Pillow-based)...")
+            duration = 4.0
+            
+            bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
+            
+            img = Image.new('RGB', (w, h), color=(15, 15, 15))
+            draw = ImageDraw.Draw(img)
+            
+            try:
                 font_size = h // 25
                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
             except Exception:
                 font = ImageFont.load_default()
 
-            cta_lines = [
-                "LIKE • SHARE • FOLLOW",
-                "",
-                "Hit the 🔔 for more!"
-            ]
-            
-            # Center text vertically
+            cta_lines = ["LIKE • SHARE • FOLLOW", "", "Hit the 🔔 for more!"]
             total_h = len(cta_lines) * (font_size * 1.5)
             current_y = (h - total_h) // 2
             
             for line in cta_lines:
-                # Use textbbox in modern Pillow
                 bbox = draw.textbbox((0, 0), line, font=font)
                 line_w = bbox[2] - bbox[0]
-                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=(255, 215, 0)) # Gold
+                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=(255, 215, 0))
                 current_y += font_size * 1.5
             
-            # Convert Pillow image to MoviePy clip
             img_array = np.array(img)
             txt_clip = ImageClip(img_array).with_duration(duration)
             
             cta_segment = CompositeVideoClip([bg, txt_clip])
-            clips.append(cta_segment)
-            
-            return clips
+            cta_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
+            cta_segment.close()
+            return output_path
         except Exception as e:
             logger.exception(f"Failed to inject CTA: {e}")
-            return clips
+            return None
 
     async def _generate_video_thumbnail(self, video_path: str) -> str:
         """Generates a high-quality thumbnail from the video."""
