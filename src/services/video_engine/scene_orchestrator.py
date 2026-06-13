@@ -441,13 +441,14 @@ class SceneBasedVideoOrchestrator:
             await asyncio.sleep(2)  # Simulate processing time
 
             # Create a text file describing what would be created
-            with open(output_path.with_suffix(".txt"), "w") as f:
-                f.write("SCENE-BASED VIDEO FUSION PLAN\\n")
-                f.write(f"Segments: {len(segments)}\\n")
-                f.write(f"Total Duration: {fusion_plan.get('total_duration', 0)}s\\n")
-                f.write(f"Video Files Used: {len(video_files)}\\n")
+            import aiofiles
+            async with aiofiles.open(output_path.with_suffix(".txt"), "w") as f:
+                await f.write("SCENE-BASED VIDEO FUSION PLAN\\n")
+                await f.write(f"Segments: {len(segments)}\\n")
+                await f.write(f"Total Duration: {fusion_plan.get('total_duration', 0)}s\\n")
+                await f.write(f"Video Files Used: {len(video_files)}\\n")
                 for i, segment in enumerate(segments):
-                    f.write(
+                    await f.write(
                         f"Segment {i + 1}: {segment.get('scene', f'Scene_{i + 1}')}\\n"
                     )
 
@@ -669,9 +670,10 @@ class SceneBasedVideoOrchestrator:
             }
 
             # Save metadata alongside video
+            import aiofiles
             metadata_path = final_path.with_suffix(".json")
-            with open(metadata_path, "w") as f:
-                json.dump(metadata, f, indent=2)
+            async with aiofiles.open(metadata_path, "w") as f:
+                await f.write(json.dumps(metadata, indent=2))
 
             return {
                 "success": True,
