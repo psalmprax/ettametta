@@ -248,8 +248,10 @@ class SceneBasedVideoOrchestrator:
                 try:
                     stock_urls = await base_stock_service.fetch_b_roll(search_query, count=1)
                     if stock_urls:
+                        import tempfile
+                        secure_dir = tempfile.mkdtemp(prefix=f"ettametta_stock_scene_{idx}_")
                         stock_path = await base_stock_service.download_stock_video(
-                            stock_urls[0], output_dir=f"/tmp/ettametta/stock_scene_{idx}"
+                            stock_urls[0], output_dir=secure_dir
                         )
                         if stock_path and Path(stock_path).exists():
                             logger.info(f"[Scene {idx+1}] Pexels stock acquired: {stock_path}")
@@ -262,8 +264,10 @@ class SceneBasedVideoOrchestrator:
                     logger.info(f"[Scene {idx+1}] Last resort stock search: '{niche_keyword} video'")
                     fallback_urls = await base_stock_service.fetch_b_roll(f"{niche_keyword} video", count=1)
                     if fallback_urls:
+                        import tempfile
+                        secure_dir = tempfile.mkdtemp(prefix=f"ettametta_stock_fallback_{idx}_")
                         fallback_path = await base_stock_service.download_stock_video(
-                            fallback_urls[0], output_dir=f"/tmp/ettametta/stock_fallback_{idx}"
+                            fallback_urls[0], output_dir=secure_dir
                         )
                         if fallback_path and Path(fallback_path).exists():
                             logger.info(f"[Scene {idx+1}] Last resort stock acquired: {fallback_path}")
