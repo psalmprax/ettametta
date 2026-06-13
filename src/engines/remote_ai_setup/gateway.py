@@ -10,7 +10,6 @@ import tempfile
 import threading
 import asyncio
 import traceback
-import uuid
 from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Any

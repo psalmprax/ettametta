@@ -2,34 +2,23 @@
 
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import Link from "next/link";
 import {
   Zap,
-  TrendingUp,
   Activity,
   Globe,
-  CheckCircle2,
   LayoutDashboard,
   Cpu,
   History,
-  Workflow,
-  Terminal,
-  Database,
-  Radar,
-  Target,
-  ShieldCheck,
-  LineChart,
-  ArrowUpRight
+  Terminal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
-import { Button } from "@/components/ui/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { AreaChartCustom, MiniAreaChart } from "@/components/ui/ChartComponents";
@@ -41,7 +30,7 @@ function DashboardContent() {
   
   const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "overview");
   const [activityFeed, setActivityFeed] = useState<any[]>([]);
-  const [actionLogs, setActionLogs] = useState<string[]>([]);
+  const [actionLogs, _setActionLogs] = useState<string[]>([]);
 
   const fetchStats = useCallback(async () => {
     const token = await getAuthToken();

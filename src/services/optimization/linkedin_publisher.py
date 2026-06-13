@@ -36,11 +36,24 @@ class LinkedInPublisher(SocialPublisher):
         headers: dict,
     ) -> str | None:
         """LinkedIn-specific upload implementation"""
-        if not headers:
+        if not headers.get("Authorization") and not headers.get("Cookie"):
             logger.error(f"[LinkedInPublisher] No authentication for user {user_id}")
             return None
 
         headers["X-Restli-Protocol-Version"] = "2.0.0"
+
+        # Resolve LinkedIn profile ID — the username stored in SocialAccount.
+        # urn:li:person:{user_id} requires the LinkedIn member ID (sub from /v2/userinfo),
+        # NOT the application's internal user_id (which is a random UUID).
+        # If no stored sub, fall back to user_id (will likely fail but avoids crash).
+        linkedin_sub = None
+        token_data = await token_manager.get_token_data(
+            "linkedin", user_id=user_id, account_id=account_id
+        )
+        if token_data:
+            linkedin_sub = token_data.get("username")
+        author_urn = f"urn:li:person:{linkedin_sub or user_id}"
+        logger.info(f"[LinkedInPublisher] Author URN: {author_urn}")
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             # Step 1: Register upload
@@ -48,7 +61,7 @@ class LinkedInPublisher(SocialPublisher):
             register_data = {
                 "registerUploadRequest": {
                     "recipes": ["urn:li:digitalmediaRecipe:feedshare-video"],
-                    "owner": f"urn:li:person:{user_id}",
+                    "owner": author_urn,
                     "serviceRelationships": [
                         {
                             "relationshipType": "OWNER",
@@ -112,7 +125,7 @@ class LinkedInPublisher(SocialPublisher):
             post_text = self._build_post_text(metadata)
 
             post_data = {
-                "author": f"urn:li:person:{user_id}",
+                "author": author_urn,
                 "lifecycleState": "PUBLISHED",
                 "specificContent": {
                     "com.linkedin.ugc.ShareContent": {

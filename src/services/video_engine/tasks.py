@@ -252,7 +252,7 @@ def download_and_process_task(
         try:
             from .motion_graphics import base_motion_graphics_service
             wm_path = await base_motion_graphics_service.add_watermark(
-                processed_path, watermark_text=f"Created with ettametta"
+                processed_path, watermark_text="Created with ettametta"
             )
             if wm_path and os.path.exists(wm_path):
                 processed_path = wm_path

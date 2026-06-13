@@ -1,49 +1,33 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, { useState, useCallback } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import {
     Youtube,
     Share2,
-    Settings,
-    CheckCircle2,
-    AlertCircle,
     Plus,
-    ArrowUpRight,
-    ShieldCheck,
     Globe,
     RefreshCw,
-    Layout,
     Instagram,
     Twitter,
-    Play,
-    ExternalLink,
     X,
-    Lock,
     Zap,
     Radio,
     Terminal,
-    Activity,
     Database,
-    ArrowRight,
-    Unlink,
-    Radar,
-    Cpu,
-    Target,
     Loader2,
     Clock,
     Calendar,
     Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { API_BASE } from "@/lib/config";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { PlatformLinkModal } from "@/components/ui/PlatformLinkModal";
@@ -59,7 +43,7 @@ const getPlatformIcon = (platform: string) => {
 };
 
 export default function PublishingPage() {
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: systemLogs, status, pulse: _pulse } = useTelemetry();
     const [activeEngine, setActiveEngine] = useState("nodes");
     const [accounts, setAccounts] = useState<any[]>([]);
     const [history, setHistory] = useState<any[]>([]);
@@ -69,7 +53,7 @@ export default function PublishingPage() {
     const [isMultiPublishModalOpen, setIsMultiPublishModalOpen] = useState(false);
     const [isDeploying, setIsDeploying] = useState(false);
     const [accountToUnlink, setAccountToUnlink] = useState<any | null>(null);
-    const [isRetrying, setIsRetrying] = useState(false);
+    const [_isRetrying, setIsRetrying] = useState(false);
     const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
     const [suggestedTimes, setSuggestedTimes] = useState<any[]>([]);
     const [isCancellingSchedule, setIsCancellingSchedule] = useState<string | null>(null);
@@ -267,7 +251,7 @@ export default function PublishingPage() {
                                 </button>
 
                                 {accounts.map((acc) => {
-                                    const Icon = getPlatformIcon(acc.platform);
+                                    const _Icon = getPlatformIcon(acc.platform);
                                     return (
                                         <DesignCard 
                                             key={acc.id}
@@ -289,9 +273,10 @@ export default function PublishingPage() {
                         {activeEngine === "jobs" && (
                             <div className="space-y-6 overflow-y-auto custom-scrollbar flex-1 p-1">
                                 {jobs.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center opacity-30 grayscale space-y-4 py-40">
-                                        <Database className="h-16 w-16" />
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No active egress jobs</span>
+                                    <div className="h-full flex flex-col items-center justify-center opacity-60 space-y-4 py-40">
+                                        <Database className="h-16 w-16 text-zinc-600" />
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">No active egress jobs</span>
+                                        <span className="text-[8px] text-zinc-700 font-mono uppercase tracking-widest">Egress jobs appear when content is being published</span>
                                     </div>
                                 ) : (
                                     jobs.map((job) => (
@@ -394,9 +379,10 @@ export default function PublishingPage() {
                                 <div className="xl:col-span-2 space-y-6">
                                     <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Upcoming Posts</h4>
                                     {scheduledPosts.length === 0 ? (
-                                        <div className="py-24 flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
-                                            <Clock className="h-16 w-16" />
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.5em]">No scheduled posts</p>
+                                        <div className="py-24 flex flex-col items-center justify-center space-y-4 opacity-60">
+                                            <Clock className="h-16 w-16 text-zinc-600" />
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">No scheduled posts</p>
+                                            <span className="text-[8px] text-zinc-700 font-mono uppercase tracking-widest">Schedule a post from the Manual Broadcast tab</span>
                                         </div>
                                     ) : (
                                         scheduledPosts.map((post) => (
@@ -445,9 +431,10 @@ export default function PublishingPage() {
                                 <div className="xl:col-span-1 space-y-6">
                                     <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">AI Suggested Times</h4>
                                     {suggestedTimes.length === 0 ? (
-                                        <div className="p-6 rounded-[32px] bg-[#0F0F11] border border-white/5 flex flex-col items-center justify-center py-16 opacity-30 grayscale">
-                                            <Calendar className="h-10 w-10 mb-3" />
-                                            <p className="text-[8px] font-bold uppercase tracking-[0.4em]">No suggestions yet</p>
+                                        <div className="p-6 rounded-[32px] bg-[#0F0F11] border border-white/5 flex flex-col items-center justify-center py-16 opacity-60">
+                                            <Calendar className="h-10 w-10 mb-3 text-zinc-600" />
+                                            <p className="text-[8px] font-bold uppercase tracking-[0.4em] text-zinc-500">No suggestions yet</p>
+                                            <span className="text-[7px] text-zinc-700 font-mono mt-2 uppercase tracking-widest">AI will suggest optimal posting times as you schedule</span>
                                         </div>
                                     ) : (
                                         suggestedTimes.map((time: any, i: number) => (
@@ -476,9 +463,10 @@ export default function PublishingPage() {
                         {activeEngine === "matrix" && (
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 overflow-y-auto custom-scrollbar flex-1 p-1">
                                 {history.length === 0 ? (
-                                    <div className="col-span-full py-40 flex flex-col items-center justify-center space-y-6 opacity-30 grayscale">
-                                        <Globe className="h-16 w-16" />
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Global Matrix Standby</p>
+                                    <div className="col-span-full py-40 flex flex-col items-center justify-center space-y-6 opacity-60">
+                                        <Globe className="h-16 w-16 text-zinc-600" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">Global Matrix Standby</p>
+                                        <span className="text-[8px] text-zinc-700 font-mono uppercase tracking-widest">Published content appears here once distributed</span>
                                     </div>
                                 ) : (
                                     history.map((post) => (

@@ -98,6 +98,13 @@ event_bus_dlq_total = safe_counter(
     ["stream"],
 )
 
+# ─── Discovery → Analysis → Video Pipeline (Phase 10-06) ────────────
+analysis_to_video_pipeline = safe_counter(
+    "ettametta_analysis_to_video_pipeline_total",
+    "Number of video jobs created from analysis, by snapshot status",
+    ["status"],  # "snapshot_attached" | "celery_fallback"
+)
+
 # ─── Remotion Rendering Engine ─────────────────────────────────────
 remotion_render_duration = safe_histogram(
     "ettametta_remotion_render_duration_seconds",

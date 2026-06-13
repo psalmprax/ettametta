@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 
 interface PlatformLinkModalProps {
-    isOpen: boolean;
-    onClose: () => void;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
 }
 
 const PLATFORMS = [

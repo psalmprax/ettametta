@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
     Brain, 
     Database, 
@@ -8,13 +8,9 @@ import {
     UploadCloud, 
     Zap, 
     Activity, 
-    Layers, 
     ShieldCheck, 
-    RefreshCw, 
     Loader2, 
-    CheckCircle2, 
-    AlertCircle,
-    Plus,
+    CheckCircle2,
     FileText,
     Globe,
     Terminal,
@@ -28,7 +24,6 @@ import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
-import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 
@@ -50,7 +45,7 @@ export default function KnowledgePage() {
     const { agents, logs: systemLogs, pulse } = useTelemetry();
     
     const [stats, setStats] = useState<KnowledgeStats | null>(null);
-    const [isLoadingStats, setIsLoadingStats] = useState(true);
+    const [_isLoadingStats, setIsLoadingStats] = useState(true);
     const [activeTab, setActiveTab] = useState("overview"); // overview, ingest, query, logs
 
     // Ingestion State

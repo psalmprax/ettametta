@@ -1,48 +1,31 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, {  } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
-    Search,
-    Video,
     Share2,
     BarChart3,
-    Settings,
     Zap,
     LogOut,
-    Sparkles,
     Cpu,
-    TrendingUp,
     Menu,
-    X,
     Crown,
-    Coins,
-    CheckCircle2,
     Layers,
-    PlusSquare,
     Activity,
-    Bell,
     User,
-    Users,
     ShieldCheck,
-    ChevronRight,
-    Terminal,
-    Fingerprint,
     Lock,
     PlaySquare,
-    Music,
-    Volume2,
     Brain,
-    FileVideo,
-    Scan,
-    Database,
-    Radar
+    Radar,
+    Bell
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { useNotificationCount } from "@/hooks/useNotificationCount";
 
 const navItems = [
     { name: "Command Center", href: "/dashboard", icon: LayoutDashboard },
@@ -115,6 +98,7 @@ const intelligenceItems = [
     { name: "Security Sentinel", href: "/security", icon: Lock },
     { name: "Agent Interface", href: "/agent", icon: Brain },
     { name: "Persona Lab", href: "/persona", icon: User },
+    { name: "Notifications", href: "/settings", icon: Bell },
 ];
 
 const studioItems = [
@@ -238,6 +222,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                     {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Intelligence</label>}
                     {intelligenceItems.map((item) => {
                         const isActive = pathname.startsWith(item.href);
+                        const isNotifications = item.name === "Notifications";
                         return (
                             <div key={item.href} className="space-y-1">
                                 <Link
@@ -249,6 +234,9 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                 >
                                     <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400")} />
                                     {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                                    {!collapsed && isNotifications && (
+                                        <UnreadBadge />
+                                    )}
                                 </Link>
                                 {!collapsed && isActive && item.subItems && (
                                     <div className="ml-9 border-l border-white/5 pl-4 py-1 space-y-1">
@@ -351,6 +339,16 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
     );
 });
 
+function UnreadBadge() {
+    const unreadCount = useNotificationCount();
+    if (unreadCount === 0) return null;
+    return (
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500/20 px-1.5 text-[9px] font-black text-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+            {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+    );
+}
+
 export function MobileNav() {
     const pathname = usePathname();
     const mobileNavItems = [
@@ -385,7 +383,7 @@ export function MobileNav() {
     );
 }
 
-export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
+export function MobileHeader({ onMenuClick }: { readonly onMenuClick?: () => void }) {
     return (
         <header className="bg-black/80 backdrop-blur-2xl border-b border-white/5 fixed top-0 z-50 flex justify-between items-center w-full px-4 h-20 md:hidden">
             <div className="flex items-center gap-4">

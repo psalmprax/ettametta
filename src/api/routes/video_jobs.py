@@ -1,5 +1,7 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
 from src.api.utils.models import VideoJobDB, AuditLogDB
@@ -16,11 +18,19 @@ import logging
 router = APIRouter(prefix="/video/jobs", tags=["Video Jobs"])
 logger = logging.getLogger(__name__)
 
+GENERATION_PROMPT = "Generation Prompt"
+NARRATIVE_PROMPT = "Narrative Prompt"
 
-@router.get("/")
+
+@router.get(
+    "/",
+    responses={
+        500: {"description": "Database error retrieving jobs"},
+    },
+)
 async def list_jobs(
-    current_user: UserDB = Depends(get_current_user),
-    job_service: VideoJobService = Depends(get_video_job_service),
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    job_service: Annotated[VideoJobService, Depends(get_video_job_service)],
 ):
     """
     Lists all video processing jobs from the database for the current current_user.
@@ -38,11 +48,17 @@ async def list_jobs(
         raise HTTPException(status_code=500, detail="Database error retrieving jobs")
 
 
-@router.post("/{job_id}/abort")
+@router.post(
+    "/{job_id}/abort",
+    responses={
+        404: {"description": "Job not found or unauthorized"},
+        500: {"description": "Database error aborting job"},
+    },
+)
 async def abort_job(
     job_id: str,
-    current_user: UserDB = Depends(get_current_user),
-    job_service: VideoJobService = Depends(get_video_job_service),
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    job_service: Annotated[VideoJobService, Depends(get_video_job_service)],
 ):
     """
     Abort a running video processing job.
@@ -70,12 +86,18 @@ async def abort_job(
         raise HTTPException(status_code=500, detail="Database error aborting job")
 
 
-@router.get("/metadata/{job_id}")
+@router.get(
+    "/metadata/{job_id}",
+    responses={
+        404: {"description": "Job not found"},
+        500: {"description": "Database error fetching metadata"},
+    },
+)
 async def get_job_details(
     job_id: str,
-    current_user: UserDB = Depends(get_current_user),
-    job_service: VideoJobService = Depends(get_video_job_service),
-    db=Depends(get_db),
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    job_service: Annotated[VideoJobService, Depends(get_video_job_service)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Get comprehensive metadata for a video generation task.
@@ -109,7 +131,7 @@ async def get_job_details(
             "created_at": job["created_at"].isoformat(),
             "updated_at": job["updated_at"].isoformat(),
             "input_prompt": job["source_uri"]
-            if job["source_uri"] not in ["Generation Prompt", "Narrative Prompt", "Cinema Mode / Studio"]
+            if job["source_uri"] not in [GENERATION_PROMPT, NARRATIVE_PROMPT, "Cinema Mode / Studio"]
             else None,
             "output_path": job["output_path"],
             "generation_details": {},
@@ -175,11 +197,19 @@ async def get_job_details(
         raise HTTPException(status_code=500, detail="Database error fetching metadata")
 
 
-@router.post("/{job_id}/retry")
+@router.post(
+    "/{job_id}/retry",
+    responses={
+        400: {"description": "Job cannot be retried or missing parameters"},
+        403: {"description": "Not authorized"},
+        404: {"description": "Job not found"},
+        500: {"description": "Database error retrying job"},
+    },
+)
 async def retry_job(
     job_id: str,
-    current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Retry a failed video processing job.
@@ -208,7 +238,7 @@ async def retry_job(
 
         # Retry logic based on job type
         task = None
-        if job.source_uri not in ["Generation Prompt", "Narrative Prompt"]:
+        if job.source_uri not in [GENERATION_PROMPT, NARRATIVE_PROMPT]:
             task = download_and_process_task.delay(
                 source_uri=job.source_uri,
                 niche=job.title.split(" - ")[-1]
@@ -220,7 +250,7 @@ async def retry_job(
                 user_id=current_user.id,
                 request_id=get_request_id(),
             )
-        elif job.source_uri == "Generation Prompt":
+        elif job.source_uri == GENERATION_PROMPT:
             stmt_audit = select(AuditLogDB).where(
                 AuditLogDB.resource_id == job_id,
                 AuditLogDB.action == "VIDEO_GENERATE_START",
@@ -274,9 +304,15 @@ async def retry_job(
         raise HTTPException(status_code=500, detail="Database error retrying job")
 
 
-@router.get("/quotas")
+@router.get(
+    "/quotas",
+    responses={
+        500: {"description": "Database error fetching quotas"},
+    },
+)
 async def get_video_quotas(
-    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Get current current_user's video generation quotas and usage.
@@ -284,7 +320,7 @@ async def get_video_quotas(
     from src.api.utils.subscription import get_user_subscription_tier
 
     try:
-        tier = await get_user_subscription_tier(current_user, db)
+        tier = get_user_subscription_tier(current_user)
         today_start = datetime.combine(datetime.now(timezone.utc).date(), datetime.min.time())
 
         stmt = select(func.count(VideoJobDB.id)).where(

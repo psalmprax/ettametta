@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Promoting BACKLOG 999.1 → Phase 10 (Pipeline Fix) and beginning execution
-last_updated: "2026-05-29T00:00:00.000Z"
-last_activity: 2026-05-29
+last_updated: "2026-06-13T00:00:00.000Z"
+last_activity: 2026-06-13
 progress:
-  total_phases: 10
-  completed_phases: 6
-  total_plans: 22
-  completed_plans: 16
-  percent: 73
+  total_phases: 14
+  completed_phases: 7
+  total_plans: 29
+  completed_plans: 23
+  percent: 79
 ---
 
 # Project State
@@ -25,18 +25,18 @@ See: .planning/PROJECT.md (updated 2026-05-29)
 
 ## Current Position
 
-Phase: 10
-Plan: 10-01 in progress (promoted from BACKLOG 999.1)
-Status: Executing Phase 10 — Foundation (DB schema + AnalysisReport contract)
-Last activity: 2026-05-29
+Phase: 14
+Plan: 14-01 complete (Affiliate Auto-Insert shipped)
+Status: Completed Phase 14 — Affiliate Auto-Insert (drawtext burn-in + impression tracking)
+Last activity: 2026-06-13
 
-Progress: [███████░░░] 73%
+Progress: [███████░░░] 79%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 16
+- Total plans completed: 23
 - Average duration: N/A
 - Total execution time: 0 hours
 
@@ -53,6 +53,11 @@ Progress: [███████░░░] 73%
 | 7 | 1/2 | - | - |
 | 8 | 1/2 | - | - |
 | 9 | 1/2 | - | - |
+| 10 | 6/6 | - | - |
+| 11 | 1/1 | - | - |
+| 12 | 1/1 | - | - |
+| 13 | 1/1 | - | - |
+| 14 | 1/1 | - | - |
 
 **Recent Activity (since 2026-04-17):**
 
@@ -79,12 +84,6 @@ Recent decisions affecting current work:
 - Phase 9 Plan 02: Verify enterprise infrastructure capabilities
 - 2 stale skills need fix pending
 - 7 new skills in progress (exploration agents launched 2026-05-28)
-- Phase 10 Plan 01: Foundation for Discovery → Analysis → Video pipeline fix
-  - Schema additions to `ContentCandidateDB` (analysis_task_id, status, payload, recommended_style, viral_score_velocity)
-  - `AnalysisReport` Pydantic contract in `src/services/discovery/schemas.py`
-  - `ENABLE_PERSISTED_ANALYSIS` feature flag
-  - Alembic migration
-  - Sub-plans 10-02..10-06 to be drafted after 10-01 lands
 
 ### Blockers/Concerns
 

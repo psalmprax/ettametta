@@ -334,7 +334,6 @@ class PlatformComposer:
             return url_only[:count]
 
         try:
-            from src.services.video_engine.semantic_stock import base_semantic_stock_matcher
 
             # Build path list for CLIP ranking
             paths = [a.path for a in downloaded]

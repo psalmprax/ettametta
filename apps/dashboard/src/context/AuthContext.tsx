@@ -79,8 +79,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 import { API_BASE } from "@/lib/config";
 import { withRealFallback } from "@/lib/real_first_utils";
+import { toast } from "sonner";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { readonly children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (authToken: string, remember: boolean = false) => {
         if (!authToken || authToken === "undefined" || authToken === "null") {
             console.error("AuthContext: Attempted login with invalid token:", authToken);
+            toast.error("Invalid login token — please try logging in again");
             return false;
         }
 

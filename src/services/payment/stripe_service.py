@@ -6,11 +6,22 @@ import stripe
 import logging
 import asyncio
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from src.api.utils.database import async_session_factory
 
 logger = logging.getLogger(__name__)
+
+# Maps Stripe metadata tier names to SubscriptionTier enum values.
+# Stripe uses "creator" / "empire" / "sovereign" / "studio" in metadata,
+# but SubscriptionTier uses BASIC / PREMIUM / SOVEREIGN / STUDIO.
+STRIPE_TIER_MAP = {
+    "free": "FREE",
+    "creator": "BASIC",
+    "empire": "PREMIUM",
+    "sovereign": "SOVEREIGN",
+    "studio": "STUDIO",
+}
 
 # Subscription tiers
 SUBSCRIPTION_TIERS = {
@@ -54,17 +65,26 @@ SUBSCRIPTION_TIERS = {
 class PaymentService:
     """Stripe payment integration for subscriptions"""
 
-    def __init__(self, stripe_api_key: str):
-        if not stripe_api_key:
+    def __init__(self, stripe_api_key: str | None = None):
+        self.stripe_api_key = stripe_api_key
+
+    def _ensure_api_key(self) -> str:
+        """Resolve and verify Stripe API key dynamically."""
+        if not self.stripe_api_key:
+            from src.api.config import settings
+            self.stripe_api_key = settings.STRIPE_SECRET_KEY
+        if not self.stripe_api_key:
             raise ValueError(
-                "Stripe API key not configured. Please set STRIPE_SECRET_KEY."
+                "Stripe is not configured. Please set STRIPE_SECRET_KEY in environment."
             )
-        stripe.api_key = stripe_api_key
+        stripe.api_key = self.stripe_api_key
+        return self.stripe_api_key
 
     async def create_customer(
         self, email: str, user_id: str, idempotency_key: str = None
     ) -> dict[str, Any]:
         """Create a Stripe customer for a user"""
+        self._ensure_api_key()
         try:
             create_params = {"email": email, "metadata": {"user_id": str(user_id)}}
             if idempotency_key:
@@ -90,8 +110,17 @@ class PaymentService:
         success_url: str = None,
         cancel_url: str = None,
         idempotency_key: str = None,
+        trial_period_days: int = 0,
     ) -> dict[str, Any]:
-        """Create a checkout session for subscription"""
+        """Create a checkout session for subscription
+
+        Args:
+            trial_period_days: Number of days for free trial (0 = no trial).
+                               When > 0, the subscription will start in
+                               ``trialing`` status and the user won't be
+                               charged until the trial ends.
+        """
+        self._ensure_api_key()
         from src.api.config import settings
 
         # Use provided URLs or default to production domain settings
@@ -124,12 +153,16 @@ class PaymentService:
             }
             if idempotency_key:
                 session_params["idempotency_key"] = idempotency_key
+            if trial_period_days > 0:
+                session_params["trial_period_days"] = trial_period_days
+                session_params["payment_method_collection"] = "if_required"
 
             session = await asyncio.to_thread(
                 stripe.checkout.Session.create, **session_params
             )
             logger.info(
                 f"[PaymentService] Created checkout session {session.id} for tier {tier}"
+                + (f" with {trial_period_days}-day trial" if trial_period_days > 0 else "")
             )
             return {
                 "session_id": session.id,
@@ -141,8 +174,9 @@ class PaymentService:
 
     async def get_subscription(self, subscription_id: str) -> dict[str, Any]:
         """Get subscription details from Stripe"""
+        self._ensure_api_key()
         try:
-            sub = stripe.Subscription.retrieve(subscription_id)
+            sub = await asyncio.to_thread(stripe.Subscription.retrieve, subscription_id)
             return {
                 "id": sub.id,
                 "status": sub.status,
@@ -155,8 +189,11 @@ class PaymentService:
 
     async def cancel_subscription(self, subscription_id: str) -> dict[str, Any]:
         """Cancel a subscription at period end"""
+        self._ensure_api_key()
         try:
-            sub = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+            sub = await asyncio.to_thread(
+                stripe.Subscription.modify, subscription_id, cancel_at_period_end=True
+            )
             logger.info(f"[PaymentService] Cancelled subscription {subscription_id}")
             return {
                 "id": sub.id,
@@ -171,6 +208,8 @@ class PaymentService:
         self, payload: bytes, signature: str, webhook_secret: str
     ) -> dict[str, Any]:
         """Handle Stripe webhook events"""
+        self._ensure_api_key()
+
         try:
             # construct_event is relatively fast but handles signature verification
             event = stripe.Webhook.construct_event(payload, signature, webhook_secret)
@@ -197,17 +236,53 @@ class PaymentService:
                 credits = int(metadata.get("credits", 0))
                 if user_id and credits > 0:
                     from src.services.payment.credit_service import credit_service
+                    from src.api.utils.credit_models import CreditTransactionDB
 
-                    # Assuming add_credits is now async or we wrap it
-                    await credit_service.add_credits(
-                        user_id=user_id,
-                        amount=credits,
-                        transaction_type="purchase",
-                        description=f"Credit purchase via Stripe (session: {session.id})",
-                    )
-                    logger.info(
-                        f"[PaymentService] Added {credits} credits to user {user_id}"
-                    )
+                    async with async_session_factory() as db:
+                        # Idempotency check: skip if this session was already processed
+                        dup_stmt = select(CreditTransactionDB).where(
+                            CreditTransactionDB.user_id == user_id,
+                            CreditTransactionDB.reference_id == session.id,
+                            CreditTransactionDB.transaction_type == "purchase",
+                        )
+                        existing = await db.execute(dup_stmt)
+                        if existing.scalar_one_or_none():
+                            logger.info(
+                                f"[PaymentService] Credit purchase for session {session.id} "
+                                f"already processed — skipping"
+                            )
+                            # Track skip event
+                            from src.api.utils.models import WebhookEventDB
+                            db.add(WebhookEventDB(
+                                event_type="checkout.session.completed",
+                                platform="stripe",
+                                external_id=session.id,
+                                payload_json={"result": "skipped", "reason": "idempotency", "subtype": "credit_purchase"},
+                                processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                            ))
+                            await db.commit()
+                        else:
+                            await credit_service.add_credits(
+                                user_id=user_id,
+                                amount=credits,
+                                transaction_type="purchase",
+                                db=db,
+                                reference_id=session.id,
+                                description=f"Credit purchase via Stripe (session: {session.id})",
+                            )
+                            # Track processed event
+                            from src.api.utils.models import WebhookEventDB
+                            db.add(WebhookEventDB(
+                                event_type="checkout.session.completed",
+                                platform="stripe",
+                                external_id=session.id,
+                                payload_json={"result": "processed", "subtype": "credit_purchase"},
+                                processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                            ))
+                            await db.commit()
+                            logger.info(
+                                f"[PaymentService] Added {credits} credits to user {user_id}"
+                            )
                 return {
                     "status": "processed",
                     "event": "checkout.session.completed",
@@ -215,8 +290,29 @@ class PaymentService:
                 }
 
             # Handle subscription checkout
-            tier = metadata.get("tier", "free").upper()
+            tier_key = metadata.get("tier", "free")
+            tier_enum_name = STRIPE_TIER_MAP.get(tier_key, "FREE")
             subscription_id = session.get("subscription")
+            new_tier = getattr(
+                SubscriptionTier, tier_enum_name, SubscriptionTier.FREE
+            )
+
+            # Retrieve subscription from Stripe to check trial status
+            trial_ends_at = None
+            if subscription_id:
+                try:
+                    sub = await asyncio.to_thread(
+                        stripe.Subscription.retrieve, subscription_id
+                    )
+                    if sub.trial_end:
+                        trial_ends_at = datetime.fromtimestamp(
+                            sub.trial_end, tz=timezone.utc
+                        ).replace(tzinfo=None)
+                except stripe.error.StripeError:
+                    logger.warning(
+                        f"[PaymentService] Could not retrieve subscription {subscription_id} "
+                        f"for trial info"
+                    )
 
             async with async_session_factory() as db:
                 stmt = select(UserDB).where(UserDB.stripe_customer_id == customer_id)
@@ -224,14 +320,45 @@ class PaymentService:
                 user = result.scalar_one_or_none()
 
                 if user:
-                    user.subscription = getattr(
-                        SubscriptionTier, tier, SubscriptionTier.FREE
-                    )
-                    user.stripe_subscription_id = subscription_id
-                    await db.commit()
-                    logger.info(
-                        f"[PaymentService] Updated user {user.id} to tier {tier}"
-                    )
+                        # Idempotency check: skip if tier and subscription_id are unchanged
+                        if (
+                            user.subscription == new_tier
+                            and user.stripe_subscription_id == subscription_id
+                        ):
+                            logger.info(
+                                f"[PaymentService] Subscription for session {session.id} "
+                                f"already processed — skipping"
+                            )
+                            # Track skip event
+                            from src.api.utils.models import WebhookEventDB
+                            db.add(WebhookEventDB(
+                                event_type="checkout.session.completed",
+                                platform="stripe",
+                                external_id=session.id,
+                                payload_json={"result": "skipped", "reason": "idempotency", "subtype": "subscription_checkout"},
+                                processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                            ))
+                            await db.commit()
+                        else:
+                            user.subscription = new_tier
+                            user.stripe_subscription_id = subscription_id
+                            if trial_ends_at:
+                                user.trial_ends_at = trial_ends_at
+                            await db.commit()
+                            # Track processed event
+                            from src.api.utils.models import WebhookEventDB
+                            db.add(WebhookEventDB(
+                                event_type="checkout.session.completed",
+                                platform="stripe",
+                                external_id=session.id,
+                                payload_json={"result": "processed", "subtype": "subscription_checkout"},
+                                processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                            ))
+                            await db.commit()
+                            logger.info(
+                                f"[PaymentService] Updated user {user.id} to tier {tier_enum_name}"
+                                + (f" (trial until {trial_ends_at})" if trial_ends_at else "")
+                            )
 
             return {"status": "processed", "event": "checkout.session.completed"}
 
@@ -249,8 +376,25 @@ class PaymentService:
                 if user:
                     user.subscription = SubscriptionTier.FREE
                     user.stripe_subscription_id = None
+                    # NOTE: intentionally NOT clearing trial_ends_at here so the user
+                    # cannot re-use the free trial after it expires or is canceled.
                     await db.commit()
                     logger.info(f"[PaymentService] Reset user {user.id} to FREE tier")
+
+                    # Create in-app notification
+                    from src.api.utils.models import UserNotificationDB
+                    notification = UserNotificationDB(
+                        user_id=user.id,
+                        type="billing",
+                        title="Subscription Cancelled",
+                        message="Your subscription has been cancelled and you have been downgraded to the Free tier.",
+                        link="/settings?tab=billing",
+                    )
+                    db.add(notification)
+                    await db.commit()
+                    logger.info(
+                        f"[PaymentService] Created cancellation notification for user {user.id}"
+                    )
 
             return {"status": "processed", "event": "customer.subscription.deleted"}
 
@@ -270,29 +414,113 @@ class PaymentService:
                     # Check if subscription is still active
                     if subscription.status == "active":
                         # Get the tier from metadata
-                        new_tier = subscription.metadata.get("tier", "free").upper()
+                        tier_key = subscription.metadata.get("tier", "free")
+                        tier_enum_name = STRIPE_TIER_MAP.get(tier_key, "FREE")
+                        tier_info = SUBSCRIPTION_TIERS.get(tier_key, {})
+                        tier_display = tier_info.get("name", tier_enum_name.title())
                         try:
                             user.subscription = getattr(
-                                SubscriptionTier, new_tier, SubscriptionTier.FREE
+                                SubscriptionTier, tier_enum_name, SubscriptionTier.FREE
                             )
+                            # Trial → paid transition: clear trial tracking;
+                            # user is now a normal subscriber.
+                            user.trial_ends_at = None
+                            await db.commit()
+                            # Create in-app notification for upgrade/change
+                            from src.api.utils.models import UserNotificationDB
+                            notification = UserNotificationDB(
+                                user_id=user.id,
+                                type="billing",
+                                title="Subscription Updated",
+                                message=f"Your subscription has been updated to the {tier_display} tier.",
+                                link="/settings?tab=billing",
+                            )
+                            db.add(notification)
                             await db.commit()
                             logger.info(
-                                f"[PaymentService] Updated user {user.id} to tier {new_tier}"
+                                f"[PaymentService] Updated user {user.id} to tier {tier_enum_name}"
                             )
                         except ValueError:
                             logger.warning(
-                                f"[PaymentService] Unknown tier {new_tier}, keeping current"
+                                f"[PaymentService] Unknown tier {tier_key}, keeping current"
                             )
                     elif subscription.status in ["canceled", "past_due", "unpaid"]:
                         # Downgrade to free
                         user.subscription = SubscriptionTier.FREE
                         user.stripe_subscription_id = None
+                        user.trial_ends_at = None
+                        await db.commit()
+                        # Create in-app notification for downgrade
+                        from src.api.utils.models import UserNotificationDB
+                        reason_map = {"canceled": "cancellation", "past_due": "non-payment", "unpaid": "non-payment"}
+                        reason = reason_map.get(subscription.status, subscription.status)
+                        notification = UserNotificationDB(
+                            user_id=user.id,
+                            type="billing",
+                            title="Subscription Downgraded",
+                            message=f"Your subscription has been downgraded to Free due to {reason}.",
+                            link="/settings?tab=billing",
+                        )
+                        db.add(notification)
                         await db.commit()
                         logger.info(
                             f"[PaymentService] Downgraded user {user.id} to FREE due to {subscription.status}"
                         )
 
             return {"status": "processed", "event": "customer.subscription.updated"}
+
+        elif event["type"] == "invoice.payment_succeeded":
+            # Log successful renewals for observability and track as renewal event
+            invoice = event["data"]["object"]
+            subscription_id = invoice.get("subscription")
+            amount_paid = invoice.get("amount_paid", 0)
+            logger.info(
+                f"[PaymentService] Payment succeeded for invoice: {invoice.id} "
+                f"(subscription: {subscription_id}, amount: ${amount_paid / 100:.2f})"
+            )
+
+            async with async_session_factory() as db:
+                customer_id = invoice.get("customer")
+                stmt = select(UserDB).where(UserDB.stripe_customer_id == customer_id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+
+                if user:
+                    logger.info(
+                        f"[PaymentService] User {user.id} subscription renewed successfully"
+                    )
+                    # Create in-app notification for successful renewal
+                    from src.api.utils.models import UserNotificationDB
+                    amount_dollars = f"${amount_paid / 100:.2f}"
+                    notification = UserNotificationDB(
+                        user_id=user.id,
+                        type="billing",
+                        title="Subscription Renewed",
+                        message=f"Your subscription has been renewed successfully ({amount_dollars}).",
+                        link="/settings?tab=billing",
+                    )
+                    db.add(notification)
+                    logger.info(
+                        f"[PaymentService] Created renewal notification for user {user.id}"
+                    )
+
+                # Track renewal event in WebhookEventDB for billing dashboard
+                from src.api.utils.models import WebhookEventDB
+                db.add(WebhookEventDB(
+                    event_type="invoice.payment_succeeded",
+                    platform="stripe",
+                    external_id=invoice.id,
+                    payload_json={
+                        "result": "renewal",
+                        "subtype": "subscription_renewal",
+                        "subscription_id": subscription_id,
+                        "amount_cents": amount_paid,
+                    },
+                    processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                ))
+                await db.commit()
+
+            return {"status": "processed", "event": "invoice.payment_succeeded"}
 
         elif event["type"] == "invoice.payment_failed":
             # Handle failed payments - notify user
@@ -306,9 +534,20 @@ class PaymentService:
                 user = result.scalar_one_or_none()
 
                 if user:
-                    # Could add notification logic here
+                    from src.api.utils.models import UserNotificationDB
+                    invoice_amount = invoice.get("amount_due", 0)
+                    amount_part = f"of ${invoice_amount / 100:.2f} " if invoice_amount else ""
+                    notification = UserNotificationDB(
+                        user_id=user.id,
+                        type="billing",
+                        title="Payment Failed",
+                        message=f"Your recent payment {amount_part}failed. Please update your payment method to avoid service interruption.",
+                        link="/settings?tab=billing",
+                    )
+                    db.add(notification)
+                    await db.commit()
                     logger.warning(
-                        f"[PaymentService] User {user.id} has failed payment"
+                        f"[PaymentService] User {user.id} has failed payment — created notification"
                     )
 
             return {"status": "processed", "event": "invoice.payment_failed"}
@@ -318,12 +557,12 @@ class PaymentService:
             return {"status": "ignored", "event": event["type"]}
 
 
-# Initialize with API key from settings
-def get_payment_service() -> PaymentService:
-    from src.api.config import settings
+# Initialize base service singleton (lazy loaded)
+base_stripe_service = PaymentService()
 
-    if not settings.STRIPE_SECRET_KEY:
-        raise ValueError(
-            "Stripe is not configured. Please set STRIPE_SECRET_KEY in environment."
-        )
-    return PaymentService(settings.STRIPE_SECRET_KEY)
+
+# Keep get_payment_service for backward compatibility
+def get_payment_service() -> PaymentService:
+    base_stripe_service._ensure_api_key()
+    return base_stripe_service
+

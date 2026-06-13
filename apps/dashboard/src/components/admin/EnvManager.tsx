@@ -9,8 +9,6 @@ import {
     RefreshCw, 
     CheckCircle2,
     Lock,
-    Eye,
-    EyeOff,
     Search,
     Power,
     TriangleAlert
@@ -52,6 +50,7 @@ export default function EnvManager() {
             }
         } catch (error) {
             console.error("Failed to fetch env keys:", error);
+            toast.error("Failed to load environment configuration");
         } finally {
             setIsLoading(false);
         }

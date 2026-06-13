@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def utc_now():
     """Get current UTC datetime (naive for PostgreSQL compatibility)"""
-    return datetime.now(timezone.utc)
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class CreditService:
@@ -373,6 +373,89 @@ class CreditService:
             "total_credits_earned": total_earned,
         }
 
+    # === Usage Breakdown ===
+
+    async def get_usage_breakdown(
+        self, user_id: str, db: AsyncSession, month: str | None = None
+    ) -> dict:
+        """
+        Get per-action credit spending breakdown for a calendar month.
+
+        Parameters
+        ----------
+        user_id : str
+            The user to query.
+        db : AsyncSession
+            Database session.
+        month : str | None
+            Optional month in ``YYYY-MM`` format (e.g. ``"2026-05"``).
+            Defaults to the current calendar month.
+
+        Returns
+        -------
+        dict
+            ``{"total_spent": int, "by_action": {str: int}, "action_count": int}``
+        """
+        if month:
+            try:
+                year, mon = month.split("-")
+                month_start = datetime(
+                    int(year), int(mon), 1, tzinfo=timezone.utc
+                ).replace(tzinfo=None)
+            except (ValueError, IndexError):
+                raise ValueError(
+                    f"Invalid month format: '{month}'. Expected YYYY-MM (e.g. '2026-05')."
+                )
+            # Start of the *next* month for the upper bound
+            if int(mon) == 12:
+                next_month_start = datetime(
+                    int(year) + 1, 1, 1, tzinfo=timezone.utc
+                ).replace(tzinfo=None)
+            else:
+                next_month_start = datetime(
+                    int(year), int(mon) + 1, 1, tzinfo=timezone.utc
+                ).replace(tzinfo=None)
+        else:
+            now = utc_now()
+            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            next_month_start = None  # no upper bound — all transactions from month_start onward
+
+        conditions = [
+            CreditTransactionDB.user_id == user_id,
+            CreditTransactionDB.transaction_type == "spent",
+            CreditTransactionDB.created_at >= month_start,
+        ]
+        if next_month_start:
+            conditions.append(CreditTransactionDB.created_at < next_month_start)
+
+        stmt = (
+            select(CreditTransactionDB)
+            .where(*conditions)
+            .order_by(CreditTransactionDB.created_at.desc())
+        )
+        result = await db.execute(stmt)
+        rows = result.scalars().all()
+
+        # Parse action from description — descriptions follow the pattern
+        # "Action: {action_name}" or a custom message.
+        by_action: dict[str, int] = {}
+        total_spent = 0
+        ACTION_PREFIX = "Action: "
+
+        for row in rows:
+            amount = abs(row.amount)  # amount is negative for spends
+            action = "unknown"
+            if row.description and row.description.startswith(ACTION_PREFIX):
+                action = row.description[len(ACTION_PREFIX):]
+            by_action[action] = by_action.get(action, 0) + amount
+            total_spent += amount
+
+        return {
+            "total_spent": total_spent,
+            "by_action": dict(sorted(by_action.items(), key=lambda x: -x[1])),
+            "action_count": len(by_action),
+        }
+
     # === Credit Costs ===
 
     def get_action_cost(self, action: str, tier: str = "free") -> int:
@@ -416,4 +499,6 @@ class CreditService:
 
 
 # Initialize service
-credit_service = CreditService()
+base_credit_service = CreditService()
+credit_service = base_credit_service
+

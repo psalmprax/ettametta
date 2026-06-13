@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
-import { Search, TrendingUp, Filter, RefreshCw } from "lucide-react";
+import React, { memo } from "react";
+import { Filter } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 // Neural Config Component - Extracted from discovery page
 interface NeuralConfigProps {

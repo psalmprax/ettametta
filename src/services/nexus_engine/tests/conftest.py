@@ -62,7 +62,7 @@ def _prevent_redis_connections():
     patches = [
         patch("redis.Redis"),
         patch("redis.from_url"),
-        patch("redis.asyncio.Redis"),
+        patch("redis.asyncio.Redis", return_value=async_redis_client),
         patch("redis.asyncio.from_url", return_value=async_redis_client),
     ]
     for p in patches:

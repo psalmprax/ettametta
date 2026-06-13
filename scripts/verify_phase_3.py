@@ -51,7 +51,7 @@ def test_db_schema():
         if res.status_code == 200:
             print("✅ Database connection healthy.")
             return True
-    except:
+    except Exception:
         print("❌ Database health check failed.")
         return False
 

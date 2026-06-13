@@ -1,22 +1,20 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { WS_BASE } from "@/lib/config";
 import { 
     Cpu, 
     Globe, 
-    Zap, 
     Activity, 
-    Terminal, 
-    ShieldAlert, 
     Radar,
     Server,
     Network,
     HardDrive,
     Bot
 } from "lucide-react";
+import { toast } from "sonner";
 
-interface TelemetryPulse {
+export interface TelemetryPulse {
     status: string;
     credits?: number;
     cluster_node: string;
@@ -56,7 +54,7 @@ interface TelemetryPulse {
     };
 }
 
-interface LogEntry {
+export interface LogEntry {
     type: string;
     level: string;
     module: string;
@@ -72,9 +70,9 @@ interface TelemetryContextType {
     agents: any[];
 }
 
-const TelemetryContext = createContext<TelemetryContextType | undefined>(undefined);
+export const TelemetryContext = createContext<TelemetryContextType | undefined>(undefined);
 
-export function TelemetryProvider({ children }: { children: React.ReactNode }) {
+export function TelemetryProvider({ children }: { readonly children: React.ReactNode }) {
     const [pulse, setPulse] = useState<TelemetryPulse | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [lastJobUpdate, setLastJobUpdate] = useState<any | null>(null);
@@ -116,6 +114,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
                         }
                     } catch (e) {
                         console.error("[Telemetry] Parse Error:", e);
+                        toast.error("Telemetry data parse error — some metrics may be stale");
                     }
                 };
 
@@ -130,6 +129,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
                 ws.current = socket;
             } catch (e) {
                 console.error("[Telemetry] Connection Failed:", e);
+                toast.error("Telemetry connection failed — dashboard may show stale data");
                 if (isMounted) {
                     setStatus("closed");
                     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);

@@ -609,32 +609,48 @@ class AutoCreator:
                 seg_idx = self.params.get("seg_idx", 0)
                 job_id_str = str(self.params.get("job_id", ""))
 
-                best_path = None
+                best: dict | None = None  # {path, score}
                 for path in paths:
-                    is_relevant = await self._run_vision_audit(path, prompt, job_id_str, seg_idx)
-                    if is_relevant:
-                        best_path = path
-                        logger.info(f"[DAG] Segment {seg_idx} passed audit: {path}")
-                        break
+                    result = await self._run_vision_audit(path, prompt, job_id_str, seg_idx)
+                    score = result.get("score", 50)
+                    if result.get("passed"):
+                        logger.info(
+                            f"[DAG] Segment {seg_idx} passed audit: "
+                            f"{path} (score={score})"
+                        )
+                        if best is None or score > best["score"]:
+                            if best is not None and os.path.exists(best["path"]):
+                                os.remove(best["path"])
+                            best = {"path": path, "score": score}
                     else:
-                        logger.warning(f"[DAG] Segment {seg_idx} failed audit, cleaning up: {path}")
+                        logger.warning(
+                            f"[DAG] Segment {seg_idx} failed audit "
+                            f"(score={score}), cleaning up: {path}"
+                        )
                         if os.path.exists(path):
                             os.remove(path)
 
-                if not best_path and paths:
+                if best:
+                    return {"path": best["path"], "seg_idx": seg_idx, "score": best["score"]}
+
+                if paths:
                     best_path = paths[0]
                     logger.warning(f"[DAG] Segment {seg_idx} using unaudited fallback: {best_path}")
+                    return {"path": best_path, "seg_idx": seg_idx}
 
-                return {"path": best_path, "seg_idx": seg_idx}
+                return {"path": None, "seg_idx": seg_idx}
 
             async def _run_vision_audit(self, video_path: str, visual_prompt: str,
-                                        job_id_str: str, seg_idx: int) -> bool:
-                """Wrapper that calls the parent AutoCreator's _vision_audit."""
+                                        job_id_str: str, seg_idx: int) -> dict:
+                """Wrapper that calls the parent AutoCreator's _vision_audit.
+
+                Returns dict with ``passed``, ``score``, ``reason``.
+                """
                 try:
                     return await self._parent_audit(video_path, visual_prompt, job_id_str, seg_idx)
                 except Exception:
                     logger.exception("[DAG] Vision audit error, passing by default")
-                    return True
+                    return {"passed": True, "score": 50, "reason": "wrapper_error"}
 
         # ─── Build DAG nodes ─────────────────────────────────────────────
         all_nodes = []
@@ -725,26 +741,46 @@ class AutoCreator:
     async def _download_and_audit_visual_asset(self, urls, seg, i, job_id, niche):
         from src.services.video_engine.stock_service import base_stock_service
 
+        best: dict | None = None  # {path, score}
         for attempt, url in enumerate(urls):
             path = await base_stock_service.download_stock_video(url)
             if not path:
                 continue
             
-            # Perform Hard Vision Audit
-            is_relevant = await self._vision_audit(path, seg.get("visual_prompt", niche), job_id, i)
-            if is_relevant:
-                logger.info(f"[AutoCreator] Segment {i} passed audit on attempt {attempt+1}")
-                return path
-            
-            logger.warning(f"[AutoCreator] Segment {i} failed audit on attempt {attempt+1}. Re-rolling...")
-            # Clean up the failed clip to save space
-            if os.path.exists(path):
-                os.remove(path)
+            # Perform Scored Vision Audit (Phase 10-05)
+            result = await self._vision_audit(path, seg.get("visual_prompt", niche), job_id, i)
+            score = result.get("score", 50)
+            if result.get("passed"):
+                logger.info(
+                    f"[AutoCreator] Segment {i} passed audit on attempt "
+                    f"{attempt+1} (score={score})"
+                )
+                if best is None or score > best["score"]:
+                    # Clean up previous best if we're replacing it
+                    if best is not None and os.path.exists(best["path"]):
+                        os.remove(best["path"])
+                    best = {"path": path, "score": score}
+            else:
+                logger.warning(
+                    f"[AutoCreator] Segment {i} failed audit on attempt "
+                    f"{attempt+1} (score={score}). Re-rolling..."
+                )
+                if os.path.exists(path):
+                    os.remove(path)
+
+        if best:
+            logger.info(
+                f"[AutoCreator] Segment {i} selected best clip (score={best['score']})"
+            )
+            return best["path"]
         return None
 
-    async def _vision_audit(self, video_path: str, visual_prompt: str, job_id: str, segment_idx: int) -> bool:
+    async def _vision_audit(self, video_path: str, visual_prompt: str, job_id: str, segment_idx: int) -> dict:
         """
         Extracts a frame and audits it against the visual prompt using Gemini Flash.
+
+        Returns dict with keys: ``passed`` (bool), ``score`` (int 0-100),
+        ``reason`` (str).  Score >= 40 is considered passing.
         """
         from src.services.llm.service import unified_llm_service
         
@@ -761,12 +797,17 @@ class AutoCreator:
             cap.release()
             
             if not ret:
-                return True # Fallback to true if extraction fails to avoid stuck loops
+                return {"passed": True, "score": 50, "reason": "frame_extraction_failed"}
                 
             cv2.imwrite(frame_path, frame)
             
-            # AI Audit with Fallback
-            prompt = f"Does this video frame match the description: '{visual_prompt}'? Answer with YES or NO followed by a short reason."
+            # AI Audit with Fallback — ask for a 0-100 score
+            prompt = (
+                f"Rate how well this video frame matches the description: "
+                f"'{visual_prompt}'. Return a score from 0 (not at all) "
+                f"to 100 (perfect match), followed by a brief reason. "
+                f"Example: '85 - good match, similar colors and composition'"
+            )
             
             try:
                 audit_result = await unified_llm_service.analyze_image(frame_path, prompt, provider=LLMProvider.GEMINI)
@@ -779,16 +820,22 @@ class AutoCreator:
                     frame_path, prompt, provider=LLMProvider.OLLAMA, model=app_settings.OLLAMA_MODEL
                 )
             
-            content = audit_result.get("content", "YES").upper()
+            content = audit_result.get("content", "50") if audit_result else "50"
             
+            # Parse numeric score from LLM response (first 1-3 digit number)
+            import re
+            score_match = re.search(r"(\d{1,3})", str(content))
+            score = int(score_match.group(1)) if score_match else 50
+            score = max(0, min(100, score))
+
             # Clean up frame
             if os.path.exists(frame_path):
                 os.remove(frame_path)
-                
-            return "YES" in content
+
+            return {"passed": score >= 40, "score": score, "reason": str(content)[:80]}
         except Exception:
             logger.exception("[AutoCreator] Vision audit error")
-            return True # Bypassed on error
+            return {"passed": True, "score": 50, "reason": "audit_error"} # Bypassed on error
 
     async def _generate_voiceovers(self, segments, job_id):
         from src.services.voiceover.service import base_voiceover_service

@@ -73,4 +73,6 @@ class CookieManager:
             return False
         return os.path.exists(os.path.join(self.cookies_dir, filename))
 
-cookie_manager = CookieManager()
+base_cookie_manager_service = CookieManager()
+cookie_manager = base_cookie_manager_service
+

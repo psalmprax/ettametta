@@ -1,10 +1,11 @@
 "use client";
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { toast } from "sonner";
 
 interface Props {
-  children?: ReactNode;
-  fallback?: ReactNode;
+  readonly children?: ReactNode;
+  readonly fallback?: ReactNode;
 }
 
 interface State {
@@ -23,6 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    toast.error("Component error — see console for details");
   }
 
   public render() {

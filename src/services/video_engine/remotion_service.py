@@ -461,8 +461,20 @@ class RemotionService:
             f"--js-flags='--max-old-space-size={limit_mb}'"
         ]
         
-        # Use lower scale for faster renders; scale can be tuned in settings
-        scale_val = "0.5" if "test" in (output_name or "") else getattr(settings, "REMOTION_RENDER_SCALE", "0.75")
+        # Use lower scale for faster renders.  Priority:
+        # 1. Explicit override in props.job_metadata.remotion_scale
+        #    (set by orchestrator preview_mode for fast draft renders)
+        # 2. "test" in output_name → 0.5 (test renders)
+        # 3. settings.REMOTION_RENDER_SCALE (default 0.75)
+        remotion_scale_override = None
+        if isinstance(props.get("job_metadata"), dict):
+            remotion_scale_override = props["job_metadata"].get("remotion_scale")
+        if remotion_scale_override is not None:
+            scale_val = str(remotion_scale_override)
+        elif "test" in (output_name or ""):
+            scale_val = "0.5"
+        else:
+            scale_val = getattr(settings, "REMOTION_RENDER_SCALE", "0.75")
         
         args.extend([
             "--chromium-flags", " ".join(chrome_flags),

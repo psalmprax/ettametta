@@ -4,7 +4,6 @@ import logging
 import asyncio
 import time
 from typing import Any, Awaitable, Callable
-from src.api.config import settings
 
 logger = logging.getLogger("DistributedEventBus")
 

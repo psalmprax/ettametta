@@ -6,29 +6,17 @@ import {
     Zap,
     Layers,
     Cpu,
-    Sparkles,
-    Share2,
     Database,
-    Plus,
     Play,
-    Settings2,
     RefreshCw,
     Loader2,
     CheckCircle2,
     AlertCircle,
-    Activity,
-    ExternalLink,
-    ChevronRight,
     ChevronDown,
     Search,
     User,
     Video,
-    ImageIcon,
-    MessageSquare,
-    Send,
     Bot,
-    ShieldCheck,
-    Trash2,
     X,
     Terminal,
     Fingerprint,
@@ -41,26 +29,241 @@ import {
     Volume2,
     Palette,
     Scissors,
-    Sliders,
     Coins
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
-import { NexusNode, NodeType } from "@/components/ui/NexusNode";
+import { NexusNode } from "@/components/ui/NexusNode";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { CommandPod } from "@/components/ui/CommandPod";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { AreaChartCustom } from "@/components/ui/ChartComponents";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
+
+interface Capability {
+    id?: string;
+    name: string;
+    category: string;
+    description: string;
+    stability?: string;
+    credits_per_task?: number;
+}
 import { useTelemetry } from "@/context/TelemetryContext";
 import { useAuth } from "@/context/AuthContext";
+
+interface PreviewScene {
+    assets?: any[];
+    duration?: number;
+    type?: string;
+    description?: string;
+    visual_prompt?: string;
+    [key: string]: unknown;
+}
+function getSceneTypeStyles(type: string | undefined): string {
+    switch (type) {
+        case 'hook': return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+        case 'problem': return "bg-rose-500/10 text-rose-500 border-rose-500/20";
+        case 'solution': return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        case 'outro': return "bg-cyan-500/10 text-cyan-500 border-cyan-500/20";
+        default: return "bg-zinc-500/10 text-zinc-500 border-white/5";
+    }
+}
+
+function SceneItem({
+    scene,
+    index,
+    activeAsset,
+    isDrawerOpen,
+    setActiveSwapDrawerIndex,
+    setSwappedAssets
+}: Readonly<{
+    scene: PreviewScene;
+    index: number;
+    activeAsset: any;
+    isDrawerOpen: boolean;
+    setActiveSwapDrawerIndex: (index: number | null) => void;
+    setSwappedAssets: React.Dispatch<React.SetStateAction<Record<number, { thumbnail: string, title: string, tags: string[] }>>>;
+}>) {
+    // Mock timing tracks aligned to the scene's duration
+    const duration = scene.duration || 5;
+    const simulatedWords = [
+        { word: "AI", start: 0, end: 0.8 },
+        { word: "Engine", start: 0.8, end: 1.6 },
+        { word: "Orchestrated", start: 1.6, end: 2.6 },
+        { word: "this", start: 2.6, end: 3.2 },
+        { word: "scene", start: 3.2, end: 4.0 },
+        { word: "perfectly.", start: 4.0, end: duration }
+    ];
+
+    return (
+        <div className="p-6 bg-[#0F0F12]/80 border border-white/5 rounded-[28px] hover:border-violet-500/20 transition-all space-y-6 relative overflow-hidden group">
+            {/* Top Bar */}
+            <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                    <span className="h-9 w-9 bg-violet-500/10 border border-violet-500/20 rounded-xl flex items-center justify-center text-violet-400 font-bold text-sm">
+                        {index + 1}
+                    </span>
+                    <span className={cn(
+                        "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
+                        getSceneTypeStyles(scene.type)
+                    )}>
+                        {scene.type || 'Scene'}
+                    </span>
+                </div>
+                <span className="text-xs font-black text-zinc-500 font-mono">{duration}s</span>
+            </div>
+            
+            {/* Text content */}
+            <div className="space-y-4">
+                <div>
+                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-1">Visual Direction / Prompt</span>
+                    <p className="text-xs text-zinc-300 font-semibold leading-relaxed">
+                        {scene.description || scene.visual_prompt || "No instructions provided."}
+                    </p>
+                </div>
+
+                {/* Timing track visualizer */}
+                <div className="p-4 bg-black/40 border border-white/5 rounded-2xl space-y-4">
+                    
+                    {/* Words Timeline */}
+                    <div className="space-y-2">
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block">Subtitle Word Timeline</span>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {simulatedWords.map((item, idx) => (
+                                <div 
+                                    key={idx}
+                                    className="px-2 py-1 bg-white/5 rounded-lg border border-white/5 flex flex-col items-center justify-center shrink-0 min-w-[50px] animate-pulse"
+                                    style={{ animationDelay: `${idx * 0.3}s` }}
+                                >
+                                    <span className="text-[10px] text-white font-bold">{item.word}</span>
+                                    <span className="text-[6px] text-zinc-500 font-mono">{item.start}s - {item.end}s</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Audio waveforms timeline */}
+                    <div className="space-y-3 pt-2 border-t border-white/5">
+                        <div className="flex items-center justify-between text-[7px] text-zinc-600 uppercase font-black tracking-widest">
+                            <span>0.0s</span>
+                            <span>Audio Composition Track</span>
+                            <span>{duration}s</span>
+                        </div>
+                        
+                        {/* Voiceover Track */}
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[7px] text-zinc-500">
+                                <span className="flex items-center gap-1"><Mic2 className="h-2 w-2" /> AI VOICEOVER</span>
+                                <span className="font-mono">Volume: 100%</span>
+                            </div>
+                            <div className="h-6 w-full bg-violet-950/20 border border-violet-500/10 rounded-lg relative overflow-hidden flex items-center justify-around px-2">
+                                {[4, 8, 2, 7, 5, 9, 3, 6, 8, 4, 9, 2, 7, 5, 8, 3, 6, 4, 7, 5].map((h, i) => (
+                                    <div key={i} className="w-0.5 bg-violet-400 rounded-full" style={{ height: `${h * 10}%` }} />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Background music track */}
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[7px] text-zinc-500">
+                                <span className="flex items-center gap-1"><Volume2 className="h-2 w-2" /> BACKGROUND MUSIC</span>
+                                <span className="font-mono">Volume: 12%</span>
+                            </div>
+                            <div className="h-4 w-full bg-cyan-950/20 border border-cyan-500/10 rounded-lg relative overflow-hidden flex items-center justify-around px-2">
+                                {[2, 3, 2, 4, 3, 2, 3, 4, 3, 2, 3, 4, 3, 2, 3, 4, 3, 2, 3, 2].map((h, i) => (
+                                    <div key={i} className="w-0.5 bg-cyan-500/50 rounded-full" style={{ height: `${h * 10}%` }} />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Assets section with optimize/swap triggers */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Active Stock Video Segment</span>
+                        <button
+                            onClick={() => setActiveSwapDrawerIndex(isDrawerOpen ? null : index)}
+                            className="px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[8px] font-bold uppercase transition-all flex items-center gap-1.5"
+                        >
+                            <Scissors className="h-2.5 w-2.5" /> Swap Asset
+                        </button>
+                    </div>
+                    
+                    <div className="flex gap-4 items-center">
+                        <div className="shrink-0 h-20 w-32 bg-zinc-900 rounded-xl border border-white/5 overflow-hidden relative shadow-inner">
+                            {activeAsset && activeAsset.thumbnail ? (
+                                <img src={activeAsset.thumbnail} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                    <Video className="h-6 w-6" />
+                                </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                <Play className="h-5 w-5 text-white filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-bold text-white uppercase">{activeAsset?.title || `Stock_Footage_${index + 1}.mp4`}</p>
+                            <div className="flex flex-wrap gap-1">
+                                {(activeAsset?.tags || ["workspace", "technology", "abstract"]).slice(0, 3).map((tag: string, tIdx: number) => (
+                                    <span key={tIdx} className="text-[7px] text-zinc-500 bg-white/5 px-1.5 py-0.5 rounded-sm uppercase font-mono">{tag}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Asset replacement drawer */}
+                    <AnimatePresence>
+                        {isDrawerOpen && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden border-t border-white/5 pt-4 space-y-3"
+                            >
+                                <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest block">Select Alternative Curation Candidate</span>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[
+                                        { title: "Digital Flow", thumbnail: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=150&auto=format&fit=crop&q=60", tags: ["cyber", "abstract"] },
+                                        { title: "Team Work", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=60", tags: ["corporate", "collaboration"] },
+                                        { title: "Minimal Server", thumbnail: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=150&auto=format&fit=crop&q=60", tags: ["server", "database"] },
+                                    ].map((alt, altIdx) => (
+                                        <button 
+                                            type="button"
+                                            key={altIdx}
+                                            onClick={() => {
+                                                setSwappedAssets(prev => ({
+                                                    ...prev,
+                                                    [index]: alt
+                                                }));
+                                                setActiveSwapDrawerIndex(null);
+                                                toast.success("Asset replaced visually", { description: "Timeline update will be committed on compile." });
+                                            }}
+                                            className="p-2 rounded-xl bg-white/2 border border-white/5 hover:border-cyan-500/40 cursor-pointer transition-all flex flex-col gap-2 group/alt text-left w-full"
+                                        >
+                                            <div className="aspect-video w-full rounded-lg bg-zinc-950 overflow-hidden relative">
+                                                <img src={alt.thumbnail} alt="" className="w-full h-full object-cover group-hover/alt:scale-105 transition-transform" />
+                                            </div>
+                                            <span className="text-[8px] font-bold text-white uppercase truncate">{alt.title}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function NexusContent() {
     const router = useRouter();
@@ -70,7 +273,10 @@ function NexusContent() {
 
     // Auto-refresh credit balance every 2 minutes
     const refreshRef = useRef(refreshCredits);
-    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current = refreshCredits;
+    }, [refreshCredits]);
+
     useEffect(() => {
         refreshRef.current();
         const interval = setInterval(() => refreshRef.current(), 120_000);
@@ -78,25 +284,36 @@ function NexusContent() {
     }, []);
     
     const [personas, setPersonas] = useState<Persona[]>([]);
-    const [capabilities, setCapabilities] = useState<any[]>([]);
+    const [capabilities, setCapabilities] = useState<Capability[]>([]);
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "orchestrator");
     const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
     const [isLaunching, setIsLaunching] = useState(false);
     const [nexusJobs, setNexusJobs] = useState<NexusJob[]>([]);
-    const [niches, setNiches] = useState<any[]>([]);
+    const [niches, setNiches] = useState<string[]>([]);
     const [selectedNiche, setSelectedNiche] = useState("");
-    const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    const [_activeJobId, setActiveJobId] = useState<string | null>(null);
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const [actionLogs, setActionLogs] = useState<string[]>(["NEXUS_CORE_ONLINE", "AWAITING_PIPELINE_ORCHESTRATION"]);
     const [creationMode, setCreationMode] = useState<'cinema' | 'blueprint'>('cinema');
+    
+    // Persona Management State
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [selectedPersonaForGenerate, setSelectedPersonaForGenerate] = useState<Persona | null>(null);
+    const [creatingPersona, setCreatingPersona] = useState(false);
+    const [generatingVideo, setGeneratingVideo] = useState(false);
+    const [newPersonaName, setNewPersonaName] = useState("");
+    const [newPersonaImageUrl, setNewPersonaImageUrl] = useState("");
+    const [generateTopic, setGenerateTopic] = useState("");
+    const [generateScript, setGenerateScript] = useState("");
     
     const [searchTerm, setSearchTerm] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
     
     // Preview Scenes Modal State
     const [previewJobId, setPreviewJobId] = useState<string | null>(null);
-    const [previewScenes, setPreviewScenes] = useState<any[]>([]);
+    const [previewScenes, setPreviewScenes] = useState<PreviewScene[]>([]);
     const [previewJobStatus, setPreviewJobStatus] = useState<string>("");
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -169,14 +386,14 @@ function NexusContent() {
                     onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
                 }
             ),
-            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/discovery/niches`, { headers }),
+            withRealFallback<unknown[]>((signal) => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 {
                     fallback: [
                         "AI Technology", "Motivation", "Finance", "Health & Fitness",
                         "Business", "Marketing", "Lifestyle", "Gaming",
                         "Education", "Real Estate", "E-commerce", "Spirituality"
                     ],
-                    onSuccess: (data: any) => {
+                    onSuccess: (data: unknown) => {
                         const defaultNiches = [
                             "AI Technology", "Motivation", "Finance", "Health & Fitness",
                             "Business", "Marketing", "Lifestyle", "Gaming",
@@ -184,7 +401,7 @@ function NexusContent() {
                         ];
                         
                         // Handle both array and object responses
-                        let nicheList = Array.isArray(data) ? data : (data?.niches || []);
+                        let nicheList = Array.isArray(data) ? data : (((data as Record<string, unknown>)?.niches as unknown[]) || []);
                         
                         // Top-Notch: If the user has no monitored niches, use the high-velocity defaults
                         if (nicheList.length === 0) {
@@ -195,18 +412,18 @@ function NexusContent() {
                         
                         // Ensure we have a selection if nothing is selected
                         if (nicheList.length > 0 && !selectedNiche) {
-                            const firstNiche = typeof nicheList[0] === 'string' ? nicheList[0] : (nicheList[0].niche || nicheList[0].name);
+                            const firstNiche = typeof nicheList[0] === 'string' ? nicheList[0] : ((nicheList[0] as any).niche || (nicheList[0] as any).name);
                             setSelectedNiche(firstNiche);
                         }
                     }
                 }
             ),
-            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+            withRealFallback<unknown>((signal) => fetch(`${API_BASE}/agent/capabilities`, { headers }),
                 {
                     fallback: [],
-                    onSuccess: (data: any) => {
+                    onSuccess: (data: unknown) => {
                         // Capabilities endpoint returns { workers: [...] }
-                        const caps = Array.isArray(data) ? data : (data?.workers || []);
+                        const caps = Array.isArray(data) ? data : ((data as Record<string, unknown>)?.workers as Capability[] || []);
                         setCapabilities(caps);
                     }
                 }
@@ -253,6 +470,105 @@ function NexusContent() {
         );
     }, []);
 
+    // Persona CRUD handlers
+    const handleCreatePersona = async () => {
+        if (!newPersonaName.trim()) return;
+        setCreatingPersona(true);
+        const token = await getAuthToken();
+        if (!token) return;
+
+        const params = new URLSearchParams();
+        params.append("name", newPersonaName.trim());
+        if (newPersonaImageUrl.trim()) {
+            params.append("reference_image_uri", newPersonaImageUrl.trim());
+        }
+
+        await withRealFallback<Persona>((signal) => fetch(`${API_BASE}/persona/create?${params.toString()}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: { name: newPersonaName.trim() } as Persona,
+                onSuccess: (data) => {
+                    // The backend wraps in success_response, so data could be { data: { ... } }
+                    const persona: Persona = (data as any)?.data || data;
+                    setPersonas(prev => [...prev, persona]);
+                    setIsCreateModalOpen(false);
+                    setNewPersonaName("");
+                    setNewPersonaImageUrl("");
+                    toast.success("Persona created");
+                },
+                onFallback: (err) => {
+                    toast.error(`Failed to create persona: ${err.message}`);
+                }
+            }
+        );
+        setCreatingPersona(false);
+    };
+
+    const handleGenerateVideo = async () => {
+        if (!selectedPersonaForGenerate || !generateTopic.trim()) return;
+        setGeneratingVideo(true);
+        const token = await getAuthToken();
+        if (!token) return;
+
+        await withRealFallback<Record<string, unknown>>((signal) => fetch(`${API_BASE}/persona/generate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    persona_id: selectedPersonaForGenerate.id || selectedPersonaForGenerate._id,
+                    topic: generateTopic.trim(),
+                    script: generateScript.trim() || null
+                })
+            }),
+            {
+                fallback: { status: "success", video_uri: "local://mock" } as Record<string, unknown>,
+                onSuccess: (data) => {
+                    const videoUri = (data as any)?.data?.video_uri || (data as any)?.video_uri;
+                    if (videoUri) {
+                        toast.success("Video generation dispatched", { description: `Job sent for ${selectedPersonaForGenerate.name}` });
+                    } else {
+                        toast.success("Generation request submitted");
+                    }
+                    setIsGenerateModalOpen(false);
+                    setSelectedPersonaForGenerate(null);
+                    setGenerateTopic("");
+                    setGenerateScript("");
+                },
+                onFallback: (err) => {
+                    toast.error(`Generation failed: ${err.message}`);
+                }
+            }
+        );
+        setGeneratingVideo(false);
+    };
+
+    const handleDeletePersona = async (personaId: string | undefined, personaName: string) => {
+        if (!personaId) return;
+        if (!window.confirm(`Purge neural identity "${personaName}"? This cannot be undone.`)) return;
+        const token = await getAuthToken();
+        if (!token) return;
+
+        await withRealFallback<Record<string, unknown>>((signal) => fetch(`${API_BASE}/persona/${personaId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: { status: "purged" } as Record<string, unknown>,
+                onSuccess: () => {
+                    setPersonas(prev => prev.filter(p => (p.id || p._id) !== personaId));
+                    toast.success(`Persona ${personaName} purged`);
+                },
+                onFallback: (err) => {
+                    toast.error(`Failed to delete: ${err.message}`);
+                }
+            }
+        );
+    };
+
     const handleLaunchPipeline = async () => {
         if (!selectedNiche) return;
         setIsLaunching(true);
@@ -281,8 +597,8 @@ function NexusContent() {
                 body: JSON.stringify(payload)
             }),
             {
-                fallback: null,
-                onSuccess: (data: any) => {
+                fallback: null as unknown as Record<string, unknown>,
+                onSuccess: (data: Record<string, unknown>) => {
                     setActiveJobId(String(data.job_id));
                     toast.success("Pipeline Dispatched");
                     setActionLogs(prev => [`[SUCCESS] Pipeline Job ID: ${data.job_id}`, ...prev]);
@@ -294,7 +610,7 @@ function NexusContent() {
 
     const [deployingIds, setDeployingIds] = useState<Set<string>>(new Set());
 
-    const handleDeployAgent = async (worker: any) => {
+    const handleDeployAgent = async (worker: Capability) => {
         const workerId = worker.id || worker.name;
         const token = await getAuthToken();
         if (!token) return;
@@ -302,7 +618,7 @@ function NexusContent() {
         setDeployingIds(prev => new Set(prev).add(workerId));
         setActionLogs(prev => [`[DEPLOY] Initializing Neural Instance: ${worker.name}`, ...prev]);
         
-        const promise = withRealFallback<any>((signal) => fetch(`${API_BASE}/tools/crew/run`, {
+        const promise = withRealFallback<Record<string, unknown>>((signal) => fetch(`${API_BASE}/tools/crew/run`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -315,8 +631,8 @@ function NexusContent() {
                 })
             }),
             {
-                fallback: { status: "success", job_id: `LOCAL_${Date.now()}` },
-                onSuccess: (data: any) => {
+                fallback: { status: "success", job_id: `LOCAL_${Date.now()}` } as Record<string, unknown>,
+                onSuccess: (data: Record<string, unknown>) => {
                     setActionLogs(prev => [`[SUCCESS] Neural Stream Established: ${worker.name} (Job: ${data.job_id || 'OK'})`, ...prev]);
                     setTimeout(() => setDeployingIds(prev => {
                         const next = new Set(prev);
@@ -356,7 +672,7 @@ function NexusContent() {
             // Unwrap data if it exists (WS message format: {type: "...", data: {...}})
             const update = lastJobUpdate.data || lastJobUpdate;
             
-            if (update && update.id) {
+            if (update?.id) {
                 setNexusJobs(prev => {
                     const index = prev.findIndex(j => j.id === update.id);
                     if (index !== -1) {
@@ -419,6 +735,52 @@ function NexusContent() {
         ].sort((a, b) => b.timestamp - a.timestamp);
         return merged;
     }, [actionLogs, systemLogs]);
+
+    /** Renders the modal body for the preview: loading spinner, empty state, or full scene grid. */
+    function renderPreviewContent() {
+        if (isLoadingPreview) {
+            return (
+                <div className="flex items-center justify-center py-32">
+                    <Loader2 className="h-12 w-12 animate-spin text-violet-400" />
+                </div>
+            );
+        }
+
+        if (previewScenes.length === 0) {
+            const isTerminal = ["COMPLETED", "FAILED"].includes(previewJobStatus);
+
+            let statusMessage: string;
+            if (!isTerminal) {
+                statusMessage = `Narrative decomposition in progress (status: ${previewJobStatus}). Scenes will appear once the Cognition stage finishes.`;
+            } else if (previewJobStatus === "FAILED") {
+                statusMessage = `This job failed with status: ${previewJobStatus}. No scene data is available.`;
+            } else {
+                statusMessage = "No scene data available for this pipeline.";
+            }
+
+            return (
+                <div className="text-center py-32 space-y-4">
+                    {isTerminal ? (
+                        <AlertCircle className="h-14 w-14 text-zinc-700 mx-auto" />
+                    ) : (
+                        <Loader2 className="h-14 w-14 animate-spin text-violet-400 mx-auto" />
+                    )}
+                    <p className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                        {statusMessage}
+                    </p>
+                    <button
+                        onClick={() => handlePreviewScenes(previewJobId || "")}
+                        className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/5 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2 mx-auto"
+                    >
+                        <RefreshCw className="h-3 w-3" /> Refresh Preview
+                    </button>
+                </div>
+            );
+        }
+
+        // Scenes are available — render the full grid
+        return null; // placeholder; actual grid is rendered below
+    }
 
     return (
         <CommandCenterLayout
@@ -579,9 +941,9 @@ function NexusContent() {
                                                 className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
                                             >
                                                 {niches.length === 0 && <option value="">Loading Targets...</option>}
-                                                {niches?.map((n) => (
-                                                    <option key={typeof n === 'string' ? n : n.niche} value={typeof n === 'string' ? n : n.niche} className="bg-[#0F0F11] text-white">
-                                                        {typeof n === 'string' ? n : n.niche}
+                                                {niches.map((n, i) => (
+                                                    <option key={n} value={n} className="bg-[#0F0F11] text-white">
+                                                        {n}
                                                     </option>
                                                 ))}
                                             </select>
@@ -711,44 +1073,55 @@ function NexusContent() {
                                             </defs>
                                             
                                             {/* Generate connections based on parallel branch coordinates */}
-                                            {activeBlueprint?.nodes?.map((node, idx) => {
-                                                if (idx === 0) return null;
+                                            {activeBlueprint?.nodes?.map((node, nodeIndex) => {
+                                                if (nodeIndex === 0) return null;
                                                 const listLength = activeBlueprint?.nodes?.length || 0;
                                                 
-                                                // Dynamic Coordinates logic
-                                                const getCoords = (i: number) => {
-                                                    let x = 15 + (i / Math.max(listLength - 1, 1)) * 70;
-                                                    let y = 50;
-                                                    if (listLength >= 4) {
-                                                        if (i === 0) { x = 15; y = 50; }
-                                                        else if (i === 1) { x = 45; y = 25; } // Branch 1: Script Cognition
-                                                        else if (i === 2) { x = 45; y = 75; } // Branch 2: Asset Discovery
-                                                        else if (i === 3) { x = 75; y = 50; } // Merge: Synthesis
-                                                        else if (i >= 4) { x = 90; y = 50; }
+                                                // Diamond Formation Coordinates logic
+                                                const getCoords = (i: number, total: number) => {
+                                                    if (total <= 3) {
+                                                        return {
+                                                            x: 15 + (i / Math.max(total - 1, 1)) * 70,
+                                                            y: 50
+                                                        };
+                                                    } else {
+                                                        if (i === 0) return { x: 15, y: 50 };
+                                                        if (i === total - 1) return { x: 85, y: 50 };
+                                                        
+                                                        const numMiddle = total - 2;
+                                                        const middleIdx = i - 1;
+                                                        const spacing = numMiddle > 1 ? 60 / (numMiddle - 1) : 0;
+                                                        const startY = numMiddle > 1 ? 20 : 50;
+                                                        
+                                                        return {
+                                                            x: 50,
+                                                            y: startY + (middleIdx * spacing)
+                                                        };
                                                     }
-                                                    return { x, y };
                                                 };
                                                 
-                                                let parentIndices = [idx - 1];
+                                                let parentIndices = [nodeIndex - 1];
+                                                // Diamond Formation wiring
                                                 if (listLength >= 4) {
-                                                    if (idx === 1) parentIndices = [0];
-                                                    if (idx === 2) parentIndices = [0];
-                                                    if (idx === 3) parentIndices = [1, 2]; // Merge node
-                                                    if (idx === 4) parentIndices = [3];
+                                                    if (nodeIndex > 0 && nodeIndex < listLength - 1) {
+                                                        parentIndices = [0];
+                                                    } else if (nodeIndex === listLength - 1) {
+                                                        parentIndices = Array.from({length: listLength - 2}, (_, i) => i + 1);
+                                                    }
                                                 }
                                                 
                                                 return parentIndices.map((parentIdx, pI) => {
-                                                    const start = getCoords(parentIdx);
-                                                    const end = getCoords(idx);
+                                                    const start = getCoords(parentIdx, listLength);
+                                                    const end = getCoords(nodeIndex, listLength);
                                                     
                                                     const isPathActive = activePipelineJob?.status === "Active" && 
-                                                                         (selectedNodeIndex === idx || selectedNodeIndex === parentIdx);
+                                                                         (selectedNodeIndex === nodeIndex || selectedNodeIndex === parentIdx);
                                                     
                                                     // Beautiful Bezier path representing parallel pipelines
                                                     const pathD = `M ${start.x} ${start.y} C ${(start.x + end.x)/2} ${start.y}, ${(start.x + end.x)/2} ${end.y}, ${end.x} ${end.y}`;
                                                     
                                                     return (
-                                                        <g key={`${parentIdx}-${idx}-${pI}`}>
+                                                        <g key={`${parentIdx}-${nodeIndex}-${pI}`}>
                                                             <path 
                                                                 d={pathD} 
                                                                 stroke="rgba(255,255,255,0.03)" 
@@ -776,24 +1149,39 @@ function NexusContent() {
 
                                     {/* Position Nodes based on branch coordinates */}
                                     <div className="absolute inset-0 z-10">
-                                        {activeBlueprint?.nodes?.map((node, idx) => {
-                                            const isProcessing = activePipelineJob?.status === "Active" && idx === selectedNodeIndex;
-                                            const isComplete = activePipelineJob?.status === "Completed" || idx < selectedNodeIndex;
+                                        {activeBlueprint?.nodes?.map((node, nodeIndex) => {
+                                            const isProcessing = activePipelineJob?.status === "Active" && nodeIndex === selectedNodeIndex;
+                                            const isComplete = activePipelineJob?.status === "Completed" || nodeIndex < selectedNodeIndex;
                                             const listLength = activeBlueprint?.nodes?.length || 0;
                                             
-                                            let x = 15 + (idx / Math.max(listLength - 1, 1)) * 70;
-                                            let y = 50;
-                                            if (listLength >= 4) {
-                                                if (idx === 0) { x = 15; y = 50; }
-                                                else if (idx === 1) { x = 45; y = 25; }
-                                                else if (idx === 2) { x = 45; y = 75; }
-                                                else if (idx === 3) { x = 75; y = 50; }
-                                                else if (idx >= 4) { x = 90; y = 50; }
-                                            }
+                                            // Diamond Formation Coordinates logic
+                                            const getCoords = (i: number, total: number) => {
+                                                if (total <= 3) {
+                                                    return {
+                                                        x: 15 + (i / Math.max(total - 1, 1)) * 70,
+                                                        y: 50
+                                                    };
+                                                } else {
+                                                    if (i === 0) return { x: 15, y: 50 };
+                                                    if (i === total - 1) return { x: 85, y: 50 };
+                                                    
+                                                    const numMiddle = total - 2;
+                                                    const middleIdx = i - 1;
+                                                    const spacing = numMiddle > 1 ? 60 / (numMiddle - 1) : 0;
+                                                    const startY = numMiddle > 1 ? 20 : 50;
+                                                    
+                                                    return {
+                                                        x: 50,
+                                                        y: startY + (middleIdx * spacing)
+                                                    };
+                                                }
+                                            };
+                                            
+                                            const { x, y } = getCoords(nodeIndex, listLength);
                                             
                                             return (
                                                 <div 
-                                                    key={idx} 
+                                                    key={nodeIndex} 
                                                     className="absolute"
                                                     style={{ 
                                                         left: `${x}%`, 
@@ -807,8 +1195,8 @@ function NexusContent() {
                                                         description={node.desc}
                                                         status={isComplete ? "complete" : isProcessing ? "processing" : "pending"}
                                                         progress={isProcessing ? activePipelineJob.progress : undefined}
-                                                        active={selectedNodeIndex === idx}
-                                                        onClick={() => setSelectedNodeIndex(idx)}
+                                                        active={selectedNodeIndex === nodeIndex}
+                                                        onClick={() => setSelectedNodeIndex(nodeIndex)}
                                                     />
                                                 </div>
                                             );
@@ -822,7 +1210,10 @@ function NexusContent() {
                             <div className="space-y-8 h-full flex flex-col">
                                 <div className="flex items-center justify-between shrink-0">
                                     <h3 className="text-2xl font-bold text-white uppercase tracking-tighter">Neural Identity Lab</h3>
-                                    <Button className="bg-white/5 border border-white/10 hover:bg-white/10 text-white gap-2">
+                                    <Button
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className="bg-white/5 border border-white/10 hover:bg-white/10 text-white gap-2"
+                                    >
                                         <PlusCircle className="h-4 w-4" /> Register New ID
                                     </Button>
                                 </div>
@@ -848,15 +1239,43 @@ function NexusContent() {
                                             </div>
                                             <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                                 <div className="flex gap-2">
-                                                    <div className="h-6 w-6 rounded bg-white/5 flex items-center justify-center"><Mic2 className="h-3 w-3 text-zinc-500" /></div>
-                                                    <div className="h-6 w-6 rounded bg-white/5 flex items-center justify-center"><Video className="h-3 w-3 text-zinc-500" /></div>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedPersonaForGenerate(persona);
+                                                            setGenerateTopic("");
+                                                            setGenerateScript("");
+                                                            setIsGenerateModalOpen(true);
+                                                        }}
+                                                        className="h-8 w-8 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 border border-white/5 hover:border-cyan-500/30 flex items-center justify-center transition-all group/btn"
+                                                        title="Generate video with this persona"
+                                                    >
+                                                        <Video className="h-3.5 w-3.5 text-zinc-500 group-hover/btn:text-cyan-400 transition-colors" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeletePersona(persona.id, persona.name)}
+                                                        className="h-8 w-8 rounded-lg bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 border border-white/5 hover:border-rose-500/30 flex items-center justify-center transition-all group/btn"
+                                                        title="Delete persona"
+                                                    >
+                                                        <X className="h-3.5 w-3.5 text-zinc-500 group-hover/btn:text-rose-400 transition-colors" />
+                                                    </button>
                                                 </div>
-                                                <Button variant="outline" className="h-8 text-[9px] uppercase font-bold border-white/10 text-white hover:bg-cyan-500 hover:text-black">Modify</Button>
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedPersonaForGenerate(persona);
+                                                        setGenerateTopic("");
+                                                        setGenerateScript("");
+                                                        setIsGenerateModalOpen(true);
+                                                    }}
+                                                    variant="outline"
+                                                    className="h-8 text-[9px] uppercase font-bold border-white/10 text-white hover:bg-cyan-500 hover:text-black"
+                                                >
+                                                    Generate Video
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
                                     {personas.length === 0 && (
-                                        <div className="col-span-4 h-full flex flex-col items-center justify-center opacity-10 gap-6 py-20">
+                                        <div className="col-span-4 h-full flex flex-col items-center justify-center opacity-40 gap-6 py-20">
                                             <Fingerprint className="h-24 w-24" />
                                             <span className="text-xl font-black uppercase tracking-[1em]">No Neural IDs Found</span>
                                         </div>
@@ -952,9 +1371,10 @@ function NexusContent() {
                                             );
                                         })}
                                         {filteredCapabilities.length === 0 && (
-                                            <div className="py-20 text-center space-y-4 opacity-20">
-                                                <Users className="h-12 w-12 mx-auto" />
-                                                <p className="text-xs font-bold uppercase tracking-widest">No Agents Match Filters</p>
+                                            <div className="py-20 text-center space-y-4 opacity-50">
+                                                <Users className="h-12 w-12 mx-auto text-zinc-600" />
+                                                <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">No Agents Match Filters</p>
+                                                <span className="text-[8px] text-zinc-700 font-mono block uppercase tracking-widest">Try adjusting your search or category filter</span>
                                             </div>
                                         )}
                                     </div>
@@ -969,7 +1389,10 @@ function NexusContent() {
                                                 The mesh is currently operating at {pulse?.load_avg ? Math.round(pulse.load_avg * 100) : 12}% global capacity.
                                             </p>
                                         </div>
-                                        <Button className="h-14 px-10 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(8,145,178,0.3)] transition-all hover:scale-105">Initialize New Crew</Button>
+                                        <Button 
+                                            onClick={() => toast.info("Crew orchestration is coming in v1.2 — you'll be able to assemble multi-agent teams from the Workforce tab.")}
+                                            className="h-14 px-10 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(8,145,178,0.3)] transition-all hover:scale-105"
+                                        >Initialize New Crew</Button>
                                     </div>
                                 </div>
                             </div>
@@ -1021,11 +1444,11 @@ function NexusContent() {
                                                         body: JSON.stringify({ code: "// Nexus Sandbox Logic" })
                                                     }),
                                                     {
-                                                        fallback: null,
-                                                        onSuccess: (data: any) => {
+                                                        fallback: {} as { logs?: string[] },
+                                                        onSuccess: (data: { logs?: string[] }) => {
                                                             toast.success("Execution Complete");
                                                             if (data.logs) {
-                                                                setActionLogs(prev => [...data.logs, ...prev]);
+                                                                setActionLogs(prev => [...(data.logs || []), ...prev]);
                                                             }
                                                         }
                                                     }
@@ -1169,7 +1592,11 @@ scout.on("VIRAL_DETECT", async (data) => {
                                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Master Override</span>
                                         <h4 className="text-lg font-bold text-white uppercase tracking-tight">Emergency System Halt</h4>
                                     </div>
-                                    <Button variant="outline" className="h-14 px-10 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Execute Halt_0</Button>
+                                    <Button 
+                                        onClick={() => toast.info("Emergency Halt is available in the full system console — contact an admin for critical shutdown procedures.")}
+                                        variant="outline" 
+                                        className="h-14 px-10 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white font-bold uppercase tracking-widest text-[10px]"
+                                    >Execute Halt_0</Button>
                                 </div>
                             </div>
                         )}
@@ -1241,217 +1668,22 @@ scout.on("VIRAL_DETECT", async (data) => {
                                 </button>
                             </div>
                             
-                            {isLoadingPreview ? (
-                                <div className="flex items-center justify-center py-32">
-                                    <Loader2 className="h-12 w-12 animate-spin text-violet-400" />
-                                </div>
-                            ) : previewScenes.length === 0 ? (
-                                <div className="text-center py-32 space-y-4">
-                                    {["COMPLETED", "FAILED"].includes(previewJobStatus) ? (
-                                        <AlertCircle className="h-14 w-14 text-zinc-700 mx-auto" />
-                                    ) : (
-                                        <Loader2 className="h-14 w-14 animate-spin text-violet-400 mx-auto" />
-                                    )}
-                                    <p className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                                        {!["COMPLETED", "FAILED"].includes(previewJobStatus)
-                                            ? `Narrative decomposition in progress (status: ${previewJobStatus}). Scenes will appear once the Cognition stage finishes.`
-                                            : previewJobStatus === "FAILED"
-                                            ? `This job failed with status: ${previewJobStatus}. No scene data is available.`
-                                            : "No scene data available for this pipeline."}
-                                    </p>
-                                    <button
-                                        onClick={() => handlePreviewScenes(previewJobId || "")}
-                                        className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/5 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2 mx-auto"
-                                    >
-                                        <RefreshCw className="h-3 w-3" /> Refresh Preview
-                                    </button>
-                                </div>
-                            ) : (
+                            {renderPreviewContent() || (
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                     
                                     {/* Left Column: Scene List & Timelines */}
                                     <div className="lg:col-span-2 space-y-6 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
-                                        {previewScenes.map((scene, index) => {
-                                            const activeAsset = swappedAssets[index] || (scene.assets && scene.assets[0]) || null;
-                                            const isDrawerOpen = activeSwapDrawerIndex === index;
-                                            
-                                            // Mock timing tracks aligned to the scene's duration
-                                            const duration = scene.duration || 5;
-                                            const simulatedWords = [
-                                                { word: "AI", start: 0, end: 0.8 },
-                                                { word: "Engine", start: 0.8, end: 1.6 },
-                                                { word: "Orchestrated", start: 1.6, end: 2.6 },
-                                                { word: "this", start: 2.6, end: 3.2 },
-                                                { word: "scene", start: 3.2, end: 4.0 },
-                                                { word: "perfectly.", start: 4.0, end: duration }
-                                            ];
-
-                                            return (
-                                                <div key={index} className="p-6 bg-[#0F0F12]/80 border border-white/5 rounded-[28px] hover:border-violet-500/20 transition-all space-y-6 relative overflow-hidden group">
-                                                    
-                                                    {/* Top Bar */}
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="h-9 w-9 bg-violet-500/10 border border-violet-500/20 rounded-xl flex items-center justify-center text-violet-400 font-bold text-sm">
-                                                                {index + 1}
-                                                            </span>
-                                                            <span className={cn(
-                                                                "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
-                                                                scene.type === 'hook' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                                                                scene.type === 'problem' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
-                                                                scene.type === 'solution' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                                                scene.type === 'outro' ? "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" :
-                                                                "bg-zinc-500/10 text-zinc-500 border-white/5"
-                                                            )}>
-                                                                {scene.type || 'Scene'}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-xs font-black text-zinc-500 font-mono">{duration}s</span>
-                                                    </div>
-                                                    
-                                                    {/* Text content */}
-                                                    <div className="space-y-4">
-                                                        <div>
-                                                            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-1">Visual Direction / Prompt</span>
-                                                            <p className="text-xs text-zinc-300 font-semibold leading-relaxed">
-                                                                {scene.description || scene.visual_prompt || "No instructions provided."}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Timing track visualizer */}
-                                                        <div className="p-4 bg-black/40 border border-white/5 rounded-2xl space-y-4">
-                                                            
-                                                            {/* Words Timeline */}
-                                                            <div className="space-y-2">
-                                                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block">Subtitle Word Timeline</span>
-                                                                <div className="flex flex-wrap gap-2 pt-1">
-                                                                    {simulatedWords.map((item, idx) => (
-                                                                        <div 
-                                                                            key={idx}
-                                                                            className="px-2 py-1 bg-white/5 rounded-lg border border-white/5 flex flex-col items-center justify-center shrink-0 min-w-[50px] animate-pulse"
-                                                                            style={{ animationDelay: `${idx * 0.3}s` }}
-                                                                        >
-                                                                            <span className="text-[10px] text-white font-bold">{item.word}</span>
-                                                                            <span className="text-[6px] text-zinc-500 font-mono">{item.start}s - {item.end}s</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Audio waveforms timeline */}
-                                                            <div className="space-y-3 pt-2 border-t border-white/5">
-                                                                <div className="flex items-center justify-between text-[7px] text-zinc-600 uppercase font-black tracking-widest">
-                                                                    <span>0.0s</span>
-                                                                    <span>Audio Composition Track</span>
-                                                                    <span>{duration}s</span>
-                                                                </div>
-                                                                
-                                                                {/* Voiceover Track */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-[7px] text-zinc-500">
-                                                                        <span className="flex items-center gap-1"><Mic2 className="h-2 w-2" /> AI VOICEOVER</span>
-                                                                        <span className="font-mono">Volume: 100%</span>
-                                                                    </div>
-                                                                    <div className="h-6 w-full bg-violet-950/20 border border-violet-500/10 rounded-lg relative overflow-hidden flex items-center justify-around px-2">
-                                                                        {[4, 8, 2, 7, 5, 9, 3, 6, 8, 4, 9, 2, 7, 5, 8, 3, 6, 4, 7, 5].map((h, i) => (
-                                                                            <div key={i} className="w-0.5 bg-violet-400 rounded-full" style={{ height: `${h * 10}%` }} />
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Background music track */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-[7px] text-zinc-500">
-                                                                        <span className="flex items-center gap-1"><Volume2 className="h-2 w-2" /> BACKGROUND MUSIC</span>
-                                                                        <span className="font-mono">Volume: 12%</span>
-                                                                    </div>
-                                                                    <div className="h-4 w-full bg-cyan-950/20 border border-cyan-500/10 rounded-lg relative overflow-hidden flex items-center justify-around px-2">
-                                                                        {[2, 3, 2, 4, 3, 2, 3, 4, 3, 2, 3, 4, 3, 2, 3, 4, 3, 2, 3, 2].map((h, i) => (
-                                                                            <div key={i} className="w-0.5 bg-cyan-500/50 rounded-full" style={{ height: `${h * 10}%` }} />
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Assets section with optimize/swap triggers */}
-                                                        <div className="space-y-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Active Stock Video Segment</span>
-                                                                <button
-                                                                    onClick={() => setActiveSwapDrawerIndex(isDrawerOpen ? null : index)}
-                                                                    className="px-3 py-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[8px] font-bold uppercase transition-all flex items-center gap-1.5"
-                                                                >
-                                                                    <Scissors className="h-2.5 w-2.5" /> Swap Asset
-                                                                </button>
-                                                            </div>
-                                                            
-                                                            <div className="flex gap-4 items-center">
-                                                                <div className="shrink-0 h-20 w-32 bg-zinc-900 rounded-xl border border-white/5 overflow-hidden relative shadow-inner">
-                                                                    {activeAsset && activeAsset.thumbnail ? (
-                                                                        <img src={activeAsset.thumbnail} alt="" className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                                                                            <Video className="h-6 w-6" />
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                                                        <Play className="h-5 w-5 text-white filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-[11px] font-bold text-white uppercase">{activeAsset?.title || `Stock_Footage_${index + 1}.mp4`}</p>
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        {(activeAsset?.tags || ["workspace", "technology", "abstract"]).slice(0, 3).map((tag: string, tIdx: number) => (
-                                                                            <span key={tIdx} className="text-[7px] text-zinc-500 bg-white/5 px-1.5 py-0.5 rounded-sm uppercase font-mono">{tag}</span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Asset replacement drawer */}
-                                                            <AnimatePresence>
-                                                                {isDrawerOpen && (
-                                                                    <motion.div 
-                                                                        initial={{ opacity: 0, height: 0 }}
-                                                                        animate={{ opacity: 1, height: "auto" }}
-                                                                        exit={{ opacity: 0, height: 0 }}
-                                                                        className="overflow-hidden border-t border-white/5 pt-4 space-y-3"
-                                                                    >
-                                                                        <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest block">Select Alternative Curation Candidate</span>
-                                                                        <div className="grid grid-cols-3 gap-3">
-                                                                            {[
-                                                                                { title: "Digital Flow", thumbnail: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=150&auto=format&fit=crop&q=60", tags: ["cyber", "abstract"] },
-                                                                                { title: "Team Work", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=60", tags: ["corporate", "collaboration"] },
-                                                                                { title: "Minimal Server", thumbnail: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=150&auto=format&fit=crop&q=60", tags: ["server", "database"] },
-                                                                            ].map((alt, altIdx) => (
-                                                                                <div 
-                                                                                    key={altIdx}
-                                                                                    onClick={() => {
-                                                                                        setSwappedAssets(prev => ({
-                                                                                            ...prev,
-                                                                                            [index]: alt
-                                                                                        }));
-                                                                                        setActiveSwapDrawerIndex(null);
-                                                                                        toast.success("Asset replaced visually", { description: "Timeline update will be committed on compile." });
-                                                                                    }}
-                                                                                    className="p-2 rounded-xl bg-white/2 border border-white/5 hover:border-cyan-500/40 cursor-pointer transition-all flex flex-col gap-2 group/alt"
-                                                                                >
-                                                                                    <div className="aspect-video w-full rounded-lg bg-zinc-950 overflow-hidden relative">
-                                                                                        <img src={alt.thumbnail} alt="" className="w-full h-full object-cover group-hover/alt:scale-105 transition-transform" />
-                                                                                    </div>
-                                                                                    <span className="text-[8px] font-bold text-white uppercase truncate">{alt.title}</span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-                                                            </AnimatePresence>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                        {previewScenes.map((scene, index) => (
+                                            <SceneItem 
+                                                key={index}
+                                                scene={scene}
+                                                index={index}
+                                                activeAsset={swappedAssets[index] || (scene.assets && scene.assets[0]) || null}
+                                                isDrawerOpen={activeSwapDrawerIndex === index}
+                                                setActiveSwapDrawerIndex={setActiveSwapDrawerIndex}
+                                                setSwappedAssets={setSwappedAssets}
+                                            />
+                                        ))}
                                     </div>
                                     
                                     {/* Right Column: Style Archetype & Modulator Canvas */}
@@ -1471,21 +1703,21 @@ scout.on("VIRAL_DETECT", async (data) => {
                                                     { id: "MONOCHROME_DARK", name: "Mono Dark", style: "from-neutral-800 to-zinc-950" },
                                                     { id: "EMERALD_MATRIX", name: "Matrix Green", style: "from-emerald-600 via-teal-800 to-emerald-950" }
                                                 ].map((preset) => (
-                                                    <div 
+                                                    <button 
+                                                        type="button"
                                                         key={preset.id}
                                                         onClick={() => setSelectedStylePreset(preset.id as any)}
                                                         className={cn(
-                                                            "p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-2",
+                                                            "p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-2 text-left w-full",
                                                             selectedStylePreset === preset.id ? "bg-white/5 border-cyan-500" : "bg-transparent border-white/5 hover:border-white/10"
                                                         )}
                                                     >
-                                                        <div className={cn("h-4 w-full rounded-md bg-gradient-to-r", preset.style)} />
+                                                        <div className={cn("h-4 w-full rounded-md bg-linear-to-r", preset.style)} />
                                                         <span className="text-[8px] font-bold text-white uppercase">{preset.name}</span>
-                                                    </div>
+                                                    </button>
                                                 ))}
                                             </div>
                                         </div>
-                                    </div>
 
                                         {/* Modulator Sliders */}
                                         <div className="space-y-4 pt-2">
@@ -1611,6 +1843,165 @@ scout.on("VIRAL_DETECT", async (data) => {
                                     className="bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest text-[10px] border border-white/10 h-12 px-8 rounded-xl"
                                 >
                                     Close Preview
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Create Persona Modal */}
+            <AnimatePresence>
+                {isCreateModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-6 sm:p-10"
+                        onClick={() => setIsCreateModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            className="w-full max-w-lg bg-[#070709] border border-white/10 rounded-[36px] p-8 shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-14 w-14 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl flex items-center justify-center">
+                                        <Fingerprint className="h-7 w-7 text-cyan-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-white uppercase tracking-tighter">Register New Neural ID</h3>
+                                        <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Persona Identity Creation</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsCreateModalOpen(false)}
+                                    className="h-11 w-11 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl flex items-center justify-center transition-colors"
+                                >
+                                    <X className="h-5 w-5 text-zinc-400" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block">Identity Name</label>
+                                    <input
+                                        type="text"
+                                        value={newPersonaName}
+                                        onChange={(e) => setNewPersonaName(e.target.value)}
+                                        placeholder="e.g. Sarah AI Host"
+                                        className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-cyan-500/30 transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block">Reference Image URL</label>
+                                    <input
+                                        type="url"
+                                        value={newPersonaImageUrl}
+                                        onChange={(e) => setNewPersonaImageUrl(e.target.value)}
+                                        placeholder="https://example.com/portrait.jpg"
+                                        className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-cyan-500/30 transition-all"
+                                    />
+                                    {newPersonaImageUrl && (
+                                        <div className="mt-3 aspect-video rounded-xl overflow-hidden border border-white/5 bg-zinc-900">
+                                            <img
+                                                src={newPersonaImageUrl}
+                                                alt="Preview"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <Button
+                                    onClick={handleCreatePersona}
+                                    disabled={creatingPersona || !newPersonaName.trim()}
+                                    className="w-full h-14 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(8,145,178,0.3)] transition-all"
+                                >
+                                    {creatingPersona ? <Loader2 className="h-5 w-5 animate-spin" /> : "Register Identity"}
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Generate Video Modal */}
+            <AnimatePresence>
+                {isGenerateModalOpen && selectedPersonaForGenerate && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-6 sm:p-10"
+                        onClick={() => setIsGenerateModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            className="w-full max-w-lg bg-[#070709] border border-white/10 rounded-[36px] p-8 shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-14 w-14 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center">
+                                        <Video className="h-7 w-7 text-violet-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-white uppercase tracking-tighter">Generate Persona Video</h3>
+                                        <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{selectedPersonaForGenerate.name}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsGenerateModalOpen(false)}
+                                    className="h-11 w-11 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl flex items-center justify-center transition-colors"
+                                >
+                                    <X className="h-5 w-5 text-zinc-400" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                {selectedPersonaForGenerate.reference_image_uri && (
+                                    <div className="aspect-video rounded-xl overflow-hidden border border-white/5 bg-zinc-900">
+                                        <img
+                                            src={selectedPersonaForGenerate.reference_image_uri}
+                                            alt={selectedPersonaForGenerate.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block">Topic</label>
+                                    <input
+                                        type="text"
+                                        value={generateTopic}
+                                        onChange={(e) => setGenerateTopic(e.target.value)}
+                                        placeholder="e.g. AI in Healthcare"
+                                        className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-violet-500/30 transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block">Script (optional)</label>
+                                    <textarea
+                                        value={generateScript}
+                                        onChange={(e) => setGenerateScript(e.target.value)}
+                                        placeholder="Leave blank for auto-generated script based on topic..."
+                                        rows={4}
+                                        className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-violet-500/30 transition-all resize-none"
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleGenerateVideo}
+                                    disabled={generatingVideo || !generateTopic.trim()}
+                                    className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all"
+                                >
+                                    {generatingVideo ? <Loader2 className="h-5 w-5 animate-spin" /> : "Generate Video"}
                                 </Button>
                             </div>
                         </motion.div>

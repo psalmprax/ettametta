@@ -18,7 +18,7 @@ const UIThemeContext = createContext<UIThemeContextType>({
 
 const THEME_KEY = "ettametta_ui_theme";
 
-export function UIThemeProvider({ children }: { children: ReactNode }) {
+export function UIThemeProvider({ children }: { readonly children: ReactNode }) {
     const [theme, setThemeState] = useState<UITheme>("legacy");
     const [mounted, setMounted] = useState(false);
 

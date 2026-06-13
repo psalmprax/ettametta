@@ -129,7 +129,7 @@ if content != original:
     filterStyle_pos = verify.find('const filterStyle = useMemo')
     
     if colorTemp_pos >= 0 and contrast_pos >= 0 and filterStyle_pos >= 0:
-        print(f"\nOrder check (should be: colorTemp < contrast < filterStyle):")
+        print("\nOrder check (should be: colorTemp < contrast < filterStyle):")
         print(f"  colorTemp pos: {colorTemp_pos}")
         print(f"  contrast pos: {contrast_pos}")
         print(f"  filterStyle pos: {filterStyle_pos}")

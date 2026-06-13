@@ -31,7 +31,7 @@ interface GatewayHealth {
 
 const getErrorMessage = (err: unknown) => err instanceof Error ? err.message : "Unknown error";
 
-export function ClusterManager({ onClose }: { onClose: () => void }) {
+export function ClusterManager({ onClose }: { readonly onClose: () => void }) {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);

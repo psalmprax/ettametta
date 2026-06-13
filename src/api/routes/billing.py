@@ -4,11 +4,12 @@ Billing API Routes for ettametta
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from src.api.utils.user_models import UserDB
+from src.api.utils.user_models import UserDB, SubscriptionTier
 from src.api.utils.auth import get_current_user
 from src.api.utils.database import get_db
 from src.api.utils.subscription import get_subscription_tier_value
 from sqlalchemy import select
+from datetime import datetime, timezone
 from src.api.config import settings
 from src.api.utils.api_responses import success_response, handle_exception
 
@@ -23,6 +24,28 @@ class SubscriptionResponse(BaseModel):
     tier: str
     status: str
     current_period_end: str | None = None
+
+
+@router.get("/tiers")
+async def list_tiers():
+    """Return all available subscription tiers with prices and features"""
+    from src.services.payment.stripe_service import SUBSCRIPTION_TIERS
+
+    tiers = [
+        {
+            "id": tier_id,
+            "name": info["name"],
+            "price_cents": info.get("price_cents", 0),
+            "price_formatted": f"${info.get('price_cents', 0) / 100:.2f}",
+            "features": info["features"],
+            "limit_videos": info["limit_videos"],
+            "available": info["price_id"] is not None,
+            "trial_available": tier_id == "sovereign",
+            "trial_days": 14 if tier_id == "sovereign" else 0,
+        }
+        for tier_id, info in SUBSCRIPTION_TIERS.items()
+    ]
+    return success_response(data={"tiers": tiers, "count": len(tiers)})
 
 
 @router.post("/create-checkout-session")
@@ -45,6 +68,17 @@ async def create_checkout_session(
     if not tier_info.get("price_id"):
         raise HTTPException(status_code=400, detail="Tier not available for purchase")
 
+    # Trial eligibility: only SOVEREIGN tier gets a 14-day trial, and only once
+    trial_period_days = 0
+    if request.tier == "sovereign":
+        # Check if user has already used their trial
+        if current_user.trial_ends_at is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="You have already used your free trial. Please subscribe to continue.",
+            )
+        trial_period_days = 14
+
     # Get or create Stripe customer
     try:
         # Check if user has stripe_customer_id
@@ -64,9 +98,11 @@ async def create_checkout_session(
             current_user.stripe_customer_id = stripe_customer_id
             await db.commit()
 
-        # Create checkout session
+        # Create checkout session (with trial if applicable)
         result = await payment_service.create_subscription(
-            stripe_customer_id=stripe_customer_id, tier=request.tier
+            stripe_customer_id=stripe_customer_id,
+            tier=request.tier,
+            trial_period_days=trial_period_days,
         )
         return success_response(data=result)
     except ValueError as e:
@@ -95,6 +131,24 @@ async def get_subscription(
         tier = get_subscription_tier_value(user)
         tier_info = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS["free"])
 
+        # Build response with trial info
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        trial_info = None
+        if user.trial_ends_at is not None:
+            if user.trial_ends_at > now:
+                days_remaining = (user.trial_ends_at - now).days
+                trial_info = {
+                    "active": True,
+                    "ends_at": user.trial_ends_at.isoformat(),
+                    "days_remaining": days_remaining,
+                }
+            else:
+                trial_info = {
+                    "active": False,
+                    "ended_at": user.trial_ends_at.isoformat(),
+                    "days_remaining": 0,
+                }
+
         # If user has a stripe subscription, get live status
         if user.stripe_subscription_id:
             try:
@@ -109,6 +163,7 @@ async def get_subscription(
                         "current_period_end": sub_info.get("current_period_end"),
                         "features": tier_info.get("features", []),
                         "stripe_subscription_id": user.stripe_subscription_id,
+                        "trial": trial_info,
                     }
                 )
             except Exception:
@@ -120,6 +175,7 @@ async def get_subscription(
                 "tier": tier,
                 "status": "active",
                 "features": tier_info.get("features", []),
+                "trial": trial_info,
             }
         )
     except HTTPException:
@@ -167,6 +223,114 @@ async def cancel_subscription(
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         return handle_exception(e)
+
+
+@router.get("/webhook/stats")
+async def get_webhook_stats(
+    current_user: UserDB = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Returns Stripe webhook processing statistics for monitoring duplicate events.
+
+    Queries CreditTransactionDB for purchase records — each purchase represents a
+    successfully processed ``checkout.session.completed`` webhook with
+    ``type=credit_purchase``.
+    """
+    from src.api.utils.credit_models import CreditTransactionDB
+    from src.api.utils.models import WebhookEventDB
+    from sqlalchemy import func, desc, cast, String
+
+    # --- Credit purchase stats (from CreditTransactionDB) ---
+    total_stmt = select(func.count(CreditTransactionDB.id)).where(
+        CreditTransactionDB.transaction_type == "purchase"
+    )
+    total_result = await db.execute(total_stmt)
+    total_purchases = total_result.scalar_one()
+
+    credits_stmt = select(func.coalesce(func.sum(CreditTransactionDB.amount), 0)).where(
+        CreditTransactionDB.transaction_type == "purchase"
+    )
+    credits_result = await db.execute(credits_stmt)
+    total_credits = credits_result.scalar_one()
+
+    recent_stmt = (
+        select(CreditTransactionDB)
+        .where(CreditTransactionDB.transaction_type == "purchase")
+        .order_by(desc(CreditTransactionDB.created_at))
+        .limit(10)
+    )
+    recent_result = await db.execute(recent_stmt)
+    recent = recent_result.scalars().all()
+
+    # --- Webhook processed vs skipped vs renewal stats (from WebhookEventDB) ---
+    # Use func.json_extract for cross-DB compatibility (PostgreSQL + SQLite)
+    result_field = func.json_extract(WebhookEventDB.payload_json, "$.result")
+
+    processed_stmt = select(func.count(WebhookEventDB.id)).where(
+        WebhookEventDB.platform == "stripe",
+        cast(result_field, String) == "processed",
+    )
+    processed_result = await db.execute(processed_stmt)
+    total_processed = processed_result.scalar_one()
+
+    skipped_stmt = select(func.count(WebhookEventDB.id)).where(
+        WebhookEventDB.platform == "stripe",
+        cast(result_field, String) == "skipped",
+    )
+    skipped_result = await db.execute(skipped_stmt)
+    total_skipped = skipped_result.scalar_one()
+
+    # Count subscription renewals from invoice.payment_succeeded events
+    renewal_stmt = select(func.count(WebhookEventDB.id)).where(
+        WebhookEventDB.platform == "stripe",
+        cast(result_field, String) == "renewal",
+    )
+    renewal_result = await db.execute(renewal_stmt)
+    total_renewals = renewal_result.scalar_one()
+
+    # --- Recent 10 webhook events (any result) ---
+    recent_events_stmt = (
+        select(WebhookEventDB)
+        .where(WebhookEventDB.platform == "stripe")
+        .order_by(desc(WebhookEventDB.created_at))
+        .limit(10)
+    )
+    recent_events_result = await db.execute(recent_events_stmt)
+    recent_events = recent_events_result.scalars().all()
+
+    return success_response(
+        data={
+            "total_purchases": total_purchases,
+            "total_credits_granted": total_credits,
+            "total_processed": total_processed,
+            "total_skipped": total_skipped,
+            "total_renewals": total_renewals,
+            "recent": [
+                {
+                    "id": t.id,
+                    "user_id": t.user_id[:8] + "...",
+                    "amount": t.amount,
+                    "balance_after": t.balance_after,
+                    "reference_id": t.reference_id,
+                    "description": t.description,
+                    "created_at": t.created_at.isoformat() if t.created_at else None,
+                }
+                for t in recent
+            ],
+            "recent_events": [
+                {
+                    "id": e.id,
+                    "event_type": e.event_type,
+                    "external_id": e.external_id,
+                    "result": e.payload_json.get("result") if e.payload_json else None,
+                    "subtype": e.payload_json.get("subtype") if e.payload_json else None,
+                    "created_at": e.created_at.isoformat() if e.created_at else None,
+                }
+                for e in recent_events
+            ],
+        }
+    )
 
 
 @router.post("/webhook")

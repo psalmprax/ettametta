@@ -249,24 +249,45 @@ async def auth_tiktok_callback(code: str, state: str):
                     detail=f"TikTok Auth Failed: {token_data.get('error_description', 'Unknown error')}",
                 )
 
+            # Fetch the TikTok user's display name via /v2/user/info/ to store as username
+            # (reuse the existing client instead of creating a nested one)
+            try:
+                user_headers = {
+                    "Authorization": f"Bearer {token_data['access_token']}"
+                }
+                user_resp = await client.get(
+                    "https://open.tiktokapis.com/v2/user/info/?fields=display_name,open_id",
+                    headers=user_headers,
+                )
+                if user_resp.status_code == 200:
+                    user_data = user_resp.json()
+                    user_info = user_data.get("data", {}).get("user", {})
+                    token_data["username"] = user_info.get("display_name", token_data.get("open_id", "tiktok_user"))
+                else:
+                    token_data["username"] = token_data.get("open_id", "tiktok_user")
+            except Exception:
+                token_data["username"] = token_data.get("open_id", "tiktok_user")
+
             await token_manager.store_token(
                 "tiktok",
                 user_id,
                 {
                     "access_token": token_data["access_token"],
                     "refresh_token": token_data.get("refresh_token"),
+                    "username": token_data.get("username"),
                     "open_id": token_data.get("open_id"),
                     "expires_in": token_data.get("expires_in", 3600),
                     "scope": token_data.get("scope"),
                 },
             )
 
-            return success_response(
-                data={
-                    "status": "success",
-                    "message": "TikTok authenticated successfully",
-                    "user_id": user_id,
-                }
+            # Redirect back to the frontend dashboard
+            dashboard_url = (
+                settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/")
+                or "http://localhost:7202"
+            )
+            return RedirectResponse(
+                url=f"{dashboard_url}/publishing?success=true&platform=tiktok"
             )
 
     except HTTPException:
@@ -295,7 +316,12 @@ async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
     state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
 
     # Instagram scope for video upload
-    scope = "instagram_basic,instagram_content_publish,pages_read_engagement,pages_manage_posts"
+    # Instagram Graph API requires Facebook Login for Business/Creator account access.
+    # The Instagram Basic Display API (api.instagram.com/oauth/authorize) does NOT
+    # support pages_* or instagram_content_publish scopes — only ig_basic and ig_content_publish.
+    # To publish via Instagram Graph API, users must have an Instagram Business Account
+    # connected to a Facebook Page, and we use Facebook Login to get the required tokens.
+    scope = "instagram_basic,pages_read_engagement,pages_manage_posts,instagram_content_publish"
 
     params = {
         "client_id": app_id,
@@ -306,7 +332,8 @@ async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
     }
 
     query_string = urllib.parse.urlencode(params)
-    auth_url = f"https://api.instagram.com/oauth/authorize?{query_string}"
+    # Use Facebook Login dialog (supports Instagram + Pages scopes) 
+    auth_url = f"https://www.facebook.com/v20.0/dialog/oauth?{query_string}"
     return success_response(data={"url": auth_url})
 
 
@@ -325,12 +352,13 @@ async def auth_instagram_callback(code: str, state: str):
     app_secret = await get_secret_async("meta_app_secret")
     redirect_uri = settings.META_REDIRECT_URI
 
-    url = "https://api.instagram.com/oauth/access_token"
+    # Exchange Facebook Login code for a long-lived User Access Token
+    # (Not the Instagram Basic Display token endpoint)
+    url = "https://graph.facebook.com/v20.0/oauth/access_token"
     data = {
         "client_id": app_id,
         "client_secret": app_secret,
         "code": code,
-        "grant_type": "authorization_code",
         "redirect_uri": redirect_uri,
     }
 
@@ -340,27 +368,50 @@ async def auth_instagram_callback(code: str, state: str):
             token_data = response.json()
 
             if response.status_code != 200 or "access_token" not in token_data:
+                error_detail = token_data.get("error", {}).get(
+                    "message", token_data.get("error_message", "Unknown error")
+                )
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Instagram Auth Failed: {token_data.get('error_message', 'Unknown error')}",
+                    detail=f"Instagram/Facebook Auth Failed: {error_detail}",
                 )
+
+            # Since we're using Facebook Login, fetch the user's name from Facebook Graph API
+            # (graph.instagram.com/me only works with Instagram Basic Display tokens, not FB tokens)
+            try:
+                me_resp = await client.get(
+                    "https://graph.facebook.com/v20.0/me",
+                    params={
+                        "fields": "name,id",
+                        "access_token": token_data["access_token"],
+                    },
+                )
+                if me_resp.status_code == 200:
+                    me_data = me_resp.json()
+                    token_data["username"] = me_data.get("name", f"ig_user_{me_data.get('id', 'unknown')}")
+                else:
+                    token_data["username"] = "instagram_user"
+            except Exception:
+                token_data["username"] = "instagram_user"
 
             await token_manager.store_token(
                 "instagram",
                 user_id,
                 {
                     "access_token": token_data["access_token"],
-                    "user_id": token_data.get("user_id"),
+                    "username": token_data.get("username"),
+                    "instagram_user_id": token_data.get("user_id"),
                     "expires_in": token_data.get("expires_in", 3600),
                 },
             )
 
-            return success_response(
-                data={
-                    "status": "success",
-                    "message": "Instagram authenticated successfully",
-                    "user_id": user_id,
-                }
+            # Redirect back to the frontend dashboard
+            dashboard_url = (
+                settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/")
+                or "http://localhost:7202"
+            )
+            return RedirectResponse(
+                url=f"{dashboard_url}/publishing?success=true&platform=instagram"
             )
 
     except HTTPException:
@@ -439,22 +490,39 @@ async def auth_x_callback(code: str, state: str):
                     detail=f"X Auth Failed: {token_data.get('error_description', 'Unknown error')}",
                 )
 
+            # Fetch the X username via /2/users/me to store as account name
+            try:
+                user_headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+                me_resp = await client.get(
+                    "https://api.twitter.com/2/users/me",
+                    headers=user_headers,
+                )
+                if me_resp.status_code == 200:
+                    me_data = me_resp.json()
+                    token_data["username"] = me_data.get("data", {}).get("username", "x_user")
+                else:
+                    token_data["username"] = "x_user"
+            except Exception:
+                token_data["username"] = "x_user"
+
             await token_manager.store_token(
                 "x",
                 user_id,
                 {
                     "access_token": token_data["access_token"],
                     "refresh_token": token_data.get("refresh_token"),
+                    "username": token_data.get("username"),
                     "expires_in": token_data.get("expires_in", 3600),
                 },
             )
 
-            return success_response(
-                data={
-                    "status": "success",
-                    "message": "X authenticated successfully",
-                    "user_id": user_id,
-                }
+            # Redirect back to the frontend dashboard
+            dashboard_url = (
+                settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/")
+                or "http://localhost:7202"
+            )
+            return RedirectResponse(
+                url=f"{dashboard_url}/publishing?success=true&platform=x"
             )
 
     except HTTPException:
@@ -508,8 +576,8 @@ async def auth_linkedin_callback(code: str, state: str):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
-    client_id = get_secret("linkedin_client_id")
-    client_secret = get_secret("linkedin_client_secret")
+    client_id = await get_secret_async("linkedin_client_id")
+    client_secret = await get_secret_async("linkedin_client_secret")
     redirect_uri = settings.LINKEDIN_REDIRECT_URI
 
     url = "https://www.linkedin.com/oauth/v2/accessToken"
@@ -533,21 +601,48 @@ async def auth_linkedin_callback(code: str, state: str):
                     detail=f"LinkedIn Auth Failed: {token_data.get('error_description', 'Unknown error')}",
                 )
 
+            # Fetch the LinkedIn user's profile info.
+            # LinkedIn's /v2/userinfo (OpenID Connect) returns `sub` — the LinkedIn member ID
+            # needed for the `urn:li:person:{sub}` URN in upload API calls.
+            # Also fetch display name for the accounts list.
+            linkedin_sub = None
+            try:
+                user_headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+                me_resp = await client.get(
+                    "https://api.linkedin.com/v2/userinfo",
+                    headers=user_headers,
+                )
+                if me_resp.status_code == 200:
+                    me_data = me_resp.json()
+                    linkedin_sub = me_data.get("sub")
+                    given = me_data.get("given_name", "")
+                    family = me_data.get("family_name", "")
+                    display_name = f"{given} {family}".strip()
+                    # Store the linkedin sub (member ID) as username — this is what
+                    # the upload endpoints need for urn:li:person:{sub}
+                    token_data["username"] = linkedin_sub or display_name or "linkedin_user"
+                else:
+                    token_data["username"] = "linkedin_user"
+            except Exception:
+                token_data["username"] = "linkedin_user"
+
             await token_manager.store_token(
                 "linkedin",
                 user_id,
                 {
                     "access_token": token_data["access_token"],
+                    "username": token_data.get("username"),
                     "expires_in": token_data.get("expires_in", 3600),
                 },
             )
 
-            return success_response(
-                data={
-                    "status": "success",
-                    "message": "LinkedIn authenticated successfully",
-                    "user_id": user_id,
-                }
+            # Redirect back to the frontend dashboard
+            dashboard_url = (
+                settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/")
+                or "http://localhost:7202"
+            )
+            return RedirectResponse(
+                url=f"{dashboard_url}/publishing?success=true&platform=linkedin"
             )
 
     except HTTPException:

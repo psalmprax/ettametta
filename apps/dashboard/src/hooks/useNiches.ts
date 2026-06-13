@@ -6,7 +6,7 @@ import { getAuthToken } from "@/lib/auth_utils";
 
 export function useNiches() {
     const [niches, setNiches] = useState<string[]>([]);
-    const [styles, setStyles] = useState<string[]>(["Default", "Cinematic", "Hectic/Viral", "ASMR/Calm", "Educational", "Dramatic", "Glitch/High-Art", "Noir/Classic"]);
+    const [styles, _setStyles] = useState<string[]>(["Default", "Cinematic", "Hectic/Viral", "ASMR/Calm", "Educational", "Dramatic", "Glitch/High-Art", "Noir/Classic"]);
     const [isLoading, setIsLoading] = useState(true);
 
     const refreshNiches = useCallback(async () => {

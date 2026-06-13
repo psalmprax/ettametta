@@ -167,15 +167,39 @@ class StrategyService:
         # Include viral pattern analysis if available
         analysis_context = ""
         if analysis_data and isinstance(analysis_data, dict):
+            # ── Legacy pattern shape (Phase 10-02) ──
             pattern = analysis_data.get("pattern", {})
             if pattern:
-                analysis_context = f"""
+                analysis_context += f"""
 VIRAL PATTERN ANALYSIS:
 - Hook Score: {pattern.get("hook_score", "N/A")}
 - Retention Estimate: {pattern.get("retention_estimate", "N/A")}%
 - Pacing BPM: {pattern.get("pacing_bpm", "N/A")}
 - Style Keywords: {", ".join(pattern.get("style_keywords", []))}
 - Emotional Triggers: {", ".join(pattern.get("emotional_triggers", []))}
+"""
+
+            # ── Rich AnalysisReport shape (Phase 10-04) ──
+            report = analysis_data.get("analysis_report", {})
+            if report:
+                hook = report.get("hook", {})
+                pacing = report.get("pacing", {})
+                structure = report.get("structure", {})
+                style_ins = report.get("style", {})
+                sentiment = report.get("sentiment", {})
+                analysis_context += f"""
+DEEP ANALYSIS REPORT:
+- Hook (first 3 sec): {hook.get("first_3_seconds", "N/A")[:120]}
+- Emotional Angle: {hook.get("emotional_angle", "N/A")}
+- Scroll Stopper: {"YES" if hook.get("scroll_stopper") else "NO"}
+- Pacing: {pacing.get("bpm", "?")} BPM, {pacing.get("cuts_per_minute", "?")} cuts/min
+- Recommended Duration: {pacing.get("recommended_duration_s", "?")}s
+- Narrative Arc: {" → ".join(structure.get("arc", []))}
+- Recommended Style: {style_ins.get("recommended_style", "N/A")}
+- Motion Graphics: {", ".join(style_ins.get("motion_graphics", []))}
+- Sentiment: {sentiment.get("overall", "?")} for {sentiment.get("target_audience", "?")}
+- Summary: {report.get("summary", "")[:200]}
+- Viral Score: {report.get("viral_score", "?")}/100 (confidence: {report.get("confidence", "?")})
 """
 
         prompt = f"""

@@ -14,6 +14,8 @@ from pathlib import Path
 from src.api.config import settings
 from src.services.infrastructure.resource_governor import base_governor_service
 
+logger = logging.getLogger(__name__)
+
 class FFmpegTransformer:
     def __init__(self, threads: int | None = None, preset: str | None = None):
         # 10/10 Production: Adaptive Core Management

@@ -1,25 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { 
-    Video, 
-    Upload, 
-    ChevronDown, 
-    Sparkles, 
-    Play, 
-    Plus,
-    ChevronLeft,
-    ChevronRight,
-    Image as ImageIcon,
-    FileText,
+import React, { useState } from "react";
+import {
     Zap,
-    Mic2,
-    Globe,
-    Settings,
-    Layers,
     Save,
     Cpu,
-    CheckCircle2,
     Loader2,
     Clapperboard,
     PenTool,
@@ -42,7 +27,7 @@ const EDITOR_TABS = [
   { id: "studio", label: "Final Studio", icon: Clapperboard },
 ];
 
-const STYLES = ["story", "motivation", "educational", "breaking_news", "cinematic_top10"];
+const _STYLES = ["story", "motivation", "educational", "breaking_news", "cinematic_top10"];
 const DURATIONS = [15, 30, 60, 90, 120];
 
 export default function VideoEditorPage() {
@@ -50,9 +35,9 @@ export default function VideoEditorPage() {
     const [activeTab, setActiveTab] = useState("concept");
     const [prompt, setPrompt] = useState("");
     const [niche, setNiche] = useState("Motivation");
-    const [style, setStyle] = useState("story");
+    const [style, _setStyle] = useState("story");
     const [duration, setDuration] = useState(60);
-    const [engine, setEngine] = useState("cloud");
+    const [engine, _setEngine] = useState("cloud");
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<any>(null);

@@ -4,8 +4,8 @@ import { useUITheme } from "@/context/UIThemeContext";
 import { cn } from "@/lib/utils";
 
 interface ThemeToggleProps {
-    className?: string;
-    showLabel?: boolean;
+    readonly className?: string;
+    readonly showLabel?: boolean;
 }
 
 export function ThemeToggle({ className, showLabel = false }: ThemeToggleProps) {

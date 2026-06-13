@@ -9,7 +9,7 @@ interface UIContextType {
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
-export function UIProvider({ children }: { children: React.ReactNode }) {
+export function UIProvider({ children }: { readonly children: React.ReactNode }) {
     const [isProMode, setIsProMode] = useState(false);
 
     // Initial load from localStorage

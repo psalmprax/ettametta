@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface SkeletonProps {
-    className?: string;
-    variant?: "default" | "card" | "text" | "circle";
+    readonly className?: string;
+    readonly variant?: "default" | "card" | "text" | "circle";
 }
 
 export function Skeleton({ className, variant = "default" }: SkeletonProps) {

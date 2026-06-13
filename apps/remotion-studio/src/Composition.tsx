@@ -129,16 +129,32 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     const totalClipDuration = resolvedClips?.reduce((acc, c) => acc + c.duration_in_frames, 0) || 0;
     const effectiveDuration = durationInFrames; // Always use the full video duration
 
-    // Build a looping clip list that covers the full video duration
+    // Build a looping clip list that covers the full video duration.
+    // ── Phase 10-05: Speed-ramp variety replaces naive identical looping ──
+    // When clips must repeat to fill audio, each repetition uses a
+    // different playback speed (normal / slow / reverse / fast) so the
+    // viewer perceives variety instead of obvious looping.
+    // Primary fix is in the orchestrator (duration-aware sourcing +
+    // even-stretching); this is the safety net for edge cases.
+    const _speedPattern = [1.0, 0.85, -1.0, 1.12];
     const loopingClips: typeof resolvedClips = resolvedClips ? (() => {
         const out: typeof resolvedClips = [];
         let covered = 0;
+        let repetition = 0;
         while (covered < durationInFrames && resolvedClips.length > 0) {
             for (const clip of resolvedClips) {
                 if (covered >= durationInFrames) break;
-                out.push(clip);
-                covered += clip.duration_in_frames;
+                const speed = _speedPattern[repetition % _speedPattern.length];
+                // Effective duration accounts for speed: a 90-frame clip
+                // at 0.5x occupies 180 frames; at 2x it occupies 45.
+                const absSpeed = Math.abs(speed);
+                const effDuration = absSpeed > 0.001
+                    ? Math.round(clip.duration_in_frames / absSpeed)
+                    : clip.duration_in_frames;
+                out.push({ ...clip, duration_in_frames: effDuration, _playbackRate: speed });
+                covered += effDuration;
             }
+            repetition++;
         }
         return out;
     })() : [];
@@ -217,7 +233,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
                                     durationInFrames={clip.duration_in_frames}
                                 >
                                     <KenBurns durationInFrames={clip.duration_in_frames} index={index}>
-                                         <Video src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                         <Video src={clip.url} playbackRate={((clip as Record<string, unknown>)._playbackRate as number) ?? 1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </KenBurns>
                                 </SceneTransition>
                             </Sequence>

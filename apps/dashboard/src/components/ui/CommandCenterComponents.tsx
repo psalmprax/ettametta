@@ -2,17 +2,8 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { 
-    Cpu, 
-    Zap, 
-    Activity, 
-    Clock, 
-    CheckCircle2, 
-    AlertTriangle,
-    Play,
-    Share2,
+import {
     Eye,
-    MessageSquare,
     Sparkles,
     Clapperboard,
     Mic2,
@@ -33,7 +24,7 @@ interface AgentStatus {
     details?: string;
 }
 
-export function AgentMatrix({ agents }: { agents: AgentStatus[] }) {
+export function AgentMatrix({ agents }: { readonly agents: AgentStatus[] }) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -117,7 +108,7 @@ interface Asset {
     size?: string;
 }
 
-export function AssetQuickview({ assets }: { assets: Asset[] }) {
+export function AssetQuickview({ assets }: { readonly assets: Asset[] }) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">

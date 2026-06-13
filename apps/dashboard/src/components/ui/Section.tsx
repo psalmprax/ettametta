@@ -2,10 +2,10 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "hero" | "featured" | "compact";
-  withBackground?: boolean;
-  withPattern?: boolean;
-  className?: string;
+  readonly variant?: "default" | "hero" | "featured" | "compact";
+  readonly withBackground?: boolean;
+  readonly withPattern?: boolean;
+  readonly className?: string;
 }
 
 export const Section = React.forwardRef<HTMLDivElement, SectionProps>(

@@ -1115,8 +1115,8 @@ class VideoLeadScanner:
 
             return {
                 "ai_analysis": response.choices[0].message.content,
-                "avg_duration": sum(l.duration_seconds for l in leads) / len(leads),
-                "avg_engagement_score": sum(l.engagement_score for l in leads) / len(leads),
+                "avg_duration": sum(lead.duration_seconds for lead in leads) / len(leads),
+                "avg_engagement_score": sum(lead.engagement_score for lead in leads) / len(leads),
                 "content_types": self._count_content_types(leads),
             }
         except asyncio.TimeoutError:

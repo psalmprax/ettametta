@@ -28,6 +28,67 @@ class InstagramPublisher(SocialPublisher):
             rate_limit_config=RateLimitConfig(max_retries=5),
         )
 
+    async def _get_ig_user_id(
+        self,
+        access_token: str,
+        client: httpx.AsyncClient,
+    ) -> str | None:
+        """Resolve the Instagram Business Account ID from the Facebook user's connected Pages.
+        
+        The Instagram Graph API requires the IG User ID (Instagram Business Account ID)
+        in the URL path for media container creation, not 'me'. This resolves it by:
+        1. Getting the user's Facebook Pages: GET /me/accounts
+        2. Getting the Instagram Business Account for each Page: GET /{page-id}?fields=instagram_business_account
+        """
+        try:
+            # Step 1: Get Facebook Pages the user manages
+            pages_resp = await client.get(
+                "https://graph.facebook.com/v20.0/me/accounts",
+                params={"access_token": access_token, "limit": 10},
+            )
+            pages_data = pages_resp.json()
+
+            pages = pages_data.get("data", [])
+            if not pages:
+                logger.warning(
+                    "[InstagramPublisher] No Facebook Pages found for user. "
+                    "Instagram Business Account must be connected to a Facebook Page."
+                )
+                return None
+
+            # Step 2: For each Page, check if it has a connected Instagram Business Account
+            for page in pages:
+                page_id = page["id"]
+                page_token = page.get("access_token", access_token)
+
+                page_resp = await client.get(
+                    f"https://graph.facebook.com/v20.0/{page_id}",
+                    params={
+                        "fields": "instagram_business_account",
+                        "access_token": page_token,
+                    },
+                )
+                page_info = page_resp.json()
+
+                ig_account = page_info.get("instagram_business_account")
+                if ig_account:
+                    ig_id = ig_account.get("id")
+                    logger.info(
+                        f"[InstagramPublisher] Found IG Business Account: {ig_id} (Page: {page_id})"
+                    )
+                    return ig_id
+
+            logger.warning(
+                "[InstagramPublisher] No Facebook Page has an Instagram Business Account connected."
+            )
+            return None
+
+        except Exception as e:
+            logger.exception(
+                f"[InstagramPublisher] Failed to resolve IG user ID: {e}"
+            )
+            return None
+
     async def _upload_impl(
         self,
         video_path: str,
@@ -36,7 +97,7 @@ class InstagramPublisher(SocialPublisher):
         account_id: int | None,
         headers: dict,
     ) -> str | None:
-        """Instagram-specific upload implementation"""
+        """Instagram-specific upload implementation via Instagram Graph API"""
         access_token = await token_manager.get_token(
             "instagram", user_id=user_id, account_id=account_id
         )
@@ -50,11 +111,23 @@ class InstagramPublisher(SocialPublisher):
             return None
 
         async with httpx.AsyncClient(timeout=300.0) as client:
+            # Step 0: Resolve the Instagram Business Account ID
+            # Instagram Graph API requires /{ig-user-id}/media, NOT /me/media
+            ig_user_id = await self._get_ig_user_id(
+                access_token or headers.get("Cookie", ""), client
+            )
+            if not ig_user_id:
+                logger.error(
+                    "[InstagramPublisher] Could not resolve IG Business Account ID. "
+                    "User must have an Instagram Business Account connected to a Facebook Page."
+                )
+                return None
+
             # Step 1: Create media container
-            container_url = "https://graph.facebook.com/v18.0/me/media"
+            container_url = f"https://graph.facebook.com/v20.0/{ig_user_id}/media"
             container_data = {
                 "media_type": "VIDEO",
-                "video_uri": video_uri,
+                "video_url": video_uri,
                 "caption": self._build_caption(metadata),
                 "access_token": access_token or headers.get("Cookie"),
             }
@@ -79,13 +152,13 @@ class InstagramPublisher(SocialPublisher):
             poll_interval = 5
             for _ in range(max_polls):
                 await asyncio.sleep(poll_interval)
-                status_url = f"https://graph.facebook.com/v18.0/{container_id}"
+                status_url = f"https://graph.facebook.com/v20.0/{container_id}"
                 status_resp = await client.get(
                     status_url, params={"access_token": access_token}
                 )
                 status_data = status_resp.json()
 
-                if status_data.get("uri"):
+                if status_data.get("id"):
                     break
                 if "error" in status_data:
                     logger.error(
@@ -97,7 +170,7 @@ class InstagramPublisher(SocialPublisher):
                 return None
 
             # Step 3: Publish media
-            publish_url = "https://graph.facebook.com/v18.0/me/media_publish"
+            publish_url = f"https://graph.facebook.com/v20.0/{ig_user_id}/media_publish"
             publish_data = {
                 "creation_id": container_id,
                 "access_token": access_token or headers.get("Cookie"),

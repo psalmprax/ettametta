@@ -20,7 +20,7 @@ def get_auth_token():
         f"{BASE_URL}/api/v1/auth/login",
         data={"username": TEST_USER, "password": TEST_PASS},
     )
-    return response.json()["access_token"]
+    return response.json()["data"]["access_token"]
 
 
 class TestAuthFlow:
@@ -33,7 +33,8 @@ class TestAuthFlow:
             data={"username": TEST_USER, "password": TEST_PASS},
         )
         assert response.status_code == 200
-        assert "access_token" in response.json()
+        assert "data" in response.json()
+        assert "access_token" in response.json()["data"]
 
     def test_login_invalid_password(self):
         """Test invalid password"""
@@ -58,7 +59,8 @@ class TestDiscoveryToCreationFlow:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 200
-        trends = response.json()
+        data = response.json()
+        trends = data.get("data", data) if isinstance(data, dict) else data
         assert len(trends) > 0
         return trends[0] if trends else None
 
@@ -78,7 +80,8 @@ class TestDiscoveryToCreationFlow:
             f"{BASE_URL}/api/v1/discovery/trends",
             headers={"Authorization": f"Bearer {token}"},
         )
-        trends = trends_response.json() if trends_response.status_code == 200 else []
+        trends_data = trends_response.json() if trends_response.status_code == 200 else []
+        trends = trends_data.get("data", trends_data) if isinstance(trends_data, dict) else trends_data
 
         if not trends:
             pytest.skip("No trends to analyze")
@@ -162,7 +165,7 @@ class TestPublishingFlow:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 200
-        platforms = response.json()
+        platforms = response.json().get("data", response.json())
         assert "youtube" in platforms.get("platforms", {})
 
     def test_get_accounts(self, token):

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { toast } from "sonner";
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 
@@ -17,7 +18,7 @@ interface Point {
 }
 
 interface GeomapProps {
-    points?: Point[];
+    readonly points?: Point[];
 }
 
 export default React.memo(function Geomap({ points = [] }: GeomapProps) {
@@ -169,6 +170,7 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
             setIsLoading(false);
         } catch (err) {
             console.error("Geomap error:", err);
+            toast.error("Failed to render geographic map — see console for details");
             setError(err instanceof Error ? err.message : "Failed to load map");
             setIsLoading(false);
         }

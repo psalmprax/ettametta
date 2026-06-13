@@ -4,6 +4,7 @@ import uuid
 import random
 import logging
 import asyncio
+import aiofiles
 import subprocess
 try:
     from moviepy import VideoFileClip, CompositeVideoClip, TextClip, concatenate_videoclips
@@ -27,7 +28,11 @@ from src.api.config import settings
 base_stock_service = StockService()
 base_ffmpeg_service = FFmpegTransformer()
 
+import tempfile
+
 logger = logging.getLogger(__name__)
+
+TEMP_DIR = os.path.join(tempfile.gettempdir(), "ettametta")
 
 # Lazy loading flags
 _moviepy_available = None
@@ -150,9 +155,9 @@ class VideoProcessor:
                 logger.warning(
                     "[VideoProcessor] FFmpeg check failed. Video processing may be unstable."
                 )
-        except FileNotFoundError:
+        except Exception:
             logger.exception(
-                "[VideoProcessor] FFmpeg NOT FOUND. Video processing will FAIL."
+                "[VideoProcessor] FFmpeg check failed or NOT FOUND. Video processing will FAIL."
             )
 
     def get_dependency_report(self):
@@ -176,7 +181,7 @@ class VideoProcessor:
             "healthy": m_available,  # MoviePy is the primary driver
         }
 
-    async def _verify_video_readable(self, clip: "VideoFileClip"):
+    def _verify_video_readable(self, clip: "VideoFileClip"):
         """Verify video can be read by iterating frames."""
         if not check_moviepy_available():
             logger.warning(
@@ -205,7 +210,7 @@ class VideoProcessor:
         if not result["success"]:
             raise RuntimeError(f"Video not readable: {result.get('error', 'timeout')}")
 
-    async def _create_opencv_based_processing(
+    def _create_opencv_based_processing(
         self, input_path: str, clip: "VideoFileClip" = None
     ):
         """
@@ -359,7 +364,6 @@ class VideoProcessor:
         input_path: str,
         output_name: str,
         enabled_filters: list[str] = None,
-        strategy: dict = None,
     ) -> str:
         """
         Full video processing pipeline using OpenCV when MoviePy fails.
@@ -385,6 +389,7 @@ class VideoProcessor:
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
+        rng = np.random.default_rng(42)
         frame_count = 0
         while cap.isOpened():
             ret, frame = cap.read()
@@ -411,7 +416,7 @@ class VideoProcessor:
             # Apply enabled filters
             if enabled_filters:
                 if "f10" in enabled_filters:  # Film grain
-                    noise = np.random.randint(0, 30, frame.shape, dtype=np.uint8)
+                    noise = rng.integers(0, 30, size=frame.shape, dtype=np.uint8)
                     frame = cv2.add(frame, noise)
                 if "f11" in enabled_filters:  # Grayscale
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -819,12 +824,12 @@ class VideoProcessor:
         )
 
         # 1. Download base image
-        temp_image = os.path.join("/tmp/ettametta", f"lite4k_base_{uuid.uuid4()}.jpg")
-        os.makedirs("/tmp/ettametta", exist_ok=True)
+        temp_image = os.path.join(TEMP_DIR, f"lite4k_base_{uuid.uuid4()}.jpg")
+        os.makedirs(TEMP_DIR, exist_ok=True)
         async with httpx.AsyncClient() as client:
             resp = await client.get(image_uri, follow_redirects=True)
-            with open(temp_image, "wb") as f:
-                f.write(resp.content)
+            async with aiofiles.open(temp_image, "wb") as f:
+                await f.write(resp.content)
 
         # 2. Create ImageClip at 4K resolution
         clip = ImageClip(temp_image).with_duration(duration)
@@ -866,85 +871,86 @@ class VideoProcessor:
 
         return output_path
 
+    async def _download_media_for_scene(self, url: str, ext: str, temp_files: list) -> str:
+        if not url:
+            return ""
+        if isinstance(url, str) and url.startswith("http"):
+            import httpx
+            import uuid
+            import aiofiles
+            local_path = os.path.join(TEMP_DIR, f"dl_{uuid.uuid4()}{ext}")
+            async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                async with aiofiles.open(local_path, "wb") as f:
+                    await f.write(resp.content)
+            temp_files.append(local_path)
+            return local_path
+        return url
+
+    async def _process_scene(self, scene: dict, temp_files: list):
+        video_uri = scene.get("video_uri")
+        audio_uri = scene.get("audio_uri")
+        duration_hint = scene.get("duration_hint", 5.0)
+
+        if not video_uri:
+            return None
+
+        # 1. Download Video Clip
+        local_vid = await self._download_media_for_scene(video_uri, ".mp4", temp_files)
+        from moviepy import VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip
+        import moviepy.video.fx as vfx
+
+        clip = VideoFileClip(local_vid)
+
+        # 2. Add Narration Audio if exists
+        if audio_uri:
+            local_aud = await self._download_media_for_scene(audio_uri, ".mp3", temp_files)
+            narration = AudioFileClip(local_aud)
+
+            audio_duration = narration.duration
+            if audio_duration > 0:
+                speed_factor = clip.duration / audio_duration
+                clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
+                clip = clip.with_audio(narration)
+        else:
+            # Fallback to duration hint
+            clip = clip.subclipped(0, min(clip.duration, duration_hint))
+
+        # 3. Add Dynamic Captions
+        narration_text = scene.get("narration_text")
+        if narration_text:
+            txt = (
+                TextClip(
+                    text=narration_text.upper(),
+                    font_size=60,
+                    color="white",
+                    font=self.font_path,
+                    stroke_color="black",
+                    stroke_width=2.0,
+                    method="caption",
+                    size=(int(clip.w * 0.8), None),
+                )
+                .with_duration(clip.duration)
+                .with_position(("center", 0.8))
+            )
+            clip = CompositeVideoClip([clip, txt])
+
+        return clip
+
     async def assemble_story(self, scenes: list[dict], output_name: str) -> str:
         """
         Assembles multi-scene stories with precise voice-visual alignment.
         """
-        import httpx
-
         processing_scenes = []
         temp_files = []
-        os.makedirs("/tmp/ettametta", exist_ok=True)
-
-        async def _download_media(url: str, ext: str) -> str:
-            if not url:
-                return ""
-            if isinstance(url, str) and url.startswith("http"):
-                local_path = os.path.join("temp", f"dl_{uuid.uuid4()}{ext}")
-                async with httpx.AsyncClient(
-                    follow_redirects=True, timeout=60
-                ) as client:
-                    resp = await client.get(url)
-                    resp.raise_for_status()
-                    with open(local_path, "wb") as f:
-                        f.write(resp.content)
-                temp_files.append(local_path)
-                return local_path
-            return url
+        os.makedirs(TEMP_DIR, exist_ok=True)
 
         try:
-            for i, scene in enumerate(scenes):
-                video_uri = scene.get("video_uri")
-                audio_uri = scene.get("audio_uri")
-                duration_hint = scene.get("duration_hint", 5.0)
-
-                if not video_uri:
-                    continue
-
-                # 1. Download Video Clip if it's a URL
-                local_vid = await _download_media(video_uri, ".mp4")
-                from moviepy import VideoFileClip
-
-                clip = VideoFileClip(local_vid)
-
-                # 2. Add Narration Audio if exists
-                if audio_uri:
-                    from moviepy import AudioFileClip
-
-                    local_aud = await _download_media(audio_uri, ".mp3")
-                    narration = AudioFileClip(local_aud)
-
-                    # PRECISISION ALIGNMENT: Stretch/Compress video to match audio duration
-                    audio_duration = narration.duration
-                    if audio_duration > 0:
-                        speed_factor = clip.duration / audio_duration
-                        import moviepy.video.fx as vfx
-
-                        clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
-                        clip = clip.with_audio(narration)
-                else:
-                    # Fallback to duration hint
-                    clip = clip.subclipped(0, min(clip.duration, duration_hint))
-
-                # 3. Add Dynamic Captions for this scene's narration
-                if scene.get("narration_text"):
-                    txt = (
-                        TextClip(
-                            text=scene["narration_text"].upper(),
-                            font_size=60,
-                            color="white",
-                            font=self.font_path,
-                            stroke_color="black",
-                            stroke_width=2.0,
-                            method="caption",
-                            size=(int(clip.w * 0.8), None),
-                        )
-                        .with_duration(clip.duration)
-                        .with_position(("center", 0.8))
-                    )
-                    clip = CompositeVideoClip([clip, txt])
-
-                processing_scenes.append(clip)
+            for scene in scenes:
+                clip = await self._process_scene(scene, temp_files)
+                if clip:
+                    processing_scenes.append(clip)
 
             # 4. Concatenate all scenes with CrossFades
             final_clip = concatenate_videoclips(processing_scenes, method="compose")
@@ -968,7 +974,6 @@ class VideoProcessor:
         self,
         input_path: str,
         output_name: str,
-        enabled_filters: list[str] | None = None,
         strategy: dict | None = None,
     ) -> str:
         """
@@ -1007,7 +1012,7 @@ class VideoProcessor:
                 )
                 return rendered_path
 
-            raise Exception("Remotion rendering failed to produce an output")
+            raise RuntimeError("Remotion rendering failed to produce an output")
 
         except Exception as e:
             logging.exception(

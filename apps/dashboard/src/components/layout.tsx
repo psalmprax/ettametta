@@ -6,18 +6,11 @@ import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     Globe, 
-    User as UserIcon, 
     Coins, 
-    MessageSquare,
-    Search,
-    PlusSquare,
-    Activity,
-    BarChart3
+    MessageSquare
 } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
 
-function LegacyLayout({ children }: { children: React.ReactNode }) {
+function LegacyLayout({ children }: { readonly children: React.ReactNode }) {
     const { user, credits } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -127,7 +120,7 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({
     children,
 }: {
-    children: React.ReactNode;
+    readonly children: React.ReactNode;
 }) {
     return <LegacyLayout>{children}</LegacyLayout>;
 }

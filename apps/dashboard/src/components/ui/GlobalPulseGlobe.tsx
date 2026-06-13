@@ -19,9 +19,9 @@ interface TelemetryData {
 }
 
 interface GlobalPulseGlobeProps {
-    pulseIntensity?: number;
-    telemetry?: TelemetryData | null;
-    reducedMotion?: boolean;
+    readonly pulseIntensity?: number;
+    readonly telemetry?: TelemetryData | null;
+    readonly reducedMotion?: boolean;
 }
 
 const CITIES: GeoHotspot[] = [

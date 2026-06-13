@@ -116,6 +116,30 @@ async def get_transaction_history(
     )
 
 
+@router.get("/usage")
+async def get_credit_usage(
+    month: str | None = None,
+    current_user: UserDB = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Get per-action credit spending breakdown.
+
+    Parameters
+    ----------
+    month : str, optional
+        Target month in ``YYYY-MM`` format (e.g. ``2026-05``).
+        Defaults to the current calendar month.
+    """
+    try:
+        breakdown = await credit_service.get_usage_breakdown(
+            current_user.id, db, month=month
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return success_response(data=breakdown)
+
+
 # === Credit Packages ===
 @router.get("/packages")
 async def get_credit_packages(db=Depends(get_db)):

@@ -28,6 +28,7 @@ celery_app = Celery(
         "src.services.security.tasks",
         "src.services.storage.tasks",
         "src.services.openclaw.tasks",
+        "src.services.payment.tasks",
     ],
 )
 
@@ -54,6 +55,10 @@ celery_app.conf.update(
             "task": "optimization.retry_missed_schedules",
             "schedule": 300.0,  # Every 5 minutes
         },
+        "retry-failed-posts-10m": {
+            "task": "optimization.retry_failed_posts",
+            "schedule": 600.0,  # Every 10 minutes
+        },
         "system-security-audit-daily": {
             "task": "security.system_audit",
             "schedule": 86400.0,  # Every 24 hours
@@ -78,6 +83,10 @@ celery_app.conf.update(
         "nexus-cleanup-stale-jobs-10m": {
             "task": "nexus.cleanup_stale_jobs",
             "schedule": 600.0,  # Every 10 minutes
+        },
+        "grant-monthly-subscription-credits-daily": {
+            "task": "payment.monthly_credits",
+            "schedule": 86400.0,  # Every 24 hours
         },
     },
 )

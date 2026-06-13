@@ -1,3 +1,5 @@
+from typing import Annotated
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from src.api.utils.database import get_db
 from src.api.utils.auth import (
@@ -24,7 +26,6 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from authlib.integrations.base_client import OAuthError
 import secrets
-import redis.asyncio as redis_async
 import logging
 
 logger = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ class Token(BaseModel):
 
 
 @router.post("/register")
-async def register(user: UserCreate, db=Depends(get_db)):
+async def register(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]):
     # 1. Check for duplicate email
     stmt = select(UserDB).where(UserDB.email == user.email)
     result = await db.execute(stmt)
@@ -164,7 +165,7 @@ class LoginRequest(BaseModel):
 @router.post("/login")
 async def login(
     request: Request,
-    db=Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     # Detect content type and parse accordingly
     content_type = request.headers.get("content-type", "")
@@ -227,7 +228,7 @@ async def login(
 
 
 @router.get("/me")
-async def get_me(current_user: UserDB = Depends(get_current_user)):
+async def get_me(current_user: Annotated[UserDB, Depends(get_current_user)]):
     return success_response(data=UserResponse.model_validate(current_user).model_dump())
 
 
@@ -247,20 +248,24 @@ async def google_auth():
 
 
 @router.post("/logout")
-async def logout(token: str = Depends(oauth2_scheme)):
-    from src.api.utils.auth import redis_async_client
+async def logout(token: Annotated[str, Depends(oauth2_scheme)]):
+    from src.api.utils.redis import get_async_redis
 
+    r = await get_async_redis()
     # Use individual key with TTL (24h) instead of unbounded set
-    await redis_async_client.set(f"token_blacklist:{token}", "1", ex=86400)
+    await r.set(f"token_blacklist:{token}", "1", ex=86400)
     return success_response(data={"message": "Logged out"})
 
 
-@router.get("/callback/google")
+@router.get(
+    "/callback/google",
+    responses={400: {"description": "Bad Request (missing code, state, or invalid Google auth)"}},
+)
 async def google_auth_callback(
     request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
     code: str | None = None,
     state: str | None = None,
-    db=Depends(get_db),
 ):
     """
     Google OAuth callback endpoint.
@@ -337,8 +342,12 @@ async def google_auth_callback(
 
 
 # Internal endpoint for OpenClaw to fetch users with Telegram bots
-@router.get("/internal/users-with-bots", tags=["Internal"])
-async def get_users_with_bots(request: Request, db=Depends(get_db)):
+@router.get(
+    "/internal/users-with-bots", 
+    tags=["Internal"],
+    responses={401: {"description": "Unauthorized (missing or invalid internal token)"}}
+)
+async def get_users_with_bots(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
     """Internal endpoint for OpenClaw to get users configured with Telegram bots."""
     from sqlalchemy import select
 

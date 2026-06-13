@@ -1,38 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { useTelemetry } from "@/context/TelemetryContext";
 import {
-    Coins,
-    CreditCard,
-    Zap,
-    RefreshCw,
-    Copy,
-    Check,
-    Gift,
     Clock,
     TrendingUp,
-    Share2,
-    Users,
-    Activity,
     Vault,
     Package,
     History,
     Network,
-    ShieldCheck,
     Terminal,
-    Database,
-    Cpu
+    BarChart3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
-import { toast } from "sonner";
+import { API_BASE } from "@/lib/config";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
-import { DesignCard } from "@/components/ui/DesignCard";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
 
 interface CreditBalance {
@@ -49,16 +35,27 @@ interface Transaction {
     balance_after: number;
 }
 
+interface UsageBreakdown {
+    total_spent: number;
+    by_action: Record<string, number>;
+    action_count: number;
+}
+
 export default function CreditsPage() {
     const [activeEngine, setActiveEngine] = useState("vault");
     const [balance, setBalance] = useState<CreditBalance | null>(null);
-    const [costs, setCosts] = useState<any[]>([]);
+    const [_costs, setCosts] = useState<any[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [referralCode, setReferralCode] = useState<any>(null);
+    const [_referralCode, setReferralCode] = useState<any>(null);
     const [packages, setPackages] = useState<any[]>([]);
-    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [usage, setUsage] = useState<UsageBreakdown | null>(null);
+    const [usageMonth, setUsageMonth] = useState<string>(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [_isRefreshing, setIsRefreshing] = useState(false);
     const [logs, setLogs] = useState<string[]>(["VAULT_INITIALIZED", "SYNCHRONIZING_LEDGER"]);
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: _systemLogs, status: _status, pulse: _pulse } = useTelemetry();
 
     const fetchData = useCallback(async () => {
         setIsRefreshing(true);
@@ -72,13 +69,27 @@ export default function CreditsPage() {
             withRealFallback((signal) => fetch(`${API_BASE}/credits/transactions`, { headers, signal }), { fallback: [], onSuccess: setTransactions }),
             withRealFallback((signal) => fetch(`${API_BASE}/credits/referral/code`, { headers, signal }), { fallback: null, onSuccess: setReferralCode }),
             withRealFallback((signal) => fetch(`${API_BASE}/credits/packages`, { headers, signal }), { fallback: [], onSuccess: setPackages }),
+            withRealFallback((signal) => fetch(`${API_BASE}/credits/usage?month=${usageMonth}`, { headers, signal }), { fallback: null, onSuccess: setUsage }),
         ]);
         setIsRefreshing(false);
-    }, []);
+    }, [usageMonth]);
 
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+    }, [fetchData, usageMonth]);
+
+    // Generate month options: current month and 5 previous
+    const monthOptions = React.useMemo(() => {
+        const options: { value: string; label: string }[] = [];
+        const now = new Date();
+        for (let i = 0; i < 6; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const label = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+            options.push({ value, label });
+        }
+        return options;
+    }, []);
 
     const handlePurchase = async (packageId: string) => {
         const token = await getAuthToken();
@@ -109,6 +120,7 @@ export default function CreditsPage() {
             <div className="space-y-1">
               {[
                 { id: "vault", label: "Credit Vault", icon: Vault },
+                { id: "spending", label: "Spending", icon: BarChart3 },
                 { id: "acquisition", label: "Acquisition", icon: Package },
                 { id: "history", label: "Ledger", icon: History },
                 { id: "network", label: "Neural Network", icon: Network },
@@ -162,6 +174,80 @@ export default function CreditsPage() {
                          <span className="text-2xl font-bold text-cyan-400 uppercase tracking-widest">Neural Credits Available</span>
                          <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-[0.4em]">Allocated for autonomous synthesis</p>
                        </div>
+                    </div>
+                  )}
+
+                  {activeEngine === "spending" && usage && (
+                    <div className="space-y-8">
+                      {/* Month selector */}
+                      <div className="flex items-end justify-between">
+                        <div className="space-y-1">
+                          <h3 className="text-lg font-bold text-white uppercase tracking-tight">Monthly Spend</h3>
+                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.3em]">Per-Action Breakdown</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <select
+                            value={usageMonth}
+                            onChange={(e) => setUsageMonth(e.target.value)}
+                            className="bg-[#0F0F11] border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-xl focus:outline-none focus:border-cyan-500/40 appearance-none cursor-pointer"
+                          >
+                            {monthOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {usage.action_count > 0 && (
+                        <>
+                          {/* Total header */}
+                          <div className="flex items-end justify-end">
+                            <div className="text-right">
+                              <span className="text-3xl font-bold text-white tabular-nums">{usage.total_spent}</span>
+                              <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest ml-2">CR TOTAL</span>
+                            </div>
+                          </div>
+
+                          {/* Horizontal bar chart */}
+                          <div className="space-y-3">
+                            {Object.entries(usage.by_action).map(([action, amount]) => {
+                              const pct = usage.total_spent > 0 ? (amount / usage.total_spent) * 100 : 0;
+                              return (
+                                <div key={action} className="space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                      {action.replace(/_/g, ' ')}
+                                    </span>
+                                    <span className="text-xs font-bold text-white tabular-nums">
+                                      {amount} <span className="text-zinc-600 font-normal">CR</span>
+                                    </span>
+                                  </div>
+                                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${pct}%`,
+                                        background: `linear-gradient(90deg, #22d3ee, #06b6d4)`,
+                                      }}
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${pct}%` }}
+                                      transition={{ duration: 0.8, ease: "easeOut" }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+
+                      {usage.action_count === 0 && (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <BarChart3 className="h-12 w-12 text-zinc-800 mb-4" />
+                          <p className="text-sm font-bold text-zinc-600 uppercase tracking-wider">No spending this month</p>
+                          <p className="text-[9px] text-zinc-700 font-bold uppercase tracking-[0.3em] mt-1">Generate content to see usage</p>
+                        </div>
+                      )}
                     </div>
                   )}
 

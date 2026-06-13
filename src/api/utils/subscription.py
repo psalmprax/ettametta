@@ -11,7 +11,7 @@ def subscription_required(required_tier: SubscriptionTier):
     """
     from src.api.utils.auth import get_current_user
 
-    async def dependency(current_user: UserDB = Depends(get_current_user)):
+    def dependency(current_user: UserDB = Depends(get_current_user)):
         # Tier hierarchy check
         tier_values = {
             SubscriptionTier.FREE: 0,
@@ -98,7 +98,7 @@ def engine_access_required(engine: str):
     """
     from src.api.utils.auth import get_current_user
 
-    async def dependency(current_user: UserDB = Depends(get_current_user)):
+    def dependency(current_user: UserDB = Depends(get_current_user)):
         tier_values = {
             SubscriptionTier.FREE: 0,
             SubscriptionTier.BASIC: 1,
@@ -192,7 +192,7 @@ def credits_required(action: CreditAction | str):
     return dependency
 
 
-async def get_user_subscription_tier(user: UserDB, db: AsyncSession) -> str:
+def get_user_subscription_tier(user: UserDB) -> str:
     """
     Get user's current subscription tier as a string.
     """

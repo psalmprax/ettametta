@@ -30,6 +30,7 @@ from src.api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from src.services.video_engine.job_service import VideoJobService, get_video_job_service
+from src.services.discovery.schemas import AnalysisReport
 
 logger = logging.getLogger(__name__)
 
@@ -466,6 +467,43 @@ async def get_analysis_status(
         return handle_exception(e)
 
 
+def _pack_analysis_data(report: "AnalysisReport") -> dict:
+    """Build the ``analysis_data`` dict passed to
+    ``download_and_process_task`` from a persisted ``AnalysisReport``.
+
+    Contains two sub-dicts:
+    * ``pattern`` — legacy-compatible shape with ``hook_score``,
+      ``retention_estimate``, ``pacing_bpm``, ``style_keywords``,
+      ``emotional_triggers`` (keeps ``strategy_service`` working).
+    * ``analysis_report`` — the richer Pydantic-model-dump with full
+      hook/pacing/structure/style/sentiment insights (Phase 10-04).
+    """
+    return {
+        "pattern": {
+            "hook_score": report.hook.scroll_stopper and 0.8 or 0.5,
+            "retention_estimate": (
+                report.structure.retention_curve[2]
+                if len(report.structure.retention_curve) > 2
+                else 0.5
+            ),
+            "pacing_bpm": report.pacing.bpm,
+            "style_keywords": report.style.motion_graphics,
+            "emotional_triggers": report.sentiment.emotional_triggers,
+        },
+        "analysis_report": {
+            "candidate_id": report.candidate_id,
+            "hook": report.hook.model_dump(mode="json"),
+            "pacing": report.pacing.model_dump(mode="json"),
+            "structure": report.structure.model_dump(mode="json"),
+            "style": report.style.model_dump(mode="json"),
+            "sentiment": report.sentiment.model_dump(mode="json"),
+            "summary": report.summary,
+            "viral_score": report.viral_score,
+            "confidence": report.confidence,
+        },
+    }
+
+
 class CreateVideoFromAnalysisRequest(BaseModel):
     task_id: str
     niche: str = "Motivation"
@@ -473,7 +511,7 @@ class CreateVideoFromAnalysisRequest(BaseModel):
     style: str | None = "Default"
     quality_tier: str | None = "standard"
     generate_thumbnail: bool | None = False
-
+    content_id: str | None = None  # 10-05: candidate_id for DB-backed AnalysisReport threading
 
 
 @router.post("/analyze/{task_id}/create-video")
@@ -503,7 +541,7 @@ async def create_video_from_analysis(
                 status_code=400, detail=f"Analysis failed: {result.info}"
             )
 
-        # Get analysis result
+        # Get analysis result (Celery — backward-compatible path)
         analysis = result.result
         candidate_url = analysis.get("source_uri") or analysis.get("candidate_id", "")
 
@@ -512,7 +550,41 @@ async def create_video_from_analysis(
                 status_code=400, detail="No source URL found in analysis"
             )
 
-        # Dispatch Task
+        # ── 10-04: Read persisted AnalysisReport from DB when available ──
+        analysis_data: dict | None = None
+        analysis_snapshot: dict | None = None
+        candidate_id = analysis.get("candidate_id", "")
+        if candidate_id:
+            from src.services.discovery.schemas import AnalysisReport
+            from pydantic import ValidationError
+
+            stmt = select(ContentCandidateDB).filter(
+                ContentCandidateDB.id == candidate_id
+            )
+            db_result = await db.execute(stmt)
+            content = db_result.scalar_one_or_none()
+            if content and getattr(content, "analysis_payload", None):
+                try:
+                    report = AnalysisReport.from_db_payload(
+                        content.analysis_payload
+                    )
+                    analysis_data = _pack_analysis_data(report)
+                    analysis_snapshot = report.model_dump(mode="json")
+                    logger.info(
+                        f"[Discovery] Threading AnalysisReport "
+                        f"(candidate={candidate_id}, "
+                        f"viral={report.viral_score:.0f}, "
+                        f"style={report.recommended_style()}) "
+                        f"into video job from analysis task {task_id}"
+                    )
+                except ValidationError as report_err:
+                    logger.warning(
+                        f"[Discovery] Failed to parse AnalysisReport "
+                        f"for candidate={candidate_id}: {report_err}. "
+                        f"Falling back to Celery-only path."
+                    )
+
+        # Dispatch Task — thread analysis_data when available
         try:
             task = download_and_process_task.delay(
                 source_uri=candidate_url,
@@ -522,6 +594,7 @@ async def create_video_from_analysis(
                 quality_tier=request.quality_tier,
                 generate_thumbnail=request.generate_thumbnail or False,
                 user_id=current_user.id,
+                analysis_data=analysis_data,
             )
         except Exception as task_err:
             logger.exception(f"Task dispatch failure: {task_err}")
@@ -561,8 +634,21 @@ async def create_video_from_analysis(
                 "quality_tier": request.quality_tier,
                 "generate_thumbnail": request.generate_thumbnail,
                 "analysis_task_id": task_id,
+                "analysis_snapshot": analysis_snapshot,
             },
         )
+
+        # ── 10-06: Observability — track analysis→video pipeline completions ──
+        try:
+            from src.services.infrastructure.resilience_metrics import (
+                analysis_to_video_pipeline,
+            )
+            label = "snapshot_attached" if analysis_snapshot else "celery_fallback"
+            analysis_to_video_pipeline.labels(status=label).inc()
+        except Exception as metric_err:  # pragma: no cover - non-fatal
+            logger.warning(
+                f"[Discovery] Failed to increment pipeline metric: {metric_err}"
+            )
 
         # Agentic Intelligence Injection (Official Skill Integration)
         try:

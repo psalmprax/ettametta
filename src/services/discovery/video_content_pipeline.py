@@ -18,7 +18,6 @@ from datetime import datetime, timezone
 from src.services.discovery.cloak_scanner import CloakBrowserScanner
 from src.services.discovery.analysis_service import extract_content_patterns
 from src.services.video_engine.free_video_providers import free_video_provider
-from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
 from src.shared.state_machine import base_state_machine
 
 logger = logging.getLogger(__name__)
@@ -289,6 +288,7 @@ class ViralContentPipeline:
             # Use scene orchestrator to compile clips into final video
             logger.info(f"Compiling {len(clips_for_orchestration)} AI video clips into final video")
             
+            from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
             compilation_result = await base_scene_orchestrator_service.produce_scene_based_video(
                 scenes=[{"url": clip["url"], "duration": clip["duration_in_frames"]//30} for clip in clips_for_orchestration],
                 niche=niche,

@@ -93,10 +93,10 @@ export default function NeuralCore() {
 
             const project = (x: number, y: number, z: number) => {
                 // Rotate Y
-                let rx = x * cosY - z * sinY;
+                const rx = x * cosY - z * sinY;
                 let rz = x * sinY + z * cosY;
                 // Rotate X
-                let ry = y * cosX - rz * sinX;
+                const ry = y * cosX - rz * sinX;
                 rz = y * sinX + rz * cosX;
                 const perspective = 1 / (1 + rz * 0.1);
                 return {

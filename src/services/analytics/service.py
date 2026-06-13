@@ -1,7 +1,6 @@
 from .models import ContentPerformance
 from typing import Any
 import logging
-import redis
 import json
 from tenacity import (
     retry,
@@ -686,10 +685,8 @@ class AnalyticsService:
         Executes a real-world neural pattern injection by synchronizing high-velocity
         viral telemetry with the distribution weights of a specific post.
         """
-        import redis
         import datetime
         from src.services.optimization.youtube_publisher import base_youtube_service
-        from src.api.config import settings
 
         self.logger.info(
             f"[Analytics] Injecting neural pattern into post {post_id} for user {user_id}"

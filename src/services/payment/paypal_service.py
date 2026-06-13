@@ -40,12 +40,13 @@ class PayPalService:
             raise ValueError("PayPal credentials not configured")
 
         auth = httpx.BasicAuth(self.client_id, self.client_secret)
-        response = httpx.post(
-            f"{self.base_url}/v1/oauth2/token",
-            auth=auth,
-            data={"grant_type": "client_credentials"},
-            headers={"Accept": "application/json"},
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/v1/oauth2/token",
+                auth=auth,
+                data={"grant_type": "client_credentials"},
+                headers={"Accept": "application/json"},
+            )
 
         if response.status_code != 200:
             raise Exception(f"Failed to get PayPal token: {response.text}")
@@ -175,4 +176,6 @@ PAYPAL_PLANS = {
 }
 
 
-paypal_service = PayPalService()
+base_paypal_service = PayPalService()
+paypal_service = base_paypal_service
+

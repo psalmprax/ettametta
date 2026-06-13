@@ -2,13 +2,13 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
-  size?: "sm" | "md" | "lg" | "xl";
-  isLoading?: boolean;
-  fullWidth?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: "left" | "right";
-  rounded?: "md" | "lg" | "xl" | "2xl" | "full";
+  readonly variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
+  readonly size?: "sm" | "md" | "lg" | "xl";
+  readonly isLoading?: boolean;
+  readonly fullWidth?: boolean;
+  readonly icon?: React.ReactNode;
+  readonly iconPosition?: "left" | "right";
+  readonly rounded?: "md" | "lg" | "xl" | "2xl" | "full";
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

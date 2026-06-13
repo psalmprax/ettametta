@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { BaseLayout } from "@/components/layout/BaseLayout";
@@ -18,6 +19,7 @@ function CallbackHandler() {
 
         if (error) {
             console.error("OAuth Error:", error);
+            toast.error(`OAuth login failed: ${error}`);
             router.push(`/login?error=${encodeURIComponent(error)}`);
             return;
         }
@@ -31,6 +33,7 @@ function CallbackHandler() {
                 })
                 .catch((err) => {
                     console.error("Session verification failed:", err);
+                    toast.error("Session verification failed — please try logging in again");
                     router.push("/login?error=Session+verification+failed");
                 });
         } else {

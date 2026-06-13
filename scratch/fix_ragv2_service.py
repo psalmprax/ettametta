@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Fix ragV2Service.ts inside the ag-dashboard-backend container."""
-import sys
 
 path = "/app/src/services/ragV2Service.ts"
 with open(path) as f:

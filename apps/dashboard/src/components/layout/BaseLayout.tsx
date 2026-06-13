@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export interface BaseLayoutProps {
-  children: React.ReactNode;
-  variant?: "landing" | "auth" | "dashboard";
-  withBackground?: boolean;
-  withPattern?: boolean;
-  className?: string;
-  containerClassName?: string;
+  readonly children: React.ReactNode;
+  readonly variant?: "landing" | "auth" | "dashboard";
+  readonly withBackground?: boolean;
+  readonly withPattern?: boolean;
+  readonly className?: string;
+  readonly containerClassName?: string;
 }
 
 export const BaseLayout = React.forwardRef<HTMLDivElement, BaseLayoutProps>(

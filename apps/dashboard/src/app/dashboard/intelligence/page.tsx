@@ -3,15 +3,10 @@
 import React, { useState } from "react";
 import DashboardLayout from "@/components/layout";
 import { 
-    Brain, 
     Cpu, 
-    MessageSquare, 
-    Users, 
-    Zap, 
-    Search,
+    Users,
     Shield,
     Workflow,
-    ArrowRight,
     Terminal,
     Sparkles,
     RefreshCw

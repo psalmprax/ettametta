@@ -14,12 +14,9 @@ import warnings
 # DEPRECATION NOTICE: This module is legacy and has been replaced by the React Dashboard
 # and TelemetryContext-driven hooks. Do not use for production logic.
 warnings.warn("src.services.ui.command_center is deprecated", DeprecationWarning, stacklevel=2)
-import time
-from datetime import datetime
 from src.services.analytics.ledger import base_ledger_service
 from src.services.analytics.drift_monitor import base_monitor_service
 from src.services.infrastructure.inference_gateway import base_inference_service
-from src.services.infrastructure.event_bus import base_event_service
 from src.services.infrastructure.resource_governor import base_governor_service
 from src.services.infrastructure.economic_controller import base_economic_service
 from src.services.analytics.drift_detector import base_drift_service
@@ -57,7 +54,7 @@ class CommandCenter:
         print("🧪 ACTIVE COHORTS & STRATEGY SURVIVAL:")
         for cohort in cohorts:
              print(f"  📦 {cohort['id']} | Strategy: {cohort['strategy'] : <15} | Fill: {cohort['fill']}")
-        print(f"  💀 RECENT ROLLBACKS: 12 (Last 24h) | 🏆 DOMINANT: 'Aggressive Hook v3'")
+        print("  💀 RECENT ROLLBACKS: 12 (Last 24h) | 🏆 DOMINANT: 'Aggressive Hook v3'")
         print("-" * 75)
         
         # 3. PERFORMANCE & EFFICIENCY (THE 10/10 CORE)
@@ -97,7 +94,7 @@ class CommandCenter:
              with open("data/analytics/performance_ledger.json", "r") as f:
                  entries = json.load(f)
                  return sum(int(e.get("actual_retention", 0) * 100000) for e in entries)
-        except:
+        except Exception:
              return 425100 # Simulated base
 
 # Singleton Instance

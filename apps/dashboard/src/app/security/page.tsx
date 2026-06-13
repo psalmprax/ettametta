@@ -1,38 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import {
     ShieldCheck,
-    ShieldAlert,
     Shield,
     Activity,
     Terminal,
     ScanLine,
     AlertTriangle,
     AlertOctagon,
-    CheckCircle2,
-    XCircle,
-    RefreshCw,
     Lock,
     Key,
     Database,
     Server,
-    Cpu,
-    HardDrive,
-    Globe,
     Clock,
     Loader2,
-    Eye,
-    EyeOff,
-    AlertCircle,
-    Search,
-    ChevronRight,
-    Zap,
-    Target,
-    Dna,
-    Radar,
-    Fingerprint
+    AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -45,13 +29,13 @@ import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 
 function SecurityContent() {
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: _systemLogs, status: _status, pulse: _pulse } = useTelemetry();
     const [activeEngine, setActiveEngine] = useState("status");
     const [securityStatus, setSecurityStatus] = useState<any>(null);
     const [securityEvents, setSecurityEvents] = useState<any[]>([]);
     const [scanResults, setScanResults] = useState<any[]>([]);
     const [isScanning, setIsScanning] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [_isLoading, setIsLoading] = useState(true);
     const [actionLogs, setActionLogs] = useState<string[]>(["SECURITY_SENTINEL_INITIALIZED"]);
 
     const fetchSecurityStatus = useCallback(async () => {
@@ -269,9 +253,10 @@ function SecurityContent() {
                                             </div>
                                         ))}
                                         {(!recentThreats || recentThreats.length === 0) && (
-                                            <div className="flex flex-col items-center justify-center py-12 opacity-20">
+                                            <div className="flex flex-col items-center justify-center py-12 opacity-50">
                                                 <ShieldCheck className="h-12 w-12 mb-4 text-emerald-500" />
-                                                <span className="text-xs font-bold uppercase tracking-[0.4em]">No recent threats detected</span>
+                                                <span className="text-xs font-bold uppercase tracking-[0.4em] text-zinc-500">No recent threats detected</span>
+                                                <span className="text-[8px] text-zinc-700 font-mono mt-2 uppercase tracking-widest">Your system is clean — checking every scan cycle</span>
                                             </div>
                                         )}
                                     </div>
@@ -307,9 +292,10 @@ function SecurityContent() {
                             <div className="overflow-y-auto custom-scrollbar flex-1 p-1">
                                 <div className="space-y-2">
                                     {(Array.isArray(securityEvents) ? securityEvents : []).length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-32 opacity-20">
-                                            <Activity className="h-16 w-16 mb-4" />
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No security events recorded</span>
+                                        <div className="flex flex-col items-center justify-center py-32 opacity-50">
+                                            <Activity className="h-16 w-16 mb-4 text-zinc-600" />
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">No security events recorded</span>
+                                            <span className="text-[8px] text-zinc-700 font-mono mt-2 uppercase tracking-widest">Events appear when threats or anomalies are detected</span>
                                         </div>
                                     ) : (
                                         (Array.isArray(securityEvents) ? securityEvents : []).map((event: any, i: number) => (
@@ -374,9 +360,10 @@ function SecurityContent() {
                                     )}
 
                                     {scanResults.length === 0 && !isScanning && (
-                                        <div className="flex flex-col items-center justify-center py-16 opacity-20">
-                                            <Shield className="h-16 w-16 mb-4" />
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No scan results yet — run a scan to check for vulnerabilities</span>
+                                        <div className="flex flex-col items-center justify-center py-16 opacity-50">
+                                            <Shield className="h-16 w-16 mb-4 text-zinc-600" />
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">No scan results yet</span>
+                                            <span className="text-[8px] text-zinc-700 font-mono mt-2 uppercase tracking-widest">Run a vulnerability scan above to check for issues</span>
                                         </div>
                                     )}
                                 </div>

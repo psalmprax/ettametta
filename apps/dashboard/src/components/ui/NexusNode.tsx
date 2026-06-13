@@ -4,12 +4,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
 import {
-    Search,
     Cpu,
     Sparkles,
     Share2,
     Database,
-    Zap,
     AlertCircle,
     CheckCircle2,
     Clock
@@ -18,14 +16,14 @@ import {
 export type NodeType = 'ingress' | 'cognition' | 'synthesis' | 'egress';
 
 interface NexusNodeProps {
-    type: NodeType;
-    label: string;
-    description: string;
-    status: 'pending' | 'processing' | 'complete' | 'error';
-    active?: boolean;
-    progress?: number;
-    metrics?: { label: string; value: string }[];
-    onClick?: () => void;
+    readonly type: NodeType;
+    readonly label: string;
+    readonly description: string;
+    readonly status: 'pending' | 'processing' | 'complete' | 'error';
+    readonly active?: boolean;
+    readonly progress?: number;
+    readonly metrics?: { label: string; value: string }[];
+    readonly onClick?: () => void;
 }
 
 const NODE_CONFIG: Record<NodeType, { icon: any; color: string; bg: string }> = {

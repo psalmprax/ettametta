@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, memo } from "react";
-import { Play, Loader2, Globe, BarChart3, Clock, CheckCircle2, X, Sparkles, Flame, BookOpen, Calendar, MessageSquare, Newspaper } from "lucide-react";
+import { Play, Globe, BarChart3, Clock, Sparkles, Flame, BookOpen, MessageSquare, Newspaper } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { VideoPreviewModal } from "@/components/ui/VideoPreviewModal";

@@ -5,12 +5,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export function useWebSocket<T>(url: string) {
     const [data, setData] = useState<T | null>(null);
     const [status, setStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');
+    const [reconnectCount, setReconnectCount] = useState(0);
     const ws = useRef<WebSocket | null>(null);
     const isMounted = useRef(true);
-    const reconnectTimeout = useRef<any>(null);
+    const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const reconnectAttempts = useRef(0);
     const maxReconnectAttempts = 10;
-    const connectionTimeout = useRef<any>(null);
+    const connectionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const connectRef = useRef<(() => void) | null>(null);
 
     const connect = useCallback(() => {
         if (!isMounted.current) return;
@@ -47,6 +49,7 @@ export function useWebSocket<T>(url: string) {
                 }
                 setStatus('open');
                 reconnectAttempts.current = 0;
+                setReconnectCount(0);
             };
 
             socket.onmessage = (event) => {
@@ -59,7 +62,7 @@ export function useWebSocket<T>(url: string) {
                 }
             };
 
-            socket.onclose = (event) => {
+            socket.onclose = () => {
                 if (connectionTimeout.current) {
                     clearTimeout(connectionTimeout.current);
                 }
@@ -70,9 +73,10 @@ export function useWebSocket<T>(url: string) {
                 if (reconnectAttempts.current < maxReconnectAttempts) {
                     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
                     reconnectAttempts.current++;
+                    setReconnectCount(reconnectAttempts.current);
                     if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
                     reconnectTimeout.current = setTimeout(() => {
-                        if (isMounted.current) connect();
+                        if (isMounted.current) connectRef.current?.();
                     }, delay);
                 }
             };
@@ -86,7 +90,7 @@ export function useWebSocket<T>(url: string) {
 
                 // Log additional details if available
                 if (error && typeof error === 'object' && 'target' in error) {
-                    const target = (error as any).target;
+                    const target = error.target as WebSocket | null;
                     if (target) {
                         console.error(`[WS] Target readyState: ${target.readyState}`);
                     }
@@ -98,9 +102,14 @@ export function useWebSocket<T>(url: string) {
             console.error("[WS] Connection failed", e);
             if (isMounted.current) {
                 setStatus('closed');
+                setReconnectCount(reconnectAttempts.current);
             }
         }
     }, [url]);
+
+    useEffect(() => {
+        connectRef.current = connect;
+    }, [connect]);
 
     useEffect(() => {
         isMounted.current = true;
@@ -121,5 +130,5 @@ export function useWebSocket<T>(url: string) {
         };
     }, [connect]);
 
-    return { data, status };
+    return { data, status, reconnectAttempts: reconnectCount };
 }

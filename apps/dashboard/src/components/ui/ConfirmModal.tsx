@@ -6,15 +6,15 @@ import { AlertTriangle, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ConfirmModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    title: string;
-    description: string;
-    confirmText?: string;
-    cancelText?: string;
-    variant?: "danger" | "primary" | "success";
-    isLoading?: boolean;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
+    readonly onConfirm: () => void;
+    readonly title: string;
+    readonly description: string;
+    readonly confirmText?: string;
+    readonly cancelText?: string;
+    readonly variant?: "danger" | "primary" | "success";
+    readonly isLoading?: boolean;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({

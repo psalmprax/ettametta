@@ -47,3 +47,18 @@ async def cleanup_after_session():
     except Exception:
         pass
 
+
+@pytest.fixture(autouse=True)
+def mock_redis_async():
+    """Mock async Redis client methods used in services/auth/routes."""
+    from unittest.mock import patch, AsyncMock
+    with patch("src.api.utils.redis.get_async_redis", new_callable=AsyncMock) as mock_get_redis:
+        mock_redis = AsyncMock()
+        mock_redis.sismember = AsyncMock(return_value=False)
+        mock_redis.get = AsyncMock(return_value=None)
+        mock_redis.set = AsyncMock(return_value=True)
+        mock_redis.exists = AsyncMock(return_value=False)
+        mock_get_redis.return_value = mock_redis
+        yield mock_redis
+
+

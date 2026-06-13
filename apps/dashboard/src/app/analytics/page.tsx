@@ -2,37 +2,25 @@
 
 export const dynamic = "force-dynamic";
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import {
     BarChart3,
-    TrendingUp,
-    Zap,
     Activity,
     Globe,
     Cpu,
-    Target,
-    Layers,
-    RefreshCw,
-    Shield,
-    Database,
-    Share2,
-    PieChart,
-    ChevronRight,
-    ArrowUpRight,
     Terminal,
     Radar,
     LineChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import nextDynamic from "next/dynamic";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { getAuthToken } from "@/lib/auth_utils";
-import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
@@ -289,11 +277,12 @@ function AnalyticsContent() {
                                         <LineChart className="h-5 w-5 text-cyan-400" />
                                         Prediction Matrix
                                     </h3>
-                                    <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-20">
+                                    <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-50">
                                         <Radar className="h-16 w-16 text-zinc-500 animate-pulse" />
                                         <div className="text-center space-y-2">
                                             <p className="text-sm font-black uppercase tracking-[0.4em] text-white">Aggregating Global Drift</p>
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Simulation running at 14.2 GFLOPS</p>
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Connecting to data pipeline...</p>
+                                            <span className="text-[8px] text-zinc-700 font-mono block">Prediction matrix updates when analytics data is available</span>
                                         </div>
                                     </div>
                                     <Button className="w-full h-14 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl uppercase tracking-widest text-xs transition-all">Launch Strategic Forecast</Button>

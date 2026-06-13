@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Zap, Globe, Shield, Activity } from "lucide-react";
+import { Globe, Activity } from "lucide-react";
 
 interface TickerEvent {
     id: string;

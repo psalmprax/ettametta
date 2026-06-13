@@ -1,40 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { 
-    Zap, 
-    Target, 
-    Activity, 
-    BarChart3, 
-    TrendingUp, 
-    RefreshCw, 
-    Play, 
-    AlertTriangle, 
-    ChevronRight,
+import React, { useState, useEffect, useCallback } from "react";
+import {
     Terminal,
-    ArrowRight,
     CheckCircle2,
-    XCircle,
-    Info,
-    Layout,
     FlaskConical,
     Microscope,
     History,
-    Dna,
-    Cpu,
-    Radar,
-    Database,
-    ShieldCheck
+    Dna
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 
@@ -59,10 +42,10 @@ export default function ABTestingStudio() {
     const [completedTests, setCompletedTests] = useState<ABTest[]>([]);
     const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
     const [testDetail, setTestDetail] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [_isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [logs, setLogs] = useState<string[]>(["LAB_INITIALIZED", "SYNCHRONIZING_NEURAL_EXPERIMENTS"]);
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: _systemLogs, status: _status, pulse: _pulse } = useTelemetry();
 
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
@@ -237,9 +220,10 @@ export default function ABTestingStudio() {
                                     />
                                 ))}
                                 {activeTests.length === 0 && (
-                                    <div className="col-span-full py-40 flex flex-col items-center justify-center space-y-6 opacity-30 grayscale">
-                                        <FlaskConical className="h-16 w-16" />
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">No active experiments</p>
+                                    <div className="col-span-full py-40 flex flex-col items-center justify-center space-y-6 opacity-60">
+                                        <FlaskConical className="h-16 w-16 text-zinc-600" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">No active experiments</p>
+                                        <span className="text-[8px] text-zinc-700 font-mono uppercase tracking-widest">Create an A/B test from the publishing flow to see it here</span>
                                     </div>
                                 )}
                             </div>
@@ -315,9 +299,10 @@ export default function ABTestingStudio() {
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-6 opacity-30 py-40">
-                                        <Microscope className="h-16 w-16" />
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Select an experiment for deep analysis</p>
+                                    <div className="h-full flex flex-col items-center justify-center space-y-6 opacity-50 py-40">
+                                        <Microscope className="h-16 w-16 text-zinc-600" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">Select an experiment for deep analysis</p>
+                                        <span className="text-[8px] text-zinc-700 font-mono uppercase tracking-widest">Click on an active experiment in the Lab tab</span>
                                     </div>
                                 )}
                             </div>

@@ -37,7 +37,8 @@ class XPublisher(SocialPublisher):
         headers: dict,
     ) -> str | None:
         """X-specific upload implementation using chunked media upload"""
-        if not headers:
+        # Check actual auth — headers dict is always truthy even when empty
+        if not headers.get("Authorization") and not headers.get("Cookie"):
             logger.error(f"[XPublisher] No authentication for user {user_id}")
             return None
 
@@ -125,12 +126,15 @@ class XPublisher(SocialPublisher):
             finalize_json = finalize_resp.json()
             processing_info = finalize_json.get("processing_info")
 
-            # Step 3b: Poll for processing completion
+            # Step 3b: Poll for processing completion (with timeout guard)
             if processing_info:
                 state = processing_info.get("state", "")
-                while state in ("pending", "in_progress"):
+                max_polls = 30  # ~2.5 min at 5s intervals
+                poll_count = 0
+                while state in ("pending", "in_progress") and poll_count < max_polls:
                     check_after = processing_info.get("check_after_secs", 5)
                     await asyncio.sleep(check_after)
+                    poll_count += 1
                     status_resp = await client.get(
                         init_url,
                         params={"command": "STATUS", "media_id": media_id},
@@ -145,6 +149,10 @@ class XPublisher(SocialPublisher):
                         error = processing_info.get("error", {})
                         logger.error(f"[XPublisher] Processing failed: {error}")
                         return None
+                
+                if state in ("pending", "in_progress"):
+                    logger.error("[XPublisher] Media processing timed out after 30 polls")
+                    return None
 
             logger.info("[XPublisher] FINALIZE ok, media ready")
 

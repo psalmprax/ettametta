@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bell, Shield, Video, Zap, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Bell, DollarSign, Shield, Video, Zap, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -10,8 +10,9 @@ import { withRealFallback } from "@/lib/real_first_utils";
 
 interface Notification {
     id: string;
-    type: "compliance" | "job" | "system" | "security";
-    message: string;
+    type: string;
+    title: string;
+    message?: string;
     timestamp: string;
     read: boolean;
     link?: string;
@@ -22,45 +23,48 @@ export function NotificationCenter() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [hasUnread, setHasUnread] = useState(false);
 
-    useEffect(() => {
-        // Poll for events every 30s
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
     const fetchNotifications = async () => {
         const token = getAuthToken();
         if (!token) return;
 
-        // In a real system, we'd have an /api/notifications endpoint.
-        // For now, we'll derive some from /publish/history and /security/events
         await withRealFallback<any[]>(
-            (signal) => fetch(`${API_BASE}/security/events`, {
+            (signal) => fetch(`${API_BASE}/notifications/`, {
                 headers: { Authorization: `Bearer ${token}` },
                 signal,
             }),
             {
                 fallback: [],
-                onSuccess: (events) => {
-                    const newNotes = events.slice(0, 5).map((e: any, i: number) => ({
-                        id: `sec-${i}`,
-                        type: "security" as const,
-                        message: typeof e === 'string' ? e : e.message,
-                        timestamp: new Date().toISOString(),
-                        read: false
+                onSuccess: (notes) => {
+                    const parsed = notes.map((n: any) => ({
+                        id: n.id,
+                        type: n.type || "system",
+                        title: n.title || n.message,
+                        message: n.message,
+                        timestamp: n.timestamp || new Date().toISOString(),
+                        read: n.read ?? false,
+                        link: n.link,
                     }));
-                    setNotifications(prev => {
-                        const merged = [...newNotes, ...prev].slice(0, 10);
-                        setHasUnread(merged.some(n => !n.read));
-                        return merged;
-                    });
+                    setNotifications(parsed);
+                    setHasUnread(parsed.some(n => !n.read));
                 }
             }
         );
     };
 
-    const markAllRead = () => {
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const markAllRead = async () => {
+        const token = getAuthToken();
+        if (token) {
+            await fetch(`${API_BASE}/notifications/read-all`, {
+                method: "PUT",
+                headers: { Authorization: `Bearer ${token}` },
+            }).catch(() => {});
+        }
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         setHasUnread(false);
     };
@@ -118,16 +122,18 @@ export function NotificationCenter() {
     );
 }
 
-function NotificationItem({ note }: { note: Notification }) {
-    const icons = {
+function NotificationItem({ note }: { readonly note: Notification }) {
+    const icons: Record<string, React.ComponentType<{ className?: string }>> = {
         security: Shield,
         job: Video,
+        billing: DollarSign,
         compliance: CheckCircle2,
         system: Zap
     };
-    const colors = {
+    const colors: Record<string, string> = {
         security: "text-rose-500 bg-rose-100",
         job: "text-indigo-500 bg-indigo-100",
+        billing: "text-blue-500 bg-blue-100",
         compliance: "text-emerald-500 bg-emerald-100",
         system: "text-amber-500 bg-amber-100"
     };
@@ -142,7 +148,10 @@ function NotificationItem({ note }: { note: Notification }) {
                 <Icon className="h-4 w-4" />
             </div>
             <div className="space-y-1 flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800 leading-tight">{note.message}</p>
+                <p className="text-sm font-medium text-slate-800 leading-tight">{note.title}</p>
+                {note.message && (
+                    <p className="text-xs text-slate-500 leading-tight">{note.message}</p>
+                )}
                 <p className="text-[10px] text-slate-400">{new Date(note.timestamp).toLocaleTimeString()}</p>
             </div>
         </div>

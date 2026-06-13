@@ -3,29 +3,14 @@
 import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import {
-    Globe,
     Zap,
-    Cpu,
     ShieldCheck,
-    AlertTriangle,
     RefreshCw,
-    Layers,
-    Copy,
-    TrendingUp,
-    ChevronRight,
-    Search,
     MessageSquareQuote,
-    ShoppingBag,
     LinkIcon,
     Package,
     Trash2,
-    Share2,
-    Database,
-    Network,
-    Terminal,
     Target,
-    Dna,
-    Radar,
     ShieldCheck as ShieldCheckIcon,
     Database as DatabaseIcon,
     Terminal as TerminalIcon,
@@ -35,17 +20,27 @@ import { toast } from "sonner";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, copyToClipboard, formatLabel } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
+import type { Node as NetworkNode, Link as NetworkLink } from "@/components/ui/NetworkMesh";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+
+interface NetworkData { nodes: NetworkNode[]; links: NetworkLink[]; }
+interface Blueprint { id?: string; niche: string; name?: string; status?: string; avg_score?: number; total_views?: number; }
+interface PlatformRevenue { platform: string; revenue: number; views?: number; clicks?: number; }
+interface RevenueReport { total_revenue: number; platforms?: PlatformRevenue[]; }
+interface SentinelStatus { status?: string; score?: number; recommendations?: string[]; }
+interface AffiliateLink { id?: string; product_name: string; niche: string; commission?: string | number; conversion_rate?: string | number; }
+interface CommerceStatus { status?: string; source?: string; sample_count?: number; }
+interface LogEntry { type?: string; level?: string; module?: string; message: string; timestamp: number; }
 
 function EmpireContent() {
     const router = useRouter();
@@ -53,10 +48,10 @@ function EmpireContent() {
     const { agents: telemetryAgents, logs: systemLogs, status, pulse } = useTelemetry();
     
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "registry");
-    const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
-    const [blueprints, setBlueprints] = useState<any[]>([]);
-    const [revenueReport, setRevenueReport] = useState<any>(null);
-    const [sentinelStatus, setSentinelStatus] = useState<any>(null);
+    const [networkData, setNetworkData] = useState<NetworkData>({ nodes: [], links: [] });
+    const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
+    const [revenueReport, setRevenueReport] = useState<RevenueReport | null>(null);
+    const [sentinelStatus, setSentinelStatus] = useState<SentinelStatus | null>(null);
     const [availableNiches, setAvailableNiches] = useState<string[]>([
         "Motivation", "AI Technology", "Finance", "Fitness",
         "Business & Entrepreneurship", "Marketing & Sales",
@@ -70,8 +65,8 @@ function EmpireContent() {
     ]);
     const [cloningNiche, setCloningNiche] = useState("");
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
-    const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
-    const [commerceStatus, setCommerceStatus] = useState<any>(null);
+    const [affiliateLinks, setAffiliateLinks] = useState<AffiliateLink[]>([]);
+    const [commerceStatus, setCommerceStatus] = useState<CommerceStatus | null>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["EMPIRE_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
 
     useEffect(() => {
@@ -86,16 +81,16 @@ function EmpireContent() {
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/no-face/sentinel/status`, { headers }),
-                { fallback: null, onSuccess: (data) => setSentinelStatus(data) }
+            withRealFallback<SentinelStatus>((signal) => fetch(`${API_BASE}/no-face/sentinel/status`, { headers }),
+                { fallback: null as unknown as SentinelStatus, onSuccess: (data) => setSentinelStatus(data) }
             ),
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/revenue/summary?days=30`, { headers }),
+            withRealFallback<RevenueReport>((signal) => fetch(`${API_BASE}/monetization/revenue/summary?days=30`, { headers }),
                 { 
-                    fallback: null, 
+                    fallback: null as unknown as RevenueReport, 
                     onSuccess: (data) => setRevenueReport(data)
                 } 
             ),
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
+            withRealFallback<{ blueprints: Blueprint[] }>((signal) => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
                 { 
                     fallback: { blueprints: [] }, 
                     onSuccess: (data) => {
@@ -104,14 +99,14 @@ function EmpireContent() {
                     } 
                 }
             ),
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/report`, { headers }),
-                { fallback: null, onSuccess: (data) => setRevenueReport(data) }
+            withRealFallback<RevenueReport>((signal) => fetch(`${API_BASE}/monetization/report`, { headers }),
+                { fallback: null as unknown as RevenueReport, onSuccess: (data) => setRevenueReport(data) }
             ),
-            withRealFallback<any[]>((signal) => fetch(`${API_BASE}/discovery/niches`, { headers }),
+            withRealFallback<unknown[]>((signal) => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 { 
                     fallback: [], 
-                    onSuccess: (responseData: any) => {
-                        const dataList = Array.isArray(responseData) ? responseData : (responseData?.data || []);
+                    onSuccess: (responseData: unknown) => {
+                        const dataList = Array.isArray(responseData) ? responseData : ((responseData as Record<string, unknown>)?.data || []);
                         if (Array.isArray(dataList) && dataList.length > 0) {
                             const nicheNames = dataList.map(n => typeof n === 'string' ? n : (n.niche || 'General'));
                             setAvailableNiches(nicheNames);
@@ -133,10 +128,10 @@ function EmpireContent() {
                     }
                 }
             ),
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
+            withRealFallback<NetworkData>((signal) => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
                 { fallback: { nodes: [], links: [] }, onSuccess: (data) => setNetworkData(data) }
             ),
-            withRealFallback<any>((signal) => fetch(`${API_BASE}/monetization/links`, { headers }),
+            withRealFallback<{ links: AffiliateLink[] }>((signal) => fetch(`${API_BASE}/monetization/links`, { headers }),
                 { fallback: { links: [] }, onSuccess: (data) => setAffiliateLinks(Array.isArray(data.links) ? data.links : []) }
             )
         ]);
@@ -234,7 +229,7 @@ function EmpireContent() {
                         {/* Platform Breakdown */}
                         {revenueReport?.platforms && (
                             <div className="mt-4 space-y-2">
-                                {revenueReport.platforms.map((platform: any, i: number) => (
+                                {revenueReport.platforms.map((platform: PlatformRevenue, i: number) => (
                                     <div key={i} className="flex items-center justify-between text-[9px]">
                                         <span className="text-zinc-400 font-bold uppercase">{platform.platform}</span>
                                         <div className="flex items-center gap-3">
@@ -400,7 +395,10 @@ function EmpireContent() {
                                             <Zap className="h-5 w-5 text-amber-500" />
                                             Affiliate Registry
                                         </h3>
-                                        <Button className="h-8 px-4 text-[10px] bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 uppercase tracking-widest font-bold">Add Link</Button>
+                                        <Button 
+                                            onClick={() => toast.info("Affiliate link management is coming in v1.2 — you'll be able to add and manage links directly from this panel.")}
+                                            className="h-8 px-4 text-[10px] bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 uppercase tracking-widest font-bold"
+                                        >Add Link</Button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                                         {affiliateLinks.map((link, i) => (
@@ -460,7 +458,10 @@ function EmpireContent() {
                                                 placeholder="Paste your video script here to optimize the call-to-action..."
                                             />
                                         </div>
-                                        <Button className="w-full h-14 bg-amber-500 text-black font-bold rounded-2xl uppercase tracking-widest text-xs hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all">Generate Optimized CTA</Button>
+                                        <Button 
+                                            onClick={() => toast.info("AI-powered CTA optimization is coming in v1.2 — it will analyze your script and generate the highest-converting call-to-action.")}
+                                            className="w-full h-14 bg-amber-500 text-black font-bold rounded-2xl uppercase tracking-widest text-xs hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all"
+                                        >Generate Optimized CTA</Button>
                                     </div>
                                 </div>
                             </div>
@@ -501,8 +502,8 @@ function EmpireContent() {
                                                 }),
                                                 {
                                                     fallback: null,
-                                                    onSuccess: (data) => {
-                                                        setCommerceStatus(data);
+                                                onSuccess: (data: unknown) => {
+                                                        setCommerceStatus(data as CommerceStatus);
                                                         toast.success("Store Synchronized");
                                                     }
                                                 }
@@ -571,7 +572,7 @@ function EmpireContent() {
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
-                                    {displayLogs.map((log: any, i: number) => (
+                                    {displayLogs.map((log: LogEntry, i: number) => (
                                         <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
                                             <span className="text-zinc-700 shrink-0 select-none">{new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
                                             <span className="text-zinc-800 shrink-0 select-none">|</span>
@@ -605,7 +606,7 @@ function EmpireContent() {
                                     <span className="text-[8px] font-mono text-amber-500/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                    {Array.isArray(displayLogs) && displayLogs.slice(0, 15).map((log: any, i: number) => (
+                                    {Array.isArray(displayLogs) && displayLogs.slice(0, 15).map((log: LogEntry, i: number) => (
                                         <div key={i} className="flex gap-4">
                                             <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                             <span className={cn(

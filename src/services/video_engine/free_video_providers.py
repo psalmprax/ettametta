@@ -932,4 +932,6 @@ class FreeVideoProviderService:
 
 
 # Global instance
-free_video_provider = FreeVideoProviderService()
+base_free_video_provider_service = FreeVideoProviderService()
+free_video_provider = base_free_video_provider_service
+

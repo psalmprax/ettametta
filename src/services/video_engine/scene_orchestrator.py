@@ -17,7 +17,7 @@ import os
 import json
 import cv2
 
-from src.services.discovery.video_lead_scanner import video_lead_scanner
+
 from src.services.video_engine.processor import VideoProcessor
 from src.services.monetization.service import MonetizationEngine
 
@@ -30,6 +30,7 @@ class SceneBasedVideoOrchestrator:
     """Orchestrates scene-based video production with audio overlay"""
 
     def __init__(self):
+        from src.services.discovery.video_lead_scanner import video_lead_scanner
         self.video_scanner = video_lead_scanner
         self.video_processor = VideoProcessor()
         self.monetization_engine = MonetizationEngine()

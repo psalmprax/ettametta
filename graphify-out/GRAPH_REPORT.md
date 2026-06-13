@@ -1,16 +1,16 @@
-# Graph Report - ettametta  (2026-05-28)
+# Graph Report - ettametta  (2026-06-13)
 
 ## Corpus Check
-- 1054 files · ~863,141 words
+- 971 files · ~714,674 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 17877 nodes · 29668 edges · 1573 communities (1053 shown, 520 thin omitted)
-- Extraction: 68% EXTRACTED · 32% INFERRED · 0% AMBIGUOUS · INFERRED: 9637 edges (avg confidence: 0.57)
+- 12527 nodes · 17628 edges · 1209 communities (766 shown, 443 thin omitted)
+- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 3151 edges (avg confidence: 0.61)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `03807007`
+- Built from commit: `0e39d3b3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -276,7 +276,6 @@
 - [[_COMMUNITY_Community 258|Community 258]]
 - [[_COMMUNITY_Community 259|Community 259]]
 - [[_COMMUNITY_Community 260|Community 260]]
-- [[_COMMUNITY_Community 261|Community 261]]
 - [[_COMMUNITY_Community 262|Community 262]]
 - [[_COMMUNITY_Community 263|Community 263]]
 - [[_COMMUNITY_Community 264|Community 264]]
@@ -345,7 +344,6 @@
 - [[_COMMUNITY_Community 327|Community 327]]
 - [[_COMMUNITY_Community 328|Community 328]]
 - [[_COMMUNITY_Community 329|Community 329]]
-- [[_COMMUNITY_Community 330|Community 330]]
 - [[_COMMUNITY_Community 331|Community 331]]
 - [[_COMMUNITY_Community 332|Community 332]]
 - [[_COMMUNITY_Community 333|Community 333]]
@@ -460,6 +458,7 @@
 - [[_COMMUNITY_Community 442|Community 442]]
 - [[_COMMUNITY_Community 443|Community 443]]
 - [[_COMMUNITY_Community 444|Community 444]]
+- [[_COMMUNITY_Community 445|Community 445]]
 - [[_COMMUNITY_Community 446|Community 446]]
 - [[_COMMUNITY_Community 447|Community 447]]
 - [[_COMMUNITY_Community 448|Community 448]]
@@ -636,9 +635,7 @@
 - [[_COMMUNITY_Community 619|Community 619]]
 - [[_COMMUNITY_Community 620|Community 620]]
 - [[_COMMUNITY_Community 621|Community 621]]
-- [[_COMMUNITY_Community 622|Community 622]]
 - [[_COMMUNITY_Community 623|Community 623]]
-- [[_COMMUNITY_Community 624|Community 624]]
 - [[_COMMUNITY_Community 625|Community 625]]
 - [[_COMMUNITY_Community 626|Community 626]]
 - [[_COMMUNITY_Community 627|Community 627]]
@@ -679,8 +676,6 @@
 - [[_COMMUNITY_Community 662|Community 662]]
 - [[_COMMUNITY_Community 663|Community 663]]
 - [[_COMMUNITY_Community 664|Community 664]]
-- [[_COMMUNITY_Community 665|Community 665]]
-- [[_COMMUNITY_Community 666|Community 666]]
 - [[_COMMUNITY_Community 667|Community 667]]
 - [[_COMMUNITY_Community 668|Community 668]]
 - [[_COMMUNITY_Community 669|Community 669]]
@@ -688,10 +683,8 @@
 - [[_COMMUNITY_Community 671|Community 671]]
 - [[_COMMUNITY_Community 672|Community 672]]
 - [[_COMMUNITY_Community 673|Community 673]]
-- [[_COMMUNITY_Community 674|Community 674]]
 - [[_COMMUNITY_Community 675|Community 675]]
 - [[_COMMUNITY_Community 676|Community 676]]
-- [[_COMMUNITY_Community 677|Community 677]]
 - [[_COMMUNITY_Community 678|Community 678]]
 - [[_COMMUNITY_Community 679|Community 679]]
 - [[_COMMUNITY_Community 680|Community 680]]
@@ -726,39 +719,11 @@
 - [[_COMMUNITY_Community 709|Community 709]]
 - [[_COMMUNITY_Community 710|Community 710]]
 - [[_COMMUNITY_Community 711|Community 711]]
-- [[_COMMUNITY_Community 712|Community 712]]
-- [[_COMMUNITY_Community 713|Community 713]]
-- [[_COMMUNITY_Community 714|Community 714]]
-- [[_COMMUNITY_Community 716|Community 716]]
-- [[_COMMUNITY_Community 717|Community 717]]
-- [[_COMMUNITY_Community 718|Community 718]]
-- [[_COMMUNITY_Community 719|Community 719]]
-- [[_COMMUNITY_Community 720|Community 720]]
-- [[_COMMUNITY_Community 721|Community 721]]
-- [[_COMMUNITY_Community 722|Community 722]]
-- [[_COMMUNITY_Community 723|Community 723]]
-- [[_COMMUNITY_Community 724|Community 724]]
-- [[_COMMUNITY_Community 725|Community 725]]
-- [[_COMMUNITY_Community 726|Community 726]]
-- [[_COMMUNITY_Community 727|Community 727]]
-- [[_COMMUNITY_Community 728|Community 728]]
-- [[_COMMUNITY_Community 729|Community 729]]
-- [[_COMMUNITY_Community 730|Community 730]]
-- [[_COMMUNITY_Community 731|Community 731]]
-- [[_COMMUNITY_Community 732|Community 732]]
-- [[_COMMUNITY_Community 733|Community 733]]
 - [[_COMMUNITY_Community 734|Community 734]]
 - [[_COMMUNITY_Community 735|Community 735]]
-- [[_COMMUNITY_Community 736|Community 736]]
-- [[_COMMUNITY_Community 737|Community 737]]
-- [[_COMMUNITY_Community 738|Community 738]]
-- [[_COMMUNITY_Community 739|Community 739]]
-- [[_COMMUNITY_Community 740|Community 740]]
-- [[_COMMUNITY_Community 741|Community 741]]
 - [[_COMMUNITY_Community 742|Community 742]]
 - [[_COMMUNITY_Community 743|Community 743]]
 - [[_COMMUNITY_Community 744|Community 744]]
-- [[_COMMUNITY_Community 745|Community 745]]
 - [[_COMMUNITY_Community 746|Community 746]]
 - [[_COMMUNITY_Community 747|Community 747]]
 - [[_COMMUNITY_Community 748|Community 748]]
@@ -766,33 +731,11 @@
 - [[_COMMUNITY_Community 750|Community 750]]
 - [[_COMMUNITY_Community 751|Community 751]]
 - [[_COMMUNITY_Community 752|Community 752]]
-- [[_COMMUNITY_Community 753|Community 753]]
-- [[_COMMUNITY_Community 754|Community 754]]
-- [[_COMMUNITY_Community 755|Community 755]]
 - [[_COMMUNITY_Community 756|Community 756]]
-- [[_COMMUNITY_Community 757|Community 757]]
-- [[_COMMUNITY_Community 758|Community 758]]
-- [[_COMMUNITY_Community 759|Community 759]]
-- [[_COMMUNITY_Community 760|Community 760]]
-- [[_COMMUNITY_Community 761|Community 761]]
-- [[_COMMUNITY_Community 762|Community 762]]
-- [[_COMMUNITY_Community 763|Community 763]]
-- [[_COMMUNITY_Community 764|Community 764]]
-- [[_COMMUNITY_Community 765|Community 765]]
-- [[_COMMUNITY_Community 766|Community 766]]
-- [[_COMMUNITY_Community 767|Community 767]]
-- [[_COMMUNITY_Community 768|Community 768]]
-- [[_COMMUNITY_Community 769|Community 769]]
-- [[_COMMUNITY_Community 770|Community 770]]
-- [[_COMMUNITY_Community 771|Community 771]]
-- [[_COMMUNITY_Community 772|Community 772]]
-- [[_COMMUNITY_Community 773|Community 773]]
 - [[_COMMUNITY_Community 774|Community 774]]
 - [[_COMMUNITY_Community 775|Community 775]]
 - [[_COMMUNITY_Community 776|Community 776]]
 - [[_COMMUNITY_Community 777|Community 777]]
-- [[_COMMUNITY_Community 778|Community 778]]
-- [[_COMMUNITY_Community 779|Community 779]]
 - [[_COMMUNITY_Community 780|Community 780]]
 - [[_COMMUNITY_Community 781|Community 781]]
 - [[_COMMUNITY_Community 782|Community 782]]
@@ -801,28 +744,6 @@
 - [[_COMMUNITY_Community 785|Community 785]]
 - [[_COMMUNITY_Community 786|Community 786]]
 - [[_COMMUNITY_Community 787|Community 787]]
-- [[_COMMUNITY_Community 788|Community 788]]
-- [[_COMMUNITY_Community 789|Community 789]]
-- [[_COMMUNITY_Community 790|Community 790]]
-- [[_COMMUNITY_Community 791|Community 791]]
-- [[_COMMUNITY_Community 792|Community 792]]
-- [[_COMMUNITY_Community 794|Community 794]]
-- [[_COMMUNITY_Community 795|Community 795]]
-- [[_COMMUNITY_Community 796|Community 796]]
-- [[_COMMUNITY_Community 797|Community 797]]
-- [[_COMMUNITY_Community 798|Community 798]]
-- [[_COMMUNITY_Community 799|Community 799]]
-- [[_COMMUNITY_Community 800|Community 800]]
-- [[_COMMUNITY_Community 801|Community 801]]
-- [[_COMMUNITY_Community 802|Community 802]]
-- [[_COMMUNITY_Community 803|Community 803]]
-- [[_COMMUNITY_Community 804|Community 804]]
-- [[_COMMUNITY_Community 805|Community 805]]
-- [[_COMMUNITY_Community 806|Community 806]]
-- [[_COMMUNITY_Community 807|Community 807]]
-- [[_COMMUNITY_Community 808|Community 808]]
-- [[_COMMUNITY_Community 809|Community 809]]
-- [[_COMMUNITY_Community 810|Community 810]]
 - [[_COMMUNITY_Community 811|Community 811]]
 - [[_COMMUNITY_Community 812|Community 812]]
 - [[_COMMUNITY_Community 813|Community 813]]
@@ -851,29 +772,6 @@
 - [[_COMMUNITY_Community 836|Community 836]]
 - [[_COMMUNITY_Community 837|Community 837]]
 - [[_COMMUNITY_Community 838|Community 838]]
-- [[_COMMUNITY_Community 839|Community 839]]
-- [[_COMMUNITY_Community 840|Community 840]]
-- [[_COMMUNITY_Community 841|Community 841]]
-- [[_COMMUNITY_Community 842|Community 842]]
-- [[_COMMUNITY_Community 843|Community 843]]
-- [[_COMMUNITY_Community 844|Community 844]]
-- [[_COMMUNITY_Community 846|Community 846]]
-- [[_COMMUNITY_Community 847|Community 847]]
-- [[_COMMUNITY_Community 848|Community 848]]
-- [[_COMMUNITY_Community 850|Community 850]]
-- [[_COMMUNITY_Community 851|Community 851]]
-- [[_COMMUNITY_Community 853|Community 853]]
-- [[_COMMUNITY_Community 854|Community 854]]
-- [[_COMMUNITY_Community 855|Community 855]]
-- [[_COMMUNITY_Community 856|Community 856]]
-- [[_COMMUNITY_Community 857|Community 857]]
-- [[_COMMUNITY_Community 858|Community 858]]
-- [[_COMMUNITY_Community 859|Community 859]]
-- [[_COMMUNITY_Community 860|Community 860]]
-- [[_COMMUNITY_Community 861|Community 861]]
-- [[_COMMUNITY_Community 862|Community 862]]
-- [[_COMMUNITY_Community 863|Community 863]]
-- [[_COMMUNITY_Community 864|Community 864]]
 - [[_COMMUNITY_Community 865|Community 865]]
 - [[_COMMUNITY_Community 866|Community 866]]
 - [[_COMMUNITY_Community 867|Community 867]]
@@ -888,28 +786,21 @@
 - [[_COMMUNITY_Community 876|Community 876]]
 - [[_COMMUNITY_Community 877|Community 877]]
 - [[_COMMUNITY_Community 878|Community 878]]
-- [[_COMMUNITY_Community 879|Community 879]]
 - [[_COMMUNITY_Community 880|Community 880]]
 - [[_COMMUNITY_Community 881|Community 881]]
 - [[_COMMUNITY_Community 882|Community 882]]
 - [[_COMMUNITY_Community 883|Community 883]]
 - [[_COMMUNITY_Community 884|Community 884]]
 - [[_COMMUNITY_Community 885|Community 885]]
-- [[_COMMUNITY_Community 886|Community 886]]
 - [[_COMMUNITY_Community 887|Community 887]]
-- [[_COMMUNITY_Community 888|Community 888]]
-- [[_COMMUNITY_Community 889|Community 889]]
-- [[_COMMUNITY_Community 890|Community 890]]
 - [[_COMMUNITY_Community 891|Community 891]]
 - [[_COMMUNITY_Community 892|Community 892]]
 - [[_COMMUNITY_Community 893|Community 893]]
 - [[_COMMUNITY_Community 894|Community 894]]
-- [[_COMMUNITY_Community 895|Community 895]]
 - [[_COMMUNITY_Community 896|Community 896]]
 - [[_COMMUNITY_Community 897|Community 897]]
 - [[_COMMUNITY_Community 898|Community 898]]
 - [[_COMMUNITY_Community 899|Community 899]]
-- [[_COMMUNITY_Community 900|Community 900]]
 - [[_COMMUNITY_Community 901|Community 901]]
 - [[_COMMUNITY_Community 902|Community 902]]
 - [[_COMMUNITY_Community 903|Community 903]]
@@ -923,10 +814,10 @@
 - [[_COMMUNITY_Community 911|Community 911]]
 - [[_COMMUNITY_Community 912|Community 912]]
 - [[_COMMUNITY_Community 913|Community 913]]
+- [[_COMMUNITY_Community 914|Community 914]]
 - [[_COMMUNITY_Community 916|Community 916]]
 - [[_COMMUNITY_Community 917|Community 917]]
 - [[_COMMUNITY_Community 918|Community 918]]
-- [[_COMMUNITY_Community 919|Community 919]]
 - [[_COMMUNITY_Community 920|Community 920]]
 - [[_COMMUNITY_Community 921|Community 921]]
 - [[_COMMUNITY_Community 922|Community 922]]
@@ -935,6 +826,7 @@
 - [[_COMMUNITY_Community 925|Community 925]]
 - [[_COMMUNITY_Community 926|Community 926]]
 - [[_COMMUNITY_Community 927|Community 927]]
+- [[_COMMUNITY_Community 928|Community 928]]
 - [[_COMMUNITY_Community 929|Community 929]]
 - [[_COMMUNITY_Community 930|Community 930]]
 - [[_COMMUNITY_Community 931|Community 931]]
@@ -979,6 +871,9 @@
 - [[_COMMUNITY_Community 970|Community 970]]
 - [[_COMMUNITY_Community 971|Community 971]]
 - [[_COMMUNITY_Community 972|Community 972]]
+- [[_COMMUNITY_Community 973|Community 973]]
+- [[_COMMUNITY_Community 974|Community 974]]
+- [[_COMMUNITY_Community 975|Community 975]]
 - [[_COMMUNITY_Community 976|Community 976]]
 - [[_COMMUNITY_Community 977|Community 977]]
 - [[_COMMUNITY_Community 978|Community 978]]
@@ -1009,7 +904,6 @@
 - [[_COMMUNITY_Community 1003|Community 1003]]
 - [[_COMMUNITY_Community 1004|Community 1004]]
 - [[_COMMUNITY_Community 1005|Community 1005]]
-- [[_COMMUNITY_Community 1006|Community 1006]]
 - [[_COMMUNITY_Community 1007|Community 1007]]
 - [[_COMMUNITY_Community 1008|Community 1008]]
 - [[_COMMUNITY_Community 1009|Community 1009]]
@@ -1022,11 +916,27 @@
 - [[_COMMUNITY_Community 1016|Community 1016]]
 - [[_COMMUNITY_Community 1017|Community 1017]]
 - [[_COMMUNITY_Community 1018|Community 1018]]
+- [[_COMMUNITY_Community 1019|Community 1019]]
+- [[_COMMUNITY_Community 1020|Community 1020]]
+- [[_COMMUNITY_Community 1021|Community 1021]]
+- [[_COMMUNITY_Community 1022|Community 1022]]
+- [[_COMMUNITY_Community 1023|Community 1023]]
+- [[_COMMUNITY_Community 1024|Community 1024]]
+- [[_COMMUNITY_Community 1025|Community 1025]]
+- [[_COMMUNITY_Community 1026|Community 1026]]
+- [[_COMMUNITY_Community 1027|Community 1027]]
+- [[_COMMUNITY_Community 1030|Community 1030]]
+- [[_COMMUNITY_Community 1031|Community 1031]]
+- [[_COMMUNITY_Community 1032|Community 1032]]
+- [[_COMMUNITY_Community 1033|Community 1033]]
 - [[_COMMUNITY_Community 1034|Community 1034]]
-- [[_COMMUNITY_Community 1035|Community 1035]]
+- [[_COMMUNITY_Community 1036|Community 1036]]
+- [[_COMMUNITY_Community 1037|Community 1037]]
+- [[_COMMUNITY_Community 1038|Community 1038]]
 - [[_COMMUNITY_Community 1039|Community 1039]]
 - [[_COMMUNITY_Community 1040|Community 1040]]
 - [[_COMMUNITY_Community 1041|Community 1041]]
+- [[_COMMUNITY_Community 1042|Community 1042]]
 - [[_COMMUNITY_Community 1043|Community 1043]]
 - [[_COMMUNITY_Community 1044|Community 1044]]
 - [[_COMMUNITY_Community 1045|Community 1045]]
@@ -1037,20 +947,68 @@
 - [[_COMMUNITY_Community 1050|Community 1050]]
 - [[_COMMUNITY_Community 1051|Community 1051]]
 - [[_COMMUNITY_Community 1052|Community 1052]]
+- [[_COMMUNITY_Community 1053|Community 1053]]
+- [[_COMMUNITY_Community 1054|Community 1054]]
 - [[_COMMUNITY_Community 1055|Community 1055]]
+- [[_COMMUNITY_Community 1056|Community 1056]]
+- [[_COMMUNITY_Community 1057|Community 1057]]
+- [[_COMMUNITY_Community 1058|Community 1058]]
+- [[_COMMUNITY_Community 1059|Community 1059]]
+- [[_COMMUNITY_Community 1060|Community 1060]]
+- [[_COMMUNITY_Community 1061|Community 1061]]
+- [[_COMMUNITY_Community 1062|Community 1062]]
+- [[_COMMUNITY_Community 1063|Community 1063]]
+- [[_COMMUNITY_Community 1064|Community 1064]]
+- [[_COMMUNITY_Community 1065|Community 1065]]
+- [[_COMMUNITY_Community 1066|Community 1066]]
+- [[_COMMUNITY_Community 1067|Community 1067]]
+- [[_COMMUNITY_Community 1068|Community 1068]]
+- [[_COMMUNITY_Community 1070|Community 1070]]
+- [[_COMMUNITY_Community 1071|Community 1071]]
+- [[_COMMUNITY_Community 1072|Community 1072]]
 - [[_COMMUNITY_Community 1073|Community 1073]]
 - [[_COMMUNITY_Community 1074|Community 1074]]
 - [[_COMMUNITY_Community 1075|Community 1075]]
+- [[_COMMUNITY_Community 1076|Community 1076]]
+- [[_COMMUNITY_Community 1077|Community 1077]]
+- [[_COMMUNITY_Community 1078|Community 1078]]
 - [[_COMMUNITY_Community 1079|Community 1079]]
 - [[_COMMUNITY_Community 1080|Community 1080]]
 - [[_COMMUNITY_Community 1081|Community 1081]]
-- [[_COMMUNITY_Community 1082|Community 1082]]
 - [[_COMMUNITY_Community 1083|Community 1083]]
 - [[_COMMUNITY_Community 1084|Community 1084]]
 - [[_COMMUNITY_Community 1085|Community 1085]]
 - [[_COMMUNITY_Community 1086|Community 1086]]
 - [[_COMMUNITY_Community 1087|Community 1087]]
+- [[_COMMUNITY_Community 1088|Community 1088]]
+- [[_COMMUNITY_Community 1089|Community 1089]]
+- [[_COMMUNITY_Community 1090|Community 1090]]
+- [[_COMMUNITY_Community 1091|Community 1091]]
+- [[_COMMUNITY_Community 1092|Community 1092]]
+- [[_COMMUNITY_Community 1093|Community 1093]]
+- [[_COMMUNITY_Community 1094|Community 1094]]
 - [[_COMMUNITY_Community 1096|Community 1096]]
+- [[_COMMUNITY_Community 1097|Community 1097]]
+- [[_COMMUNITY_Community 1098|Community 1098]]
+- [[_COMMUNITY_Community 1099|Community 1099]]
+- [[_COMMUNITY_Community 1101|Community 1101]]
+- [[_COMMUNITY_Community 1105|Community 1105]]
+- [[_COMMUNITY_Community 1106|Community 1106]]
+- [[_COMMUNITY_Community 1107|Community 1107]]
+- [[_COMMUNITY_Community 1108|Community 1108]]
+- [[_COMMUNITY_Community 1110|Community 1110]]
+- [[_COMMUNITY_Community 1111|Community 1111]]
+- [[_COMMUNITY_Community 1112|Community 1112]]
+- [[_COMMUNITY_Community 1113|Community 1113]]
+- [[_COMMUNITY_Community 1114|Community 1114]]
+- [[_COMMUNITY_Community 1115|Community 1115]]
+- [[_COMMUNITY_Community 1116|Community 1116]]
+- [[_COMMUNITY_Community 1117|Community 1117]]
+- [[_COMMUNITY_Community 1118|Community 1118]]
+- [[_COMMUNITY_Community 1119|Community 1119]]
+- [[_COMMUNITY_Community 1120|Community 1120]]
+- [[_COMMUNITY_Community 1121|Community 1121]]
+- [[_COMMUNITY_Community 1122|Community 1122]]
 - [[_COMMUNITY_Community 1123|Community 1123]]
 - [[_COMMUNITY_Community 1124|Community 1124]]
 - [[_COMMUNITY_Community 1125|Community 1125]]
@@ -1062,16 +1020,22 @@
 - [[_COMMUNITY_Community 1131|Community 1131]]
 - [[_COMMUNITY_Community 1132|Community 1132]]
 - [[_COMMUNITY_Community 1133|Community 1133]]
+- [[_COMMUNITY_Community 1134|Community 1134]]
 - [[_COMMUNITY_Community 1135|Community 1135]]
 - [[_COMMUNITY_Community 1136|Community 1136]]
 - [[_COMMUNITY_Community 1137|Community 1137]]
 - [[_COMMUNITY_Community 1138|Community 1138]]
 - [[_COMMUNITY_Community 1139|Community 1139]]
 - [[_COMMUNITY_Community 1140|Community 1140]]
+- [[_COMMUNITY_Community 1141|Community 1141]]
+- [[_COMMUNITY_Community 1142|Community 1142]]
+- [[_COMMUNITY_Community 1143|Community 1143]]
+- [[_COMMUNITY_Community 1144|Community 1144]]
 - [[_COMMUNITY_Community 1145|Community 1145]]
+- [[_COMMUNITY_Community 1146|Community 1146]]
 - [[_COMMUNITY_Community 1147|Community 1147]]
 - [[_COMMUNITY_Community 1148|Community 1148]]
-- [[_COMMUNITY_Community 1149|Community 1149]]
+- [[_COMMUNITY_Community 1150|Community 1150]]
 - [[_COMMUNITY_Community 1151|Community 1151]]
 - [[_COMMUNITY_Community 1152|Community 1152]]
 - [[_COMMUNITY_Community 1153|Community 1153]]
@@ -1086,9 +1050,10 @@
 - [[_COMMUNITY_Community 1162|Community 1162]]
 - [[_COMMUNITY_Community 1163|Community 1163]]
 - [[_COMMUNITY_Community 1164|Community 1164]]
+- [[_COMMUNITY_Community 1165|Community 1165]]
 - [[_COMMUNITY_Community 1166|Community 1166]]
 - [[_COMMUNITY_Community 1167|Community 1167]]
-- [[_COMMUNITY_Community 1169|Community 1169]]
+- [[_COMMUNITY_Community 1168|Community 1168]]
 - [[_COMMUNITY_Community 1170|Community 1170]]
 - [[_COMMUNITY_Community 1171|Community 1171]]
 - [[_COMMUNITY_Community 1172|Community 1172]]
@@ -1104,4073 +1069,2526 @@
 - [[_COMMUNITY_Community 1182|Community 1182]]
 - [[_COMMUNITY_Community 1183|Community 1183]]
 - [[_COMMUNITY_Community 1184|Community 1184]]
-- [[_COMMUNITY_Community 1185|Community 1185]]
 - [[_COMMUNITY_Community 1186|Community 1186]]
 - [[_COMMUNITY_Community 1187|Community 1187]]
 - [[_COMMUNITY_Community 1188|Community 1188]]
 - [[_COMMUNITY_Community 1189|Community 1189]]
 - [[_COMMUNITY_Community 1190|Community 1190]]
 - [[_COMMUNITY_Community 1191|Community 1191]]
-- [[_COMMUNITY_Community 1192|Community 1192]]
-- [[_COMMUNITY_Community 1193|Community 1193]]
-- [[_COMMUNITY_Community 1194|Community 1194]]
-- [[_COMMUNITY_Community 1195|Community 1195]]
-- [[_COMMUNITY_Community 1196|Community 1196]]
-- [[_COMMUNITY_Community 1197|Community 1197]]
-- [[_COMMUNITY_Community 1198|Community 1198]]
-- [[_COMMUNITY_Community 1199|Community 1199]]
-- [[_COMMUNITY_Community 1200|Community 1200]]
-- [[_COMMUNITY_Community 1201|Community 1201]]
-- [[_COMMUNITY_Community 1202|Community 1202]]
-- [[_COMMUNITY_Community 1203|Community 1203]]
-- [[_COMMUNITY_Community 1204|Community 1204]]
-- [[_COMMUNITY_Community 1205|Community 1205]]
-- [[_COMMUNITY_Community 1206|Community 1206]]
-- [[_COMMUNITY_Community 1207|Community 1207]]
-- [[_COMMUNITY_Community 1208|Community 1208]]
-- [[_COMMUNITY_Community 1209|Community 1209]]
-- [[_COMMUNITY_Community 1210|Community 1210]]
-- [[_COMMUNITY_Community 1211|Community 1211]]
-- [[_COMMUNITY_Community 1212|Community 1212]]
-- [[_COMMUNITY_Community 1213|Community 1213]]
-- [[_COMMUNITY_Community 1214|Community 1214]]
-- [[_COMMUNITY_Community 1215|Community 1215]]
-- [[_COMMUNITY_Community 1216|Community 1216]]
-- [[_COMMUNITY_Community 1217|Community 1217]]
-- [[_COMMUNITY_Community 1218|Community 1218]]
-- [[_COMMUNITY_Community 1219|Community 1219]]
-- [[_COMMUNITY_Community 1220|Community 1220]]
-- [[_COMMUNITY_Community 1221|Community 1221]]
-- [[_COMMUNITY_Community 1222|Community 1222]]
-- [[_COMMUNITY_Community 1223|Community 1223]]
-- [[_COMMUNITY_Community 1224|Community 1224]]
-- [[_COMMUNITY_Community 1225|Community 1225]]
-- [[_COMMUNITY_Community 1226|Community 1226]]
-- [[_COMMUNITY_Community 1227|Community 1227]]
-- [[_COMMUNITY_Community 1228|Community 1228]]
-- [[_COMMUNITY_Community 1229|Community 1229]]
-- [[_COMMUNITY_Community 1230|Community 1230]]
-- [[_COMMUNITY_Community 1231|Community 1231]]
-- [[_COMMUNITY_Community 1232|Community 1232]]
-- [[_COMMUNITY_Community 1233|Community 1233]]
-- [[_COMMUNITY_Community 1234|Community 1234]]
-- [[_COMMUNITY_Community 1235|Community 1235]]
-- [[_COMMUNITY_Community 1236|Community 1236]]
-- [[_COMMUNITY_Community 1237|Community 1237]]
-- [[_COMMUNITY_Community 1238|Community 1238]]
-- [[_COMMUNITY_Community 1239|Community 1239]]
-- [[_COMMUNITY_Community 1240|Community 1240]]
-- [[_COMMUNITY_Community 1241|Community 1241]]
-- [[_COMMUNITY_Community 1242|Community 1242]]
-- [[_COMMUNITY_Community 1243|Community 1243]]
-- [[_COMMUNITY_Community 1245|Community 1245]]
-- [[_COMMUNITY_Community 1246|Community 1246]]
-- [[_COMMUNITY_Community 1247|Community 1247]]
-- [[_COMMUNITY_Community 1248|Community 1248]]
-- [[_COMMUNITY_Community 1249|Community 1249]]
-- [[_COMMUNITY_Community 1250|Community 1250]]
-- [[_COMMUNITY_Community 1251|Community 1251]]
-- [[_COMMUNITY_Community 1252|Community 1252]]
-- [[_COMMUNITY_Community 1253|Community 1253]]
-- [[_COMMUNITY_Community 1254|Community 1254]]
-- [[_COMMUNITY_Community 1255|Community 1255]]
-- [[_COMMUNITY_Community 1256|Community 1256]]
-- [[_COMMUNITY_Community 1257|Community 1257]]
-- [[_COMMUNITY_Community 1258|Community 1258]]
-- [[_COMMUNITY_Community 1259|Community 1259]]
-- [[_COMMUNITY_Community 1260|Community 1260]]
-- [[_COMMUNITY_Community 1261|Community 1261]]
-- [[_COMMUNITY_Community 1262|Community 1262]]
-- [[_COMMUNITY_Community 1263|Community 1263]]
-- [[_COMMUNITY_Community 1264|Community 1264]]
-- [[_COMMUNITY_Community 1267|Community 1267]]
-- [[_COMMUNITY_Community 1268|Community 1268]]
-- [[_COMMUNITY_Community 1269|Community 1269]]
-- [[_COMMUNITY_Community 1270|Community 1270]]
-- [[_COMMUNITY_Community 1272|Community 1272]]
-- [[_COMMUNITY_Community 1273|Community 1273]]
-- [[_COMMUNITY_Community 1274|Community 1274]]
-- [[_COMMUNITY_Community 1275|Community 1275]]
-- [[_COMMUNITY_Community 1276|Community 1276]]
-- [[_COMMUNITY_Community 1277|Community 1277]]
-- [[_COMMUNITY_Community 1278|Community 1278]]
-- [[_COMMUNITY_Community 1279|Community 1279]]
-- [[_COMMUNITY_Community 1280|Community 1280]]
-- [[_COMMUNITY_Community 1281|Community 1281]]
-- [[_COMMUNITY_Community 1282|Community 1282]]
-- [[_COMMUNITY_Community 1283|Community 1283]]
-- [[_COMMUNITY_Community 1284|Community 1284]]
-- [[_COMMUNITY_Community 1285|Community 1285]]
-- [[_COMMUNITY_Community 1286|Community 1286]]
-- [[_COMMUNITY_Community 1287|Community 1287]]
-- [[_COMMUNITY_Community 1288|Community 1288]]
-- [[_COMMUNITY_Community 1290|Community 1290]]
-- [[_COMMUNITY_Community 1291|Community 1291]]
-- [[_COMMUNITY_Community 1292|Community 1292]]
-- [[_COMMUNITY_Community 1293|Community 1293]]
-- [[_COMMUNITY_Community 1294|Community 1294]]
-- [[_COMMUNITY_Community 1295|Community 1295]]
-- [[_COMMUNITY_Community 1296|Community 1296]]
-- [[_COMMUNITY_Community 1297|Community 1297]]
-- [[_COMMUNITY_Community 1298|Community 1298]]
-- [[_COMMUNITY_Community 1299|Community 1299]]
-- [[_COMMUNITY_Community 1300|Community 1300]]
-- [[_COMMUNITY_Community 1301|Community 1301]]
-- [[_COMMUNITY_Community 1303|Community 1303]]
-- [[_COMMUNITY_Community 1304|Community 1304]]
-- [[_COMMUNITY_Community 1305|Community 1305]]
-- [[_COMMUNITY_Community 1306|Community 1306]]
-- [[_COMMUNITY_Community 1307|Community 1307]]
-- [[_COMMUNITY_Community 1308|Community 1308]]
-- [[_COMMUNITY_Community 1309|Community 1309]]
-- [[_COMMUNITY_Community 1310|Community 1310]]
-- [[_COMMUNITY_Community 1311|Community 1311]]
-- [[_COMMUNITY_Community 1312|Community 1312]]
-- [[_COMMUNITY_Community 1313|Community 1313]]
-- [[_COMMUNITY_Community 1314|Community 1314]]
-- [[_COMMUNITY_Community 1316|Community 1316]]
-- [[_COMMUNITY_Community 1317|Community 1317]]
-- [[_COMMUNITY_Community 1318|Community 1318]]
-- [[_COMMUNITY_Community 1323|Community 1323]]
-- [[_COMMUNITY_Community 1324|Community 1324]]
-- [[_COMMUNITY_Community 1325|Community 1325]]
-- [[_COMMUNITY_Community 1326|Community 1326]]
-- [[_COMMUNITY_Community 1328|Community 1328]]
-- [[_COMMUNITY_Community 1329|Community 1329]]
-- [[_COMMUNITY_Community 1330|Community 1330]]
-- [[_COMMUNITY_Community 1331|Community 1331]]
-- [[_COMMUNITY_Community 1332|Community 1332]]
-- [[_COMMUNITY_Community 1333|Community 1333]]
-- [[_COMMUNITY_Community 1334|Community 1334]]
-- [[_COMMUNITY_Community 1335|Community 1335]]
-- [[_COMMUNITY_Community 1336|Community 1336]]
-- [[_COMMUNITY_Community 1337|Community 1337]]
-- [[_COMMUNITY_Community 1338|Community 1338]]
-- [[_COMMUNITY_Community 1339|Community 1339]]
-- [[_COMMUNITY_Community 1340|Community 1340]]
-- [[_COMMUNITY_Community 1341|Community 1341]]
-- [[_COMMUNITY_Community 1342|Community 1342]]
-- [[_COMMUNITY_Community 1343|Community 1343]]
-- [[_COMMUNITY_Community 1344|Community 1344]]
-- [[_COMMUNITY_Community 1345|Community 1345]]
-- [[_COMMUNITY_Community 1346|Community 1346]]
-- [[_COMMUNITY_Community 1347|Community 1347]]
-- [[_COMMUNITY_Community 1348|Community 1348]]
-- [[_COMMUNITY_Community 1350|Community 1350]]
-- [[_COMMUNITY_Community 1351|Community 1351]]
-- [[_COMMUNITY_Community 1352|Community 1352]]
-- [[_COMMUNITY_Community 1353|Community 1353]]
-- [[_COMMUNITY_Community 1354|Community 1354]]
-- [[_COMMUNITY_Community 1355|Community 1355]]
-- [[_COMMUNITY_Community 1356|Community 1356]]
-- [[_COMMUNITY_Community 1357|Community 1357]]
-- [[_COMMUNITY_Community 1358|Community 1358]]
-- [[_COMMUNITY_Community 1359|Community 1359]]
-- [[_COMMUNITY_Community 1361|Community 1361]]
-- [[_COMMUNITY_Community 1362|Community 1362]]
-- [[_COMMUNITY_Community 1363|Community 1363]]
-- [[_COMMUNITY_Community 1364|Community 1364]]
-- [[_COMMUNITY_Community 1365|Community 1365]]
-- [[_COMMUNITY_Community 1366|Community 1366]]
-- [[_COMMUNITY_Community 1367|Community 1367]]
-- [[_COMMUNITY_Community 1368|Community 1368]]
-- [[_COMMUNITY_Community 1369|Community 1369]]
-- [[_COMMUNITY_Community 1370|Community 1370]]
-- [[_COMMUNITY_Community 1371|Community 1371]]
-- [[_COMMUNITY_Community 1372|Community 1372]]
-- [[_COMMUNITY_Community 1373|Community 1373]]
-- [[_COMMUNITY_Community 1374|Community 1374]]
-- [[_COMMUNITY_Community 1375|Community 1375]]
-- [[_COMMUNITY_Community 1377|Community 1377]]
-- [[_COMMUNITY_Community 1378|Community 1378]]
-- [[_COMMUNITY_Community 1379|Community 1379]]
-- [[_COMMUNITY_Community 1380|Community 1380]]
-- [[_COMMUNITY_Community 1381|Community 1381]]
-- [[_COMMUNITY_Community 1382|Community 1382]]
-- [[_COMMUNITY_Community 1406|Community 1406]]
-- [[_COMMUNITY_Community 1407|Community 1407]]
-- [[_COMMUNITY_Community 1408|Community 1408]]
-- [[_COMMUNITY_Community 1409|Community 1409]]
-- [[_COMMUNITY_Community 1410|Community 1410]]
-- [[_COMMUNITY_Community 1411|Community 1411]]
-- [[_COMMUNITY_Community 1412|Community 1412]]
-- [[_COMMUNITY_Community 1413|Community 1413]]
-- [[_COMMUNITY_Community 1414|Community 1414]]
-- [[_COMMUNITY_Community 1415|Community 1415]]
-- [[_COMMUNITY_Community 1416|Community 1416]]
-- [[_COMMUNITY_Community 1417|Community 1417]]
-- [[_COMMUNITY_Community 1418|Community 1418]]
-- [[_COMMUNITY_Community 1420|Community 1420]]
-- [[_COMMUNITY_Community 1421|Community 1421]]
-- [[_COMMUNITY_Community 1422|Community 1422]]
-- [[_COMMUNITY_Community 1423|Community 1423]]
-- [[_COMMUNITY_Community 1424|Community 1424]]
-- [[_COMMUNITY_Community 1425|Community 1425]]
-- [[_COMMUNITY_Community 1426|Community 1426]]
-- [[_COMMUNITY_Community 1427|Community 1427]]
-- [[_COMMUNITY_Community 1428|Community 1428]]
-- [[_COMMUNITY_Community 1429|Community 1429]]
-- [[_COMMUNITY_Community 1430|Community 1430]]
-- [[_COMMUNITY_Community 1431|Community 1431]]
-- [[_COMMUNITY_Community 1432|Community 1432]]
-- [[_COMMUNITY_Community 1433|Community 1433]]
-- [[_COMMUNITY_Community 1434|Community 1434]]
-- [[_COMMUNITY_Community 1435|Community 1435]]
-- [[_COMMUNITY_Community 1436|Community 1436]]
-- [[_COMMUNITY_Community 1437|Community 1437]]
-- [[_COMMUNITY_Community 1438|Community 1438]]
-- [[_COMMUNITY_Community 1439|Community 1439]]
-- [[_COMMUNITY_Community 1440|Community 1440]]
-- [[_COMMUNITY_Community 1441|Community 1441]]
-- [[_COMMUNITY_Community 1442|Community 1442]]
-- [[_COMMUNITY_Community 1443|Community 1443]]
-- [[_COMMUNITY_Community 1444|Community 1444]]
-- [[_COMMUNITY_Community 1445|Community 1445]]
-- [[_COMMUNITY_Community 1446|Community 1446]]
-- [[_COMMUNITY_Community 1447|Community 1447]]
-- [[_COMMUNITY_Community 1448|Community 1448]]
-- [[_COMMUNITY_Community 1449|Community 1449]]
-- [[_COMMUNITY_Community 1450|Community 1450]]
-- [[_COMMUNITY_Community 1451|Community 1451]]
-- [[_COMMUNITY_Community 1452|Community 1452]]
-- [[_COMMUNITY_Community 1453|Community 1453]]
-- [[_COMMUNITY_Community 1454|Community 1454]]
-- [[_COMMUNITY_Community 1455|Community 1455]]
-- [[_COMMUNITY_Community 1456|Community 1456]]
-- [[_COMMUNITY_Community 1457|Community 1457]]
-- [[_COMMUNITY_Community 1458|Community 1458]]
-- [[_COMMUNITY_Community 1459|Community 1459]]
-- [[_COMMUNITY_Community 1460|Community 1460]]
-- [[_COMMUNITY_Community 1461|Community 1461]]
-- [[_COMMUNITY_Community 1462|Community 1462]]
-- [[_COMMUNITY_Community 1463|Community 1463]]
-- [[_COMMUNITY_Community 1464|Community 1464]]
-- [[_COMMUNITY_Community 1465|Community 1465]]
-- [[_COMMUNITY_Community 1466|Community 1466]]
-- [[_COMMUNITY_Community 1467|Community 1467]]
-- [[_COMMUNITY_Community 1468|Community 1468]]
-- [[_COMMUNITY_Community 1469|Community 1469]]
-- [[_COMMUNITY_Community 1470|Community 1470]]
-- [[_COMMUNITY_Community 1471|Community 1471]]
-- [[_COMMUNITY_Community 1472|Community 1472]]
-- [[_COMMUNITY_Community 1473|Community 1473]]
-- [[_COMMUNITY_Community 1474|Community 1474]]
-- [[_COMMUNITY_Community 1475|Community 1475]]
-- [[_COMMUNITY_Community 1476|Community 1476]]
-- [[_COMMUNITY_Community 1477|Community 1477]]
-- [[_COMMUNITY_Community 1478|Community 1478]]
-- [[_COMMUNITY_Community 1479|Community 1479]]
-- [[_COMMUNITY_Community 1480|Community 1480]]
-- [[_COMMUNITY_Community 1481|Community 1481]]
-- [[_COMMUNITY_Community 1482|Community 1482]]
-- [[_COMMUNITY_Community 1483|Community 1483]]
-- [[_COMMUNITY_Community 1484|Community 1484]]
-- [[_COMMUNITY_Community 1485|Community 1485]]
-- [[_COMMUNITY_Community 1486|Community 1486]]
-- [[_COMMUNITY_Community 1487|Community 1487]]
-- [[_COMMUNITY_Community 1488|Community 1488]]
-- [[_COMMUNITY_Community 1489|Community 1489]]
-- [[_COMMUNITY_Community 1490|Community 1490]]
-- [[_COMMUNITY_Community 1491|Community 1491]]
-- [[_COMMUNITY_Community 1492|Community 1492]]
-- [[_COMMUNITY_Community 1493|Community 1493]]
-- [[_COMMUNITY_Community 1494|Community 1494]]
-- [[_COMMUNITY_Community 1495|Community 1495]]
-- [[_COMMUNITY_Community 1496|Community 1496]]
-- [[_COMMUNITY_Community 1497|Community 1497]]
-- [[_COMMUNITY_Community 1498|Community 1498]]
-- [[_COMMUNITY_Community 1499|Community 1499]]
-- [[_COMMUNITY_Community 1500|Community 1500]]
-- [[_COMMUNITY_Community 1501|Community 1501]]
-- [[_COMMUNITY_Community 1502|Community 1502]]
-- [[_COMMUNITY_Community 1503|Community 1503]]
-- [[_COMMUNITY_Community 1504|Community 1504]]
-- [[_COMMUNITY_Community 1505|Community 1505]]
-- [[_COMMUNITY_Community 1506|Community 1506]]
-- [[_COMMUNITY_Community 1507|Community 1507]]
-- [[_COMMUNITY_Community 1508|Community 1508]]
-- [[_COMMUNITY_Community 1509|Community 1509]]
-- [[_COMMUNITY_Community 1510|Community 1510]]
-- [[_COMMUNITY_Community 1511|Community 1511]]
-- [[_COMMUNITY_Community 1512|Community 1512]]
-- [[_COMMUNITY_Community 1513|Community 1513]]
-- [[_COMMUNITY_Community 1514|Community 1514]]
-- [[_COMMUNITY_Community 1515|Community 1515]]
-- [[_COMMUNITY_Community 1516|Community 1516]]
-- [[_COMMUNITY_Community 1517|Community 1517]]
-- [[_COMMUNITY_Community 1518|Community 1518]]
-- [[_COMMUNITY_Community 1519|Community 1519]]
-- [[_COMMUNITY_Community 1520|Community 1520]]
-- [[_COMMUNITY_Community 1521|Community 1521]]
-- [[_COMMUNITY_Community 1522|Community 1522]]
-- [[_COMMUNITY_Community 1523|Community 1523]]
-- [[_COMMUNITY_Community 1524|Community 1524]]
-- [[_COMMUNITY_Community 1525|Community 1525]]
-- [[_COMMUNITY_Community 1526|Community 1526]]
-- [[_COMMUNITY_Community 1527|Community 1527]]
-- [[_COMMUNITY_Community 1528|Community 1528]]
-- [[_COMMUNITY_Community 1529|Community 1529]]
-- [[_COMMUNITY_Community 1530|Community 1530]]
-- [[_COMMUNITY_Community 1531|Community 1531]]
-- [[_COMMUNITY_Community 1532|Community 1532]]
-- [[_COMMUNITY_Community 1533|Community 1533]]
-- [[_COMMUNITY_Community 1534|Community 1534]]
-- [[_COMMUNITY_Community 1535|Community 1535]]
-- [[_COMMUNITY_Community 1536|Community 1536]]
-- [[_COMMUNITY_Community 1537|Community 1537]]
-- [[_COMMUNITY_Community 1538|Community 1538]]
-- [[_COMMUNITY_Community 1539|Community 1539]]
-- [[_COMMUNITY_Community 1540|Community 1540]]
-- [[_COMMUNITY_Community 1541|Community 1541]]
-- [[_COMMUNITY_Community 1542|Community 1542]]
-- [[_COMMUNITY_Community 1543|Community 1543]]
-- [[_COMMUNITY_Community 1544|Community 1544]]
-- [[_COMMUNITY_Community 1545|Community 1545]]
-- [[_COMMUNITY_Community 1546|Community 1546]]
-- [[_COMMUNITY_Community 1547|Community 1547]]
-- [[_COMMUNITY_Community 1548|Community 1548]]
-- [[_COMMUNITY_Community 1549|Community 1549]]
-- [[_COMMUNITY_Community 1550|Community 1550]]
-- [[_COMMUNITY_Community 1551|Community 1551]]
-- [[_COMMUNITY_Community 1552|Community 1552]]
-- [[_COMMUNITY_Community 1553|Community 1553]]
-- [[_COMMUNITY_Community 1554|Community 1554]]
-- [[_COMMUNITY_Community 1555|Community 1555]]
-- [[_COMMUNITY_Community 1556|Community 1556]]
-- [[_COMMUNITY_Community 1557|Community 1557]]
-- [[_COMMUNITY_Community 1558|Community 1558]]
-- [[_COMMUNITY_Community 1559|Community 1559]]
-- [[_COMMUNITY_Community 1560|Community 1560]]
-- [[_COMMUNITY_Community 1561|Community 1561]]
-- [[_COMMUNITY_Community 1562|Community 1562]]
-- [[_COMMUNITY_Community 1563|Community 1563]]
-- [[_COMMUNITY_Community 1564|Community 1564]]
-- [[_COMMUNITY_Community 1565|Community 1565]]
-- [[_COMMUNITY_Community 1566|Community 1566]]
-- [[_COMMUNITY_Community 1567|Community 1567]]
-- [[_COMMUNITY_Community 1568|Community 1568]]
-- [[_COMMUNITY_Community 1569|Community 1569]]
-- [[_COMMUNITY_Community 1570|Community 1570]]
-- [[_COMMUNITY_Community 1571|Community 1571]]
-- [[_COMMUNITY_Community 1572|Community 1572]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `OpenClawBaseSkill` - 395 edges
-2. `UserDB` - 320 edges
-3. `success_response()` - 239 edges
-4. `ContentCandidate` - 223 edges
-5. `VideoJobDB` - 212 edges
-6. `PostMetadata` - 199 edges
-7. `VideoProcessor` - 187 edges
-8. `SystemJobStatus` - 168 edges
-9. `UserRole` - 165 edges
-10. `VideoLeadScanner` - 154 edges
+1. `success_response()` - 249 edges
+2. `UserDB` - 157 edges
+3. `SystemJobStatus` - 104 edges
+4. `VideoLeadScanner` - 87 edges
+5. `NexusOrchestrator` - 86 edges
+6. `AutoCreator` - 84 edges
+7. `getAuthToken()` - 80 edges
+8. `VideoJobService` - 76 edges
+9. `ContentCandidate` - 72 edges
+10. `VideoProcessor` - 69 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `Info`  [INFERRED]
   src/services/discovery-go/main.go → REVIEW.md
 - `NewScanner()` --calls--> `Info`  [INFERRED]
   src/services/discovery-go/scanner.go → REVIEW.md
-- `run_compilation_test()` --calls--> `VideoProcessor`  [INFERRED]
-  scratch/test_compilation_workflow.py → src/services/video_engine/processor.py
-- `run_full_pipeline()` --calls--> `VideoProcessor`  [INFERRED]
-  scratch/test_full_pipeline.py → src/services/video_engine/processor.py
-- `load_tts()` --calls--> `Pipeline`  [INFERRED]
-  src/engines/remote_ai_setup/main.py → graphify/ARCHITECTURE.md
+- `verify_font_logic()` --calls--> `VideoProcessor`  [INFERRED]
+  scripts/verify_production_config.py → src/services/video_engine/processor.py
+- `RateLimitMiddleware()` --calls--> `After`  [INFERRED]
+  src/services/discovery-go/auth.go → apps/dashboard/REDESIGN_SUMMARY.md
+- `test()` --calls--> `discover_multi_platform()`  [INFERRED]
+  test_discovery.py → src/engines/intelligent_video_workflow.py
 
-## Communities (1573 total, 520 thin omitted)
+## Communities (1209 total, 443 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
-Nodes (239): Fetch YouTube analytics data, Simple circuit breaker to prevent cascading failures, Fetch analytics from social media platforms, Fetch metrics from specific social platform, Get Instagram post metrics, Get TikTok video metrics, Get X/Twitter metrics, Fetches historical performance data points.         Hardened: Queries real analy (+231 more)
+Cohesion: 0.02
+Nodes (166): CreditService, Check if user has enough credits, Attempt to consume credits for an action.         Returns (success, message), Add credits to user's balance, Get user's credit transaction history, Get current UTC datetime (naive for PostgreSQL compatibility), Get available credit packages for purchase, Generate a unique referral code for user (+158 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.01
-Nodes (245): delete_account(), list_accounts(), Account management routes — list and unlink social accounts.  Extracted from the, auth_instagram(), auth_instagram_callback(), auth_linkedin(), auth_linkedin_callback(), auth_snapchat() (+237 more)
+Cohesion: 0.02
+Nodes (101): Analyzes transcript content, user-selected style, and VLM visual insights to dec, StoryScene, StoryScript, StrategyService, VideoStrategy, DiscoveryService, Passthrough to global DB trending results., Find cross-platform reuploads of the same content.         Uses title similarity (+93 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.02
-Nodes (190): 10/10 Proof: The Imperial Success Engine (Stateful).     Aggregates metrics and, Calculates a unified success score.         Weighted: 50% Retention, 30% Views (, Calculates a unified success score.         Weighted: 50% Retention, 30% Views (, 10/10 Proof: The Imperial Success Engine (Stateful).     Aggregates metrics and, SuccessModel, Base, ExperimentBatcher, 10/10 Production: The Gated Rollout Engine (Stateful).     Groups videos into st (+182 more)
+Nodes (87): FacebookPublisher, Facebook Publisher for ettametta Handles video uploads to Facebook via Meta Grap, Resolve video path to URL, Fetch Facebook video insights, Facebook video publisher with production-grade features, Verify Facebook credentials, Facebook-specific upload implementation, InstagramPublisher (+79 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.01
-Nodes (145): Video Lead Discovery Service ============================ Advanced video content, Get best transition for a given scene type, Calculate viral potential score (0-10) using robust logarithmic view scaling, Calculate viral potential score (0-10) using robust logarithmic view scaling, Analyze common patterns in successful videos, Classify video content type based on title, Classify video content type based on title, Assess monetization potential (+137 more)
+Cohesion: 0.04
+Nodes (71): Delegate to standalone validation function., Delegate to standalone validation logging function., Settings, PatternDeconstructor, Calls Groq API to deconstruct the video into hooks and sentiment., ContentCandidate, Unified content candidate model covering both discovery and search results., ViralPattern (+63 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.01
-Nodes (197): BaseModel, AgentRequest, analyze_code(), AuditRequest, chat_with_agent(), ChatMessage, CodeRequest, generate_trademark() (+189 more)
+Cohesion: 0.02
+Nodes (60): Video Lead Discovery Service ============================ Advanced video content, Calculate viral potential score (0-10) using robust logarithmic view scaling, Classify video content type based on title, Assess monetization potential, Assess monetization potential for the video, Get best transition for a given scene type, Discover high-performing video content leads across platforms., Analyze common patterns in successful videos (+52 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.03
-Nodes (167): PatternDeconstructor, Calls Groq API to deconstruct the video into hooks and sentiment., Calls Groq API to deconstruct the video into hooks and sentiment., GoogleTrendsScanner, Google Trends scanner for discovering trending topics.     Uses free Google Tren, Fetches trending searches related to the niche from Google Trends.         Uses, ContentCandidate, Unified content candidate model covering both discovery and search results. (+159 more)
+Cohesion: 0.06
+Nodes (108): Base, Enum, EmpireService, Aggregates real cross-account performance metrics with growth velocity., Fetches proven patterns from A/B test winners to serve as "blueprints"., Clones system settings/parameters from a source niche to a target niche., Aggregates real system and monetization events into a single timeline.         T, Generates a D3-compatible network graph of the user's empire.         Queries re (+100 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.03
-Nodes (102): FacebookPublisher, Facebook Publisher for ettametta Handles video uploads to Facebook via Meta Grap, Resolve video path to URL, Resolve video path to URL, Fetch Facebook video insights, Fetch Facebook video insights, Facebook video publisher with production-grade features, Facebook video publisher with production-grade features (+94 more)
+Cohesion: 0.02
+Nodes (122): delete_account(), list_accounts(), Account management routes — list and unlink social accounts.  Extracted from the, delete_test(), get_active_tests(), get_completed_tests(), Records a view, click, or conversion event for a specific variant., Get all active A/B tests with statistics (+114 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.02
-Nodes (131): Run migrations in 'offline' mode.      This configures the context with just a U, Run migrations in 'offline' mode.      This configures the context with just a U, Run migrations in 'online' mode.      In this scenario we need to create an Engi, Run migrations in 'online' mode.      In this scenario we need to create an Engi, run_migrations_offline(), run_migrations_online(), CreditService, Attempt to consume credits for an action.         Returns (success, message) (+123 more)
+Cohesion: 0.03
+Nodes (51): BaseMonetizationStrategy, AutoMerchService, Handles 'Reverse Monetization':     1. Trend -> Image Design Prompt (VLM)     2., Orchestrates the entire reverse monetization flow.         Returns the Shopify/P, Hits an image generation API.          We use pollinations.ai for free, fast pro, Publishes the design to Print-on-Demand (POD) via Printful API.         Enforces, MonetizationOrchestrator, Executes a strategy method with automatic failover if the primary strategy fails (+43 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.16
-Nodes (121): AffiliateService, Any affiliate API integration.      Disabled by default - set ENABLE_AFFILIATE_A, Any affiliate API integration.      Disabled by default - set ENABLE_AFFILIATE_A, Any affiliate API integration.      Disabled by default - set ENABLE_AFFILIATE_A, ContentPerformance, AnalyticsService, Fetch YouTube analytics data, Fetch YouTube analytics data (+113 more)
+Cohesion: 0.03
+Nodes (62): _call_api(), chat_with_llm(), generate(), LLMProvider, Unified LLM Service - Multi-Provider Support ===================================, Unified LLM service that supports multiple providers.     Configure API keys in, Load API keys from environment variables., UnifiedLLMService (+54 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.03
-Nodes (104): Stops the autonomous loop., Loads state from DB and resumes if was running., A single iteration of the autonomous cycle., The Autonomous Director of ettametta.     Orchestrates Discovery, Analysis, Prod, Uses LLM to decide on video title, hooks, and product alignment., Starts the autonomous production loop., Receives frontend error reports from GlobalErrorBoundary., Adds artificial delay to a service. (+96 more)
+Cohesion: 0.05
+Nodes (73): DiscoveryScannerBase, Calculates how fast the content is gaining views/engagement.         Default imp, Calculate a composite viral score (0-100) based on multiple factors.         Ove, AnalysisReport, Serialize for `ContentCandidateDB.analysis_payload` (JSONB).          Uses `mode, Hot-path accessor used by the video job dispatcher (10-04)., Estimate the 'viral velocity' used by the dashboard for sort ordering., Public, persisted shape of an AI deconstruction of a content candidate.      Thi (+65 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.03
-Nodes (72): account_audit(), Performs an autonomous audit of a social media account., Performs an autonomous audit of a social media account., Performs an autonomous audit of a social media account., AuditSkill, Get user's OAuth token for specified platform., Get user's OAuth token for specified platform., Fetch account data for any platform. (+64 more)
+Nodes (82): saveSettings(), [actionLogs, setActionLogs], [activeTab, setActiveTab], { agents, logs: systemLogs, status, pulse: _pulse }, AuditReport, [auditReports, setAuditReports], BiasReport, [biasReport, setBiasReport] (+74 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.04
-Nodes (112): extract_c(), extract_cpp(), extract_csharp(), extract_java(), extract_julia(), extract_kotlin(), extract_objc(), extract_php() (+104 more)
+Cohesion: 0.03
+Nodes (48): ContentPerformance, AnalyticsService, _fetch_youtube_data(), _generate_ai_insight(), Fetch YouTube analytics data, Fetch analytics from social media platforms, Fetch metrics from specific social platform, Get Instagram post metrics (+40 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.04
-Nodes (103): Calculate title similarity score (0.0 to 1.0) using word overlap., Calculate title similarity score (0.0 to 1.0) using word overlap., Calculate title similarity score (0.0 to 1.0) using word overlap., _check_tree_sitter_version(), _csharp_extra_walk(), extract(), extract_blade(), extract_dart() (+95 more)
+Cohesion: 0.03
+Nodes (75): BaseModel, NarrativePlan, SceneNarrative, MultiPlatformPublishRequest, OpenCLIPostRequest, PublishRequest, Shared constants, Pydantic models, and helper utilities for the publish module., Resolve a human-readable platform name to its canonical key. (+67 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.03
-Nodes (63): OpenClawBaseSkill, Standardized authorization headers for internal OpenClaw routing., Standardized authorization headers for internal OpenClaw routing., Base class for all ettametta Official Skills.     Enforces the mission-based pat, ChatSalesSkill, Executes the Chat Sales mission., ettametta Official Skill: Chat Sales     Handles 2-way conversational sales via, DataScrapingSkill (+55 more)
+Nodes (62): containerVariants, itemVariants, LandingPage(), CallbackHandler(), [isMobile, setIsMobile], [mobileMenuOpen, setMobileMenuOpen], [sidebarCollapsed, setSidebarCollapsed], { user, credits } (+54 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.04
-Nodes (92): EttamettaCrew, Pre-configured CrewAI crews for ettametta workflows., Pre-configured CrewAI crews for ettametta workflows., Pre-configured CrewAI crews for ettametta workflows., run_affiliate_campaign(), run_content_team(), _node_community_map(), Invert communities dict: node_id -> community_id. (+84 more)
+Nodes (75): AutoCreator, Autonomous Video Creation Engine.     Hardened with Circuit Breakers and retries, Approve or reject a pending DAG for PARTIAL mode.          Called by REST routes, Get the pending DAG preview for a job (for API polling)., Extracts a frame and audits it against the visual prompt using Gemini Flash., Tests for Nexus Engine AutoCreator — Script Generation, Pipeline Orchestration,, Tests for AutoCreator._generate_script_part — individual chapter generation., Tests for AutoCreator.generate_viral_script — script generation with retries. (+67 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.03
-Nodes (85): [activeEngine, setActiveEngine], [adminAudits, setAdminAudits], { agents, logs: systemLogs, status, pulse }, fetchData, fetchSecurityEvents(), fetchSecurityStatus(), fetchSettings(), [isLoading, setIsLoading] (+77 more)
+Cohesion: 0.04
+Nodes (43): OpenClawBaseSkill, OpenClawBaseSkill, Standardized authorization headers for internal OpenClaw routing., Base class for all ettametta Official Skills.     Enforces the mission-based pat, BrandingSkill, Polymorphic entry point for OpenClaw agent., Generate brand identity (Logo, Name, Color) using AI.         Runs inside OpenCl, BrowserSkill (+35 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.03
-Nodes (80): _execute_synthesis_node(), Execute content synthesis node using real AI models., GenerativeService, Remote/Local GPU Video Synthesis Integration.         Checks for a RENDER_NODE_U, Remote/Local GPU Video Synthesis Integration.         Checks for a RENDER_NODE_U, Open-Source Synthesis (Wan2.2 via SiliconFlow/Fal.ai or remote GPU).         Fal, Open-Source Synthesis (Wan2.2 via SiliconFlow/Fal.ai or remote GPU).         Fal, Remote/Local GPU Video Synthesis Integration.         Checks for a RENDER_NODE_U (+72 more)
+Nodes (82): auth_instagram(), auth_instagram_callback(), auth_linkedin(), auth_linkedin_callback(), auth_snapchat(), auth_snapchat_callback(), auth_tiktok(), auth_tiktok_callback() (+74 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.04
-Nodes (86): AutoCreator, Autonomous Video Creation Engine.     Hardened with Circuit Breakers and retries, Autonomous Video Creation Engine.     Hardened with Circuit Breakers and retries, Autonomous Video Creation Engine.     Hardened with Circuit Breakers and retries, Extracts a frame and audits it against the visual prompt using Gemini Flash., Extracts a frame and audits it against the visual prompt using Gemini Flash., Extracts a frame and audits it against the visual prompt using Gemini Flash., Extracts a frame and audits it against the visual prompt using Gemini Flash. (+78 more)
+Cohesion: 0.05
+Nodes (70): The Master Loop: Finds trends -> Picks Winner -> Dispatches Processing., Multi-Video Pipeline: Finds top leads -> Downloads & Normalizes -> Compiles with, ViralLoopController, AutoLinkRequest, Identifies the top viral candidate and triggers a preview transformation., Hardened transformation endpoint with atomicity between task dispatch and credit, start_transformation(), test_drive() (+62 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.03
-Nodes (71): dag_execute_blueprint(), DefaultEgressHandler, DefaultIngressHandler, execute_blueprint(), _execute_cognition_node(), _execute_custom_node(), _execute_egress_node(), _execute_ingress_node() (+63 more)
+Cohesion: 0.05
+Nodes (34): account_audit(), Performs an autonomous audit of a social media account., AuditSkill, Get user's OAuth token for specified platform., Fetch account data for any platform., Platform-agnostic audit skill for analyzing user accounts across social platform, Analyze monetization readiness for any platform., Generate AI-powered growth strategy for any platform. (+26 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.04
-Nodes (37): Cloak-Backed Facebook Scanner  Uses CloakBrowser stealth engine as primary scrap, CloakInstagramScanner, Cloak-Backed Instagram Scanner  Uses CloakBrowser stealth engine as primary scra, Instagram scanner backed by CloakBrowser stealth engine with httpx fallback., Cloak-Backed LinkedIn Scanner  Uses CloakBrowser stealth engine as primary scrap, CloakBrowser Scanner — Multi-Platform Stealth Scraping Engine  A DiscoveryScanne, Cloak-Backed TikTok Scanner  Uses CloakBrowser stealth engine as primary scraper, CloakXScanner (+29 more)
+Cohesion: 0.03
+Nodes (65): [actionLogs, setActionLogs], [activeBlueprint, setActiveBlueprint], [activeCategory, setActiveCategory], [activeEngine, setActiveEngine], [_activeJobId, setActiveJobId], activePipelineJob, [activeSwapDrawerIndex, setActiveSwapDrawerIndex], { agents, logs: systemLogs, lastJobUpdate, pulse, status } (+57 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.04
-Nodes (77): ClawHubSearchRequest, crewai_status(), CrewRequest, execute_code(), generate_seo_content(), get_popular_skills(), get_skill_categories(), get_social_metrics() (+69 more)
+Cohesion: 0.05
+Nodes (49): AudioMixNode, _dag_notify(), ParallelAssetSourceNode, Nexus Engine DAG Nodes ======================  Reusable DAG nodes for the NEXUS, DAG node: Search and rank stock footage by CLIP semantic similarity.      This i, Download a video from a URL.      Supports two source types:     - "stock":    U, Run multiple asset sourcing strategies in parallel and return the first success., Publish a progress update for a DAG node via WebSocket.      Non-blocking: failu (+41 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.04
-Nodes (84): _cross_community_surprises(), _cross_file_surprises(), _file_category(), god_nodes(), graph_diff(), _is_concept_node(), _is_file_node(), Graph analysis: god nodes (most connected), surprising connections (cross-commun (+76 more)
+Nodes (56): ABTest, [activeEngine, setActiveEngine], [activeTests, setActiveTests], { agents, logs: _systemLogs, status: _status, pulse: _pulse }, [completedTests, setCompletedTests], fetchData, fetchDetail, handleDetermineWinner() (+48 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.03
-Nodes (68): NexusOrchestrator, Primary vibe check using Dify, with LangChain fallback., Query Dify provider for video vibe data., Query LangChain provider for video vibe data., Get the number of frames in a video clip., Primary vibe check using Dify, with LangChain fallback., Get the number of frames in a video clip., Extract a middle frame from the video clip for audit. (+60 more)
+Cohesion: 0.05
+Nodes (34): DefaultCognitionHandler, DefaultSynthesisHandler, NodeHandler, TopicFusionCognitionHandler, TopicFusionSynthesisHandler, Audit a video against a text description using Gemini/Ollama vision.      Extrac, Render the final composition using either Remotion (primary) or FFmpeg (fallback, SceneRenderNode (+26 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.03
-Nodes (81): analyze_content_type(), check_content_freshness(), check_eligibility(), curl_youtube(), discover_multi_platform(), expand_query_intelligently(), main(), Search YouTube by nearest date - prioritize newest content (+73 more)
+Cohesion: 0.05
+Nodes (32): IntelligentVideoResearcher, main(), ProfessionalVideoEditor, Generate detailed production notes, Main intelligent video discovery and editing workflow, Use LLM vision to analyze each frame, Compile frame analyses into content classification, Professional video content analyzer that detects:     - Speaker presence (talkin (+24 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.04
-Nodes (62): BaseNode, Parallel asset sourcing using the DAG video compiler.         Each segment gets, Parallel asset sourcing using the DAG video compiler.         Each segment gets, Parallel asset sourcing using the DAG video compiler.         Each segment gets, Parallel asset sourcing using the DAG video compiler.         Each segment gets, Protocol, _CachingNode, main() (+54 more)
+Cohesion: 0.05
+Nodes (45): dag_execute_blueprint(), DefaultEgressHandler, DefaultIngressHandler, execute_blueprint(), get_blueprint_by_id(), get_blueprints(), NodeHandlerRegistry, Execute a blueprint with automation mode awareness.      Args:         blueprint (+37 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.03
-Nodes (59): acquire_slot(), check_module_available(), CircuitBreaker, GpuQueueManager, ModelManager, Download model from HuggingFace Hub., Refines a simple user prompt into a high-fidelity director's prompt tailored for, Refines a simple user prompt into a high-fidelity director's prompt tailored for (+51 more)
+Cohesion: 0.04
+Nodes (56): get_payment_service(), Stripe Payment Service for ettametta Subscriptions, # NOTE: intentionally NOT clearing trial_ends_at here so the user, cancel_subscription(), create_checkout_session(), get_subscription(), Get current user's subscription status, Cancel current subscription (+48 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.03
-Nodes (69): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], [activeStack, setActiveStack], [activityFeed, setActivityFeed], { agents, logs: systemLogs, status, pulse }, [audioUrl, setAudioUrl], displayLogs, [duration, setDuration] (+61 more)
+Cohesion: 0.05
+Nodes (37): NexusComposeRequest, run_nexus_composition(), ClawHubSearchRequest, CrewRequest, IngestionRequest, MetricsRequest, PromptTemplateRequest, Run a CrewAI crew for content creation as a persistent Nexus Job. (+29 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.05
-Nodes (67): handle_delete(), handle_enrich(), handle_get(), handle_list(), handle_search(), handle_upload(), API module - exposes the document pipeline over HTTP. Thin layer over parser, va, Accept a list of file paths, run the full pipeline on each,     and return a sum (+59 more)
+Cohesion: 0.07
+Nodes (30): llm_output_to_analysis_report(), Free-function alias for :meth:`AnalysisReport.from_llm_output`.      This exists, analyze_viral_pattern_task(), deep_scan_task(), _persist_analysis_report(), _persist_status_only(), process_high_potential_candidates(), Write the AnalysisReport to ContentCandidateDB.analysis_payload.      Returns Tr (+22 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.05
-Nodes (69): classify_file(), convert_office_file(), count_words(), detect(), detect_incremental(), docx_to_markdown(), extract_pdf_text(), FileType (+61 more)
+Nodes (39): DashboardPageLayoutProps, Tab, async(), async(), cn(), copyToClipboard(), formatLabel(), ButtonProps (+31 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.05
-Nodes (44): DefaultCognitionHandler, DefaultSynthesisHandler, NodeHandler, TopicFusionCognitionHandler, TopicFusionSynthesisHandler, AudioMixNode, ColorGradeNode, _dag_notify() (+36 more)
+Cohesion: 0.07
+Nodes (8): EpisodicMemory, from_dict(), MemoryGraph, MemoryNode, MemorySkill, ProceduralMemory, Polymorphic entry point for OpenClaw agent., SemanticMemory
 
 ### Community 30 - "Community 30"
-Cohesion: 0.03
-Nodes (40): Test Analytics Service, Test Analytics circuit breaker, Test retention dropoff detection, Test monetization orchestrator failover logic, Test empire service metrics, Test security sentinel system audit, Test voiceover service engines, Test visual generator prompt enhancement (+32 more)
+Cohesion: 0.07
+Nodes (49): NexusOrchestrator, High-fidelity video assembly using Remotion React engine.     Orchestrates the e, Tests for Nexus Engine Orchestrator — Video Assembly Pipeline, Retry Logic, Node, Tests for the Ingress Node — input validation., Tests for the Cognition Node — frame counting and clip metadata., Tests for the Synthesis Node — props building, audio, and Remotion render., Tests for the Egress Node — cleanup, publishing, and final metadata., Tests for the Vision Audit Node — frame extraction and AI analysis. (+41 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.04
-Nodes (46): containerVariants, itemVariants, LandingPage(), CallbackHandler(), [isMobile, setIsMobile], [mobileMenuOpen, setMobileMenuOpen], [sidebarCollapsed, setSidebarCollapsed], { user, credits } (+38 more)
+Nodes (48): [hydrated, setHydrated], LOW_SCORE_REPORT, SAMPLE_REPORT, AnalysisReportData, AnalysisResultsCardProps, [expanded, setExpanded], HookInsights, PacingInsights (+40 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.04
-Nodes (52): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], { agents, logs: systemLogs, status, pulse }, AnalyticsMetrics, engine, fetchAnalytics, GlobalPulseGlobe, handleExport() (+44 more)
+Cohesion: 0.08
+Nodes (38): BaseNode, Parallel asset sourcing using the DAG video compiler.         Each segment gets, _CachingNode, main(), Simple test node that records its execution order., Node that records how many times its execute() was called., test_automation_mode(), test_caching() (+30 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.06
-Nodes (42): ConsistencySentinel, DriftReport, ConsistencySentinel: Autonomous State Enforcement Engine.  Periodically audits R, Triggers RecoveryService if cooldown has elapsed.         Prevents repair thrash, Returns the current sentinel health summary., Structured representation of a single audit cycle's findings., The State Enforcement Engine.     Periodically verifies that Redis 'Hot' state a, Starts the background auditing + enforcement loop. (+34 more)
+Cohesion: 0.04
+Nodes (42): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], [activeStack, _setActiveStack], [activityFeed, setActivityFeed], { agents, logs: systemLogs, status: _status, pulse }, [audioUrl, _setAudioUrl], displayLogs, [duration, setDuration] (+34 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.04
-Nodes (41): ContentEditorSkill, AI Content Editor & Remixing Engine      Instead of generating content, this fin, AI Content Editor & Remixing Engine      Instead of generating content, this fin, Step 2: Download video using yt-dlp          Returns: { status, file_path, durat, Step 2: Download video using yt-dlp          Returns: { status, file_path, durat, Step 3: AI Clip Selection          Methods:         - auto: detect emotional pea, Step 3: AI Clip Selection          Methods:         - auto: detect emotional pea, Detect best moments using AI heuristics (+33 more)
+Cohesion: 0.05
+Nodes (34): List published content posts for a user with pagination.         Extracted from, api_error_exception_handler(), custom_rate_limit_exceeded_handler(), global_exception_handler(), http_exception_handler(), Register all exception handlers on the FastAPI app., Normalize HTTPException to standard nested error format., Handler for custom APIError types. (+26 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.04
-Nodes (33): OpenClawBaseSkill, BrandingSkill, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Generate brand identity (Logo, Name, Color) using AI.         Runs inside OpenCl, Generate brand identity (Logo, Name, Color) using AI.         Runs inside OpenCl, BrowserSkill, Polymorphic entry point for OpenClaw agent. (+25 more)
-
-### Community 36 - "Community 36"
-Cohesion: 0.03
-Nodes (52): [actionLogs, setActionLogs], [activeBlueprint, setActiveBlueprint], [activeCategory, setActiveCategory], [activeEngine, setActiveEngine], [activeJobId, setActiveJobId], activePipelineJob, [activeSwapDrawerIndex, setActiveSwapDrawerIndex], { agents, logs: systemLogs, lastJobUpdate, pulse, status } (+44 more)
-
-### Community 37 - "Community 37"
-Cohesion: 0.03
-Nodes (42): generative_service(), Unit tests for GenerativeService - Video synthesis service. Tests circuit breake, Test engine parameter configuration., Test engine parameter configuration., Test Hunyuan engine parameters., Test Hunyuan engine parameters., Test Mochi engine parameters., Test Mochi engine parameters. (+34 more)
-
-### Community 38 - "Community 38"
-Cohesion: 0.05
-Nodes (55): _body_content(), cache_dir(), cached_files(), check_semantic_cache(), clear_cache(), file_hash(), load_cached(), Strip YAML frontmatter from Markdown content, returning only the body. (+47 more)
-
-### Community 39 - "Community 39"
-Cohesion: 0.04
-Nodes (34): Alternative: Edit using MoviePy (more Pythonic, better for text overlays), Alternative: Edit using MoviePy (more Pythonic, better for text overlays), ColorClip, CompositeVideoClip, MockMoviePy, Test the complete video production pipeline, Test the complete video production pipeline, test_production_pipeline() (+26 more)
-
-### Community 40 - "Community 40"
-Cohesion: 0.04
-Nodes (34): AffiliateTool, Recommends high-converting products/links based on video script., Registers a new affiliate link in the database., Standardized Tool for Agent Zero to manage affiliate links and monetization., DiscoveryTool, Searches for trending niches across multi-platform scanners., Standardized Tool for Agent Zero to access the ettametta Discovery Engine., MarketScreenerTool (+26 more)
-
-### Community 41 - "Community 41"
-Cohesion: 0.05
-Nodes (38): AutomatedVideoEditorTest, main(), Test content-based video discovery capabilities, Test content-based video discovery capabilities, Test AI-powered content analysis, Test AI-powered content analysis, Test video fusion and compositing capabilities, Test video fusion and compositing capabilities (+30 more)
-
-### Community 42 - "Community 42"
-Cohesion: 0.04
-Nodes (55): 0.1.0 (2026-04-03), 0.1.1 (2026-04-04), 0.1.3 (2026-04-04), 0.1.4 (2026-04-05), 0.1.5 (2026-04-05), 0.1.6 (2026-04-05), 0.1.7 (2026-04-05), 0.1.8 (2026-04-05) (+47 more)
-
-### Community 43 - "Community 43"
-Cohesion: 0.04
-Nodes (54): Communities, Community 0 - "nanoGPT Model Architecture", Community 10 - "micrograd README + Backprop", Community 11 - "Attention Residuals Paper", Community 12 - "Continual LoRA Paper", Community 13 - "minGPT Trainer Class", Community 14 - "NeuralWalker Paper", Community 15 - "Dataset Abstractions" (+46 more)
-
-### Community 44 - "Community 44"
-Cohesion: 0.04
-Nodes (39): [envData, setEnvData], EnvKey, filteredKeys, [isLoading, setIsLoading], [isRestarting, setIsRestarting], [isUploading, setIsUploading], [searchTerm, setSearchTerm], [showRestartConfirm, setShowRestartConfirm] (+31 more)
-
-### Community 45 - "Community 45"
-Cohesion: 0.06
-Nodes (9): EpisodicMemory, from_dict(), MemoryGraph, MemoryNode, MemorySkill, ProceduralMemory, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent. (+1 more)
-
-### Community 46 - "Community 46"
-Cohesion: 0.06
-Nodes (41): DAG node: Search and rank stock footage by CLIP semantic similarity.      This i, DAG node: Search and rank stock footage by CLIP semantic similarity.      This i, SemanticSearchNode, Tests for Semantic Stock Matching layer ========================================, Validates StockSearchNode with semantic ranking., Validates the dedicated SemanticSearchNode DAG node., Validates ParallelAssetSourceNode uses semantic search., Validates edge case handling. (+33 more)
-
-### Community 47 - "Community 47"
-Cohesion: 0.05
-Nodes (27): PlaywrightVideoSkill, HaiperSkill, Haiper AI browser automation skill - Tier 1 easiest target     Clean UI, no logi, Haiper AI browser automation skill - Tier 1 easiest target     Clean UI, no logi, Polymorphic entry point for OpenClaw agent., Generate video from prompt using Haiper AI, InVideoAISkill, InVideo AI browser automation skill - Tier 1 easy platform     AI-powered video (+19 more)
-
-### Community 48 - "Community 48"
-Cohesion: 0.05
-Nodes (42): PublishingService, Real Social Media Publishing Service ==================================== Handle, Unified service for multi-platform publishing., Publish video to specified platform.                  Args:             use_auto, Unified service for multi-platform publishing with resilience., Unified service for multi-platform publishing with resilience., Publish video to specified platform with fallback logic., Publish video to specified platform with fallback logic. (+34 more)
-
-### Community 49 - "Community 49"
-Cohesion: 0.06
-Nodes (47): already_exists(), authentication_error(), Config, conflict_exception(), create_http_exception(), ErrorCode, ErrorHandler, ErrorResponse (+39 more)
-
-### Community 50 - "Community 50"
-Cohesion: 0.05
-Nodes (39): AnalyticsServiceExtended, Extended Analytics Service Consolidates all analytics-related database operation, Get dashboard summary statistics.                  Args:             user_id: ID, Get dashboard summary statistics.                  Args:             user_id: ID, Service layer for analytics operations.     Consolidates all database query logi, Service layer for analytics operations.     Consolidates all database query logi, Get A/B test results for specific content.                  Args:             co, Get A/B test results for specific content.                  Args:             co (+31 more)
-
-### Community 51 - "Community 51"
-Cohesion: 0.04
 Nodes (48): 1. `agent_zero_autonomous.spec.ts`, 2. `autonomous_operations.spec.ts`, 3. `test_helpers.ts`, Adding New Tests, Agent Zero Scenarios, Assertions, Authentication Issues, Autonomous Operations Test Suite (+40 more)
 
-### Community 52 - "Community 52"
+### Community 36 - "Community 36"
 Cohesion: 0.04
 Nodes (48): 10. Summary Scores, 1.1 Current Stack, 1.2 Strengths, 1.3 Gaps - Frontend, 1. Frontend Architecture Analysis, 2.1 Current Stack, 2.2 API Routes Structure, 2.3 Strengths (+40 more)
 
-### Community 53 - "Community 53"
-Cohesion: 0.07
-Nodes (45): _build_opener(), _NoFileRedirectHandler, Redirect handler that re-validates every redirect target.      Prevents open-red, Redirect handler that re-validates every redirect target.      Prevents open-red, Fetch *url* and return raw bytes.      Protections applied:     - URL scheme val, Fetch *url* and return raw bytes.      Protections applied:     - URL scheme val, Fetch *url* and return decoded text (UTF-8, replacing bad bytes).      Wraps saf, Fetch *url* and return decoded text (UTF-8, replacing bad bytes).      Wraps saf (+37 more)
-
-### Community 54 - "Community 54"
+### Community 37 - "Community 37"
 Cohesion: 0.04
 Nodes (47): 10. Risk Assessment, 11. Success Metrics, 12. Quick Wins (Start Immediately), 1. Executive Summary, 2.1 Content Discovery (✅ COVERED), 2.2 Video Processing (✅ COVERED), 2.3 AI & Automation (✅ COVERED), 2.4 Analytics & A/B Testing (✅ COVERED) (+39 more)
 
-### Community 55 - "Community 55"
-Cohesion: 0.11
-Nodes (24): Base class for all authentication handlers., Modify the request. May yield to inspect the response., HTTP Basic Authentication., ConnectError, An error occurred at the transport layer., Failed to establish a connection., TimeoutException, TransportError (+16 more)
-
-### Community 56 - "Community 56"
-Cohesion: 0.06
-Nodes (44): build_whisper_prompt(), download_audio(), _get_whisper(), _get_yt_dlp(), is_url(), _model_name(), Transcribe a video/audio file or URL to a .txt transcript.      If video_path is, Transcribe a list of video/audio files or URLs, return paths to transcript .txt (+36 more)
-
-### Community 57 - "Community 57"
+### Community 38 - "Community 38"
 Cohesion: 0.04
 Nodes (46): 1. HunyuanVideo (Tencent), 2. LTX-Video (Lightricks), 3. Zeroscope, 4. LTX-2 (Lightricks) - NOT RECOMMENDED, 5. ComfyUI Installation, Access, API Usage via FastAPI, code:bash (# SSH to server) (+38 more)
 
-### Community 58 - "Community 58"
-Cohesion: 0.07
-Nodes (44): collect_files(), extract_python(), Extract classes, functions, and imports from a .py file via tree-sitter AST., After merging multiple files, no internal edges should be dangling., Call-graph pass must produce INFERRED calls edges., AST-resolved call edges are deterministic and should be EXTRACTED/1.0., Same input always produces same output., run_analysis() calls compute_score() - must appear as a calls edge. (+36 more)
+### Community 39 - "Community 39"
+Cohesion: 0.1
+Nodes (12): Cloak-Backed Facebook Scanner  Uses CloakBrowser stealth engine as primary scrap, Cloak-Backed Instagram Scanner  Uses CloakBrowser stealth engine as primary scra, Cloak-Backed LinkedIn Scanner  Uses CloakBrowser stealth engine as primary scrap, Cloak-Backed Reddit Scanner  Uses CloakBrowser stealth engine as primary scraper, CloakBrowser Scanner — Multi-Platform Stealth Scraping Engine  A DiscoveryScanne, Cloak-Backed TikTok Scanner  Uses CloakBrowser stealth engine as primary scraper, Cloak-Backed Twitch Scanner  Uses CloakBrowser stealth engine as primary scraper, Cloak-Backed X (Twitter) Scanner  Uses CloakBrowser stealth engine as primary sc (+4 more)
 
-### Community 59 - "Community 59"
-Cohesion: 0.06
-Nodes (45): claude_install(), claude_uninstall(), _install_claude_hook(), Write the graphify section to the local CLAUDE.md., Add graphify PreToolUse hook to .claude/settings.json., Remove graphify PreToolUse hook from .claude/settings.json., Remove the graphify section from the local CLAUDE.md., _uninstall_claude_hook() (+37 more)
+### Community 40 - "Community 40"
+Cohesion: 0.05
+Nodes (16): PlaywrightVideoSkill, HaiperSkill, Haiper AI browser automation skill - Tier 1 easiest target     Clean UI, no logi, LeiaPixSkill, LeiaPix browser automation skill - Image to video conversion     VERY easy autom, Convert image to motion video using LeiaPix.          Args:             prompt:, PlaywrightVideoSkill, PlaywrightVideoSkill - Base class for browser-automated video generation skills. (+8 more)
 
-### Community 60 - "Community 60"
+### Community 41 - "Community 41"
+Cohesion: 0.04
+Nodes (30): client(), Tests for the Auto-Merch and Commerce API endpoints., Tests for Empire-related endpoints., GET /monetization/empire/metrics should return 401 without auth., GET /monetization/empire/activity should return 401 without auth., GET /monetization/empire/blueprints should return 401 without auth., Create a test client without DB dependency for unit-level endpoint tests., GET /monetization/empire/network should return 401 without auth. (+22 more)
+
+### Community 42 - "Community 42"
+Cohesion: 0.05
+Nodes (41): generate_single_video(), Triggers a multi-scene storytelling narrative task., Retry a failed video generation job.     Validates that the job belongs to the u, Hardened AI video synthesis endpoint with atomic credit flow., retry_failed_job(), start_story_generation(), abort_job(), get_job_details() (+33 more)
+
+### Community 43 - "Community 43"
 Cohesion: 0.04
 Nodes (44): 1. Install Python and Dependencies, 2. Setup the Remote AI Server, 3. Create Laptop-Optimized Server, 4. Create Laptop-Optimized AnimateDiff, 5. Setup Ngrok for External Access, 6. Connect to ettametta, 7. Usage, Clone and Prepare (+36 more)
 
-### Community 61 - "Community 61"
-Cohesion: 0.06
-Nodes (27): FFmpegTransformer, Extracts high-quality thumbnails for visual analysis, Concatenates multiple video files into one, Concatenates multiple video files into one, Mixes background music into the video while keeping original audio (at lower vol, Mixes background music into the video while keeping original audio (at lower vol, Verify if a stream has audio, Verify if a stream has audio (+19 more)
+### Community 44 - "Community 44"
+Cohesion: 0.07
+Nodes (25): ConsistencySentinel, DriftReport, ConsistencySentinel: Autonomous State Enforcement Engine.  Periodically audits R, Triggers RecoveryService if cooldown has elapsed.         Prevents repair thrash, Returns the current sentinel health summary., Structured representation of a single audit cycle's findings., The State Enforcement Engine.     Periodically verifies that Redis 'Hot' state a, Starts the background auditing + enforcement loop. (+17 more)
 
-### Community 62 - "Community 62"
-Cohesion: 0.05
-Nodes (28): ABTest, [activeEngine, setActiveEngine], [activeTests, setActiveTests], { agents, logs: systemLogs, status, pulse }, [completedTests, setCompletedTests], fetchData, fetchDetail, handleDetermineWinner() (+20 more)
-
-### Community 63 - "Community 63"
-Cohesion: 0.05
-Nodes (33): client(), generate_viral_script(), publish_job(), Source real stock video or synthesize with engine., Main creation loop protected by CircuitBreaker.                  Args:, Main creation loop protected by CircuitBreaker.                  Args:, Main creation loop protected by CircuitBreaker.                  Args:, Generate real TTS with provider fallback. (+25 more)
-
-### Community 64 - "Community 64"
+### Community 45 - "Community 45"
 Cohesion: 0.07
 Nodes (19): build_from_style(), detect_hw_accel(), FFmpegGraphOptimizer, FilterNode, FFmpeg Graph Optimizer ======================  Transforms multiple sequential FF, Escape text for FFmpeg filter strings., Builds optimized filter_graph strings from multiple operations.      Instead of, Add an operation to the graph.          Args:             op_id: Unique identifi (+11 more)
 
-### Community 65 - "Community 65"
-Cohesion: 0.09
-Nodes (5): Safely import a skill, returning None if dependencies are missing., safe_import_skill(), Intelligent Video Workflow Skill for OpenClaw ==================================, Scene-Based Video Production Skill for OpenClaw ================================, Video Lead Discovery Skill for OpenClaw ========================================
+### Community 46 - "Community 46"
+Cohesion: 0.12
+Nodes (42): _cleanup_browser(), close_browser(), get_browser(), is_noise(), lifespan(), new_stealth_context(), CloakBrowser — Stealth Scraping Service Playwright-based headless browser with a, Check if a scraped item is noise (nav links, footers, etc.). (+34 more)
 
-### Community 66 - "Community 66"
+### Community 47 - "Community 47"
 Cohesion: 0.06
-Nodes (30): Write a .py file in a temp project structure., Write a .py file in a temp project structure., Patch PROJECT_ROOT and SRC_DIR to point at tmp_path for isolated testing., Patch PROJECT_ROOT and SRC_DIR to point at tmp_path for isolated testing., Scans a .py file with a base_* = ... assignment., Scans a .py file with a base_* = ... assignment., Files named test_*.py should not be scanned for singletons., Files named test_*.py should not be scanned for singletons. (+22 more)
+Nodes (24): CommerceService, Fetches Shopify credentials from DB settings., Fetches products from Shopify. Falls back to database affiliate links if store i, Calls Shopify Admin API to get products., Generates a direct checkout URL.          Note: Shopify direct cart links usuall, Tests for CommerceService — Shopify product fetching, affiliate fallback, checko, Should return empty list on network error., Tests for the CommerceService singleton. (+16 more)
 
-### Community 67 - "Community 67"
+### Community 48 - "Community 48"
 Cohesion: 0.07
-Nodes (32): CircuitBreaker, _fetch_youtube_data(), _generate_ai_insight(), build(), build_merge(), deduplicate_by_label(), _norm_label(), _normalize_id() (+24 more)
+Nodes (40): analyze_content_type(), check_content_freshness(), check_eligibility(), discover_multi_platform(), expand_query_intelligently(), main(), Search YouTube by nearest date - prioritize newest content, Search YouTube using the official Data API v3. (+32 more)
 
-### Community 68 - "Community 68"
+### Community 49 - "Community 49"
+Cohesion: 0.07
+Nodes (20): FFmpegTransformer, Extracts high-quality thumbnails for visual analysis, Concatenates multiple video files into one, Mixes background music into the video while keeping original audio (at lower vol, Verify if a stream has audio, Elite Production Mix: Voiceover + Background Music with SMART DUCKING.         U, Generates an Advanced Substation Alpha (.ass) file for professional styling., Generates a 'Viral Style' ASS file with word-by-word highlights.         This pr (+12 more)
+
+### Community 50 - "Community 50"
 Cohesion: 0.05
-Nodes (30): Sound Design Service - Any Tier 3 Enhancement  Adds background music and sound e, Any sound design enhancement for video processing.     Adds background music and, Any sound design enhancement for video processing.     Adds background music and, Add sound effects to a video.          Args:             video_path: Path to inp, Add sound effects to a video.          Args:             video_path: Path to inp, Mix multiple audio tracks together., Mix multiple audio tracks together., Get list of available mood categories (+22 more)
+Nodes (25): generative_service(), Unit tests for GenerativeService - Video synthesis service. Tests circuit breake, Test engine parameter configuration., Test Hunyuan engine parameters., Test Mochi engine parameters., Create a GenerativeService instance with mocked dependencies., Test default engine parameters for unknown engine., Test video synthesis functionality. (+17 more)
 
-### Community 69 - "Community 69"
+### Community 51 - "Community 51"
+Cohesion: 0.06
+Nodes (21): ContentEditorSkill, AI Content Editor & Remixing Engine      Instead of generating content, this fin, Step 2: Download video using yt-dlp          Returns: { status, file_path, durat, Step 3: AI Clip Selection          Methods:         - auto: detect emotional pea, Detect best moments using AI heuristics, Detect keyword moments, Manual clip selection template, Step 4: Video Editing Engine (FFmpeg)          Operations:         - cut: extrac (+13 more)
+
+### Community 52 - "Community 52"
+Cohesion: 0.06
+Nodes (34): DISCOVERY_CONNECTING, DISCOVERY_OPEN, [hydrated, setHydrated], MOCK_PULSE, CommandCenterLayoutProps, [isLeftExpanded, setIsLeftExpanded], [isRightExpanded, setIsRightExpanded], [isSearchOpen, setIsSearchOpen] (+26 more)
+
+### Community 53 - "Community 53"
 Cohesion: 0.05
-Nodes (38): auth_headers(), auth_token(), client(), create_mock_module(), mock_redis(), mock_redis_async(), MockModule, Mock Redis responses. (+30 more)
+Nodes (37): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], AffiliateLink, [affiliateLinks, setAffiliateLinks], { agents: telemetryAgents, logs: systemLogs, status, pulse }, [availableNiches, setAvailableNiches], Blueprint, [blueprints, setBlueprints] (+29 more)
 
-### Community 70 - "Community 70"
-Cohesion: 0.07
-Nodes (43): _agents_install(), _agents_uninstall(), _install(), Tests for graphify install --platform routing., Claude platform install writes CLAUDE.md; others do not., Installing twice does not duplicate the section., Installs into an existing AGENTS.md without overwriting other content., Uninstall keeps pre-existing content. (+35 more)
-
-### Community 71 - "Community 71"
-Cohesion: 0.07
-Nodes (38): Config, create_google_flow(), get_me(), get_users_with_bots(), google_auth_callback(), LoginRequest, logout(), PasswordChange (+30 more)
-
-### Community 72 - "Community 72"
-Cohesion: 0.08
-Nodes (24): _call_groq(), CircuitBreaker, OptimizationService, Uses shared AIWorker to generate SEO-optimized title, description, and hashtags., Simple circuit breaker to prevent cascading failures, Complete SEO optimization using AI for viral content.         Returns optimized, Complete SEO optimization using AI for viral content.         Returns optimized, Complete SEO optimization using AI for viral content.         Returns optimized (+16 more)
-
-### Community 73 - "Community 73"
+### Community 54 - "Community 54"
 Cohesion: 0.05
 Nodes (40): 10. PROGRESS SUMMARY, 1.1 Dashboard Pages (12 Total) - ✅ 95% Complete, 1.2 Frontend Gaps (P0-P2), 1.3 Frontend Improvements Since Last Review, 1. FRONTEND GAP ANALYSIS, 2.1 API Routes (16 Total) - ✅ 98% Complete, 2.2 Backend Gaps (P0-P2), 2.3 Backend Improvements Since Last Review ✅ (+32 more)
 
-### Community 74 - "Community 74"
-Cohesion: 0.06
-Nodes (20): AnalyticsHarvester, The Raven: Autonomous Analytics Harvester (10/10) ==============================, Watches the world and reports back to the Empire., Watches the world and reports back to the Empire., Main Loop: Runs in the background every 60 seconds, Main Loop: Runs in the background every 60 seconds, Simulates external metric retrieval from TikTok/YouTube APIs, Simulates external metric retrieval from TikTok/YouTube APIs (+12 more)
+### Community 55 - "Community 55"
+Cohesion: 0.08
+Nodes (21): OpenCLIService, _parse_count(), opencli-rs Service — Per-User Chrome Session Bridge ============================, Check if opencli-rs binary is installed., Get the session directory for a specific user., Get the cookie file path for a user+platform, with global fallback., Get the opencli config path for a user., Check if opencli is enabled and binary exists. (+13 more)
 
-### Community 75 - "Community 75"
-Cohesion: 0.07
-Nodes (25): PerchanceSkill, Generate image(s) using Perchance.          Args:             prompt: Text promp, Generate image(s) using Perchance.          Args:             prompt: Text promp, Perchance AI image generator browser automation skill.     Supports multiple gen, Perchance AI image generator browser automation skill.     Supports multiple gen, Enter the main prompt, Enter the main prompt, Polymorphic entry point for OpenClaw agent. (+17 more)
+### Community 56 - "Community 56"
+Cohesion: 0.05
+Nodes (23): intelligence_hub(), Unit tests for IntelligenceHub - Central LLM routing service. Tests circuit brea, Test resetting all circuit breakers., Test complexity-based provider routing., Test low complexity routes to ollama., Test medium complexity routes to gemini when available., Test high complexity routes to openai when available., Create an IntelligenceHub instance with mocked dependencies. (+15 more)
 
-### Community 76 - "Community 76"
+### Community 57 - "Community 57"
 Cohesion: 0.05
 Nodes (39): 10. Database Models Not Used, 1. Configuration vs Implementation Gaps, 2. Services with No API Routes, 3. Routes Without Frontend Integration, 4. Monetization - Broken Links, 5. Video Generation Flow - Missing Connections, 6. Discovery → Creation Pipeline - Broken, 7. Publishing Flow - Missing Features (+31 more)
 
-### Community 77 - "Community 77"
+### Community 58 - "Community 58"
 Cohesion: 0.05
 Nodes (39): 1. Executive Summary, 2. Coverage Matrix — By Page, 3. CRITICAL: Broken/Dummy Handlers Requiring Real Implementation, 4. Use Case Scenarios — Covered vs Uncovered, 5. Page-by-Page Detailed Audit, 6. Backend Services Impacting UI (Bugs & Stubs), 7. Missing UI for Existing Backend Features, 8. Priority Fix Queue (+31 more)
 
-### Community 78 - "Community 78"
+### Community 59 - "Community 59"
 Cohesion: 0.08
-Nodes (29): cluster_health(), HeartbeatRequest, JobStore, node_pulse_heartbeat(), provision_node(), ProvisionNodeRequest, proxy_post(), proxy_status() (+21 more)
+Nodes (22): ChaosUtility, ChaosUtility: Orchestrated Failure Injection Engine.  Supports individual fault, Executes a named multi-fault scenario.         Returns a report of what was inje, THE BLACKOUT: Simultaneous multi-system failure.         Redis hot state invalid, THE CASCADE: Sequential degradation over 15 seconds.         Simulates a real-wo, THE STORM: Randomized burst of all fault types over 30s window.         Each fau, Starts a background loop that randomly injects faults at the given intensity., Stops the continuous chaos loop and clears all active faults. (+14 more)
 
-### Community 79 - "Community 79"
+### Community 60 - "Community 60"
 Cohesion: 0.06
-Nodes (28): Execute a single workflow step (placeholder), Execute a single workflow step.          Hardened: Transitioned from placeholder, Execute a single workflow step.          Hardened: Transitioned from placeholder, Get status of a workflow, Get status of a workflow, list all active workflows, list all active workflows, Get status of a workflow (+20 more)
+Nodes (27): safeRandomUUID(), addNode(), BlueprintBuilderProps, [compositionId, setCompositionId], [description, setDescription], handleSave(), [isSaving, setIsSaving], [name, setName] (+19 more)
 
-### Community 80 - "Community 80"
-Cohesion: 0.05
-Nodes (36): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], AgentCapability, { agents, logs: systemLogs, status, pulse }, [capabilities, setCapabilities], categorizedCapabilities, chatEndRef, ChatMessage (+28 more)
-
-### Community 81 - "Community 81"
-Cohesion: 0.08
-Nodes (14): AsyncClient, Client, Asynchronous HTTP client., Synchronous HTTP client., Verify handling of Go service timeout., Verify handling of Go service timeout., Verify handling of Go service being down (Connection Error)., Verify handling of Go service being down (Connection Error). (+6 more)
-
-### Community 82 - "Community 82"
+### Community 61 - "Community 61"
 Cohesion: 0.05
 Nodes (36): API Usage, Audit Logging, Automatic Provider Selection, Check Available Quotas, code:python (class VideoJobDB(Base):), code:bash (GET /video/history?user_id=123), code:python (def select_optimal_provider():), code:json ({) (+28 more)
 
-### Community 83 - "Community 83"
+### Community 62 - "Community 62"
 Cohesion: 0.05
 Nodes (38): 10. NEXUS PAGE (`/nexus`), 11. AUTONOMOUS PAGE (`/autonomous`), 12. TRADING PAGE (`/trading`), 13. CREDITS PAGE (`/credits`), 14. SETTINGS PAGE (`/settings`), 15. ADMIN PAGE (`/admin`), 16. GLOBAL WEBSOCKET CHANNELS, 1. SIDEBAR NAVIGATION (+30 more)
 
-### Community 84 - "Community 84"
+### Community 63 - "Community 63"
 Cohesion: 0.05
 Nodes (38): 10. Files Requiring Attention, 11. Recent Updates: WhatsApp Integration (Phase 66), 11. Technology Stack Summary, 1. Architecture Overview, 2.1 OAuth Credentials - Admin-Only Settings, 2.2 Production Domain Hardcoded to Localhost, 2.3 Missing API Keys for External Services, 2. Critical Gaps (P0 - Deployment Blockers) (+30 more)
 
-### Community 85 - "Community 85"
-Cohesion: 0.09
-Nodes (23): BaseMonetizationStrategy, Executes a strategy method with automatic failover if the primary strategy fails, BaseMonetizationStrategy, CourseStrategy, Fetches course platform URL from database configuration., Generates a call to action for course sales., Course/Education strategy - Sell online courses and tutorials, Fetches real balance from public blockchain APIs. (+15 more)
-
-### Community 86 - "Community 86"
-Cohesion: 0.05
-Nodes (37): 10. RECOMMENDATIONS, 11. GAP SUMMARY BY CATEGORY, 1.1 Dashboard Pages (12 Total) - ✅ 95% Complete, 1.2 Frontend Component Gaps, 1.3 Frontend Gaps (P0-P2), 1. FRONTEND GAP ANALYSIS, 2.1 API Routes (16 Total) - ✅ 98% Complete, 2.2 Backend Gaps (P0-P2) (+29 more)
-
-### Community 87 - "Community 87"
+### Community 64 - "Community 64"
 Cohesion: 0.08
 Nodes (20): AutomatedVideoEditorTest, main(), Test content-based video discovery capabilities, Test AI-powered content analysis, Test video fusion and compositing capabilities, Test upload format optimization, Test automated quality measurement, Test complete end-to-end workflow (+12 more)
 
-### Community 88 - "Community 88"
+### Community 65 - "Community 65"
+Cohesion: 0.08
+Nodes (18): AIVideoGeneratorService, AI Video Generation Service - Any Tier 3 Enhancement  Integrates with AI video g, Generate video using Runway ML API, Poll Runway generation job until completion, Any AI video generation service.     Integrates with Runway ML and Pika Labs API, Generate video using Pika Labs API, Poll Pika generation job until completion, Generate intro clip for a niche (+10 more)
+
+### Community 66 - "Community 66"
 Cohesion: 0.07
-Nodes (26): CircuitBreaker, _is_valid_key(), Inner implementation of chat, wrapped by the global timeout in chat()., Unified chat interface with complexity-based routing and failure persistence., Unified chat interface with complexity-based routing and failure persistence., Inner implementation of chat, wrapped by the global timeout in chat()., Inner implementation of chat, wrapped by the global timeout in chat()., Standard 1.14: Circuit Breaker with Exponential Backoff (+18 more)
+Nodes (19): Generate FFmpeg commands for video processing, Generates manual video editing instructions and templates, Create production overview, Create detailed step-by-step editing guide, CONVERTS AI CRITIQUE INTO ACTIONABLE EDITING COMMANDS (Tier 10), Create technical specifications for editing, Create quality assurance checklist, Generate detailed step-by-step editing instructions (+11 more)
 
-### Community 89 - "Community 89"
-Cohesion: 0.1
-Nodes (26): AutoMerchService, Handles 'Reverse Monetization':     1. Trend -> Image Design Prompt (VLM)     2., Handles 'Reverse Monetization':     1. Trend -> Image Design Prompt (VLM)     2., CryptoStrategy, Crypto/Donations strategy - Accept crypto tips or donations, Validates a crypto address using regex or public APIs., LeadGenStrategy, Get lead magnet assets for the given niche from LeadGenDB. (+18 more)
+### Community 67 - "Community 67"
+Cohesion: 0.09
+Nodes (17): CloakPlatformConfig, get_all_platform_keys(), get_platform_config(), CloakBrowser Platform Configuration Registry  Defines how each platform should b, Retrieve a platform config by key., Return all available platform keys., Configuration for a single platform's CloakBrowser scraping., CloakBrowserScanner (+9 more)
 
-### Community 90 - "Community 90"
+### Community 68 - "Community 68"
 Cohesion: 0.06
-Nodes (28): burnOpacity, burnTranslateX, CinematicOverlay(), CinematicOverlayProps, frame, ColorGradeProps, GradeType, { durationInFrames } (+20 more)
+Nodes (33): cleanup_old_files(), clear_gpu(), delete_file(), delete_model(), download_model(), encode_prompt_ltx2(), get_model_info(), health_check() (+25 more)
 
-### Community 91 - "Community 91"
+### Community 69 - "Community 69"
 Cohesion: 0.05
-Nodes (25): discovery_service(), Unit tests for DiscoveryService - Content discovery and trending analysis. Tests, Create a DiscoveryService instance with mocked dependencies., Create a DiscoveryService instance with mocked dependencies., Test viral score recalculation., Test viral score recalculation., Test monetization mode filtering., Test monetization mode filtering. (+17 more)
+Nodes (30): auth_headers(), auth_token(), cleanup_after_session(), client(), create_mock_module(), event_loop(), mock_groq(), mock_redis() (+22 more)
 
-### Community 92 - "Community 92"
+### Community 70 - "Community 70"
+Cohesion: 0.07
+Nodes (36): bulk_update_settings(), bulk_update_user_settings(), generate_bot_code(), get_available_filters(), get_monetization_strategies(), get_settings(), get_system_settings(), get_user_settings() (+28 more)
+
+### Community 71 - "Community 71"
+Cohesion: 0.05
+Nodes (37): 10. RECOMMENDATIONS, 11. GAP SUMMARY BY CATEGORY, 1.1 Dashboard Pages (12 Total) - ✅ 95% Complete, 1.2 Frontend Component Gaps, 1.3 Frontend Gaps (P0-P2), 1. FRONTEND GAP ANALYSIS, 2.1 API Routes (16 Total) - ✅ 98% Complete, 2.2 Backend Gaps (P0-P2) (+29 more)
+
+### Community 72 - "Community 72"
 Cohesion: 0.06
-Nodes (34): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], [activeNiche, setActiveNiche], [activeRegion, setActiveRegion], { agents, logs: systemLogs, pulse }, [alerts, setAlerts], [analysisTasks, setAnalysisTasks], async() (+26 more)
+Nodes (17): AnalyticsHarvester, The Raven: Autonomous Analytics Harvester (10/10) ==============================, Watches the world and reports back to the Empire., Main Loop: Runs in the background every 60 seconds, Simulates external metric retrieval from TikTok/YouTube APIs, harvester(), Unit Tests for AnalyticsHarvester (The Raven) ==================================, Test the core metrics harvesting logic. (+9 more)
 
-### Community 93 - "Community 93"
+### Community 73 - "Community 73"
 Cohesion: 0.06
-Nodes (30): CloseError, ConnectTimeout, DecodingError, HTTPError, HTTPStatusError, NetworkError, PoolTimeout, ProtocolError (+22 more)
+Nodes (22): app(), client(), _MockAsyncSession, Tests for the Affiliate Auto-Insert endpoint (Phase 14). =======================, Test that error conditions are handled gracefully., A proper async context manager for mocking DB sessions., Verify that _plan_link_insertion appends URLs to overlay script additions., Verify plan_monetization_strategy returns correct status codes. (+14 more)
 
-### Community 94 - "Community 94"
-Cohesion: 0.12
-Nodes (16): Auth, BasicAuth, BaseClient, Limits, The main Client and AsyncClient classes. BaseClient holds all shared logic. Clie, Asynchronous HTTP client., Shared implementation for Client and AsyncClient.     Handles auth, redirects, c, Shared implementation for Client and AsyncClient.     Handles auth, redirects, c (+8 more)
+### Community 74 - "Community 74"
+Cohesion: 0.06
+Nodes (35): [envData, setEnvData], EnvKey, fetchEnvKeys(), filteredKeys, handleFileUpload(), handleRestart(), [isLoading, setIsLoading], [isRestarting, setIsRestarting] (+27 more)
 
-### Community 95 - "Community 95"
+### Community 75 - "Community 75"
 Cohesion: 0.05
 Nodes (36): Agent Framework Hybrid Implementation Plan, Architecture: Hybrid Agent System, Backward Compatibility, code:block1 (┌───────────────────────────────────────────────────────────), code:python (# In OpenClaw agent), code:bash (# Agent Framework Enablement), code:python (# services/langchain/__init__.py), code:bash (# .env) (+28 more)
 
-### Community 96 - "Community 96"
-Cohesion: 0.05
-Nodes (36): Built on graphify — Penpax, code:block1 (/graphify .                        # works on any folder - y), code:bash (python -m graphify.serve graphify-out/graph.json), code:bash (mkdir -p ~/.claude/skills/graphify), code:block12 (- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any ), code:block13 (/graphify                          # run on current director), code:bash (pip install 'graphifyy[video]'   # one-time setup), code:bash (/graphify add <video-url>) (+28 more)
-
-### Community 97 - "Community 97"
-Cohesion: 0.07
-Nodes (33): generate_animatediff_video(), generate_from_image_animatediff(), load_motion_adapter(), load_sd15_animatediff(), load_sdxl_animatediff(), AnimateDiff Inference Module for Video Generation  AnimateDiff adds motion to st, Load SD 1.5 with AnimateDiff (faster, less VRAM), Load SD 1.5 with AnimateDiff (faster, less VRAM) (+25 more)
-
-### Community 98 - "Community 98"
+### Community 76 - "Community 76"
 Cohesion: 0.08
-Nodes (15): OpenClawAgent, Get API key from vault or fall back to settings, Get setting from vault or fall back to settings, Get setting from vault or fall back to settings, Initialize multiple LLM clients with fallback support, Initialize multiple LLM clients with fallback support, Get API key from vault or fall back to settings, Get setting from vault or fall back to settings (+7 more)
+Nodes (34): already_exists(), authentication_error(), conflict_exception(), create_http_exception(), ErrorHandler, ErrorResponse, external_service_error(), FieldError (+26 more)
 
-### Community 99 - "Community 99"
-Cohesion: 0.06
-Nodes (35): Triggers a multi-scene storytelling narrative task., Triggers a multi-scene storytelling narrative task., start_story_generation(), Identifies the top viral candidate and triggers a preview transformation., Identifies the top viral candidate and triggers a preview transformation., Identifies the top viral candidate and triggers a preview transformation., Hardened transformation endpoint with atomicity between task dispatch and credit, Hardened transformation endpoint with atomicity between task dispatch and credit (+27 more)
-
-### Community 100 - "Community 100"
+### Community 77 - "Community 77"
 Cohesion: 0.07
-Nodes (25): Skip third-party patches like patch('redis.Redis') or patch('os.getenv')., Skip third-party patches like patch('redis.Redis') or patch('os.getenv')., Skip common third-party patches., Skip common third-party patches., Works when the patch path omits the src. prefix., Works when the patch path omits the src. prefix., If a short name is in the singletons_short index but doesn't end with a service, If a short name is in the singletons_short index but doesn't end with a service (+17 more)
+Nodes (26): AnalyticsServiceExtended, Extended Analytics Service Consolidates all analytics-related database operation, Get dashboard summary statistics.                  Args:             user_id: ID, Service layer for analytics operations.     Consolidates all database query logi, Get A/B test results for specific content.                  Args:             co, Export all published posts for CSV download.                  Args:, Get storage usage statistics.                  Returns:             Dictionary w, Verify that user has access to specific content.                  Args: (+18 more)
 
-### Community 101 - "Community 101"
-Cohesion: 0.07
-Nodes (23): fetchEnvKeys(), handleFileUpload(), handleRestart(), fetchData(), handleForceKill(), [activeTests, setActiveTests], [completedTests, setCompletedTests], fetchData (+15 more)
+### Community 78 - "Community 78"
+Cohesion: 0.09
+Nodes (30): dict, calculate_statistics(), create_variant_ab_test(), determine_winner(), get_test_results(), _interpret_effect_size(), publish_variant_ab_test(), A/B Testing API Routes for ettametta Provides statistical A/B testing with prope (+22 more)
 
-### Community 102 - "Community 102"
-Cohesion: 0.07
-Nodes (28): apply_test_mocks(), CompositeVideoClip, execute_content_discovery(), execute_preview_generation(), execute_quality_validation(), execute_scene_planning(), execute_video_processing(), MockFFmpeg (+20 more)
-
-### Community 103 - "Community 103"
-Cohesion: 0.07
-Nodes (23): create_the_ettametta_cycle(), Elite Cinematic Fusion (Tier 10): Rhythmic & Emotional Alignment, Elite Cinematic Fusion (Tier 10): Rhythmic & Emotional Alignment, Fusion Assembly with cinematic color grading and Rhythmic Audio Mixing, Fusion Assembly with cinematic color grading and Rhythmic Audio Mixing, Analyze scenes for motion and semantics, Analyze scenes for motion and semantics, Logic for picking the absolute best viral leads (+15 more)
-
-### Community 104 - "Community 104"
+### Community 79 - "Community 79"
 Cohesion: 0.06
 Nodes (34): 1-Minute Target Strategy, Binary Verification, Bot Authentication & Tool Fix (Server: 38.54.12.83), Changes Made, Cinematic Optimization Success, code:diff (-    curl -SL https://github.com/docker/compose/releases/dow), code:bash (psalmprax@ettametta:~/ettametta$ docker run --rm ettametta-j), code:bash (root@38.54.12.83:~/ettametta# docker exec jenkins docker-com) (+26 more)
 
-### Community 105 - "Community 105"
-Cohesion: 0.07
-Nodes (23): Multi-platform video downloader using yt-dlp (supports 1000+ sites).     Auto-de, Multi-platform video downloader using yt-dlp (supports 1000+ sites).     Auto-de, Find cookies directory across possible mount locations., Find cookies directory across possible mount locations., Detect which platform a URL belongs to., Detect which platform a URL belongs to., Find the cookie file matching the URL's platform., Find the cookie file matching the URL's platform. (+15 more)
+### Community 80 - "Community 80"
+Cohesion: 0.1
+Nodes (24): _check_single_node(), cluster_health(), HeartbeatRequest, JobStore, node_pulse_heartbeat(), provision_node(), ProvisionNodeRequest, proxy_post() (+16 more)
 
-### Community 106 - "Community 106"
-Cohesion: 0.09
-Nodes (14): ABC, ConvertKitProvider, EmailProvider, EmailService, MailchimpProvider, Email Service - Transactional and marketing email delivery =====================, ConvertKit integration for email marketing., ConvertKit integration for email marketing. (+6 more)
-
-### Community 107 - "Community 107"
-Cohesion: 0.07
-Nodes (23): Restart a monitored process, Restart a monitored process, OpenClaw skill for monitoring system health and auto-restarting failed processes, OpenClaw skill for monitoring system health and auto-restarting failed processes, Perform health checks on all monitored processes, Perform health checks on all monitored processes, Add a custom health check, Add a custom health check (+15 more)
-
-### Community 108 - "Community 108"
+### Community 81 - "Community 81"
 Cohesion: 0.06
-Nodes (27): Health Check and Root Endpoint Tests ==================================== Integr, Test health check endpoints., Test health check endpoints., Test the root endpoint returns correct message., Test the root endpoint returns correct message., Test root endpoint includes environment info., Test root endpoint includes environment info., Test the health check endpoint. (+19 more)
+Nodes (20): Authentication Endpoint Tests ============================ Integration tests for, Test login endpoints., Test login with valid credentials., Test user registration endpoints., Test login with non-existent username., Test login with wrong password., Test registering a new user., Test login with missing credentials. (+12 more)
 
-### Community 109 - "Community 109"
-Cohesion: 0.06
-Nodes (30): canvas, canvasRef, CITIES, cityConnections, cityPoints, computedIntensity, connections, ctx (+22 more)
-
-### Community 110 - "Community 110"
-Cohesion: 0.08
-Nodes (28): Already starts with src. — unchanged., Already starts with src. — unchanged., Short path without src. gets it prepended., Short path without src. gets it prepended., Empty string gets src. prepended., Empty string gets src. prepended., Deep dotted path without src. works., Deep dotted path without src. works. (+20 more)
-
-### Community 111 - "Community 111"
-Cohesion: 0.11
-Nodes (32): build_from_json(), Build a NetworkX graph from an extraction dict.      directed=True produces a Di, attach_hyperedges(), Store hyperedges in the graph's metadata dict., load_extraction(), Legacy 'source' key on nodes is renamed to 'source_file' before graph build., Legacy 'from'/'to' keys on edges are accepted alongside 'source'/'target'., test_ambiguous_edge_preserved() (+24 more)
-
-### Community 112 - "Community 112"
+### Community 82 - "Community 82"
 Cohesion: 0.06
 Nodes (32): Architectural Conventions, Architecture, code:bash (# Get cached source path for any npm package), code:bash (# Debug a type error — read the actual type definition), Common Patterns, Configuration, Conventions, Coverage (+24 more)
 
-### Community 113 - "Community 113"
-Cohesion: 0.08
-Nodes (22): AIVideoGeneratorService, AI Video Generation Service - Any Tier 3 Enhancement  Integrates with AI video g, Generate video using Runway ML API, Generate video using Runway ML API, Poll Runway generation job until completion, Any AI video generation service.     Integrates with Runway ML and Pika Labs API, Poll Runway generation job until completion, Any AI video generation service.     Integrates with Runway ML and Pika Labs API (+14 more)
-
-### Community 114 - "Community 114"
-Cohesion: 0.09
-Nodes (18): executeWorkflowStep(), _LazyOracle, NeuralOracle, Neural Oracle: Temporal Retention Prediction (10/10) ===========================, Lazily initializes NeuralOracle on first attribute access., Lazily initializes NeuralOracle on first attribute access., Multimodal MLP for Retention Curve Prediction.     Input: [512 CLIP + 8 Numerica, Multimodal MLP for Retention Curve Prediction. (+10 more)
-
-### Community 115 - "Community 115"
-Cohesion: 0.1
-Nodes (12): BaseEttamettaAgent, Standard parent class for all primary orchestrators (AgentZero, Hermes, OpenClaw, Initializes Ollama client. Removal of restrictive ping to allow on-demand recove, Initializes Ollama client. Removal of restrictive ping to allow on-demand recove, Initializes Ollama client. Removal of restrictive ping to allow on-demand recove, Unified LLM call with automatic provider fallback., Unified LLM call with automatic provider fallback., Unified LLM call with automatic provider fallback. (+4 more)
-
-### Community 116 - "Community 116"
-Cohesion: 0.13
-Nodes (31): _git_root(), _hooks_dir(), install(), _install_hook(), Walk up to find .git directory., Return the git hooks directory, respecting core.hooksPath if set (e.g. Husky)., Install a single git hook, appending if an existing hook is present., Remove graphify section from a git hook using start/end markers. (+23 more)
-
-### Community 117 - "Community 117"
-Cohesion: 0.09
-Nodes (24): InternalJobClient, Helper to try primary then fallback URL, Helper to try primary then fallback URL, Client for internal services to communicate with the API.     Used for database, Client for internal services to communicate with the API.     Used for database, get_async_db_url(), Explicitly set the current request ID.     Used by middleware and task entry poi, Logging filter that adds request_id to every log record. (+16 more)
-
-### Community 118 - "Community 118"
+### Community 83 - "Community 83"
 Cohesion: 0.06
 Nodes (32): 3.4. Remote Synthesis Node Pattern (LTX-2), 3.5. Multi-Node (Hybrid) Strategy, API Layer (FastAPI), Backend Services (Docker Compose), CI/CD Architecture, code:block1 (┌───────────────────────────────────────────────────────────), code:block10 (Developer Push), code:block2 (api/) (+24 more)
 
-### Community 119 - "Community 119"
+### Community 84 - "Community 84"
 Cohesion: 0.06
-Nodes (18): intelligence_hub(), Unit tests for IntelligenceHub - Central LLM routing service. Tests circuit brea, Test resetting all circuit breakers., Create an IntelligenceHub instance with mocked dependencies., Test chat functionality., Test RAG context injection., Test service initialization and circuit breaker setup., Verify that circuit breakers are properly initialized for all providers. (+10 more)
+Nodes (19): Discovery Endpoint Tests ======================== Integration tests for discover, Test niche management endpoints., Test that niches list requires authentication., Test listing niches with authentication., Test discovery trend endpoints., Test content analysis endpoints., Test analyzing a content candidate., Test that trends endpoint requires authentication. (+11 more)
 
-### Community 120 - "Community 120"
-Cohesion: 0.06
-Nodes (22): Tests for the Resilience Metrics module. Validates that Prometheus counters, his, Verify all Prometheus metrics are properly wired and functional., Verify all Prometheus metrics are properly wired and functional., Job lifecycle counters should increment without error., Job lifecycle counters should increment without error., State drift counter should accept drift_type labels., State drift counter should accept drift_type labels., Repairs counter should increment. (+14 more)
-
-### Community 121 - "Community 121"
-Cohesion: 0.08
-Nodes (26): Cookies, build_url_with_params(), flatten_queryparams(), is_known_encoding(), normalize_header_key(), obfuscate_sensitive_headers(), parse_content_type(), primitive_value_to_str() (+18 more)
-
-### Community 122 - "Community 122"
+### Community 85 - "Community 85"
 Cohesion: 0.1
-Nodes (27): dict, _cross_community_surprises(), _cross_file_surprises(), _file_category(), god_nodes(), graph_diff(), _is_concept_node(), _is_file_node() (+19 more)
+Nodes (18): Write a .py file in a temp project structure., Patch PROJECT_ROOT and SRC_DIR to point at tmp_path for isolated testing., Scans a .py file with a base_* = ... assignment., Files named test_*.py should not be scanned for singletons., Non .py files should be skipped., __pycache__ directories should be skipped., Empty src/ should return empty module_map., Multiple files across different modules are discovered. (+10 more)
 
-### Community 123 - "Community 123"
+### Community 86 - "Community 86"
 Cohesion: 0.06
 Nodes (31): 10. Alembic Migration Filename Style Drift, 11. Type Hint Inconsistency: `datetime` Import, 12. Inconsistent `populate_by_name` Pydantic Config, 13. Status Value Hardcoding, 14. Missing Type Safety for Credit Actions, 1. Enum Value Casing Inconsistency - PERSIST, 2. "Job" vs "Task" Terminology Overload, 3. "Content" vs "Video" Domain Ambiguity (+23 more)
 
-### Community 124 - "Community 124"
+### Community 87 - "Community 87"
 Cohesion: 0.06
 Nodes (31): 10. Frontend Pages, 1. AI Script Generation, 1. Complete Video Rendering Pipeline, 2. Add A/B Testing, 2. Voiceover Synthesis, 3. Add Auto-Posting, 3. AI Image Generation, 4. Add Thumbnail Generator (+23 more)
 
-### Community 125 - "Community 125"
+### Community 88 - "Community 88"
 Cohesion: 0.06
 Nodes (31): 1. API Server (Port 7201), 2. OpenCLAW Service (Port 7214), 3. Discovery Service - Go (Port 7205), 4. Dashboard (Port 7202), API-Based Providers (Ready), Autonomous Menu Status, Browser Automation Tests, code:bash (API_BASE=http://149.104.110.122:7201/api/v1 python3 test_pro) (+23 more)
 
-### Community 126 - "Community 126"
-Cohesion: 0.09
-Nodes (16): Polymorphic entry point for OpenClaw agent., Standard: Hardening Autonomous Evolution - Critic Verification Loop., Standard: Hardening Autonomous Evolution - Critic Verification Loop., Standard: Hardening Autonomous Evolution - Critic Verification Loop., Simple heuristic-based safety check for malicious patterns., Check if the provided code is syntactically valid Python., Check if the provided code is syntactically valid Python., Critical verification loop: Validates that the code actually addresses the issue (+8 more)
-
-### Community 127 - "Community 127"
-Cohesion: 0.11
-Nodes (18): Settings, Test Suite for API Configuration ================================= Tests for con, Test that ENABLE_LANGCHAIN=true enables the service, Test that ENABLE_CREWAI=true enables the service, Test AI_VIDEO_PROVIDER environment variable, Test DEFAULT_QUALITY_TIER environment variable, Test configuration settings, Test that default settings are defined (+10 more)
-
-### Community 128 - "Community 128"
-Cohesion: 0.07
-Nodes (24): useWebSocket(), [accounts, setAccounts], [accountToUnlink, setAccountToUnlink], [actionLogs, setActionLogs], [activeEngine, setActiveEngine], { agents, logs: systemLogs, status, pulse }, fetchData, handleAutoBroadcast() (+16 more)
-
-### Community 129 - "Community 129"
-Cohesion: 0.14
-Nodes (29): _community_article(), _cross_community_links(), _god_node_article(), _index_md(), Return (community_label, edge_count) pairs for cross-community connections, sort, Generate a Wikipedia-style wiki from the graph.      Writes:       - index.md, _safe_filename(), to_wiki() (+21 more)
-
-### Community 130 - "Community 130"
-Cohesion: 0.06
-Nodes (30): 1. ✅ Enum Value Casing, 2. ✅ Celery Task Naming, 3. ✅ Content vs Video Domain, 4. ✅ Legacy `url` Field, 5. ✅ Duplicate Discovery Endpoints, 6. ✅ Abbreviations (vid → video_id), ✅ All Non-Critical Issues Verified Resolved, code:python (# Should be in service:) (+22 more)
-
-### Community 131 - "Community 131"
-Cohesion: 0.06
-Nodes (30): AMD ROCm, 🎬 Animation Models Available, Apple MPS / DirectML, Auto-Detection, code:bash (# Force specific VRAM amount (overrides auto-detection)), code:bash (GPU_OPTIMIZATION_LEVEL=safe  # 6-8GB per job → 3-4 concurren), code:bash (GPU_OPTIMIZATION_LEVEL=safe  # 6-8GB per job → 1 concurrent ), code:bash (GPU_FORCE_VRAM_GB=16  # If auto-detection fails) (+22 more)
-
-### Community 132 - "Community 132"
-Cohesion: 0.06
-Nodes (30): 1.1 Dashboard Pages (12 Total) - ✅ 95% Complete, 1.2 Frontend Gaps (P0-P2), 1. FRONTEND GAP ANALYSIS, 2.1 API Routes (16 Total) - ✅ 98% Complete, 2.2 Backend Gaps (P0-P2), 2. BACKEND/API GAP ANALYSIS, 3.1 Infrastructure Services, 3.2 Networking Gaps (+22 more)
-
-### Community 133 - "Community 133"
+### Community 89 - "Community 89"
 Cohesion: 0.09
 Nodes (17): AutonomousLeadGenerator, Lead, Autonomous Lead Generation Service ================================== Fully auto, Get newsletter subscribers in niche., Score and qualify a lead based on engagement signals., Launch automated email/SMS outreach sequence.         Supports A/B testing of te, Execute the outreach sequence with delays between emails., Represents a qualified lead with scoring and engagement data. (+9 more)
 
-### Community 134 - "Community 134"
-Cohesion: 0.08
-Nodes (22): main(), Bridges Python logic to the Remotion React studio for programmatic video renderi, Recursively scans props for local absolute file paths or temp/output directory p, Recursively scans props for local absolute file paths or temp/output directory p, Recursively scans props for local absolute file paths or temp/output directory p, Validates a local file path, checks containment/LFI, and copies it to the job sa, Validates a local file path, checks containment/LFI, and copies it to the job sa, Validates a local file path, checks containment/LFI, and copies it to the job sa (+14 more)
+### Community 90 - "Community 90"
+Cohesion: 0.06
+Nodes (17): Video Pipeline Endpoint Tests ============================ Integration tests for, Test video transformation endpoints., Test generation with invalid engine., Test that transform endpoint requires authentication., Test video job listing and status endpoints., Test that jobs list requires authentication., Test listing jobs with authentication., Test getting specific job metadata. (+9 more)
 
-### Community 135 - "Community 135"
+### Community 91 - "Community 91"
+Cohesion: 0.06
+Nodes (30): 1. ✅ Enum Value Casing, 2. ✅ Celery Task Naming, 3. ✅ Content vs Video Domain, 4. ✅ Legacy `url` Field, 5. ✅ Duplicate Discovery Endpoints, 6. ✅ Abbreviations (vid → video_id), ✅ All Non-Critical Issues Verified Resolved, code:python (# Should be in service:) (+22 more)
+
+### Community 92 - "Community 92"
+Cohesion: 0.06
+Nodes (30): AMD ROCm, 🎬 Animation Models Available, Apple MPS / DirectML, Auto-Detection, code:bash (# Force specific VRAM amount (overrides auto-detection)), code:bash (GPU_OPTIMIZATION_LEVEL=safe  # 6-8GB per job → 3-4 concurren), code:bash (GPU_OPTIMIZATION_LEVEL=safe  # 6-8GB per job → 1 concurrent ), code:bash (GPU_FORCE_VRAM_GB=16  # If auto-detection fails) (+22 more)
+
+### Community 93 - "Community 93"
+Cohesion: 0.06
+Nodes (30): 1.1 Dashboard Pages (12 Total) - ✅ 95% Complete, 1.2 Frontend Gaps (P0-P2), 1. FRONTEND GAP ANALYSIS, 2.1 API Routes (16 Total) - ✅ 98% Complete, 2.2 Backend Gaps (P0-P2), 2. BACKEND/API GAP ANALYSIS, 3.1 Infrastructure Services, 3.2 Networking Gaps (+22 more)
+
+### Community 94 - "Community 94"
+Cohesion: 0.08
+Nodes (23): PublishingService, Real Social Media Publishing Service ==================================== Handle, Unified service for multi-platform publishing with resilience., Publish video to specified platform with fallback logic., Publish to multiple platforms in parallel with isolated error handling., Handles real YouTube video uploads via Data API v3 with resilience., Load user credentials from disk., upload_video() (+15 more)
+
+### Community 95 - "Community 95"
 Cohesion: 0.1
-Nodes (12): CloakBrowserScanner, Parse view count strings like '1.2M views', '500K views', '1,234 views'., Clean up the HTTP client., Execute a single scrape attempt against the discovery-scraper service., Scanner that delegates to the containerized discovery-scraper service     powere, Scanner that delegates to the containerized discovery-scraper service     powere, Parse view count strings like '1.2M views', '500K views', '1,234 views'., Clean up the HTTP client. (+4 more)
+Nodes (10): ABC, ConvertKitProvider, EmailProvider, EmailService, MailchimpProvider, Email Service - Transactional and marketing email delivery =====================, ConvertKit integration for email marketing., Abstract base class for email providers. (+2 more)
 
-### Community 136 - "Community 136"
-Cohesion: 0.08
-Nodes (23): Publisher, Viral Distribution Gateway (True 10/10) =====================================  H, Placeholder for Meta Graph API integration., Returns IDs of videos currently in the wild waiting for data, Integration Point for YouTube Data API., # TODO: Move to google-api-python-client implementation, # TODO: Move to google-api-python-client implementation, Integration Point for TikTok Content Posting API. (+15 more)
-
-### Community 137 - "Community 137"
-Cohesion: 0.07
-Nodes (21): broadcast_message(), BroadcastRequest, ContextTypes, execute_tool(), Twilio Webhook for incoming WhatsApp messages., Twilio Webhook for incoming WhatsApp messages., Twilio Webhook for incoming WhatsApp messages., Twilio Webhook for incoming WhatsApp messages. (+13 more)
-
-### Community 138 - "Community 138"
-Cohesion: 0.07
-Nodes (20): Write a test .py file in the temp project., Write a test .py file in the temp project., Test file with a mismatched patch target is detected., Test file with a mismatched patch target is detected., Test file with correctly-named base_* patch target is not flagged., Test file with correctly-named base_* patch target is not flagged., Non-test files are not scanned for patch targets., Non-test files are not scanned for patch targets. (+12 more)
-
-### Community 139 - "Community 139"
-Cohesion: 0.09
-Nodes (29): _agents_install(), _agents_uninstall(), _antigravity_install(), gemini_install(), gemini_uninstall(), install(), _install_codex_hook(), _install_gemini_hook() (+21 more)
-
-### Community 140 - "Community 140"
+### Community 96 - "Community 96"
 Cohesion: 0.07
 Nodes (29): 1. **SEMANTICS_CURRENT_STATUS.md** (Status Report), 2. **SEMANTIC_FIXES_ACTION_PLAN.md** (Roadmap), 3. **SEMANTIC_SERVICE_LAYER_IMPLEMENTATION.md** (Step-by-Step Implementation Guide), code:block1 (ettametta/), ✅ Comprehensive Audit of All 14 Reported Issues, Critical Issues Requiring Action (4 items, 11-15 hours), Deliverables Created, Expected Outcome 📊 (+21 more)
 
-### Community 141 - "Community 141"
+### Community 97 - "Community 97"
 Cohesion: 0.07
 Nodes (29): 1. Verified Fixed Items ✅, 2.1 OAuth Credentials - Incomplete Configuration, 2.2 Production Redirect URIs, 2.3 Missing API Keys (Various Services), 2. Critical Blockers (Remaining Gaps) 🔴, 3.1 Discovery Service ✅ (Functional), 3.2 Video Engine ✅ (Complete), 3.3 Publishing ✅ (Functional) (+21 more)
 
-### Community 142 - "Community 142"
+### Community 98 - "Community 98"
 Cohesion: 0.07
-Nodes (17): CircuitBreaker, Load skills from external YAML configuration., Load skills from external YAML configuration., Construct the system prompt by injecting dynamic skills., Construct the system prompt by injecting dynamic skills., Check availability of optional heavy dependencies., Check availability of optional heavy dependencies., Generate a detailed report of missing dependencies and their impact. (+9 more)
+Nodes (23): auth_headers(), auth_token(), client(), create_mock_module(), mock_groq(), mock_redis(), mock_redis_async(), MockModule (+15 more)
 
-### Community 143 - "Community 143"
-Cohesion: 0.07
-Nodes (21): llm_service(), Unit tests for UnifiedLLMService - Core LLM routing service. Tests circuit break, Create a UnifiedLLMService instance with mocked dependencies., Create a UnifiedLLMService instance with mocked dependencies., Test error handling and graceful degradation., Test error handling and graceful degradation., Test helper functions like generate() and chat_with_llm()., Test helper functions like generate() and chat_with_llm(). (+13 more)
-
-### Community 144 - "Community 144"
-Cohesion: 0.07
-Nodes (18): ContractTestPatterns, Contract tests for Monetization API, Contract tests for Monetization API, Patterns for contract testing.     Can be used with Pact JS/Go to verify provide, Patterns for contract testing.     Can be used with Pact JS/Go to verify provide, Contract tests for Discovery API, Contract tests for Discovery API, Contract tests for Authentication API (+10 more)
-
-### Community 145 - "Community 145"
-Cohesion: 0.1
-Nodes (27): cohesion_score(), _partition(), Community detection on NetworkX graphs. Uses Leiden (graspologic) if available,, Run a second Leiden pass on a community subgraph to split it further., Context manager to suppress stdout/stderr during library calls.      graspologic, Ratio of actual intra-community edges to maximum possible., Run community detection. Returns {node_id: community_id}.      Tries Leiden (gra, score_all() (+19 more)
-
-### Community 146 - "Community 146"
+### Community 99 - "Community 99"
 Cohesion: 0.07
 Nodes (28): 1. Code Changes (13 files), 1. Dashboard Engine Decoupling, 2. Design Transformation, 2. Empire Registry Functional Parity, 3. Nexus & Workforce Integration, 3. Technical Improvements, 4. Administrative Controls, 4. Component Library Updates (+20 more)
 
-### Community 147 - "Community 147"
-Cohesion: 0.09
-Nodes (19): AutonomousVideoEditor, _format_srt_time(), Autonomous Video Editor Service =============================== Fully automated, Apply visual effects based on content analysis., Apply visual effects based on content analysis., Generate SRT caption file from script segments., Generate SRT caption file from script segments., Render final video using FFmpeg with all edits applied. (+11 more)
+### Community 100 - "Community 100"
+Cohesion: 0.08
+Nodes (15): audit_content_quality(), check_content_freshness(), Professional content audit based on 30+ quality indicators.     Returns quality, Check if content is within the 'Viral Sweet Spot' (1-30 days old).     Returns a, Checks Redis cache for existing trending content candidates if not a deep scan., Queries local database for cached candidates as fallback when scanners return no, Triggers the Global Scraper Swarm if no candidates exist., Audits candidates for quality and applies appropriate score and flags. (+7 more)
 
-### Community 148 - "Community 148"
+### Community 101 - "Community 101"
 Cohesion: 0.1
-Nodes (19): DiscoverySkill, Enhanced Discovery Skill for OpenClaw agents.     Can perform intelligent discov, Get trending content for a specific niche., Get trending content for a specific niche., Enhanced Discovery Skill for OpenClaw agents.     Can perform intelligent discov, Trigger a discovery scan and analyze opportunities., Trigger a discovery scan and analyze opportunities., Analyze a competitor's content strategy. (+11 more)
+Nodes (18): Apply stochastic style modulation., Verify that modulated values respect their defined mathematical boundaries., Verify that the same seed produces identical modulated configs, while different, Verify that theme presets correctly override base configurations and apply their, Verify that modulator injects missing keys or dictionary structures gracefully., test_apply_theme_presets(), test_missing_config_structures(), test_stochastic_modulator_clamping_limits() (+10 more)
 
-### Community 149 - "Community 149"
-Cohesion: 0.09
-Nodes (27): _antigravity_uninstall(), _check_skill_version(), _clone_repo(), _kiro_install(), _kiro_uninstall(), main(), Warn if the installed skill is from an older graphify version., Install graphify skill for VS Code Copilot Chat + write .github/copilot-instruct (+19 more)
+### Community 102 - "Community 102"
+Cohesion: 0.1
+Nodes (27): check_and_post_scheduled(), _check_and_post_scheduled_internal(), cleanup_old_scheduled(), _cleanup_old_scheduled_internal(), cleanup_pending_videos(), _cleanup_pending_videos_internal(), _get_publisher(), Scheduled Posts and Cleanup Tasks for ettametta Celery tasks for automated posti (+19 more)
 
-### Community 150 - "Community 150"
+### Community 103 - "Community 103"
+Cohesion: 0.07
+Nodes (16): discovery_service(), Unit tests for DiscoveryService - Content discovery and trending analysis. Tests, Create a DiscoveryService instance with mocked dependencies., Test viral score recalculation., Test monetization mode filtering., Test quality auditing integration., Test service initialization., Verify primary scanners are initialized. (+8 more)
+
+### Community 104 - "Community 104"
+Cohesion: 0.11
+Nodes (13): PerchanceSkill, Generate image(s) using Perchance.          Args:             prompt: Text promp, Perchance AI image generator browser automation skill.     Supports multiple gen, Enter the main prompt, Polymorphic entry point for OpenClaw agent., Set seed for reproducibility, Set number of variations, Click generate button (+5 more)
+
+### Community 105 - "Community 105"
 Cohesion: 0.07
 Nodes (27): ⚡ 10-Minute Setup for AI Video Generation, code:bash (mkdir C:\P4000_AI), code:bash (# P4000 uses CUDA 11.8), code:bash (pip install fastapi uvicorn pyngrok), code:bash (# Copy these files from your ettametta project:), code:bash (# Get ngrok token from https://ngrok.com), code:bash (start_server.bat), code:block7 (🚀 Server accessible at: https://abc123.ngrok.io) (+19 more)
 
-### Community 151 - "Community 151"
+### Community 106 - "Community 106"
 Cohesion: 0.07
 Nodes (27): 1. **Analysis Pipeline** ✅ **FIXED**, 2. **Publishing Uploads** ✅ **COMPLETE**, 3. **Trading Service** ✅ **ENABLED**, 4. **Non-Working Engines** ✅ **REMOVED**, 5. **Auto-Link Insertion** ✅ **IMPLEMENTED**, 6. **Monetization Webhooks** ✅ **COMPLETE**, 7. **Story Generation** ✅ **FUNCTIONAL**, 8. **Empire Automation** ✅ **COMPLETE** (+19 more)
 
-### Community 152 - "Community 152"
+### Community 107 - "Community 107"
 Cohesion: 0.07
 Nodes (27): 1. Go Discovery Scanner - Real YouTube API Integration, ☁️ 1. OCI Customer Secret Keys (S3 Compatibility), 1. Startup, 2. Configuration as Code (JCasC), 2. Persona Image Storage - Real S3 Upload, 3. Build Node Mapping, 3. Jenkins Credentials Configuration, 📱 3. TikTok for Developers (+19 more)
 
-### Community 153 - "Community 153"
+### Community 108 - "Community 108"
 Cohesion: 0.07
 Nodes (27): API Endpoints, Architecture, code:block1 (┌─────────────────┐), code:bash (# Install PyTorch with CUDA support), code:bash (cd /workspace), code:bash (# Using huggingface-cli), code:python (import torch), code:python (@app.post("/generate_hunyuan")) (+19 more)
 
-### Community 154 - "Community 154"
+### Community 109 - "Community 109"
 Cohesion: 0.07
 Nodes (27): API Requirements Analysis, Architecture Analysis, Can Work Without API (Web Scraping), code:python (class DiscoveryService:), Compulsory API Required (No Workaround), Conclusion, Critical Gaps (P0) - IMPROVED, Discovery Service Orchestration ([`service.py`](services/discovery/service.py)) (+19 more)
 
-### Community 155 - "Community 155"
+### Community 110 - "Community 110"
+Cohesion: 0.09
+Nodes (15): create_the_ettametta_cycle(), Elite Cinematic Fusion (Tier 10): Rhythmic & Emotional Alignment, Fusion Assembly with cinematic color grading and Rhythmic Audio Mixing, Analyze scenes for motion and semantics, Logic for picking the absolute best viral leads, Absolute 10.0 Cycle: Proactive Trending, Strategic Framing, and Empire Deploymen, The ettametta: Neural Production Engine (10.0/10)     ==========================, High-Throughput PRODUCTION cycle with Neural Predictive Pruning. (+7 more)
+
+### Community 111 - "Community 111"
+Cohesion: 0.09
+Nodes (15): AffiliateService, get_impact_products(), get_sharesale_products(), Affiliate Service - Any affiliate API integration ==============================, Any affiliate API integration.      Disabled by default - set ENABLE_AFFILIATE_A, Search products across all configured networks.          Args:             niche, Convert product URL to affiliate link.          Args:             product_url: D, Calculate estimated commission.          Args:             product_price: Produc (+7 more)
+
+### Community 112 - "Community 112"
+Cohesion: 0.09
+Nodes (12): CloakFacebookScanner, Facebook scanner backed by CloakBrowser stealth engine with httpx fallback., CloakInstagramScanner, Instagram scanner backed by CloakBrowser stealth engine with httpx fallback., CloakRedditScanner, Reddit scanner backed by CloakBrowser stealth engine with httpx fallback., CloakXScanner, X/Twitter scanner backed by CloakBrowser stealth engine with httpx fallback. (+4 more)
+
+### Community 113 - "Community 113"
 Cohesion: 0.08
-Nodes (21): Record success on circuit breaker and atomically sync Prometheus gauge., Record success on circuit breaker and atomically sync Prometheus gauge., Record success on circuit breaker and atomically sync Prometheus gauge., Transient error indicating external timeouts, Chromium resource exhaustion, or t, Helper to aggressively terminate a process during cancellation., Helper to raise an error if the subprocess failed., Launches the asynchronous subprocess, monitors execution, and enforces timeout l, Helper to aggressively terminate a process during cancellation. (+13 more)
+Nodes (16): geistMono, geistSans, metadata, { theme, setTheme }, { theme, toggleTheme }, ThemeToggleProps, AuthProvider(), TelemetryProvider() (+8 more)
 
-### Community 156 - "Community 156"
-Cohesion: 0.09
-Nodes (17): Exception, PayPalService, Create a subscription, PayPal integration for payments.     Supports: Checkout, Subscriptions, Webhooks, Verify PayPal webhook signature, Get PayPal access token, Create a PayPal order, CookieConflict (+9 more)
-
-### Community 157 - "Community 157"
-Cohesion: 0.09
-Nodes (18): Video Production Assistant Skill for OpenClaw ==================================, Create Adobe Premiere project template, Create Adobe Premiere project template, Create CapCut project template, Create CapCut project template, Generate FFmpeg command sequences, Generate FFmpeg command sequences, Create DaVinci Resolve automation script (+10 more)
-
-### Community 158 - "Community 158"
-Cohesion: 0.07
-Nodes (20): Automatically inserts affiliate links into video content via overlays or voiceov, Legacy alias for plan_monetization_strategy, Uses AI to plan where and how to insert affiliate links in video content., Legacy alias for plan_monetization_strategy, Uses AI to plan where and how to insert affiliate links in video content., Call IntelligenceHub with resilient fallback, Legacy alias for plan_monetization_strategy, Uses AI to plan where and how to insert affiliate links in video content. (+12 more)
-
-### Community 159 - "Community 159"
-Cohesion: 0.09
-Nodes (16): AuthenticationError, AuthorizationError, ExternalServiceError, NotFoundError, PaginatedResponse, RateLimitError, Resource not found error., Resource not found error. (+8 more)
-
-### Community 160 - "Community 160"
-Cohesion: 0.09
-Nodes (26): ABTestCreate, ABTestVariantEvent, calculate_statistics(), delete_test(), determine_winner(), get_active_tests(), get_completed_tests(), get_test_results() (+18 more)
-
-### Community 161 - "Community 161"
+### Community 114 - "Community 114"
 Cohesion: 0.07
 Nodes (26): Architecture: Parallel Processing Model, Backward Compatibility, Celery Task Routing, code:block1 (┌───────────────────────────────────────────────────────────), code:python (@celery.task), code:python (class SoundDesignService:), code:python (class MotionGraphicsService:), code:python (class AIVideoGeneratorService:) (+18 more)
 
-### Community 162 - "Community 162"
-Cohesion: 0.08
-Nodes (18): DriftDetector, 10/10 Proof: The Algorithm Shift Sentry.     Detects when the platform algorithm, 10/10 Proof: The Algorithm Shift Sentry.     Detects when the platform algorithm, Standard: Stateful Recovery.         Loads the last 50 deltas from the database, Standard: Stateful Recovery.         Loads the last 50 deltas from the database, Records the delta for a single production cycle.         Persists to Postgres fo, Records the delta for a single production cycle.         Persists to Postgres fo, Returns True if the algorithm shift requires a system-wide recalibration. (+10 more)
-
-### Community 163 - "Community 163"
-Cohesion: 0.12
-Nodes (25): main(), print_header(), Test content-editor providers endpoint, Test content-editor providers endpoint, Test content-editor find endpoint, Test content-editor find endpoint, Test content-editor find endpoint, Test free video providers (+17 more)
-
-### Community 164 - "Community 164"
+### Community 115 - "Community 115"
 Cohesion: 0.08
 Nodes (22): allButton, assetSection, blueprintSelect, candidateCard, dagNode, emptyState, ENGINE_LABELS, mp4Label (+14 more)
 
-### Community 165 - "Community 165"
-Cohesion: 0.08
-Nodes (18): MotionGraphicsService, Add animated text overlay at specific timestamps.          Args:             vid, Add animated text overlay at specific timestamps.          Args:             vid, Any motion graphics enhancement for video processing.     Adds animated text ove, Add watermark to video.          Args:             video_path: Path to input vid, Add watermark to video.          Args:             video_path: Path to input vid, Any motion graphics enhancement for video processing.     Adds animated text ove, Motion Graphics Service - Any Tier 3 Enhancement  Adds text animations, overlays (+10 more)
+### Community 116 - "Community 116"
+Cohesion: 0.11
+Nodes (23): generate_animatediff_video(), generate_from_image_animatediff(), load_motion_adapter(), load_sd15_animatediff(), load_sdxl_animatediff(), AnimateDiff Inference Module for Video Generation  AnimateDiff adds motion to st, Load SD 1.5 with AnimateDiff (faster, less VRAM), Generate animated video using AnimateDiff          Args:         prompt: Text de (+15 more)
 
-### Community 166 - "Community 166"
+### Community 117 - "Community 117"
+Cohesion: 0.09
+Nodes (14): Main creation loop protected by CircuitBreaker.                  Args:, When settings obj lacks AUTOMATION_MODE, falls through to system default., Core enum values, parsing, validation, and threshold comparisons., Mode resolution priority chain., TestAutomationModeEnum, TestResolveMode, from_str(), is_at_least() (+6 more)
+
+### Community 118 - "Community 118"
 Cohesion: 0.1
-Nodes (17): NeuralVisionAnalyzer, Neural Vision Service for Elite Cinematic Fusion ===============================, Lazy load the CLIP model to save memory, Generates an embedding vector for a piece of text, Analyzes a scene's semantics and motion energy, Analyzes a scene's semantics and motion energy, Finds the Top K matches in memory using FAISS., Finds the Top K matches in memory using FAISS or NumPy. (+9 more)
+Nodes (14): acquire_slot(), check_module_available(), GpuQueueManager, ModelManager, Enhance video quality using Real-ESRGAN post-processing.         Pro strategy: G, Decrements usage counter and only cleans up if no other tasks need it., Initializes the GPU slot queue with tokens if empty., Handles downloading and deleting large video models to save space on the VPS. (+6 more)
 
-### Community 167 - "Community 167"
+### Community 119 - "Community 119"
 Cohesion: 0.1
-Nodes (15): Checks if either a token or cookies exist for the platform., Checks if either a token or cookies exist for the platform., Public helper to ensure a token is valid, triggering refresh if needed., Public helper to ensure a token is valid, triggering refresh if needed., Triggers a refresh flow for a specific platform/user., Triggers a refresh flow for a specific platform/user., Returns the decrypted access token for a platform/user., Returns the decrypted access token for a platform/user. (+7 more)
+Nodes (13): InstagramScanner, Scans Instagram for trending Reels using web scraping.     Instagram is the prim, Extract post data from Instagram's JSON structure., Fallback: Scrape Instagram Explore page.         This is less reliable as the ex, Scans Instagram for trending Reels in a niche.         Uses the explore page and, Search Instagram for a hashtag and extract Reels., get_scanner_service(), Orchestrates content discovery from multiple platforms.     Handles duplicate de (+5 more)
 
-### Community 168 - "Community 168"
+### Community 120 - "Community 120"
+Cohesion: 0.14
+Nodes (5): BaseEttamettaAgent, Initializes Ollama client. Removal of restrictive ping to allow on-demand recove, Unified LLM call with automatic provider fallback., Initialize all available LLM providers from settings., Standard parent class for all primary orchestrators (AgentZero, Hermes, OpenClaw
+
+### Community 121 - "Community 121"
 Cohesion: 0.08
-Nodes (22): clear_all_faults(), get_chaos_report(), induce_exhaustion(), inject_latency(), Receives frontend error reports from GlobalErrorBoundary., Receives frontend error reports from GlobalErrorBoundary., Receives frontend error reports from GlobalErrorBoundary., Adds artificial delay to a service. (+14 more)
+Nodes (23): canvasRef, CITIES, cityConnections, cityPoints, computedIntensity, connections, ctx, draw() (+15 more)
 
-### Community 169 - "Community 169"
+### Community 122 - "Community 122"
+Cohesion: 0.1
+Nodes (14): check_playwright_available(), FreeVideoProviderService, Free AI Video Generation Providers Service  Integrates with multiple free daily, Returns health of browser automation and API drivers., Returns real-time health for the dashboard., Get API key for a specific provider, Get ordered list of all available providers, Generate video using available free provider. (+6 more)
+
+### Community 123 - "Community 123"
 Cohesion: 0.08
 Nodes (25): 1. Clone & configure environment, 2. Run with Docker, 3. Access services, 🔄 CI/CD (Jenkins), code:block1 (ettametta/), code:bash (git clone https://github.com/YOUR_USERNAME/ettametta.git), code:bash (docker-compose up -d --build), code:bash (cd terraform) (+17 more)
 
-### Community 170 - "Community 170"
+### Community 124 - "Community 124"
 Cohesion: 0.08
 Nodes (25): 10. AUTONOMOUS PAGE (`/autonomous`), 11. TRADING PAGE (`/trading`), 12. ADMIN PAGE (`/admin`), 13. CREDITS PAGE (`/credits`), 1. DISCOVERY PAGE (`/discovery`), 2. CREATION PAGE (`/creation`), 3. TRANSFORMATION PAGE (`/transformation`), 4. PUBLISHING PAGE (`/publishing`) (+17 more)
 
-### Community 171 - "Community 171"
+### Community 125 - "Community 125"
 Cohesion: 0.08
 Nodes (25): 1. Monetization Architecture Overview, 2.1 Subscription (Stripe) - 95% Complete ✅, 2.2 Commerce (Shopify) - 90% Complete ✅, 2.3 Affiliate - 60% Complete ⚠️, 2.4 Monetization Strategies - 60% Complete, 2.5 AutoMerch (POD) - 60% Complete ⚠️, 2.5 Empire (A/B Testing) - 80% Complete, 2. Current State Assessment (+17 more)
 
-### Community 172 - "Community 172"
+### Community 126 - "Community 126"
 Cohesion: 0.08
 Nodes (25): Actions, code:json ({), code:json ({), code:json ({), code:json ({), code:json ({), code:json ({), code:json ({) (+17 more)
 
-### Community 173 - "Community 173"
-Cohesion: 0.08
-Nodes (26): code:bash (mkdir -p graphify-out), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (python3 -m graphify.serve graphify-out/graph.json) (+18 more)
+### Community 127 - "Community 127"
+Cohesion: 0.13
+Nodes (5): OpenClawAgent, Get API key from vault or fall back to settings, Get setting from vault or fall back to settings, Initialize multiple LLM clients with fallback support, Get the appropriate model name for the current provider
 
-### Community 174 - "Community 174"
-Cohesion: 0.11
-Nodes (17): BilibiliScanner, Scans Bilibili for trending videos in a niche.     Bilibili is a major Chinese v, Scans Bilibili for trending videos in a niche.     Bilibili is a major Chinese v, Parse a Bilibili video item from ranking/popular., Parse a Bilibili video item from ranking/popular., Parse a Bilibili video item from search results., Parse a Bilibili video item from search results., Parse Chinese number format (e.g., 10.5万 = 1050000). (+9 more)
+### Community 128 - "Community 128"
+Cohesion: 0.09
+Nodes (14): Sound Design Service - Any Tier 3 Enhancement  Adds background music and sound e, Any sound design enhancement for video processing.     Adds background music and, Add sound effects to a video.          Args:             video_path: Path to inp, Mix multiple audio tracks together., Get list of available mood categories, Get list of available SFX categories, Get appropriate moods for a given niche, Add background music to a video.          Args:             video_path: Path to (+6 more)
 
-### Community 175 - "Community 175"
-Cohesion: 0.08
-Nodes (24): clear_all_faults(), get_chaos_report(), induce_exhaustion(), inject_latency(), Adds artificial delay to a service., Adds artificial delay to a service., Simulates a worker crash notification., Simulates a worker crash notification. (+16 more)
-
-### Community 176 - "Community 176"
-Cohesion: 0.16
-Nodes (24): _bfs(), _communities_from_graph(), _dfs(), Reconstruct community dict from community property stored on nodes., Render subgraph as text, cutting at token_budget (approx 3 chars/token)., _subgraph_to_text(), _make_graph(), Tests for serve.py - MCP graph query helpers (no mcp package required). (+16 more)
-
-### Community 177 - "Community 177"
-Cohesion: 0.1
-Nodes (24): _call_claude(), _call_openai_compat(), detect_backend(), estimate_cost(), extract_corpus_parallel(), extract_files_direct(), _parse_llm_json(), Call Anthropic Claude directly (not via OpenAI compat layer). (+16 more)
-
-### Community 178 - "Community 178"
+### Community 129 - "Community 129"
 Cohesion: 0.08
 Nodes (24): code:python (async def list_published_posts(self, db, user_id: str, page:), code:python (@router.get("/posts")), code:python (@router.get("/posts")), code:python (async def abort_job(self, db, job_id: str, user_id: str, is_), code:python (@router.post("/{job_id}/abort")), code:python (@router.post("/{job_id}/abort")), code:python (async def aggregate_niche_trends_with_scan(self, db, niche: ), code:bash (curl -H "Authorization: Bearer $TOKEN" http://localhost:8000) (+16 more)
 
-### Community 179 - "Community 179"
+### Community 130 - "Community 130"
 Cohesion: 0.08
 Nodes (24): 3-Tier Video Quality Analysis, Agent Workflow: Current vs Recommended, code:block1 (Trend Discovery → Script → Voice → Stock/AI Visuals →), code:block2 (Discovery (14+ scanners) → Script Generator →), Critical Gaps, Current Implementation Flow, Gap Analysis: What's Missing for Tier 3, Honest Assessment (+16 more)
 
-### Community 180 - "Community 180"
-Cohesion: 0.08
-Nodes (24): 1. Node/Edge Quality - Score: 6/10, 2. Edge Accuracy - Score: 5/10, 3. Community Quality - Score: 6/10, 4. Surprising Connections - Score: 4/10, 5. God Nodes - Score: 7/10, 6. Overall Usefulness - Score: 6/10, Additional Observations, code:markdown (# Graph Report - /home/safi/graphify_test/httpx  (2026-04-03) (+16 more)
+### Community 131 - "Community 131"
+Cohesion: 0.09
+Nodes (12): FFmpeg Video Transformation Utilities ====================================  Prof, check_cv2_available(), check_moviepy_available(), Returns health of local Video Processing drivers., Verify video can be read by iterating frames., Create OpenCV-based video processing when MoviePy hangs.         This is a simpl, Load video with timeout and fallback to OpenCV if it hangs., OpenCV-based fallback for video loading.         Probes video properties and tri (+4 more)
 
-### Community 181 - "Community 181"
-Cohesion: 0.08
-Nodes (24): 동작 원리, 사용법, 결과물, 실전 예제, 개인정보 보호, 기술 스택, 다음 계획, 스타 히스토리 (+16 more)
-
-### Community 182 - "Community 182"
+### Community 132 - "Community 132"
 Cohesion: 0.11
-Nodes (16): ABTestingAutomation, Automated A/B Testing Service Handles automatic winner determination and optimiz, Apply the winning variant to future content, Apply the winning variant to future content, Automated A/B testing service that monitors tests and determines winners, Automated A/B testing service that monitors tests and determines winners, Start the automated A/B testing service, Start the automated A/B testing service (+8 more)
+Nodes (17): apply_test_mocks(), CompositeVideoClip, execute_content_discovery(), execute_preview_generation(), execute_quality_validation(), execute_scene_planning(), execute_video_processing(), MockFFmpeg (+9 more)
 
-### Community 183 - "Community 183"
-Cohesion: 0.1
-Nodes (12): FlikiSkill, Fliki browser automation skill - Tier 1 easy platform     Text-to-video with voi, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Fliki         Returns: { status: success/failed, KlingSkill, Kling AI browser automation skill - Tier 1 easiest     66 free credits daily - m (+4 more)
+### Community 133 - "Community 133"
+Cohesion: 0.13
+Nodes (9): executeWorkflowStep(), _LazyOracle, NeuralOracle, Neural Oracle: Temporal Retention Prediction (10/10) ===========================, Lazily initializes NeuralOracle on first attribute access., Multimodal MLP for Retention Curve Prediction., Stub - PyTorch not available., The Scientific Heart of Ettametta: Temporal Deep Learning. (+1 more)
 
-### Community 184 - "Community 184"
-Cohesion: 0.19
-Nodes (22): _estimate_tokens(), print_benchmark(), _query_subgraph_tokens(), Token-reduction benchmark - measures how much context graphify saves vs naive fu, Print a human-readable benchmark report., Run BFS from best-matching nodes and return estimated tokens in the subgraph con, Measure token reduction: corpus tokens vs graphify query tokens.      Args:, run_benchmark() (+14 more)
+### Community 134 - "Community 134"
+Cohesion: 0.12
+Nodes (13): Skip third-party patches like patch('redis.Redis') or patch('os.getenv')., Skip common third-party patches., Works when the patch path omits the src. prefix., If a short name is in the singletons_short index but doesn't end with a service, If the module has no matching singleton, no issue raised., If the module path doesn't exist in module_map, no issue., _engine suffix is one of SERVICE_LIKE_SUFFIXES and should be checked., If the patch string has no dot-separated parts, skip (unusual). (+5 more)
 
-### Community 185 - "Community 185"
+### Community 135 - "Community 135"
+Cohesion: 0.08
+Nodes (17): aggregateLoader, bg, children, closedIndicator, container, dots, fakeUser, indicator (+9 more)
+
+### Community 136 - "Community 136"
 Cohesion: 0.08
 Nodes (23): 1. GitHub Credentials, 2. OCI SSH Key (NOT NEEDED), 3. Docker Hub Credentials (Optional), 4. Groq API Key, 5. Telegram Bot Token, 6. PostgreSQL Password, 7. Redis Password, 8. JWT Secret Key (+15 more)
 
-### Community 186 - "Community 186"
-Cohesion: 0.08
-Nodes (24): code:bash (mkdir -p graphify-out), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.serve graphify-out/graph.json), code:bash (# Detect the correct Python interpreter (handles pipx, venv,) (+16 more)
-
-### Community 187 - "Community 187"
-Cohesion: 0.08
-Nodes (24): code:bash (mkdir -p graphify-out), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:bash ($(cat .graphify_python) -c ") (+16 more)
-
-### Community 188 - "Community 188"
-Cohesion: 0.08
-Nodes (24): code:powershell (New-Item -ItemType Directory -Force -Path graphify-out | Out), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (# Detect Python and install graphify if needed) (+16 more)
-
-### Community 189 - "Community 189"
-Cohesion: 0.08
-Nodes (23): After completing all steps, code:block1 (/graphify                     # full pipeline on current dir), code:python (python -c "), code:python (python -c "), code:block12 (graphify complete), code:python (python -c "import graphify; import sys; from pathlib import ), code:python (python -m pip install graphifyy -q), code:python (python -c ") (+15 more)
-
-### Community 190 - "Community 190"
-Cohesion: 0.1
-Nodes (17): generate_animatediff_laptop(), get_p4000_recommendations(), Laptop-optimized AnimateDiff generation with memory management for P4000 8GB GPU, Get P4000-specific recommendations, Get P4000-specific recommendations, Laptop-optimized AnimateDiff generation with memory management for P4000 8GB GPU, generate_animation(), Generate animation optimized for P4000 8GB (+9 more)
-
-### Community 191 - "Community 191"
+### Community 137 - "Community 137"
 Cohesion: 0.11
-Nodes (16): IntelligentVideoResearcher, main(), Main intelligent video discovery and editing workflow, Main intelligent video discovery and editing workflow, Performs human-like video research and discovery, Performs human-like video research and discovery, Research and find videos for each scene requirement, Research and find videos for each scene requirement (+8 more)
+Nodes (13): GoogleSearchScanner, Fallback: Try to scrape Google Shopping/Trends results directly.         Note: T, Google Search scanner for discovering popular products and monetization opportun, Build dynamic search queries based on niche and current time., Searches Google for trending products, affiliate opportunities, and monetization, Get feed/trending from a specific platform for the user., Search all connected platforms for the user.          Args:             niche: S, generate_animatediff_laptop() (+5 more)
 
-### Community 192 - "Community 192"
-Cohesion: 0.1
-Nodes (15): PersistentQueue, The Stream Heartbeat: Persistent Runtime Ingestion (10/10) =====================, A SQLite-backed queue for fault-tolerant signal processing., A SQLite-backed queue for fault-tolerant signal processing., Pushes a signal into the persistent queue, Pushes a signal into the persistent queue, Retrieves and marks the oldest pending item, Retrieves and marks the oldest pending item (+7 more)
+### Community 138 - "Community 138"
+Cohesion: 0.12
+Nodes (12): Scene-Based Video Production Orchestrator ======================================, Execute the actual video fusion based on the production plan with narrative awar, Orchestrates scene-based video production with audio overlay, Check if video processing capabilities are available, Add audio overlay to the video using FFmpeg, Check if audio processing capabilities are available, Finalize video for upload with proper formatting, Generate monetization plan for the produced video (+4 more)
 
-### Community 194 - "Community 194"
+### Community 139 - "Community 139"
+Cohesion: 0.13
+Nodes (13): ComposedAsset, PlatformComposer, Platform Composer — Unified Asset Sourcing for Nexus DAG =======================, DAG-optimized: return (platform_urls, stock_urls) without downloading., Search Pexels/Coverr stock video APIs., Search CloakBrowser for platform content, return ComposedAssets with URLs., Search platforms and return raw URLs (for DAG compose_for_dag)., Query Discovery service for trending content in the niche. (+5 more)
+
+### Community 140 - "Community 140"
+Cohesion: 0.13
+Nodes (7): Standard: Hardening Autonomous Evolution - Critic Verification Loop., Check if the provided code is syntactically valid Python., Simple heuristic-based safety check for malicious patterns., Critical verification loop: Validates that the code actually addresses the issue, Polymorphic entry point for OpenClaw agent., SelfImprovementSkill, SkillCritic
+
+### Community 141 - "Community 141"
+Cohesion: 0.11
+Nodes (12): Restart a monitored process, OpenClaw skill for monitoring system health and auto-restarting failed processes, Perform health checks on all monitored processes, Add a custom health check, Run a custom health check, Get status of the watchdog system, Enable automatic process restarting, Disable automatic process restarting (+4 more)
+
+### Community 142 - "Community 142"
 Cohesion: 0.09
-Nodes (23): 1. Design Tokens & CSS Variables (`globals.css`), 2. Shared Component Library, 3. Page Redesigns, 4. Design System Benefits, 6. Technical Improvements, Analytics Page (`app/analytics/page.tsx`), Changes Made, `components/layout/BaseLayout.tsx` (+15 more)
+Nodes (12): ContractTestPatterns, Contract tests for Monetization API, Patterns for contract testing.     Can be used with Pact JS/Go to verify provide, Contract tests for Discovery API, Contract tests for Authentication API, Contract tests for Analytics API, Contract tests for Publishing API, TestAnalyticsContract (+4 more)
 
-### Community 195 - "Community 195"
-Cohesion: 0.1
-Nodes (13): _call_api(), chat_with_llm(), generate(), Unified LLM Service - Multi-Provider Support ===================================, Check if a provider is available., Get list of available providers with their models., Generate completion using specified provider.         Falls back to available pr, Call the appropriate API based on provider. (+5 more)
-
-### Community 196 - "Community 196"
-Cohesion: 0.1
-Nodes (15): Broadcasts a discovery log message with JSON formatting and OTEL support., Checks Redis cache for existing trending content candidates if not a deep scan., Checks Redis cache for existing trending content candidates if not a deep scan., Runs multi-platform parallel scans and returns the list of candidate objects., Runs multi-platform parallel scans and returns the list of candidate objects., Triggers the Global Scraper Swarm if no candidates exist., Triggers the Global Scraper Swarm if no candidates exist., Applies selective monetization mode filtering and user specific constraints. (+7 more)
-
-### Community 197 - "Community 197"
+### Community 143 - "Community 143"
 Cohesion: 0.09
-Nodes (17): Claw4ScienceSkill, Skill for transforming technical/academic data into "Science-Pop" viral scripts., Skill for transforming technical/academic data into "Science-Pop" viral scripts., Skill for transforming technical/academic data into "Science-Pop" viral scripts., Skill for transforming technical/academic data into "Science-Pop" viral scripts., Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is, Polymorphic entry point for OpenClaw agent., Uses LLM to rewrite dense scientific data into a viral short-form script. (+9 more)
+Nodes (22): generate_image(), generate_script(), get_sentinel_status(), HookRequest, ImageGenRequest, launch_automated_video(), Generates an AI image for a segment., Translates script segments for global reach. (+14 more)
 
-### Community 198 - "Community 198"
-Cohesion: 0.1
-Nodes (15): EttamettaSkill, ettametta: Revenue Recovery and Monetization Optimizer for ettametta.     Harden, ettametta: Revenue Recovery and Monetization Optimizer for ettametta.     Harden, Generates a Stripe invoice for completed gigs., Generates a Stripe invoice for completed gigs., Standardized mission execution.         Routes to audit, optimization, or auto_a, Standardized mission execution.         Routes to audit, optimization, or auto_a, Audits latest videos for engagement 'leaks' (high-intent comments). (+7 more)
+### Community 144 - "Community 144"
+Cohesion: 0.13
+Nodes (18): fix_issues replaces the old patch target with base_ version., fix_issues does not fail when a file in the issue list doesn't exist on disk., Multiple mismatches in the same file are all fixed., With no issues, fix_issues returns 0., TestFixIssues, _check_patch_target(), find_mismatches(), find_mismatches_in_files() (+10 more)
 
-### Community 199 - "Community 199"
-Cohesion: 0.11
-Nodes (17): Runs transcription locally with timeout and retry protection., Ettametta Transcription Service     Uses Faster-Whisper for high-speed local tra, Ettametta Transcription Service     Uses Faster-Whisper for high-speed local tra, Ettametta Transcription Service     Uses Faster-Whisper for high-speed local tra, Lazy loading of the Faster-Whisper model., Lazy loading of the Faster-Whisper model with fallback support., Lazy loading of the Faster-Whisper model with fallback support., Transcribes an audio file. Offloads to remote if RENDER_NODE_URL is set, (+9 more)
-
-### Community 200 - "Community 200"
-Cohesion: 0.11
-Nodes (15): THE BLACKOUT: Simultaneous multi-system failure.         Redis hot state invalid, THE BLACKOUT: Simultaneous multi-system failure.         Redis hot state invalid, THE CASCADE: Sequential degradation over 15 seconds.         Simulates a real-wo, THE CASCADE: Sequential degradation over 15 seconds.         Simulates a real-wo, THE STORM: Randomized burst of all fault types over 30s window.         Each fau, THE STORM: Randomized burst of all fault types over 30s window.         Each fau, Adds artificial delay to a specific service interaction., Adds artificial delay to a specific service interaction. (+7 more)
-
-### Community 201 - "Community 201"
-Cohesion: 0.1
-Nodes (18): check_update(), _notify_only(), Check for pending semantic update flag and notify the user if set.      Cron-saf, Write a flag file and print a notification (fallback for non-code-only corpora)., Tests for watch.py - file watcher helpers (no watchdog required)., check_update returns True and is silent when needs_update flag is absent., check_update returns True and is silent when needs_update flag is absent., check_update returns True and prints notification when flag exists. (+10 more)
-
-### Community 202 - "Community 202"
+### Community 145 - "Community 145"
 Cohesion: 0.09
 Nodes (22): 1. Content + Affiliate Marketing Stack, 2. Autonomous Money System Stack, 3. Trading + Market Analysis Stack, 4. The "Faceless Empire" Setup, AI Stack Comparison: Current vs Recommended, code:python (# Example: Add LangChain for better prompt management), code:python (# Example: Convert OpenClaw skills to CrewAI agents), Current Project Stack (+14 more)
 
-### Community 203 - "Community 203"
+### Community 146 - "Community 146"
 Cohesion: 0.09
-Nodes (22): code:block1 (/graphify                                             # full), code:bash (if [ ! -f graphify-out/.graphify_python ]; then), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3) (+14 more)
+Nodes (11): Validate input paths for existence (except remote HTTP URIs)., Source additional clips to fill duration gaps between sourced         footage an, Parallelize metadata extraction via threads to avoid blocking the event loop., Auto-sources background music from library if not provided., Concatenate voiceover clips into a single master file., Determine duration in frames by probing the master audio., Get word-level transcription for dynamic captions., Extract a thumbnail from the first clip. (+3 more)
 
-### Community 204 - "Community 204"
-Cohesion: 0.09
-Nodes (23): code:bash (mkdir -p graphify-out), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c ") (+15 more)
-
-### Community 205 - "Community 205"
-Cohesion: 0.09
-Nodes (22): code:block1 (/graphify                                             # full), code:bash (if [ ! -f graphify-out/.graphify_python ]; then), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3) (+14 more)
-
-### Community 206 - "Community 206"
-Cohesion: 0.09
-Nodes (23): code:bash (mkdir -p graphify-out), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:bash (python3 -m graphify.serve graphify-out/graph.json) (+15 more)
-
-### Community 207 - "Community 207"
+### Community 147 - "Community 147"
 Cohesion: 0.13
-Nodes (17): analyze_vlm_endpoint(), download(), generate_voice_endpoint(), get_job_status(), hunyuan_endpoint(), _inject_tensor_default(), list_models(), LLMRequest (+9 more)
+Nodes (10): LangChainService, Use LangChain for structured prompting with context.                  Args:, Use a prompt template with variables.                  Args:             templat, Maintain conversation context with memory.                  Args:             us, Use LangChain memory and cognitive patterns to predict a script's viral potentia, Parse LLM output into a Pydantic model.                  Args:             promp, Any LangChain enhancement for LLM orchestration.          Disabled by default -, Re-initialize service from current environment/settings. (+2 more)
 
-### Community 208 - "Community 208"
+### Community 148 - "Community 148"
+Cohesion: 0.13
+Nodes (11): CloakTwitchScanner, Twitch scanner backed by CloakBrowser stealth engine with httpx fallback., Search Twitch for clips., Scans Twitch for top clips in specified categories using web scraping.     Twitc, Extract clip data from Twitch JSON., Navigate Twitch's complex JSON structure to find clip edges., Parse a single Twitch clip node into a ContentCandidate., Handle different Twitch thumbnail data structures. (+3 more)
+
+### Community 149 - "Community 149"
+Cohesion: 0.13
+Nodes (20): make_mock_db_row(), Unit tests for NULL region fallback in DiscoveryService.  Verifies that all 3 DB, Test NULL region fallback in search_content., Create a mock ContentCandidateDB row with the given fields., Test NULL region fallback in get_global_trending., Edge case tests for NULL region fallback., Test NULL region fallback in _fetch_db_fallback via find_trending_content., test_fetch_db_fallback_does_not_return_other_null_regions_for_non_us() (+12 more)
+
+### Community 150 - "Community 150"
+Cohesion: 0.12
+Nodes (10): Execute a single workflow step.          Hardened: Transitioned from placeholder, Get status of a workflow, list all active workflows, Cancel a running workflow, Polymorphic entry point for OpenClaw agent., Create a new workflow definition, Execute a workflow asynchronously, Execute workflow steps in order (+2 more)
+
+### Community 151 - "Community 151"
 Cohesion: 0.09
-Nodes (15): Applies 'Copyright-Safe' transformations using high-performance FFmpeg., Applies 'Copyright-Safe' transformations using high-performance FFmpeg., Simulates handheld motion by applying small random position offsets.         Use, Simulates handheld motion by applying small random position offsets.         Use, Adds high-energy light leaks/overlays with smooth transitions., Adds high-energy light leaks/overlays with smooth transitions., Adds a subtle film grain effect to simulate analog texture (f10)., Adds a subtle film grain effect to simulate analog texture (f10). (+7 more)
+Nodes (12): Tests for the Resilience Metrics module. Validates that Prometheus counters, his, Verify all Prometheus metrics are properly wired and functional., Job lifecycle counters should increment without error., State drift counter should accept drift_type labels., Repairs counter should increment., Recovery duration histogram should accept observations., Sentinel audit pass/fail counters should increment., Chaos injection counters should accept fault_type labels. (+4 more)
 
-### Community 209 - "Community 209"
-Cohesion: 0.1
-Nodes (11): When settings obj lacks AUTOMATION_MODE, falls through to system default., Core enum values, parsing, validation, and threshold comparisons., TestAutomationModeEnum, from_str(), is_at_least(), mode_to_int(), Automation Mode Configuration ==============================  Three-tier automat, Get integer tier for threshold comparisons. (+3 more)
-
-### Community 210 - "Community 210"
-Cohesion: 0.09
-Nodes (16): Determine base Remotion executable and initial arguments., Determine base Remotion executable and initial arguments., Determine base Remotion executable and initial arguments., Wrap the Remotion execution with 'nice' priority adjustment if available., Wrap the Remotion execution with 'nice' priority adjustment if available., Wrap the Remotion execution with 'nice' priority adjustment if available., Extract frame duration arguments safely from props., Extract frame duration arguments safely from props. (+8 more)
-
-### Community 211 - "Community 211"
-Cohesion: 0.1
-Nodes (17): actionIconSize, { fps }, frame, springValue, svgIconSize, { width, height, fps }, viralClipSchema, cinematicMinimalSchema (+9 more)
-
-### Community 212 - "Community 212"
-Cohesion: 0.12
-Nodes (13): 5. Visual Improvements, After, Before, AIBridge, computeHMAC(), RateLimitMiddleware(), RequireAuth(), AuthConfig (+5 more)
-
-### Community 213 - "Community 213"
-Cohesion: 0.11
-Nodes (19): extract_content_patterns(), get_persisted_analysis_report(), _perform_ai_pattern_analysis(), _perform_pattern_analysis(), Content analysis service for viral pattern detection. Provides AI-powered analys, Basic fallback pattern analysis (keyword-based) for when AI service is unavailab, Analyze content for viral patterns and insights.      Args:         content_id:, Analyze content for viral patterns and insights using AI/NLP service.      Args: (+11 more)
-
-### Community 214 - "Community 214"
-Cohesion: 0.12
-Nodes (14): Search Twitch for clips., Search Twitch for clips., Scans Twitch for top clips in specified categories using web scraping.     Twitc, Scans Twitch for top clips in specified categories using web scraping.     Twitc, Extract clip data from Twitch JSON., Extract clip data from Twitch JSON., Navigate Twitch's complex JSON structure to find clip edges., Parse a single Twitch clip node into a ContentCandidate. (+6 more)
-
-### Community 215 - "Community 215"
-Cohesion: 0.12
-Nodes (16): chat_messages(), completion_messages(), DifyClient, Client for Dify.ai Application API.     Supports Chat, Completion, and Workflow, Execute a Dify Workflow., Send inputs to a Completion (Text Generator) app., Send inputs to a Completion (Text Generator) app., Client for Dify.ai Application API.     Supports Chat, Completion, and Workflow (+8 more)
-
-### Community 216 - "Community 216"
-Cohesion: 0.1
-Nodes (20): ErrorReport, get_security_events(), get_security_status(), Reports frontend errors to the backend for logging.     Accessible to all authen, Reports frontend errors to the backend for logging.     Accessible to all authen, Reports frontend errors to the backend for logging.     Accessible to all authen, Returns the current security health score and recent threat events.     Requires, Returns the current security health score and recent threat events.     Requires (+12 more)
-
-### Community 217 - "Community 217"
-Cohesion: 0.14
-Nodes (12): CircuitBreaker, get_impact_products(), get_sharesale_products(), Affiliate Service - Any affiliate API integration ==============================, Search Amazon products via Associates API (PA-API 5.0).          Returns empty l, Simple circuit breaker to prevent cascading failures, Search products across all configured networks.          Args:             niche, Search products across all configured networks.          Args:             niche (+4 more)
-
-### Community 218 - "Community 218"
+### Community 152 - "Community 152"
 Cohesion: 0.09
 Nodes (21): **Auth Pages** (`app/login/page.tsx`, `app/register/page.tsx`), Build Status, **Button** (`components/ui/Button.tsx`), **Card** (`components/ui/Card.tsx`), Components, Core Styling, Design Principles Applied, **Discovery Page** (`app/discovery/page.tsx`) (+13 more)
 
-### Community 219 - "Community 219"
+### Community 153 - "Community 153"
 Cohesion: 0.09
 Nodes (21): 1. Color Palette, 2. Typography, 3. Components Redesigned, 4. Shadows & Borders, 5. Spacing & Layout, Auth Pages (Login/Register), Button.tsx, Card.tsx (+13 more)
 
-### Community 220 - "Community 220"
+### Community 154 - "Community 154"
+Cohesion: 0.13
+Nodes (11): AutonomousVideoRemixer, Autonomous Video Remix Service ============================== Complete pipeline:, Discover viral videos using the intelligent workflow., Download videos using yt-dlp., Fully autonomous video creation from discovered viral content.     Chains multip, Extract best segments from downloaded videos., Generate script that matches the extracted clips., Generate AI voiceover for the script. (+3 more)
+
+### Community 155 - "Community 155"
+Cohesion: 0.12
+Nodes (11): Multi-platform video downloader using yt-dlp (supports 1000+ sites).     Auto-de, Find cookies directory across possible mount locations., Detect which platform a URL belongs to., Find the cookie file matching the URL's platform., Build yt-dlp options with platform-aware cookie injection., Downloads a video from ANY yt-dlp supported URL.         Supports YouTube, TikTo, Synchronous yt-dlp download (runs in thread)., Quickly checks if a URL points to a valid downloadable video. (+3 more)
+
+### Community 156 - "Community 156"
+Cohesion: 0.11
+Nodes (11): InterpreterService, Interpreter Service - Any Open Interpreter integration =========================, Execute Python code in a separate process for isolation., Execute JavaScript code via Node.js., Generate parameters for custom video effects.         Refactored to delegate to, Comprehensive security validation for code execution.         Returns list of se, Rate limiting for code execution to prevent abuse., Any Open Interpreter for code execution.      Disabled by default - set ENABLE_I (+3 more)
+
+### Community 157 - "Community 157"
+Cohesion: 0.1
+Nodes (20): ariaLabel, ariaLabelledby, buttons, buttonsWithoutNames, elements, focusable, hasClose, headings (+12 more)
+
+### Community 158 - "Community 158"
 Cohesion: 0.1
 Nodes (17): autonomousLink, completedJob, consoleArea, consoleSection, consoleTitle, correctionCard, currentButton, ENGINE_TABS (+9 more)
 
-### Community 221 - "Community 221"
+### Community 159 - "Community 159"
 Cohesion: 0.12
-Nodes (13): DistributedEventBus, Moves unrecoverable events to the Dead Letter Queue., Returns the number of pending failures in the DLQ., Returns the number of pending failures in the DLQ., 10/10 Fail-Safe: Reclaims messages that were started but never finished, 10/10 Fail-Safe: Reclaims messages that were started but never finished, 10/10 Infrastructure: Redis Streams-backed Event Bus for Distributed Content Clu, 10/10 Infrastructure: Redis Streams-backed Event Bus for Distributed Content Clu (+5 more)
+Nodes (11): AutonomousVideoEditor, _format_srt_time(), Autonomous Video Editor Service =============================== Fully automated, Apply visual effects based on content analysis., Generate SRT caption file from script segments., Render final video using FFmpeg with all edits applied., Top-notch autonomous video editing engine.     Takes raw clips + script and prod, Intelligently insert B-roll footage based on keyword matching. (+3 more)
 
-### Community 222 - "Community 222"
+### Community 160 - "Community 160"
+Cohesion: 0.13
+Nodes (11): main(), Update the Prometheus circuit breaker state gauge., Record success on circuit breaker and atomically sync Prometheus gauge., Record failure on circuit breaker and atomically sync Prometheus gauge., Validates a local file path, checks containment/LFI, and copies it to the job sa, Recursively prep assets for Remotion, moving local files to the job sandbox., Entrypoint for string staging. Passes the string to _prepare_single_asset, Bridges Python logic to the Remotion React studio for programmatic video renderi (+3 more)
+
+### Community 161 - "Community 161"
 Cohesion: 0.12
-Nodes (14): MythosReasoningAgent, Executes the Mythos Reasoning Protocol.         1. Prelude: Encode input into in, Executes the Mythos Reasoning Protocol.         1. Prelude: Encode input into in, Encodes the initial input into a high-density reasoning state., Encodes the initial input into a high-density reasoning state., Refines the reasoning state.          Uses 'Input Injection' (passing the origin, Refines the reasoning state.          Uses 'Input Injection' (passing the origin, OpenMythos-inspired Reasoning Agent.     Simulates Recurrent-Depth Reasoning thr (+6 more)
+Nodes (13): Uses Groq with parallel batching and high-speed models to rank candidates., api_key(), bucket(), endpoint(), provider(), region(), get_secret(), Synchronous implementation of get_secret.     Avoids asyncio issues in Celery wo (+5 more)
 
-### Community 223 - "Community 223"
-Cohesion: 0.11
-Nodes (13): HermesSkillService, Analyzes performance and captures successful patterns.         Triggers recursiv, Elite Self-Improving Skill Engine.     Reflects on successful jobs to 'crystalli, Elite Self-Improving Skill Engine.     Reflects on successful jobs to 'crystalli, Retrieve winning pattern strings to inject into new generator prompts.         U, Retrieve winning pattern strings to inject into new generator prompts.         U, Load crystallized skills from JSON storage., Load crystallized skills from JSON storage. (+5 more)
-
-### Community 224 - "Community 224"
-Cohesion: 0.12
-Nodes (14): PlaywrightPublisher, Playwright Social Publisher Skill ================================= Automates po, Post a Reel to Instagram using browser automation., Post a Reel to Instagram using browser automation., Handles automated posting via Playwright., Handles automated posting via Playwright., Start a stealthy browser instance., Start a stealthy browser instance. (+6 more)
-
-### Community 225 - "Community 225"
-Cohesion: 0.11
-Nodes (20): generate_wan_api(), generate_wan_t2v(), generate_wan_v2v(), load_wan_t2v(), load_wan_v2v(), Wan 2.2 Inference Module  Wan 2.2 is an open-source video generation model from, Transform video using Wan 2.2 V2V, Transform video using Wan 2.2 V2V (+12 more)
-
-### Community 226 - "Community 226"
+### Community 162 - "Community 162"
 Cohesion: 0.1
-Nodes (8): BaseSettings, Delegate to standalone validation function., Delegate to standalone validation function., Delegate to standalone validation function., Delegate to standalone validation logging function., Delegate to standalone validation logging function., Delegate to standalone validation logging function., Settings
+Nodes (20): clear_nexus_jobs(), compose_video(), create_nexus_blueprint(), delete_nexus_job(), get_job_preview(), get_nexus_job(), get_nexus_queue(), get_nexus_stats() (+12 more)
 
-### Community 227 - "Community 227"
+### Community 163 - "Community 163"
+Cohesion: 0.11
+Nodes (11): Write a test .py file in the temp project., Test file with a mismatched patch target is detected., Test file with correctly-named base_* patch target is not flagged., Non-test files are not scanned for patch targets., Test files inside __pycache__ are not scanned., Non .py test files in test dirs are not scanned., Files with encoding issues are skipped gracefully., The singletons_short index is populated correctly across modules. (+3 more)
+
+### Community 164 - "Community 164"
 Cohesion: 0.1
 Nodes (20): 1. **Social Media Publishing Integration** (CRITICAL), 2. **Revenue & Monetization Dashboard** (CRITICAL), 🎯 95% UI/UX COVERAGE ACHIEVED, After (95% Coverage):, Before (73% Coverage):, 💡 BUSINESS IMPACT, code:block1 (✅ Login/Register), 🎯 COMPLETE USER JOURNEY NOW AVAILABLE (+12 more)
 
-### Community 228 - "Community 228"
+### Community 165 - "Community 165"
 Cohesion: 0.1
 Nodes (20): Alternative: PyPI Package, code:bash (# Create a new repo on GitHub: openclaw), code:bash (# Add the remote), code:block3 (openclaw/), code:block4 (openclaw @ git+https://github.com/<org>/openclaw.git@main), code:bash (pip install -e ../openclaw), code:python (from src.services.openclaw.main import ...), code:python (from openclaw.main import ...) (+12 more)
 
-### Community 229 - "Community 229"
+### Community 166 - "Community 166"
 Cohesion: 0.1
 Nodes (20): 1. Critical Bugs Fixed (Previously CRIT-01 through CRIT-06), 2. Coverage Matrix — By Page, 3. Use Case Coverage, 4. Remaining Stubs/Placeholders, 5. Missing UI for Existing Backend Features, 6. Summary Table, 7. What Was Fixed Since Last Analysis, Conclusion (+12 more)
 
-### Community 230 - "Community 230"
+### Community 167 - "Community 167"
 Cohesion: 0.1
 Nodes (20): 1. Admin UI Configurable Parameters, 2. System Parameters (Deployment-Level Only), Admin UI Settings Categories, Admin UI vs System Parameters Configuration Guide, API Keys & External Services, code:sql (-- SystemSettings table already exists), code:bash (# System Parameters Only), Core Application Settings (+12 more)
 
-### Community 231 - "Community 231"
+### Community 168 - "Community 168"
 Cohesion: 0.1
 Nodes (20): 1. Architecture Overview, 2. Infrastructure & Deployment, 3. Nexus Engine Integration, 4. Dify App Configuration (The "Brain"), 5. Troubleshooting & Maintenance, App Types, Clearing Memory, code:mermaid (graph TD) (+12 more)
 
-### Community 232 - "Community 232"
+### Community 169 - "Community 169"
 Cohesion: 0.1
 Nodes (20): 1.1 OAuth Credentials - Not Configured for Production, 1.2 Production Domain Hardcoded to Localhost, 1. CRITICAL GAPS (P0 - Deployment Blockers), 2.1 Missing API Keys for External Services, 2.2 Dashboard Data Gaps, 2. HIGH-PRIORITY GAPS (P1 - Feature Limitation), 3.1 Hardcoded Values, 3.2 Untested Features (+12 more)
 
-### Community 233 - "Community 233"
-Cohesion: 0.1
-Nodes (20): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install) (+12 more)
-
-### Community 234 - "Community 234"
-Cohesion: 0.1
-Nodes (21): code:bash (mkdir -p graphify-out), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.serve graphify-out/graph.json), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:json ({), code:bash ($(cat .graphify_python) -c ") (+13 more)
-
-### Community 235 - "Community 235"
-Cohesion: 0.1
-Nodes (21): code:bash (mkdir -p graphify-out), code:bash ($(cat .graphify_python) -c "), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:block26 (Graph complete. Outputs in PATH_TO_DIR/graphify-out/) (+13 more)
-
-### Community 236 - "Community 236"
-Cohesion: 0.1
-Nodes (21): code:bash (mkdir -p graphify-out), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c ") (+13 more)
-
-### Community 237 - "Community 237"
-Cohesion: 0.1
-Nodes (21): code:bash (mkdir -p graphify-out), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (# Detect the correct Python interpreter (handles pipx, venv,), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (python3 -m graphify.serve graphify-out/graph.json) (+13 more)
-
-### Community 238 - "Community 238"
-Cohesion: 0.14
-Nodes (20): cleanup_p4000_memory(), generate_lite4k_p4000(), generate_ltx_p4000(), generate_p4000_video(), generate_zeroscope_p4000(), get_p4000_available_models(), Ultra-aggressive ZeroScope optimization for P4000, Ultra-aggressive ZeroScope optimization for P4000 (+12 more)
-
-### Community 239 - "Community 239"
+### Community 170 - "Community 170"
 Cohesion: 0.12
-Nodes (13): hardware_export_to_video(), Export frames to video using the best available hardware encoder, Export frames to video using the best available hardware encoder, Video Model Manager - Unified resource orchestration for AI models, Real inference entry point, Real inference entry point, Manages all AI resources with Smart VRAM Orchestration (TTL + Mutually Exclusive, Manages all AI resources with Smart VRAM Orchestration (TTL + Mutually Exclusive (+5 more)
+Nodes (12): Publisher, Viral Distribution Gateway (True 10/10) =====================================  H, Integration Point for YouTube Data API., # TODO: Move to google-api-python-client implementation, Integration Point for TikTok Content Posting API., # TODO: Move to TikTok Business API implementation, Integration Point for Meta Graph API., # TODO: Move to Instagram Graph API implementation (+4 more)
 
-### Community 240 - "Community 240"
-Cohesion: 0.11
-Nodes (17): circuit_breaker(), CircuitBreakerConfig, CircuitBreakerOpenError, CircuitState, get_all_breakers_status(), get_circuit_breaker(), Circuit Breaker Pattern Implementation for External API Resilience  Provides cir, Raised when circuit breaker is open (+9 more)
-
-### Community 241 - "Community 241"
-Cohesion: 0.1
-Nodes (19): ariaLabel, ariaLabelledby, buttons, buttonsWithoutNames, elements, focusable, hasClose, headings (+11 more)
-
-### Community 242 - "Community 242"
-Cohesion: 0.16
-Nodes (12): NewAIBridge(), getEnv(), NewDiscoveryService(), Scanner, calculateVelocity(), classifyURL(), getUserAgents(), NewScanner() (+4 more)
-
-### Community 243 - "Community 243"
+### Community 171 - "Community 171"
 Cohesion: 0.14
 Nodes (10): CloakLinkedInScanner, LinkedIn scanner backed by CloakBrowser stealth engine with httpx fallback., LinkedInScanner, Search LinkedIn for posts., Scans LinkedIn for trending professional content in a niche.     Uses web scrapi, Extract post data from LinkedIn JSON., Recursively search for post objects., Parse a single LinkedIn post. (+2 more)
 
-### Community 244 - "Community 244"
-Cohesion: 0.12
-Nodes (13): PixVerseSkill, PixVerse browser automation skill - Tier 1 easiest platform     Clean UI, predic, PixVerse browser automation skill - Tier 1 easiest platform     Clean UI, predic, Clean up browser resources, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Initialize stealth browser session (+5 more)
+### Community 172 - "Community 172"
+Cohesion: 0.15
+Nodes (10): DiscoverySkill, Enhanced Discovery Skill for OpenClaw agents.     Can perform intelligent discov, Get trending content for a specific niche., Trigger a discovery scan and analyze opportunities., Analyze a competitor's content strategy., Predict upcoming trends using AI analysis., Use AI to analyze discovered trends., Generate content ideas based on discovered trends. (+2 more)
 
-### Community 245 - "Community 245"
-Cohesion: 0.13
-Nodes (13): BlogSEOService, Generate SEO keywords for topic., Generate SEO keywords for topic., Blog and SEO content generation service.     Uses Groq (already configured) for, Blog and SEO content generation service.     Uses Groq (already configured) for, Generate meta description (under 160 chars)., Generate meta description (under 160 chars)., Generate structured content. (+5 more)
+### Community 173 - "Community 173"
+Cohesion: 0.1
+Nodes (13): Health Check and Root Endpoint Tests ==================================== Integr, Test health check endpoints., Test the root endpoint returns correct message., Test root endpoint includes environment info., Test the health check endpoint., Test health check includes service status., Test CORS configuration., Test CORS headers are present in response. (+5 more)
 
-### Community 246 - "Community 246"
-Cohesion: 0.13
-Nodes (12): HardwareDetector, Returns comprehensive GPU information., Returns comprehensive GPU information., Returns optimal VRAM per job based on hardware and optimization level., Returns optimal VRAM per job based on hardware and optimization level., Hardware detection utility for GPU servers.     Agnostic across NVIDIA CUDA, AMD, Calculates optimal concurrent jobs based on detected hardware., Calculates optimal concurrent jobs based on detected hardware. (+4 more)
+### Community 174 - "Community 174"
+Cohesion: 0.1
+Nodes (19): [activeEngine, setActiveEngine], { agents, logs: _systemLogs, status: _status, pulse: _pulse }, fetchData, fetchSubscription, handleSave, [_isLoading, setIsLoading], [isSaving, setIsSaving], [logs, setLogs] (+11 more)
 
-### Community 247 - "Community 247"
-Cohesion: 0.13
-Nodes (19): custom_rate_limit_exceeded_handler(), global_exception_handler(), http_exception_handler(), Register all exception handlers on the FastAPI app., Normalize HTTPException to standard nested error format., register_exception_handlers(), sqlalchemy_exception_handler(), validation_exception_handler() (+11 more)
+### Community 175 - "Community 175"
+Cohesion: 0.1
+Nodes (12): CandidateListProps, ContentCandidate, handlePreview, [selectedCandidate, setSelectedCandidate], [showPreview, setShowPreview], viralBadge, [isExporting, setIsExporting], previousActiveElement (+4 more)
 
-### Community 248 - "Community 248"
-Cohesion: 0.18
-Nodes (19): _detect_url_type(), _download_binary(), _fetch_arxiv(), _fetch_html(), _fetch_tweet(), _fetch_webpage(), _html_to_markdown(), ingest() (+11 more)
-
-### Community 249 - "Community 249"
+### Community 176 - "Community 176"
 Cohesion: 0.1
 Nodes (19): Before committing, code:bash (git clone <repo>), code:bash (source .venv/bin/activate), code:bash (./bin/cleanup --artifacts --caches    # Free ~3-4 GB), code:bash (./bin/cleanup --all                   # Remove everything), code:bash (./bin/size-report --git               # Check for tracked bl), code:block6 (ettametta/), code:bash (git rm --cached <file>     # Untrack without deleting locall) (+11 more)
 
-### Community 250 - "Community 250"
+### Community 177 - "Community 177"
 Cohesion: 0.1
 Nodes (19): 1. Home Page (`apps/dashboard/src/app/page.tsx`), 2. Transformation Page (`apps/dashboard/src/app/transformation/page.tsx`), 3. Analytics Page (`apps/dashboard/src/app/analytics/page.tsx`), 4. Discovery Page (`apps/dashboard/src/app/discovery/page.tsx`), 5. Publishing Page (`apps/dashboard/src/app/publishing/page.tsx`), 6. Settings Page (`apps/dashboard/src/app/settings/page.tsx`), API Endpoints Verified, Changes Made (+11 more)
 
-### Community 251 - "Community 251"
-Cohesion: 0.1
-Nodes (19): 1. Corpus Detection, 2. AST Extraction (3 Python files), 3. Community Detection, 4. Query Tests (live BFS traversal), 5. Feedback Loop Test (answers filed back into library), 6. Arabic Image OCR (via Claude vision), 7. Issues Found, 8. Scores (+11 more)
+### Community 178 - "Community 178"
+Cohesion: 0.11
+Nodes (11): DriftDetector, 10/10 Proof: The Algorithm Shift Sentry.     Detects when the platform algorithm, Standard: Stateful Recovery.         Loads the last 50 deltas from the database, Records the delta for a single production cycle.         Persists to Postgres fo, Returns True if the algorithm shift requires a system-wide recalibration., Verify that DriftDetector records are saved to the database., Verify that experiment cohorts are persisted and assigned correctly., Verify that RecoveryService reconstructs in-memory memory from the DB. (+3 more)
 
-### Community 252 - "Community 252"
-Cohesion: 0.1
-Nodes (19): 仕組み, 使い方, 得られるもの, 実例, プライバシー, 技術スタック, スター履歴, インストール (+11 more)
-
-### Community 253 - "Community 253"
-Cohesion: 0.1
-Nodes (19): code:block1 (/graphify                                             # full), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -m graphify save-result --question "Explain NODE_NAME), code:powershell (python -c "), code:powershell (python -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install) (+11 more)
-
-### Community 254 - "Community 254"
-Cohesion: 0.13
-Nodes (13): DuckDuckGoScanner, DuckDuckGo search scanner for discovering trending content.     Free, no API key, Determines the content category and platform-specific directness., Determines the content category and platform-specific directness., Build dynamic search queries based on niche and current time., Detect platform from URL., Detect platform from URL., Searches DuckDuckGo for trending videos and content in the niche.         Free a (+5 more)
-
-### Community 255 - "Community 255"
-Cohesion: 0.12
-Nodes (19): 1. Backend & Unit Tests (Python), 1. Production Smoke Tests, 2. Backend & Unit Tests (Python), 2. Frontend & User Flow Tests (Playwright), 3. CI/CD Integration, 3. Frontend & User Flow Tests (Playwright), 4. CI/CD Integration, 4. Manual / Scripted Stubs (+11 more)
-
-### Community 256 - "Community 256"
-Cohesion: 0.12
-Nodes (13): Use LLM vision to analyze each frame, Use LLM vision to analyze each frame, Compile frame analyses into content classification, Compile frame analyses into content classification, Professional video content analyzer that detects:     - Speaker presence (talkin, Professional video content analyzer that detects:     - Speaker presence (talkin, Check if video selection is coherent (not random mix of unrelated topics), Check if video selection is coherent (not random mix of unrelated topics) (+5 more)
-
-### Community 257 - "Community 257"
-Cohesion: 0.13
-Nodes (13): ProfessionalVideoEditor, Execute the professional editing process, Generate detailed production notes, Generate detailed production notes, Professional video editing workflow, Professional video editing workflow, Create a professionally edited video from research results, Create a professionally edited video from research results (+5 more)
-
-### Community 258 - "Community 258"
+### Community 179 - "Community 179"
 Cohesion: 0.15
-Nodes (8): Randomly shifts speed based on AI strategy range to reset algorithm clocks., Randomly shifts speed based on AI strategy range to reset algorithm clocks., fetch_b_roll(), Downloads a stock video file to a local path with retries., Downloads a stock video file to a local path with retries., Downloads a stock video file to a local path., Downloads a stock video file to a local path., StockService
+Nodes (10): NeuralVisionAnalyzer, Neural Vision Service for Elite Cinematic Fusion ===============================, Lazy load the CLIP model to save memory, Generates an embedding vector for a piece of text, Analyzes a scene's semantics and motion energy, Finds the Top K matches in memory using FAISS or NumPy., Finds the single best match using FAISS results, Handles visual understanding and semantic matching. (+2 more)
 
-### Community 259 - "Community 259"
-Cohesion: 0.18
-Nodes (8): BotManager, CircuitBreaker, _fetch_users_with_bots(), Start the Master Bot from settings if configured., Auto-start bots for fetched users., Simple circuit breaker to prevent cascading failures, Create a task and keep a strong reference to prevent garbage collection., startup_event()
-
-### Community 260 - "Community 260"
-Cohesion: 0.12
-Nodes (13): ClawHubSkillLoader, Load skills from ClawHub GitHub repository.     https://github.com/openclaw/skil, Load skills from ClawHub GitHub repository.     https://github.com/openclaw/skil, Get list of skill categories from the repo., Get list of skill categories from the repo., list skills in a specific category., list skills in a specific category., Get skill details (SKILL.md content). (+5 more)
-
-### Community 261 - "Community 261"
-Cohesion: 0.13
-Nodes (13): CodeExecutor, OpenInterpreterService, Execute JavaScript code., Execute JavaScript code., Generate a video processing script for the topic., Generate a video processing script for the topic., Open Interpreter integration for code execution.     Enable with ENABLE_INTERPRE, Open Interpreter integration for code execution.     Enable with ENABLE_INTERPRE (+5 more)
-
-### Community 262 - "Community 262"
-Cohesion: 0.11
-Nodes (12): mock_output_dir(), Verify Wan remote payload contains 480p resolution., Verify Wan remote payload contains 480p resolution., Verify Mochi remote payload contains 480p resolution., Verify Mochi remote payload contains 480p resolution., Verify Hunyuan remote payload contains 480p resolution., Verify Hunyuan remote payload contains 480p resolution., Verify LTX remote payload contains 480p resolution. (+4 more)
-
-### Community 263 - "Community 263"
-Cohesion: 0.11
-Nodes (16): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], { agents, logs: systemLogs, status, pulse }, [currentStep, setCurrentStep], displayLogs, engine, fetchData, handleToggle() (+8 more)
-
-### Community 264 - "Community 264"
-Cohesion: 0.12
-Nodes (18): Handle Telegram bot webhook for configuration, Handle WhatsApp webhook for configuration, Handle Telegram bot webhook for configuration, Handle WhatsApp webhook for configuration, telegram_webhook(), whatsapp_webhook(), configure_telegram_bot(), configure_whatsapp_bot() (+10 more)
-
-### Community 265 - "Community 265"
+### Community 180 - "Community 180"
 Cohesion: 0.14
-Nodes (6): add(), CacheManager, createProcessor(), DataProcessor, Loggable, Processor
+Nodes (9): _check_crewai_available(), CrewAIService, Elite CrewAI multi-agent orchestration.     Uses dynamic task generation to tail, Generic agent factory., Execute the content team workflow with dynamic tasks., Check if CrewAI and required dependencies are available., Dynamically check if CrewAI and required deps are installed., Re-initialize service from current environment/settings. (+1 more)
 
-### Community 266 - "Community 266"
+### Community 181 - "Community 181"
+Cohesion: 0.14
+Nodes (10): Video Production Assistant Skill for OpenClaw ==================================, Create Adobe Premiere project template, Create CapCut project template, Generate FFmpeg command sequences, Create DaVinci Resolve automation script, Provide complete production assistance package, OpenClaw skill for generating manual video editing instructions and templates., Execute video production assistance actions. (+2 more)
+
+### Community 182 - "Community 182"
+Cohesion: 0.16
+Nodes (8): Checks if either a token or cookies exist for the platform., Public helper to ensure a token is valid, triggering refresh if needed., Triggers a refresh flow for a specific platform/user., Returns the decrypted access token for a platform/user., Unified helper to get authentication headers.         Returns either Authorizati, Returns the full decrypted token data dict., Stores encrypted token data in the DB with user association., TokenManager
+
+### Community 183 - "Community 183"
+Cohesion: 0.25
+Nodes (6): _config(), Tests for Phase 13: Luma Ray API rewrite.  Covers the migration from the depreca, If the API ever returns assets.video synchronously, return it         without po, _service(), TestGenerateLumaPayload, TestPollLumaJob
+
+### Community 184 - "Community 184"
+Cohesion: 0.12
+Nodes (14): ColorGradeProps, GradeType, SceneTransition(), SceneTransitionProps, TransitionType, absSpeed, { fps, durationInFrames }, frame (+6 more)
+
+### Community 185 - "Community 185"
 Cohesion: 0.11
 Nodes (18): Branching, Code of Conduct, Code Style, code:bash (git clone https://github.com/your-username/ettametta.git), code:bash (docker compose -f docker-compose.dev.yml up -d), code:bash (python -m venv venv), code:block4 (feat: add multi-platform publishing), code:bash (pytest tests/ -v --tb=short) (+10 more)
 
-### Community 267 - "Community 267"
+### Community 186 - "Community 186"
 Cohesion: 0.11
 Nodes (18): AnimateDiff, code:python (from diffusers import DiffusionPipeline, MotionAdapter), code:python (from diffusers import CogVideoXPipeline), code:python (from diffusers import WanPipeline), code:python (from diffusers import MochiPipeline), code:python (from diffusers import HunyuanVideoPipeline), CogVideoX-2b, ❌ FAILED MODELS (+10 more)
 
-### Community 268 - "Community 268"
+### Community 187 - "Community 187"
 Cohesion: 0.11
 Nodes (18): 1. Quick Start (Recommended), 2. Manual Installation Steps, 3. Configuration & Startup, 4. Hardware Verification, 5. Security Note, code:bash (# Clone the setup to your remote server), code:bash (pip install -r requirements.txt), code:bash (export HF_HOME=/path/to/large/disk/.hf_home) (+10 more)
 
-### Community 269 - "Community 269"
+### Community 188 - "Community 188"
+Cohesion: 0.12
+Nodes (8): detect_niche_from_topic(), Generic AI completion for cross-service intelligence (Tournament Selection, etc), Returns a script that tries to bridge clips if available., Auto-detect the most relevant niche based on topic keywords., Lightweight circuit breaker for AI call protection., Centralized AI call through IntelligenceHub, Generates a structured script for a faceless video with Asset-Aware Narration., _SimpleCircuitBreaker
+
+### Community 189 - "Community 189"
 Cohesion: 0.11
 Nodes (17): code:python (@router.post("/scan")), code:python (admin_required = lambda u: admin_required(u)), code:python (redis_client = redis_async.from_url(...)), code:python (credit_service.consume_credits(  # Return value not checked), code:python (# api/routes/nexus.py:187), code:python (job_id: str,  # UUID), code:python (class TransformationRequest(BaseModel):), code:python (from pydantic import field_validator) (+9 more)
 
-### Community 270 - "Community 270"
-Cohesion: 0.14
-Nodes (11): Analyzes using Moondream2 on the remote inference node., Analyzes using Moondream2 on the remote inference node., Analyzes using Gemini Multimodal., Analyzes using Gemini Multimodal., Samples keyframes and returns paths., Samples keyframes and returns paths., Orchestrates VLM analysis: Groq -> Local -> Gemini., Orchestrates VLM analysis: Groq -> Local -> Gemini. (+3 more)
-
-### Community 271 - "Community 271"
-Cohesion: 0.13
-Nodes (13): demo(), pipeline(), Step 3: Generate AI video based on content analysis insights.                  A, Step 3: Generate AI video based on content analysis insights.                  A, Complete end-to-end pipeline: discovery → analysis → AI video generation., Complete end-to-end pipeline: discovery → analysis → AI video generation., Advanced pipeline: Discover → Analyze → Generate multiple AI videos → Compile in, Advanced pipeline: Discover → Analyze → Generate multiple AI videos → Compile in (+5 more)
-
-### Community 272 - "Community 272"
-Cohesion: 0.17
-Nodes (11): ConnectionManager, WebSocket endpoint for real-time system logs (e.g., Agent Zero, Discovery Scans), WebSocket endpoint for real-time system logs (e.g., Agent Zero, Discovery Scans), WebSocket endpoint for real-time system logs (e.g., Agent Zero, Discovery Scans), Callback for the DistributedEventBus to broadcast events to WS clients, Listens to both legacy PubSub and modern Redis Streams (Event Bus)., Listens to both legacy PubSub and modern Redis Streams (Event Bus)., WebSocket endpoint for real-time system logs (e.g., Agent Zero, Discovery Scans) (+3 more)
-
-### Community 273 - "Community 273"
-Cohesion: 0.12
-Nodes (15): deep_scan_task(), process_high_potential_candidates(), Background task for deep, intelligent discovery scan across multiple niches., Background task that iterates through all active niches and triggers discovery., Autonomous task that picks up high-potential content candidates     and triggers, Background task for real-time trend scanning using DiscoveryService., scan_trends_task(), sentinel_trend_watcher() (+7 more)
-
-### Community 274 - "Community 274"
-Cohesion: 0.13
-Nodes (17): generate_cogvideo(), generate_cogvideo_api(), generate_cogvideo_dummy(), load_cogvideo_model(), CogVideoX Inference Module  CogVideoX is an open-source text-to-video model from, Generate video using CogVideoX API on Remote GPU, Generate video using CogVideoX API on Remote GPU, Generate video using CogVideoX API on Remote GPU (+9 more)
-
-### Community 275 - "Community 275"
+### Community 190 - "Community 190"
 Cohesion: 0.28
 Nodes (4): CheckResult, main(), parse_args(), SmokeRunner
 
-### Community 276 - "Community 276"
-Cohesion: 0.11
-Nodes (17): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], { agents, logs: systemLogs, status, pulse }, fetchPersonas, [generateTopic, setGenerateTopic], handleCreate(), handleDelete(), handleGenerate() (+9 more)
+### Community 191 - "Community 191"
+Cohesion: 0.13
+Nodes (15): extract_content_patterns(), get_persisted_analysis_report(), _perform_ai_pattern_analysis(), _perform_pattern_analysis(), Content analysis service for viral pattern detection. Provides AI-powered analys, Basic fallback pattern analysis (keyword-based) for when AI service is unavailab, Analyze content for viral patterns and insights using AI/NLP service.      Args:, Retrieve existing analysis for content without performing new analysis.      Arg (+7 more)
 
-### Community 277 - "Community 277"
+### Community 192 - "Community 192"
+Cohesion: 0.12
+Nodes (10): Calculates a unified success score.         Weighted: 50% Retention, 30% Views (, Decides if a narrative strategy should live or be rolled back.         Persists, Communicates with Hermes and persists the forbidden status., 10/10 Proof: The Imperial Success Engine (Stateful).     Aggregates metrics and, SuccessModel, Assigns a video to the current open cohort with persistent state update., Update, mark_notification_read() (+2 more)
+
+### Community 193 - "Community 193"
+Cohesion: 0.17
+Nodes (9): Free social media metrics skill using web scraping (no API keys required).     N, Get GitHub user stats (free, no API key needed)., Get metrics for multiple platforms.         Expected format: {"x": "username", ", Polymorphic entry point for OpenClaw agent., Get X (Twitter) follower count via web scraping., Get subreddit stats via public API (no auth needed)., Get YouTube channel stats - requires YouTube Data API for full access.         T, Get Instagram profile - limited without API. (+1 more)
+
+### Community 194 - "Community 194"
+Cohesion: 0.12
+Nodes (8): Tests for Phase 12-01 Task 5: GET /engines/availability endpoint., With RUNWAY_API_KEY set in settings, runway.key_set is True; without, False., Phase 12-02 will wire per-engine circuit breakers; for now all are closed., The endpoint must never return the value of any API key., TestEnginesAvailability, next, Detect video generation intent and trigger appropriate AI engine, trigger_video_generation()
+
+### Community 195 - "Community 195"
+Cohesion: 0.11
+Nodes (10): Test configuration settings, Test that default settings are defined, Test that video quality tiers are disabled by default, Test that agent frameworks are disabled by default, Test default storage configuration, Test default database configuration, Test that validation passes in development, Test that validation fails in production without proper config (+2 more)
+
+### Community 196 - "Community 196"
+Cohesion: 0.14
+Nodes (9): HardwareDetector, Returns comprehensive GPU information., Returns optimal VRAM per job based on hardware and optimization level., Hardware detection utility for GPU servers.     Agnostic across NVIDIA CUDA, AMD, Calculates optimal concurrent jobs based on detected hardware., Override detected VRAM (useful for testing or manual config)., Determines the best available hardware device., Identifies the specific vendor backend. (+1 more)
+
+### Community 197 - "Community 197"
+Cohesion: 0.11
+Nodes (17): get_notification_preferences(), get_unread_notification_count(), list_notifications(), mark_all_notifications_read(), Notification Preferences & In-App Notifications ================================, Subscribe user to marketing emails., Unsubscribe user from marketing emails., List in-app notifications for the current user, newest first.     Returns up to (+9 more)
+
+### Community 198 - "Community 198"
+Cohesion: 0.11
+Nodes (17): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], AgentCapability, { agents, logs: _systemLogs, status: _status, pulse: _pulse }, [capabilities, setCapabilities], categorizedCapabilities, chatEndRef, ChatMessage (+9 more)
+
+### Community 199 - "Community 199"
+Cohesion: 0.11
+Nodes (17): [activeEngine, setActiveEngine], { agents, logs: _systemLogs, status: _status, pulse: _pulse }, [balance, setBalance], [_costs, setCosts], CreditBalance, fetchData, handlePurchase(), [_isRefreshing, setIsRefreshing] (+9 more)
+
+### Community 200 - "Community 200"
 Cohesion: 0.11
 Nodes (17): 1. ✅ Analytics Service Layer Refactoring (COMPLETED), 2. ✅ Video Job Service Extension (COMPLETED), 3. 🔄 Discovery Service Refactoring (IN PROGRESS), 4. 🔄 Singleton Naming Standardization (PENDING), 5. ✅ Abbreviation Consistency (COMPLETED), 6. 🔄 Alembic Migration Naming (PENDING), Changes Made, Conclusion (+9 more)
 
-### Community 278 - "Community 278"
+### Community 201 - "Community 201"
 Cohesion: 0.11
 Nodes (17): Automated Tests, Automated Tests, Automated Tests, Automated Tests, End-to-End System Review, Manual Verification, Proposed Changes, Resource Optimization & OOM Fix (+9 more)
 
-### Community 279 - "Community 279"
-Cohesion: 0.11
-Nodes (17): 工作原理, 用法, 你会得到什么, 隐私, 技术栈, 安装, 平台支持, 让助手始终优先使用图谱（推荐） (+9 more)
+### Community 202 - "Community 202"
+Cohesion: 0.19
+Nodes (15): get_async_db_url(), Explicitly set the current request ID.     Used by middleware and task entry poi, set_request_id(), cleanup_local_files(), download_and_process_task(), generate_story_task(), generate_video_task(), narrative_fusion_task() (+7 more)
 
-### Community 280 - "Community 280"
-Cohesion: 0.11
-Nodes (17): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install) (+9 more)
+### Community 203 - "Community 203"
+Cohesion: 0.12
+Nodes (9): MotionGraphicsService, Add animated text overlay at specific timestamps.          Args:             vid, Any motion graphics enhancement for video processing.     Adds animated text ove, Add watermark to video.          Args:             video_path: Path to input vid, Motion Graphics Service - Any Tier 3 Enhancement  Adds text animations, overlays, Get list of available animation styles, Get available styles for a specific niche, Get appropriate title style for a given niche (+1 more)
 
-### Community 281 - "Community 281"
-Cohesion: 0.11
-Nodes (17): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install) (+9 more)
-
-### Community 282 - "Community 282"
-Cohesion: 0.11
-Nodes (17): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install) (+9 more)
-
-### Community 283 - "Community 283"
-Cohesion: 0.11
-Nodes (17): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install) (+9 more)
-
-### Community 284 - "Community 284"
-Cohesion: 0.15
-Nodes (9): CloakFacebookScanner, Facebook scanner backed by CloakBrowser stealth engine with httpx fallback., FacebookScanner, Search Facebook for videos in a niche., Scans Facebook Watch for trending video content using web scraping.     Note: Fa, Extract video info from JSON data., Extract video info from schema.org JSON-LD., Scans Facebook Watch for trending video content in a niche.         Uses the wat (+1 more)
-
-### Community 285 - "Community 285"
-Cohesion: 0.16
-Nodes (11): check_cv2_available(), check_easyocr_available(), OCRService, Analyzes the video and returns a placement strategy: 'bottom' (default), 'top',, Analyzes the video and returns a placement strategy: 'bottom' (default), 'top',, Lazy initialization of the EasyOCR reader., Lazy initialization of the EasyOCR reader., Returns health of OCR drivers. (+3 more)
-
-### Community 286 - "Community 286"
+### Community 204 - "Community 204"
 Cohesion: 0.16
 Nodes (11): CategoryDetector, detect_video_category(), get_content_categories(), Detects content category using LLM, Detect which category a video belongs to, Simple keyword-based detection, Get search terms for a category, list all available categories (+3 more)
 
-### Community 287 - "Community 287"
-Cohesion: 0.13
-Nodes (13): id, JobIdAdapter, Recursively estimates memory size of input objects synchronously to prevent DOS, Recursively estimates memory size of input objects synchronously to prevent DOS, Recursively estimates memory size of input objects synchronously to prevent DOS, Fast-fail structured validation checks on rendering parameters to prevent wastin, Fast-fail structured validation checks on rendering parameters to prevent wastin, Fast-fail structured validation checks on rendering parameters to prevent wastin (+5 more)
+### Community 205 - "Community 205"
+Cohesion: 0.15
+Nodes (10): Recursively scans props for local absolute file paths or temp/output directory p, Transient error indicating external timeouts, Chromium resource exhaustion, or t, Helper to aggressively terminate a process during cancellation., Helper to raise an error if the subprocess failed., Launches the asynchronous subprocess, monitors execution, and enforces timeout l, Helper to safely record rendering telemetry to Prometheus metrics without duplic, Verify output file existence and non-zero size., Perform fast pre-render checks, validating the circuit breaker and props. (+2 more)
 
-### Community 288 - "Community 288"
+### Community 206 - "Community 206"
+Cohesion: 0.15
+Nodes (9): PersistentQueue, The Stream Heartbeat: Persistent Runtime Ingestion (10/10) =====================, A SQLite-backed queue for fault-tolerant signal processing., Pushes a signal into the persistent queue, Retrieves and marks the oldest pending item, Deletes a successfully processed item, The Operational Heart: Manages ingestion throughput and backpressure., Continuous worker loop with fault recovery (+1 more)
+
+### Community 207 - "Community 207"
+Cohesion: 0.13
+Nodes (14): Wait for user approval before executing a DAG in PARTIAL mode.          Stores t, Helper to transition states, build payloads, and notify websockets., cleanup_stale_jobs_task(), create_cinema_video_task(), _mark_job_failed(), Run async coroutine in sync context (Celery worker), Update nexus_jobs row to FAILED and notify WebSocket clients., Celery task wrapper for AutoCreator.create_cinema_video. (+6 more)
+
+### Community 208 - "Community 208"
 Cohesion: 0.15
 Nodes (12): Config, healthHandler(), init(), multiScanHandler(), DiscoveryService, code:python (import json  # Imported but unused), IN-01: Inconsistent Rate Limiting Behavior, IN-02: Large Function in video.py (+4 more)
 
-### Community 289 - "Community 289"
+### Community 209 - "Community 209"
 Cohesion: 0.17
 Nodes (9): Search Rumble for videos., Scans Rumble for trending videos in a niche.     Rumble is an alternative video, Extract video data from Rumble JSON., Parse a Rumble video item., Parse count string to integer., Scans Rumble for trending videos in a niche.         Uses the trending page and, Parse duration string to seconds., Get Rumble trending videos. (+1 more)
 
-### Community 290 - "Community 290"
+### Community 210 - "Community 210"
 Cohesion: 0.18
-Nodes (9): Free social media metrics skill using web scraping (no API keys required).     N, Get GitHub user stats (free, no API key needed)., Get metrics for multiple platforms.         Expected format: {"x": "username", ", Polymorphic entry point for OpenClaw agent., Get X (Twitter) follower count via web scraping., Get subreddit stats via public API (no auth needed)., Get YouTube channel stats - requires YouTube Data API for full access.         T, Get Instagram profile - limited without API. (+1 more)
+Nodes (9): BilibiliScanner, Scans Bilibili for trending videos in a niche.     Bilibili is a major Chinese v, Parse a Bilibili video item from ranking/popular., Parse a Bilibili video item from search results., Parse Chinese number format (e.g., 10.5万 = 1050000)., Scans Bilibili for trending videos in a niche.         Uses the popular/ranking, Parse duration string to seconds., Get Bilibili popular/ranking videos. (+1 more)
 
-### Community 291 - "Community 291"
-Cohesion: 0.18
-Nodes (3): NotificationSkill, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent.
-
-### Community 292 - "Community 292"
-Cohesion: 0.18
-Nodes (8): KnowledgeService, Production-grade Knowledge Service powered by Dify Datasets (RAG)., Get knowledge base statistics from Dify., Ingest text into a Dify dataset., Ingest text into a Dify dataset., Query the knowledge base using Dify's search API., Query the knowledge base using Dify's search API., Get knowledge base statistics from Dify.
-
-### Community 293 - "Community 293"
-Cohesion: 0.15
-Nodes (16): generate_animatediff(), generate_from_image_animatediff(), load_motion_adapter(), load_sd15_animatediff(), load_sdxl_animatediff(), AnimateDiff Inference Module for ettametta  AnimateDiff adds motion to Stable Di, Generate animated video using AnimateDiff, Generate animated video using AnimateDiff (+8 more)
-
-### Community 294 - "Community 294"
-Cohesion: 0.13
-Nodes (9): BearerAuth, DigestAuth, NetRCAuth, Authentication handlers. Auth objects are callables that modify a request before, Load credentials from ~/.netrc based on the request host., Bearer token authentication., HTTP Digest Authentication.     Requires a full request/response cycle: sends th, Extract digest parameters from the WWW-Authenticate header. (+1 more)
-
-### Community 295 - "Community 295"
+### Community 211 - "Community 211"
 Cohesion: 0.16
-Nodes (10): PinterestScanner, Get trending pins from Pinterest., Scans Pinterest for trending pins and videos in a niche.     Uses web scraping t, Extract pin data from Pinterest JSON., Recursively search for pin objects., Recursively search for pin objects., Parse a single pin item., Parse a single pin item. (+2 more)
+Nodes (9): ABTestingAutomation, Automated A/B Testing Service Handles automatic winner determination and optimiz, Apply the winning variant to future content, Automated A/B testing service that monitors tests and determines winners, Start the automated A/B testing service, Stop the automated A/B testing service, Broadcast a log message, Check all active A/B tests for potential winners (+1 more)
 
-### Community 296 - "Community 296"
+### Community 212 - "Community 212"
+Cohesion: 0.12
+Nodes (16): clear_all_faults(), get_chaos_report(), induce_exhaustion(), inject_latency(), Adds artificial delay to a service., Simulates a worker crash notification., Fakes a 429/403 for a specific platform API., Executes an orchestrated Killer Combo scenario (blackout/cascade/storm). (+8 more)
+
+### Community 213 - "Community 213"
+Cohesion: 0.12
+Nodes (16): [actionLogs, setActionLogs], [activeEngine, setActiveEngine], { agents, logs: systemLogs, status, pulse: _pulse }, [currentStep, setCurrentStep], displayLogs, engine, fetchData, handleToggle() (+8 more)
+
+### Community 214 - "Community 214"
 Cohesion: 0.12
 Nodes (16): 1. **Video Preview & Download** (CRITICAL), 2. **Real-Time Progress Tracking** (HIGH PRIORITY), ✅ COMPLETED IMPLEMENTATIONS, 📊 COVERAGE IMPROVEMENT, 🔴 Critical (Week 1):, 🚀 DEPLOYMENT STATUS, 🟡 High Priority (Week 2):, 💡 KEY ACHIEVEMENTS (+8 more)
 
-### Community 297 - "Community 297"
-Cohesion: 0.12
-Nodes (16): 🤖 **AI & Processing Services**, Architecture Principles, Cognitive & Agentic Tiers, 🔍 **Discovery & Content Services**, ettametta Services Layer Architecture, 🔧 **Infrastructure Services**, 💰 **Monetization Services**, 📊 **Optional/Experimental Services** (+8 more)
-
-### Community 298 - "Community 298"
-Cohesion: 0.12
-Nodes (16): Как это работает, Использование, Что вы получаете, Конфиденциальность, Технологический стек, История звёзд, Установка, Поддержка платформ (+8 more)
-
-### Community 299 - "Community 299"
-Cohesion: 0.12
-Nodes (16): Cómo funciona, code:block1 (/graphify .                        # funciona con cualquier ), code:block2 (graphify-out/), code:block3 (# .graphifyignore), code:bash (# Recomendado — funciona en Mac y Linux sin configurar el PA), code:block5 (/graphify .), code:block6 (/graphify                          # directorio actual), Construido sobre graphify — Penpax (+8 more)
-
-### Community 300 - "Community 300"
-Cohesion: 0.12
-Nodes (16): Ce que vous obtenez, code:block1 (/graphify .                        # fonctionne sur n'import), code:block2 (graphify-out/), code:block3 (# .graphifyignore), code:bash (# Recommandé — fonctionne sur Mac et Linux sans configuratio), code:block5 (/graphify .), code:block6 (/graphify                          # répertoire courant), Comment ça fonctionne (+8 more)
-
-### Community 301 - "Community 301"
-Cohesion: 0.12
-Nodes (16): Assistenten immer den Graphen nutzen lassen (empfohlen), Auf graphify aufgebaut — Penpax, code:block1 (/graphify .                        # funktioniert mit jedem ), code:block2 (graphify-out/), code:block3 (# .graphifyignore), code:bash (# Empfohlen — funktioniert auf Mac und Linux ohne PATH-Einri), code:block5 (/graphify .), code:block6 (/graphify                          # aktuelles Verzeichnis v) (+8 more)
-
-### Community 302 - "Community 302"
-Cohesion: 0.12
-Nodes (16): code:block1 (/graphify .                        # funciona em qualquer pa), code:block2 (graphify-out/), code:block3 (# .graphifyignore), code:bash (# Recomendado — funciona no Mac e Linux sem configurar o PAT), code:block5 (/graphify .), code:block6 (/graphify                          # diretório atual), Como funciona, Construído sobre graphify — Penpax (+8 more)
-
-### Community 303 - "Community 303"
-Cohesion: 0.12
-Nodes (16): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install), code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For --cluster-only (+8 more)
-
-### Community 304 - "Community 304"
-Cohesion: 0.12
-Nodes (16): code:block1 (/graphify                                             # full), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install), code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For --cluster-only (+8 more)
-
-### Community 306 - "Community 306"
-Cohesion: 0.13
-Nodes (11): AI ASSISTANT - Works WITH Professional Editors, Not Against Them     ===========, AI ASSISTANT - Works WITH Professional Editors, Not Against Them     ===========, Prepare 3-5 EDITOR CHOICES, not just one result.          Each option includes:, Prepare 3-5 EDITOR CHOICES, not just one result.          Each option includes:, Extract audience insights from data, Extract audience insights from data, Get audience analytics for niche - helps editor understand what works., Get audience analytics for niche - helps editor understand what works. (+3 more)
-
-### Community 307 - "Community 307"
+### Community 216 - "Community 216"
 Cohesion: 0.15
 Nodes (8): HardwareManager, Returns hardware-specific telemetry for the /health endpoint., Determines the best available hardware device., Identifies the specific vendor backend., Determines the most stable high-performance dtype for the hardware., Universal Hardware Abstraction Layer (HAL) for AI inference.     Supports NVIDIA, Returns the actual torch.device object., Triggers hardware-specific memory management/garbage collection.
 
-### Community 308 - "Community 308"
-Cohesion: 0.12
-Nodes (12): Update the Prometheus circuit breaker state gauge., Update the Prometheus circuit breaker state gauge., Update the Prometheus circuit breaker state gauge., Record failure on circuit breaker and atomically sync Prometheus gauge., Record failure on circuit breaker and atomically sync Prometheus gauge., Record failure on circuit breaker and atomically sync Prometheus gauge., Helper to safely record rendering telemetry to Prometheus metrics without duplic, Perform fast pre-render checks, validating the circuit breaker and props. (+4 more)
+### Community 217 - "Community 217"
+Cohesion: 0.13
+Nodes (8): Trend Graph Engine (9.9/10) ===========================  Graph-based topics rela, Relational brain that maps attention flow between topics., Creates or strengthens a relationship between topics, Identifies topics that are likely to 'jump' platforms based          on establis, Returns topics closely linked in the attention graph, TrendGraph, get_frontend_calls(), Store a value in the cache.
 
-### Community 309 - "Community 309"
-Cohesion: 0.15
-Nodes (11): CircuitBreaker, Execute a function with circuit breaker protection, Execute a function with circuit breaker protection, Manually reset the circuit breaker, Manually reset the circuit breaker, Circuit breaker for external API calls.          Usage:         breaker = Circui, Circuit breaker for external API calls.          Usage:         breaker = Circui, Check if execution is allowed (+3 more)
-
-### Community 310 - "Community 310"
-Cohesion: 0.12
-Nodes (12): Helper to verify disk space is sufficient before writing., Helper to verify disk space is sufficient before writing., Helper to verify disk space is sufficient before writing., Write serialized bytes to a temp file, flush/fsync, and atomically replace the d, Write serialized bytes to a temp file, flush/fsync, and atomically replace the d, Write serialized bytes to a temp file, flush/fsync, and atomically replace the d, Safely delete the temp file if it exists, ignoring exceptions., Safely delete the temp file if it exists, ignoring exceptions. (+4 more)
-
-### Community 311 - "Community 311"
-Cohesion: 0.14
-Nodes (10): The Signal Bus & Feature Store (9.9/10) =====================================  H, Standardizes raw platform signals and maintains a time-series Feature Store., Standardizes raw platform signals and maintains a time-series Feature Store., Normalizes and persists a social signal, Normalizes and persists a social signal, Computes the 2nd derivative of engagement velocity, Computes the 2nd derivative of engagement velocity, Returns the full temporal feature vector for the Forecaster (+2 more)
-
-### Community 312 - "Community 312"
-Cohesion: 0.12
-Nodes (12): High-fidelity video assembly using Remotion React engine with node-level trackin, High-fidelity video assembly using Remotion React engine with node-level trackin, High-fidelity video assembly using Remotion React engine with node-level trackin, High-fidelity video assembly using Remotion React engine with node-level trackin, Validate input paths for existence (except remote HTTP URIs)., Validate input paths for existence (except remote HTTP URIs)., Parallelize metadata extraction via threads to avoid blocking the event loop., Parallelize metadata extraction via threads to avoid blocking the event loop. (+4 more)
-
-### Community 313 - "Community 313"
-Cohesion: 0.12
-Nodes (15): Verify state transitions of CircuitBreaker., Verify state transitions of CircuitBreaker., Verify that failure in HALF_OPEN state transitions back to OPEN immediately., Verify that failure in HALF_OPEN state transitions back to OPEN immediately., Verify engine-specific failure tracking., Verify engine-specific failure tracking., Verify manual reset of CircuitBreaker., Verify manual reset of CircuitBreaker. (+7 more)
-
-### Community 314 - "Community 314"
-Cohesion: 0.12
-Nodes (10): Fetch analytics from social media platforms, Fetch analytics from social media platforms, Fetch metrics from specific social platform, Fetch metrics from specific social platform, Get Instagram post metrics, Get Instagram post metrics, Get TikTok video metrics, Get TikTok video metrics (+2 more)
-
-### Community 315 - "Community 315"
-Cohesion: 0.15
-Nodes (14): test_compile_convenience_function(), test_convenience_functions(), discover_analyze_and_generate(), discover_analyze_generate_compile(), Viral Content Discovery to AI Video Generation Pipeline ========================, Convenience function: Discover content → Analyze → Generate AI videos., Convenience function: Discover content → Analyze → Generate AI videos., Convenience function: Full pipeline discovery → analysis → generation → compilat (+6 more)
-
-### Community 316 - "Community 316"
-Cohesion: 0.17
-Nodes (9): AgentZero, Stops the autonomous loop., Loads state from DB and resumes if was running., A single iteration of the autonomous cycle., The Autonomous Director of ettametta.     Orchestrates Discovery, Analysis, Prod, Uses LLM to decide on video title, hooks, and product alignment., Uses LLM to decide on video title, hooks, and product alignment., Starts the autonomous production loop. (+1 more)
-
-### Community 317 - "Community 317"
-Cohesion: 0.12
-Nodes (3): Delegate to standalone validation function., Delegate to standalone validation logging function., Settings
-
-### Community 318 - "Community 318"
-Cohesion: 0.12
-Nodes (15): _animate_persona(), download_video(), _generate_video(), GenerationRequest, PersonaRequest, Background task to generate persona animation via SadTalker/LivePortrait, Background task to generate persona animation via SadTalker/LivePortrait, Receives image + text, kicks off deepfake animation. (+7 more)
-
-### Community 319 - "Community 319"
+### Community 218 - "Community 218"
 Cohesion: 0.17
 Nodes (10): Preferred Docker-based sandbox isolation., Main entry point for secure code execution., AST Walker to detect malicious patterns that regex might miss., Performs 'Elite' tier security validation using AST., Fallback runner if Docker is unavailable., run_docker(), run_sandboxed(), run_subprocess() (+2 more)
 
-### Community 320 - "Community 320"
-Cohesion: 0.12
-Nodes (12): CrewAIService, Any CrewAI multi-agent orchestration integration.     Disabled by default - enab, Any CrewAI multi-agent orchestration integration.     Disabled by default - enab, Create a CrewAI agent with role and goal., Create a CrewAI agent with role and goal., Create a CrewAI agent with role and goal., Create a task for an agent., Create a task for an agent. (+4 more)
+### Community 219 - "Community 219"
+Cohesion: 0.16
+Nodes (9): MythosReasoningAgent, Executes the Mythos Reasoning Protocol.         1. Prelude: Encode input into in, Encodes the initial input into a high-density reasoning state., Refines the reasoning state.          Uses 'Input Injection' (passing the origin, OpenMythos-inspired Reasoning Agent.     Simulates Recurrent-Depth Reasoning thr, Decodes the final matured reasoning state into a user-facing response., mythos_reasoning(), OpenMythos-inspired Reasoning Endpoint.     Uses recurrent-depth logic to 'think (+1 more)
 
-### Community 321 - "Community 321"
+### Community 220 - "Community 220"
+Cohesion: 0.18
+Nodes (8): DataIngestionSkill, Free multi-source data ingestion skill.     Sources: RSS feeds, Reddit (public),, Fetch GitHub trending repos., Get YouTube trending via RSS (no API key)., Ingest data from multiple sources.         Expected format: ["reddit:technology", Polymorphic entry point for OpenClaw agent., Fetch and parse RSS feed items., Fetch hot posts from a subreddit (public, no auth needed).
+
+### Community 221 - "Community 221"
+Cohesion: 0.16
+Nodes (8): EttamettaSkill, ettametta: Revenue Recovery and Monetization Optimizer for ettametta.     Harden, Generates a Stripe invoice for completed gigs., Standardized mission execution.         Routes to audit, optimization, or auto_a, Audits latest videos for engagement 'leaks' (high-intent comments)., Suggests monetization pivots based on current viral trends., Fetch available gigs from the HYRVE AI marketplace., Polls the HYRVE marketplace and automatically accepts gigs         above the con
+
+### Community 223 - "Community 223"
+Cohesion: 0.14
+Nodes (11): Receives frontend error reports from GlobalErrorBoundary., report_frontend_error(), seed_monitored_niches(), startup_event(), notify_system_log_async(), Asynchronous utility to publish system logs to Redis and persist to DB., Broadcasts a log message to the UI console and local logger., Listens for 'system_config_reload' signals from Redis and re-initializes     fra (+3 more)
+
+### Community 224 - "Community 224"
+Cohesion: 0.12
+Nodes (15): [activeTab, setActiveTab], { agents, logs: systemLogs, pulse }, fetchStats, handleIngest(), handleQuery(), [ingestMetadata, setIngestMetadata], [ingestText, setIngestText], [isIngesting, setIsIngesting] (+7 more)
+
+### Community 225 - "Community 225"
+Cohesion: 0.12
+Nodes (10): bars, btn, circles, closeBtn, createBtn, fakeUser, section, section2 (+2 more)
+
+### Community 226 - "Community 226"
 Cohesion: 0.12
 Nodes (15): 1.1 Database Decoupling & Event Sourcing, 1.2 Hybrid Inference Scaling, 1. Architectural & High Availability (HA), 2.1 Zero-Crash Hardening, 2.2 Unified Observability, 2. Core Technical Excellence, 3.1 Unified LLM Proxy, 3.2 Cost-Aware Routing (+7 more)
 
-### Community 322 - "Community 322"
+### Community 227 - "Community 227"
 Cohesion: 0.12
 Nodes (15): [0.1.0] — 2024-12-01, [0.7.0] — 2025-01-15, [0.8.0] — 2025-02-01, [0.9.0] — 2025-03-15, Added, Added, Added, Added (+7 more)
 
-### Community 323 - "Community 323"
+### Community 228 - "Community 228"
 Cohesion: 0.12
-Nodes (15): كيف يعمل, الاستخدام, ما ستحصل عليه, الخصوصية, المكدس التقني, سجل النجوم, التثبيت, دعم المنصات (+7 more)
+Nodes (15): 🤖 **AI & Processing Services**, Architecture Principles, Cognitive & Agentic Tiers, 🔍 **Discovery & Content Services**, ettametta Services Layer Architecture, 🔧 **Infrastructure Services**, 💰 **Monetization Services**, 📊 **Optional/Experimental Services** (+7 more)
 
-### Community 324 - "Community 324"
-Cohesion: 0.15
-Nodes (9): FFmpeg Video Transformation Utilities ====================================  Prof, check_cv2_available(), check_moviepy_available(), Returns health of local Video Processing drivers., Returns health of local Video Processing drivers., Verify video can be read by iterating frames., Verify video can be read by iterating frames., Full video processing pipeline using OpenCV when MoviePy fails.         This is (+1 more)
+### Community 229 - "Community 229"
+Cohesion: 0.26
+Nodes (14): main(), print_header(), Test content-editor providers endpoint, Test content-editor find endpoint, Test free video providers, Test discovery /trends endpoint, Test discovery niches endpoint, Test niche-trends endpoint (+6 more)
 
-### Community 325 - "Community 325"
-Cohesion: 0.13
-Nodes (11): Test circuit breaker integration., Test circuit breaker integration., Verify circuit breaker opens after threshold failures., Verify circuit breaker opens after threshold failures., Verify circuit breaker closes after successful call., Verify circuit breaker closes after successful call., Test engine-specific failure tracking., Test engine-specific failure tracking. (+3 more)
+### Community 230 - "Community 230"
+Cohesion: 0.19
+Nodes (14): cleanup_p4000_memory(), generate_lite4k_p4000(), generate_ltx_p4000(), generate_p4000_video(), generate_zeroscope_p4000(), get_p4000_available_models(), Ultra-aggressive ZeroScope optimization for P4000, Ultra-aggressive Lite4K optimization for P4000 (+6 more)
 
-### Community 326 - "Community 326"
-Cohesion: 0.14
-Nodes (9): ModelRegistry, 10/10 Governance: Manages the lifecycle of Neural Oracle weights.     Supports v, 10/10 Governance: Manages the lifecycle of Neural Oracle weights.     Supports v, Registers a new challenger model version., Registers a new challenger model version., Promotes a version to the active 'Champion' model., Promotes a version to the active 'Champion' model., Returns the filesystem path to the current active weights. (+1 more)
-
-### Community 327 - "Community 327"
-Cohesion: 0.2
-Nodes (8): Modulate timing and motion parameters., Applies theme preset overrides and stochastically modulates color, timing, and z, Introduces controlled, deterministic randomness to video generation parameters, Perturbs a base float value by a variance percentage, clamped between min/max., Select a random ThemePreset from the available list., Apply theme preset overrides to config., Modulate Color Grading properties stochastically., StochasticModulator
-
-### Community 328 - "Community 328"
-Cohesion: 0.13
-Nodes (13): Backend Code Review - ettametta, code:python (# Line 415-461 in video.py - Mixed sync/async session manage), code:python (@router.get("/niches", response_model=List[str])), code:python (task = download_and_process_task.delay(...)  # No validation), code:python (success, msg = await credit_service.consume_credits(...)), CR-01: Inconsistent Database Session Management, CR-02: Mixed Sync/Async Patterns in Discovery Routes, CR-03: Missing Error Handling in Background Tasks (+5 more)
-
-### Community 329 - "Community 329"
-Cohesion: 0.13
-Nodes (10): processor(), Integration Tests for Video Engine =================================== Verifies, Test suite for the Video Engine integration., Verify that the processor initializes with correct codec and font., Verify that the version check handles failures gracefully., Verify Celery task registration and accessibility., Check if core tasks are registered in the Celery app., test_synthesis_task_routing() (+2 more)
-
-### Community 330 - "Community 330"
-Cohesion: 0.13
-Nodes (7): Tests for the viral content discovery to AI video generation pipeline., Test the viral content discovery pipeline., Test the viral content discovery pipeline., Integration-style tests showing how the pipeline works., Integration-style tests showing how the pipeline works., TestPipelineIntegration, TestViralContentPipeline
-
-### Community 331 - "Community 331"
-Cohesion: 0.13
-Nodes (11): The Prophet: Proactive Trend Detection (10/10) =================================, Detects low-saturation/high-velocity niches for early-mover advantage., Detects low-saturation/high-velocity niches for early-mover advantage., Detects low-saturation/high-velocity niches for early-mover advantage., Calculates growth rate of engagement over time, Calculates growth rate of engagement over time, Calculates growth rate of engagement over time, Simulates scanning Reddit/X for emergent niches.         Identifies 'Velocity Sp (+3 more)
-
-### Community 332 - "Community 332"
-Cohesion: 0.13
-Nodes (11): Test provider selection and fallback logic., Test provider selection and fallback logic., Verify default provider is correctly set., Verify default provider is correctly set., Test get_available_providers returns correct structure., Test get_available_providers returns correct structure., Test is_available returns True for configured providers., Test is_available returns True for configured providers. (+3 more)
-
-### Community 333 - "Community 333"
-Cohesion: 0.13
-Nodes (11): Test service initialization and circuit breaker setup., Test service initialization and circuit breaker setup., Verify that circuit breakers are properly initialized for all providers., Verify that circuit breakers are properly initialized for all providers., Verify circuit breakers have correct naming convention., Verify circuit breakers have correct naming convention., Test _get_breaker method returns the correct circuit breaker., Test _get_breaker method returns the correct circuit breaker. (+3 more)
-
-### Community 334 - "Community 334"
-Cohesion: 0.17
-Nodes (14): apply_quantization(), generate_ltx(), generate_ltx_api(), generate_ltx_dummy(), load_ltx_local(), LTX-Video Inference Module  LTX-Video is an motion-optimized video generation mo, Generate video using LTX-Video (480p), Generate video using LTX-Video (480p) (+6 more)
-
-### Community 335 - "Community 335"
-Cohesion: 0.14
-Nodes (10): ChaosUtility, ChaosUtility: Orchestrated Failure Injection Engine.  Supports individual fault, Stops the continuous chaos loop and clears all active faults., Stops the continuous chaos loop and clears all active faults., The Infrastructure Destroyer — with Orchestration.     Injects controlled failur, Returns current chaos state and recent injection history., Returns current chaos state and recent injection history., The Infrastructure Destroyer — with Orchestration.     Injects controlled failur (+2 more)
-
-### Community 336 - "Community 336"
-Cohesion: 0.14
-Nodes (10): RecoveryService: Runtime-Callable State Reconstruction.  Responsible for reconst, Stateful Recovery & Consistency Engine.     Reconstructs volatile memory from pe, Stateful Recovery & Consistency Engine.     Reconstructs volatile memory from pe, Reconstructs all analytics and experimentation states., Reconstructs all analytics and experimentation states., Ensures Redis 'active_batch' pointers are correct for each strategy., Ensures Redis 'active_batch' pointers are correct for each strategy., Returns recovery service health info. (+2 more)
-
-### Community 337 - "Community 337"
-Cohesion: 0.17
-Nodes (11): NexusComposeRequest, Test the PublishingService API with mocked external boundaries., Validate NexusComposeRequest Pydantic model behavior., A request with just a niche should produce sensible defaults., PARTIAL mode should be accepted by the model., FULL mode should accept all fields., Default blueprint should be viral-reskin., Integration-style test for the Nexus compose background task. (+3 more)
-
-### Community 338 - "Community 338"
-Cohesion: 0.13
-Nodes (14): get_publishing_status(), init_oauth_auth(), publish_video(), PublishRequest, Publishing API Routes ===================== Endpoints for publishing videos to s, Initiate OAuth flow for connecting social media accounts.     Supported platform, Initiate OAuth flow for connecting social media accounts.     Supported platform, Publish a video to a social media platform.          Requires OAuth connection t (+6 more)
-
-### Community 339 - "Community 339"
-Cohesion: 0.21
-Nodes (14): End-to-end pipeline test: detect → extract → build → cluster → analyze → report, Second run on unchanged corpus should produce identical node/edge counts., Second run on unchanged corpus should produce identical node/edge counts., Run the full pipeline on the fixtures directory. Returns a dict of outputs., Run the full pipeline on the fixtures directory. Returns a dict of outputs., run_pipeline(), test_pipeline_all_nodes_have_community(), test_pipeline_detection_finds_code_and_docs() (+6 more)
-
-### Community 340 - "Community 340"
-Cohesion: 0.13
-Nodes (14): 1. Executive Summary, 2. Competitive Matrix Status ✅, 3.1 Hardcoded Environment State, 3.2 Missing Identity & Access Credentials, 3. High-Priority Gaps (P0: Deployment Blockers) 🔴, 4.1 Monetization "Latent" State, 4.2 Dashboard "Empire" View (A/B Testing), 4. Technical Gaps (P1: ROI & Scale) 🟠 (+6 more)
-
-### Community 341 - "Community 341"
-Cohesion: 0.13
-Nodes (14): 1. Current Architecture, 2. Implementation Status, 3. Remaining Gaps, 4. Technology Stack Summary, 5. Recommendations, 6. Recent Updates (February 25, 2026), Completed Features, Critical (P0) (+6 more)
-
-### Community 342 - "Community 342"
-Cohesion: 0.13
-Nodes (14): यह कैसे काम करता है, आपको क्या मिलता है, गोपनीयता, इंस्टॉलेशन, प्लेटफॉर्म समर्थन, उपयोग, code:block1 (/graphify .                        # किसी भी फोल्डर पर काम क), code:block2 (graphify-out/) (+6 more)
-
-### Community 343 - "Community 343"
+### Community 231 - "Community 231"
 Cohesion: 0.2
 Nodes (8): Get Snapchat Discover/Explore content., Scans Snapchat for trending content in a niche.     Uses web scraping to discove, Extract snap/video data from Snapchat JSON., Recursively search for snap objects., Parse a single Snapchat item., Scans Snapchat for trending Spotlight content in a niche.         Note: Snapchat, Get Snapchat Spotlight trending content., SnapchatScanner
 
-### Community 344 - "Community 344"
-Cohesion: 0.16
-Nodes (11): GoogleSearchScanner, Fallback: Try to scrape Google Shopping/Trends results directly.         Note: T, Fallback: Try to scrape Google Shopping/Trends results directly.         Note: T, Fallback: Try to scrape Google Shopping/Trends results directly.         Note: T, Google Search scanner for discovering popular products and monetization opportun, Google Search scanner for discovering popular products and monetization opportun, Build dynamic search queries based on niche and current time., Build dynamic search queries based on niche and current time. (+3 more)
+### Community 232 - "Community 232"
+Cohesion: 0.18
+Nodes (8): DuckDuckGoScanner, DuckDuckGo search scanner for discovering trending content.     Free, no API key, Determines the content category and platform-specific directness., Build dynamic search queries based on niche and current time., Detect platform from URL., Searches DuckDuckGo for trending videos and content in the niche.         Free a, Search DuckDuckGo HTML for results., Parse DuckDuckGo HTML results.
 
-### Community 346 - "Community 346"
+### Community 233 - "Community 233"
+Cohesion: 0.13
+Nodes (7): E2E: Nexus Compose → SRT Captions Pipeline =====================================, Integration: verify the SRT export pipeline produces a valid     sidecar file al, Unit tests for ``_format_srt_time`` and ``_export_srt``., test_srt_pipeline_skips_when_no_words(), test_srt_pipeline_writes_srt_alongside_audio(), TestAssembleVideoExportsSRT, TestSRTFormatting
+
+### Community 234 - "Community 234"
+Cohesion: 0.16
+Nodes (8): PayPalService, Create a subscription, PayPal integration for payments.     Supports: Checkout, Subscriptions, Webhooks, Verify PayPal webhook signature, Get PayPal access token, Create a PayPal order, Verify PayPal access token retrieval using async client., test_paypal_get_access_token()
+
+### Community 235 - "Community 235"
+Cohesion: 0.13
+Nodes (13): Backend Code Review - ettametta, code:python (# Line 415-461 in video.py - Mixed sync/async session manage), code:python (@router.get("/niches", response_model=List[str])), code:python (task = download_and_process_task.delay(...)  # No validation), code:python (success, msg = await credit_service.consume_credits(...)), CR-01: Inconsistent Database Session Management, CR-02: Mixed Sync/Async Patterns in Discovery Routes, CR-03: Missing Error Handling in Background Tasks (+5 more)
+
+### Community 236 - "Community 236"
+Cohesion: 0.19
+Nodes (8): PinterestScanner, Get trending pins from Pinterest., Scans Pinterest for trending pins and videos in a niche.     Uses web scraping t, Extract pin data from Pinterest JSON., Recursively search for pin objects., Parse a single pin item., Scans Pinterest for trending pins in a niche.         Uses the search functional, Search Pinterest for pins.
+
+### Community 237 - "Community 237"
+Cohesion: 0.19
+Nodes (8): Parses ISO 8601 duration string like PT1M30S into seconds., DEPRECATED: Returns empty list. Do not generate fake data., Scans YouTube for trending Shorts in a specific niche using the Data API v3., YouTubeShortsScanner, main(), test_groq(), test_tiktok(), test_youtube()
+
+### Community 238 - "Community 238"
+Cohesion: 0.17
+Nodes (8): hardware_export_to_video(), Export frames to video using the best available hardware encoder, Video Model Manager - Unified resource orchestration for AI models, Real inference entry point, Manages all AI resources with Smart VRAM Orchestration (TTL + Mutually Exclusive, Total eviction of all VRAM-occupying objects, Internal loader for specific architectures, VideoModelManager
+
+### Community 239 - "Community 239"
+Cohesion: 0.16
+Nodes (7): HermesSkillService, Elite Self-Improving Skill Engine.     Reflects on successful jobs to 'crystalli, Retrieve winning pattern strings to inject into new generator prompts.         U, Load crystallized skills from JSON storage., Persist crystallized skills to JSON storage., Autonomous Scaling & Transmutation via Celery.         Spawns a new 'Elite' Narr, Analyzes performance and captures successful patterns.         Triggers recursiv
+
+### Community 240 - "Community 240"
 Cohesion: 0.14
-Nodes (9): InferenceGateway, 10/10 Scalability: The Unified Entry Point for Distributed Intelligence.     Dec, 10/10 Scalability: The Unified Entry Point for Distributed Intelligence.     Dec, Request a prediction from the Neural Oracle.         In a multi-node setup, this, Request a prediction from the Neural Oracle.         In a multi-node setup, this, Orchestrates a cluster-wide model update., Orchestrates a cluster-wide model update., Returns the vitals of the distributed intelligence layer. (+1 more)
+Nodes (8): PublishTool, Publishes a video file to the specified platform (YouTube, TikTok, Instagram)., Standardized Tool for Agent Zero to publish content to social platforms., Render a specific composition with text and theme props., Entry point for Agent Zero tool execution., Agent Zero tool for programmatic video generation via Remotion., RemotionTool, run()
 
-### Community 347 - "Community 347"
-Cohesion: 0.16
-Nodes (9): 10/10 Production: The Lean Swarm Governor.     Monitors CPU and memory to enforc, 10/10 Production: The Lean Swarm Governor.     Monitors CPU and memory to enforc, Returns the degradation mode for high-throughput production.         Modes: 'STA, Returns the degradation mode for high-throughput production.         Modes: 'STA, Determines if the system is too busy to start a new heavy production task., Determines if the system is too busy to start a new heavy production task., Adaptive thread count for FFmpeg to prevent system-wide lag., Adaptive thread count for FFmpeg to prevent system-wide lag. (+1 more)
+### Community 241 - "Community 241"
+Cohesion: 0.19
+Nodes (8): PlaywrightPublisher, Playwright Social Publisher Skill ================================= Automates po, Post a Reel to Instagram using browser automation., Handles automated posting via Playwright., Start a stealthy browser instance., Load saved cookies for a user., Save cookies for future sessions., Post a video to TikTok using browser automation.
 
-### Community 348 - "Community 348"
-Cohesion: 0.15
-Nodes (10): CrewAIService, Elite CrewAI multi-agent orchestration.     Uses dynamic task generation to tail, Elite CrewAI multi-agent orchestration.     Uses dynamic task generation to tail, Dynamically check if CrewAI and required deps are installed., Dynamically check if CrewAI and required deps are installed., Re-initialize service from current environment/settings., Re-initialize service from current environment/settings., Elite CrewAI multi-agent orchestration.     Uses dynamic task generation to tail (+2 more)
+### Community 242 - "Community 242"
+Cohesion: 0.13
+Nodes (9): processor(), Integration Tests for Video Engine =================================== Verifies, Test suite for the Video Engine integration., Verify that the processor initializes with correct codec and font., Verify that the version check handles failures gracefully., Verify Celery task registration and accessibility., Check if core tasks are registered in the Celery app., TestCeleryTaskConnectivity (+1 more)
 
-### Community 349 - "Community 349"
-Cohesion: 0.16
-Nodes (8): CircuitBreaker, Cognitive analysis of video metadata to suggest optimal 'Vibe' and 'Style' overr, Simple circuit breaker to prevent cascading failures, Use LangChain memory and cognitive patterns to predict a script's viral potentia, Use LangChain memory and cognitive patterns to predict a script's viral potentia, Use LangChain memory and cognitive patterns to predict a script's viral potentia, Cognitive analysis of video metadata to suggest optimal 'Vibe' and 'Style' overr, Cognitive analysis of video metadata to suggest optimal 'Vibe' and 'Style' overr
+### Community 243 - "Community 243"
+Cohesion: 0.19
+Nodes (7): DistributedEventBus, 10/10 Infrastructure: Redis Streams-backed Event Bus for Distributed Content Clu, Returns the number of pending failures in the DLQ., 10/10 Fail-Safe: Reclaims messages that were started but never finished, Emits an event into the global stream., Subscribes a worker to a specific topic within the distributed group.         Im, Moves unrecoverable events to the Dead Letter Queue.
 
-### Community 350 - "Community 350"
-Cohesion: 0.16
-Nodes (8): check_playwright_available(), CircuitBreaker, Free AI Video Generation Providers Service  Integrates with multiple free daily, Simple circuit breaker to prevent cascading failures, Generate video using available free provider., Generate video using available free provider., Generate video using available free provider., Generate video using available free provider.
-
-### Community 351 - "Community 351"
-Cohesion: 0.15
-Nodes (11): google_auth(), decode_access_token(), get_current_user(), Sign OAuth state parameter with HMAC-SHA256., Sign OAuth state parameter with HMAC-SHA256., Sign OAuth state parameter with HMAC-SHA256., Verify and extract original state from signed state parameter., Verify and extract original state from signed state parameter. (+3 more)
-
-### Community 352 - "Community 352"
-Cohesion: 0.16
-Nodes (9): Deletes files from cloud storage that are older than specified days., Deletes files from cloud storage that are older than specified days., Calculates the total size of the output directory in bytes., Calculates the total size of the output directory in bytes., Monitors disk usage and migrates files to OCI if over threshold., Monitors disk usage and migrates files to OCI if over threshold., Moves a single file to OCI and updates DB references., Moves a single file to OCI and updates DB references. (+1 more)
-
-### Community 353 - "Community 353"
+### Community 244 - "Community 244"
 Cohesion: 0.14
-Nodes (13): cancel_scheduled_post(), get_scheduled_posts(), get_suggested_times(), Scheduling routes — schedule posts, list scheduled, cancel scheduled, and get AI, Cancel a scheduled post before it publishes., Cancel a scheduled post before it publishes., Returns AI-suggested optimal posting windows., Returns AI-suggested optimal posting windows. (+5 more)
+Nodes (12): Executes a real-world neural pattern injection by synchronizing high-velocity, Refresh discovery cache for specified niches.     If no niches specified, refres, refresh_discovery(), _build_async_url(), _build_sync_url(), get_sync_redis(), _in_docker(), Shared Redis connection pool module.  All services MUST import their Redis clien (+4 more)
 
-### Community 354 - "Community 354"
+### Community 245 - "Community 245"
+Cohesion: 0.13
+Nodes (14): get_env_keys(), get_system_status(), list_audits(), list_incident_webhooks(), Triggers a controlled shutdown of the API process.      Requires 'restart: alway, Registers an external incident reporting webhook (Standard 3.12).     Complies w, Lists all registered incident reporting webhooks., Returns unified health telemetry for the entire Intelligence OS. (+6 more)
+
+### Community 246 - "Community 246"
+Cohesion: 0.16
+Nodes (13): _check_idempotency(), get_webhook_events(), Webhooks API Routes for ettametta Handles callbacks from YouTube, TikTok, and ot, Verify webhook endpoints are active, Get recent webhook events (admin only), Verify webhook signature using HMAC-SHA256, Check if this event was already processed, Record webhook event for idempotency (+5 more)
+
+### Community 247 - "Community 247"
+Cohesion: 0.15
+Nodes (11): viralClipSchema, cinematicMinimalSchema, frame, opacity, scale, { width, height, fps, durationInFrames }, frame, hormoziStyleSchema (+3 more)
+
+### Community 248 - "Community 248"
+Cohesion: 0.13
+Nodes (14): 1. Executive Summary, 2. Competitive Matrix Status ✅, 3.1 Hardcoded Environment State, 3.2 Missing Identity & Access Credentials, 3. High-Priority Gaps (P0: Deployment Blockers) 🔴, 4.1 Monetization "Latent" State, 4.2 Dashboard "Empire" View (A/B Testing), 4. Technical Gaps (P1: ROI & Scale) 🟠 (+6 more)
+
+### Community 249 - "Community 249"
+Cohesion: 0.13
+Nodes (14): 1. Current Architecture, 2. Implementation Status, 3. Remaining Gaps, 4. Technology Stack Summary, 5. Recommendations, 6. Recent Updates (February 25, 2026), Completed Features, Critical (P0) (+6 more)
+
+### Community 250 - "Community 250"
+Cohesion: 0.19
+Nodes (7): generate_viral_script(), publish_job(), Prompt → DAG Generator (Runway-style).          Uses an LLM to output a structur, Build a preview structure for user approval in PARTIAL mode., ColorGradeNode, Apply color grading to a video based on style profile.      Params:         inpu, get_style()
+
+### Community 251 - "Community 251"
+Cohesion: 0.14
+Nodes (14): 1. Design Tokens & CSS Variables (`globals.css`), 2. Shared Component Library, 4. Design System Benefits, 6. Technical Improvements, Changes Made, `components/layout/BaseLayout.tsx`, `components/ui/Button.tsx`, `components/ui/Card.tsx` (+6 more)
+
+### Community 252 - "Community 252"
+Cohesion: 0.21
+Nodes (4): CloakTikTokScanner, TikTok scanner backed by CloakBrowser stealth engine with httpx fallback., Scans TikTok for trending videos in a niche by scraping the public search page., TikTokScanner
+
+### Community 253 - "Community 253"
+Cohesion: 0.2
+Nodes (7): FacebookScanner, Search Facebook for videos in a niche., Scans Facebook Watch for trending video content using web scraping.     Note: Fa, Extract video info from JSON data., Extract video info from schema.org JSON-LD., Scans Facebook Watch for trending video content in a niche.         Uses the wat, Get trending videos from Facebook Watch page.
+
+### Community 254 - "Community 254"
+Cohesion: 0.14
+Nodes (14): analyze_vlm_endpoint(), download(), generate_animatediff(), generate_video(), generate_voice_endpoint(), generate_with_model(), get_job_status(), hunyuan_endpoint() (+6 more)
+
+### Community 255 - "Community 255"
+Cohesion: 0.18
+Nodes (12): test_compile_convenience_function(), test_convenience_functions(), discover_analyze_and_generate(), discover_analyze_generate_compile(), Viral Content Discovery to AI Video Generation Pipeline ========================, Convenience function: Discover content → Analyze → Generate AI videos., Convenience function: Full pipeline discovery → analysis → generation → compilat, demo_basic_pipeline() (+4 more)
+
+### Community 256 - "Community 256"
+Cohesion: 0.2
+Nodes (7): AgentZero, Stops the autonomous loop., Loads state from DB and resumes if was running., A single iteration of the autonomous cycle., The Autonomous Director of ettametta.     Orchestrates Discovery, Analysis, Prod, Uses LLM to decide on video title, hooks, and product alignment., Starts the autonomous production loop.
+
+### Community 257 - "Community 257"
+Cohesion: 0.14
+Nodes (10): broadcast_message(), BroadcastRequest, ContextTypes, execute_tool(), _fetch_users_with_bots(), Twilio Webhook for incoming WhatsApp messages., Triggers an outbound message to specific users via the MessageDispatcher., Execute an OpenClaw tool directly (Internal Only). (+2 more)
+
+### Community 258 - "Community 258"
+Cohesion: 0.2
+Nodes (7): BlogSEOService, Generate SEO keywords for topic., Blog and SEO content generation service.     Uses Groq (already configured) for, Generate meta description (under 160 chars)., Generate structured content., Generate section headings., Generate SEO-optimized content for a topic using Groq.          Args:
+
+### Community 259 - "Community 259"
+Cohesion: 0.2
+Nodes (8): CodeExecutor, OpenInterpreterService, Execute JavaScript code., Generate a video processing script for the topic., Open Interpreter integration for code execution.     Enable with ENABLE_INTERPRE, Simple code execution for ettametta automation., Execute code in a sandboxed environment.          Args:             code: Code t, run_script()
+
+### Community 260 - "Community 260"
+Cohesion: 0.23
+Nodes (5): KnowledgeService, Production-grade Knowledge Service powered by Dify Datasets (RAG)., Get knowledge base statistics from Dify., Ingest text into a Dify dataset., Query the knowledge base using Dify's search API.
+
+### Community 262 - "Community 262"
+Cohesion: 0.14
+Nodes (6): Verify Wan remote payload contains 480p resolution., Verify Mochi remote payload contains 480p resolution., Verify Hunyuan remote payload contains 480p resolution., Verify LTX remote payload contains 480p resolution., Verify CogVideo remote payload contains 480p resolution., TestVideoModels480p
+
+### Community 263 - "Community 263"
+Cohesion: 0.19
+Nodes (7): PixVerseSkill, PixVerse browser automation skill - Tier 1 easiest platform     Clean UI, predic, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Login to PixVerse if credentials available, Generate video from prompt using PixVerse         Returns: { status: success/fai
+
+### Community 264 - "Community 264"
 Cohesion: 0.21
 Nodes (13): delete_old_backups(), dump_database(), get_db_config(), get_s3_client(), list_old_backups(), main(), Upload file to S3-compatible storage., List backups older than retention period. (+5 more)
 
-### Community 355 - "Community 355"
-Cohesion: 0.14
-Nodes (4): safeRandomUUID(), addNode(), handleSave(), addNode()
-
-### Community 356 - "Community 356"
-Cohesion: 0.14
-Nodes (12): [actionLogs, setActionLogs], [activeTab, setActiveTab], { agents, logs: systemLogs, status, pulse }, [auditReports, setAuditReports], [biasReport, setBiasReport], handleRunAccountAudit(), handleRunBiasScan(), handleRunSecurityAudit() (+4 more)
-
-### Community 357 - "Community 357"
+### Community 265 - "Community 265"
 Cohesion: 0.14
 Nodes (12): cachedWorldData, containerRef, [dimensions, setDimensions], [error, setError], GeoData, GeomapProps, [isLoading, setIsLoading], Point (+4 more)
 
-### Community 358 - "Community 358"
-Cohesion: 0.19
-Nodes (9): area(), Circle, Color, describe(), Geometry, multiply(), Point, Shape (+1 more)
-
-### Community 359 - "Community 359"
+### Community 266 - "Community 266"
 Cohesion: 0.14
 Nodes (13): 1. Video Preview & Download (Critical), 2. Progress Tracking Infrastructure (High Priority), 3. Progress Indicators for Long Tasks, ✅ COMPLETED FIXES, 📊 COVERAGE IMPROVEMENT, 🔴 Critical (Week 1), 🚀 DEPLOYMENT STATUS, 🟡 High Priority (Week 2) (+5 more)
 
-### Community 360 - "Community 360"
+### Community 267 - "Community 267"
 Cohesion: 0.14
 Nodes (14): code:bash (cd /home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e), code:bash (cd /home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e), code:bash (# Agent Zero tests), code:bash (SKIP_WEB_SERVER=1 BASE_URL=http://127.0.0.1:3000 npx playwri), code:bash (SKIP_WEB_SERVER=1 BASE_URL=http://127.0.0.1:3000 npx playwri), code:bash (SKIP_WEB_SERVER=1 BASE_URL=http://127.0.0.1:3000 npx playwri), Install Dependencies, Prerequisites (+6 more)
 
-### Community 361 - "Community 361"
+### Community 268 - "Community 268"
 Cohesion: 0.14
 Nodes (13): 1. HunyuanVideo 1.5 (Tencent), 2. LTX-2 19B (Lightricks), 3. AnimateDiff (SDXL / SD 1.5), 4. Specialized & Legacy Models, 🎬 AVAILABLE VIDEO MODELS (UPDATED AUDIT), 🟢 CURRENT STATUS: WORKING (WITH VRAM LIMITATIONS), DISK SPACE, Recommendation (+5 more)
 
-### Community 362 - "Community 362"
+### Community 269 - "Community 269"
 Cohesion: 0.14
 Nodes (13): 1. Executive Summary, 2.1 Core Services (27 Total), 2.2 Dashboard Ecosystem (12 Pages), 2. Architecture Overview, 3.1 Frontend Gaps (P1-P2), 3.2 Backend & Infrastructure (P0-P1), 3.3 Testing Coverage (50% -> 90% Target), 3. Detailed Gap Analysis (+5 more)
 
-### Community 363 - "Community 363"
+### Community 270 - "Community 270"
 Cohesion: 0.14
 Nodes (13): API Routes (87 total), Architecture Summary, Completed Redesign, Design Files, Executive Summary, P0 - Critical Issues, P1 - UI Wiring (Backend → Frontend), P2 - Missing Pages (+5 more)
 
-### Community 364 - "Community 364"
+### Community 271 - "Community 271"
+Cohesion: 0.14
+Nodes (13): 1. Production Smoke Tests, 2. Backend & Unit Tests (Python), 3. Frontend & User Flow Tests (Playwright), 4. CI/CD Integration, 5. Manual / Scripted Stubs, code:bash (python3 scripts/production_smoke_test.py \), code:bash (pytest src/api/tests -v --tb=short), code:bash (cd src/tests/e2e) (+5 more)
+
+### Community 272 - "Community 272"
 Cohesion: 0.14
 Nodes (13): 1. Recently Resolved (Fixed Items) ✅, 2.1 Credential & OAuth Void, 2.2 Hardcoded Environment URLs, 2.3 Optimization Logic (Mock Data), 2. Critical Blockers (Remaining Gaps) 🔴, 3.1 Discovery Service ⚠️ (Partial), 3.2 Video Engine ✅ (Mostly Complete), 3.3 Analytics & Publishing ⚠️ (Partial) (+5 more)
 
-### Community 365 - "Community 365"
-Cohesion: 0.14
-Nodes (13): Benchmark: Karpathy Repos + Research Papers, Code-only (AST, no Claude), Communities detected (major), Full corpus (code + papers + images), God nodes (highest degree), Graph quality evaluation, Graph summary, Per-question breakdown (full corpus) (+5 more)
+### Community 274 - "Community 274"
+Cohesion: 0.23
+Nodes (7): check_cv2_available(), check_easyocr_available(), OCRService, Analyzes the video and returns a placement strategy: 'bottom' (default), 'top',, Lazy initialization of the EasyOCR reader., Returns health of OCR drivers., Samples frames from a video and detects bounding boxes of text.         Returns
 
-### Community 366 - "Community 366"
-Cohesion: 0.14
-Nodes (13): Communities, Community 0 - "Community 0", Community 1 - "Community 1", Community 2 - "Community 2", Community 3 - "Community 3", Community 4 - "Community 4", Community 5 - "Community 5", Corpus Check (+5 more)
-
-### Community 367 - "Community 367"
-Cohesion: 0.14
-Nodes (13): download_file(), get_p4000_config(), health_check(), Serve generated video files, Serve generated video files, Get P4000-specific configuration and recommendations, Get P4000-specific configuration and recommendations, P4000-specific startup checks (+5 more)
-
-### Community 368 - "Community 368"
-Cohesion: 0.18
-Nodes (9): NarrativePlan, 10/10 Production Orchestrator for Multi-Scene Viral Content.     Features: Pydan, 10/10 Production Orchestrator for Multi-Scene Viral Content.     Features: Pydan, Uses LLM to break a topic into a validated narrative sequence., Uses LLM to break a topic into a validated narrative sequence., End-to-end production pipeline., End-to-end production pipeline., SceneNarrative (+1 more)
-
-### Community 369 - "Community 369"
-Cohesion: 0.17
-Nodes (10): LangChainService, Use a prompt template with variables.                  Args:             templat, Use a prompt template with variables.                  Args:             templat, Use a prompt template with variables.                  Args:             templat, Any LangChain enhancement for LLM orchestration.          Disabled by default -, Any LangChain enhancement for LLM orchestration.          Disabled by default -, Re-initialize service from current environment/settings., Re-initialize service from current environment/settings. (+2 more)
-
-### Community 370 - "Community 370"
-Cohesion: 0.18
-Nodes (7): Generic AI completion for cross-service intelligence (Tournament Selection, etc), Generic AI completion for cross-service intelligence (Tournament Selection, etc), Generic AI completion for cross-service intelligence (Tournament Selection, etc), Lightweight circuit breaker for AI call protection., Lightweight circuit breaker for AI call protection., Lightweight circuit breaker for AI call protection., _SimpleCircuitBreaker
-
-### Community 371 - "Community 371"
+### Community 275 - "Community 275"
 Cohesion: 0.19
-Nodes (8): auth_linkedin_callback(), api_key(), bucket(), endpoint(), provider(), region(), get_secret(), Synchronous implementation of get_secret.     Avoids asyncio issues in Celery wo
+Nodes (6): Determines if parallel posting is allowed based on spacing.          Args:, Predicts engagement percentage for a given scheduled time.          Args:, Dynamically calculate peak engagement windows based on historic real performance, Calculates the optimal next posting window based on current trends and peak time, Returns the top N optimal posting windows with engagement predictions., SmartScheduler
 
-### Community 372 - "Community 372"
+### Community 276 - "Community 276"
 Cohesion: 0.18
-Nodes (9): IntelligentWorkflowSkill, OpenClaw skill for "Tier 10" intelligent discovery and narrative fusion., OpenClaw skill for "Tier 10" intelligent discovery and narrative fusion., Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Perform a resilient multi-platform scan, Perform a resilient multi-platform scan, Trigger an autonomous narrative fusion production job (+1 more)
+Nodes (10): circuit_breaker(), CircuitBreakerConfig, CircuitState, get_all_breakers_status(), get_circuit_breaker(), Circuit Breaker Pattern Implementation for External API Resilience  Provides cir, Get or create a circuit breaker, Decorator to add circuit breaker to async functions (+2 more)
 
-### Community 373 - "Community 373"
+### Community 277 - "Community 277"
+Cohesion: 0.27
+Nodes (7): getEnv(), Scanner, calculateVelocity(), classifyURL(), getUserAgents(), NewScanner(), ScanResult
+
+### Community 278 - "Community 278"
+Cohesion: 0.18
+Nodes (6): ExecutionPlan, Compile nodes into an execution plan.          Raises:             ValueError: I, An ordered, batched execution plan ready for the Scheduler.      Nodes are group, Group nodes into parallel-execution batches., Return batches of nodes that can be executed in parallel., Execute the plan and return a dict of node_id → result.          Args:
+
+### Community 279 - "Community 279"
+Cohesion: 0.21
+Nodes (7): Extract tweet data from X's JSON structure., Scans X (Twitter) for trending media tweets using web scraping.     Twitter API, Parse a single tweet from a timeline entry., Get trending topics from X (fallback)., Scans X (Twitter) for trending tweets with media in a niche.         Uses the se, Search X for tweets matching the query., XScanner
+
+### Community 280 - "Community 280"
 Cohesion: 0.15
-Nodes (9): LangChainService, Any LangChain integration for advanced prompt management and LLM chaining.     D, Any LangChain integration for advanced prompt management and LLM chaining.     D, Create an LLM chain with system and human prompts., Create an LLM chain with system and human prompts., Invoke a LangChain with input text., Invoke a LangChain with input text., Create a sequence of prompts for multi-step processing. (+1 more)
+Nodes (5): Tests for the viral content discovery to AI video generation pipeline., Test the viral content discovery pipeline., Integration-style tests showing how the pipeline works., TestPipelineIntegration, TestViralContentPipeline
 
-### Community 374 - "Community 374"
-Cohesion: 0.15
-Nodes (6): End-to-End Automation Loop Tests ================================ Real-world val, End-to-End test suite for the autonomous pipeline., End-to-End test suite for the autonomous pipeline., Verify that the Sentinel watcher can be triggered., Verify that the Sentinel watcher can be triggered., TestAutomationE2E
+### Community 281 - "Community 281"
+Cohesion: 0.18
+Nodes (4): Polymorphic entry point for OpenClaw agent., Analyzes a URL to see if it's worth repurposing., Triggers a new repurpose job for a raw URL., RepurposeSkill
 
-### Community 375 - "Community 375"
-Cohesion: 0.15
-Nodes (9): mock_video_dir(), Test that Wan API sends the correct payload to the remote GPU node., Test that Wan API sends the correct payload to the remote GPU node., Test that Mochi API sends the correct payload to the remote GPU node., Test that Mochi API sends the correct payload to the remote GPU node., Test that VideoProcessor downloads remote assets during assembly., Test that VideoProcessor downloads remote assets during assembly., TestHardenedVideoInference (+1 more)
-
-### Community 376 - "Community 376"
-Cohesion: 0.15
-Nodes (10): Test video job listing and status endpoints., Test video job listing and status endpoints., Test that jobs list requires authentication., Test that jobs list requires authentication., Test getting specific job metadata., Test getting specific job metadata., Test video job listing and status endpoints., Test that jobs list requires authentication. (+2 more)
-
-### Community 377 - "Community 377"
-Cohesion: 0.15
-Nodes (12): get_zero_insights(), get_zero_status(), Returns the real-time status of the Agent Zero autonomous engine., Returns the real-time status of the Agent Zero autonomous engine., Launches the autonomous director loop in the background., Launches the autonomous director loop in the background., Sends a halt signal to the autonomous engine., Sends a halt signal to the autonomous engine. (+4 more)
-
-### Community 378 - "Community 378"
+### Community 282 - "Community 282"
 Cohesion: 0.19
-Nodes (12): create_professional_video_content(), main(), produce_video_content(), Simulate the intelligent video discovery process, Simulate the intelligent video discovery process, Create professional video content using intelligent discovery, Produce the final video content using scene-based orchestration, Produce the final video content using scene-based orchestration (+4 more)
+Nodes (7): ClawHubSkillLoader, Load skills from ClawHub GitHub repository.     https://github.com/openclaw/skil, Get list of skill categories from the repo., list skills in a specific category., Get skill details (SKILL.md content)., Search skills by query., Get a specific skill by author/name.
 
-### Community 379 - "Community 379"
+### Community 283 - "Community 283"
+Cohesion: 0.21
+Nodes (6): Analyzes using Moondream2 on the remote inference node., Analyzes using Gemini Multimodal., Samples keyframes and returns paths., Orchestrates VLM analysis: Groq -> Local -> Gemini., Analyzes using Groq Vision., VLMService
+
+### Community 284 - "Community 284"
+Cohesion: 0.21
+Nodes (9): notify_job_update_sync(), notify_system_log_sync(), WebSocket endpoint for real-time system logs (e.g., Agent Zero, Discovery Scans), Synchronous utility (for Celery) to publish job updates to Redis., Synchronous utility to publish system logs to Redis and persist to DB., websocket_jobs_endpoint(), websocket_logs_endpoint(), websocket_telemetry_endpoint() (+1 more)
+
+### Community 285 - "Community 285"
 Cohesion: 0.15
-Nodes (9): fix_issues replaces the old patch target with base_ version., fix_issues replaces the old patch target with base_ version., fix_issues does not fail when a file in the issue list doesn't exist on disk., fix_issues does not fail when a file in the issue list doesn't exist on disk., Multiple mismatches in the same file are all fixed., Multiple mismatches in the same file are all fixed., With no issues, fix_issues returns 0., With no issues, fix_issues returns 0. (+1 more)
+Nodes (12): auto_broadcast(), generate_package(), get_supported_platforms(), publish_from_job(), publish_multi_platform(), Core publishing routes — platforms, package generation, single/multi-platform po, Publish video to multiple platforms at once.     - Authenticated platforms will, Get list of all supported platforms for publishing (+4 more)
 
-### Community 380 - "Community 380"
+### Community 286 - "Community 286"
+Cohesion: 0.15
+Nodes (12): ABTestRequest, create_ab_test(), discover_leads(), get_conversion_report(), launch_outreach(), LeadDiscoveryRequest, OutreachRequest, Autonomous Lead Generation API Routes ===================================== Endp (+4 more)
+
+### Community 287 - "Community 287"
+Cohesion: 0.21
+Nodes (8): Already starts with src. — unchanged., Short path without src. gets it prepended., Empty string gets src. prepended., Deep dotted path without src. works., Deep dotted path already with src. preserved., TestNormalizeModule, normalize_module(), Normalize a Python dotted module path to match our singleton index.          Bot
+
+### Community 288 - "Community 288"
 Cohesion: 0.21
 Nodes (9): analyze_image(), generate(), generate_voice(), GenerationRequest, load_pipeline(), load_tts(), load_vlm(), VLMRequest (+1 more)
 
-### Community 381 - "Community 381"
+### Community 289 - "Community 289"
 Cohesion: 0.15
 Nodes (12): 1. ✅ FIXED: `/auto-transform` Endpoint - Documentation vs Implementation Mismatch, 2. ✅ FIXED: `deep_scan` Parameter Had No Effect on Individual Scanner Calls, 3. ✅ FIXED: `ContentCandidate.velocity` Field Never Populated, 4. ✅ FIXED: Inconsistent Scanner Task Preparation (Deep Scan Path), 5. Addressed: `metadata` vs `metadata_json` Inconsistency, 6. Clarified: Tier + Deep Scan Logic, 7. Low Priority: Generic Endpoint Names, Executive Summary (+4 more)
 
-### Community 382 - "Community 382"
+### Community 290 - "Community 290"
 Cohesion: 0.15
 Nodes (12): ✅ API & Route Synchronization, ✅ Critical Bug Fixes (Runtime Errors Prevented), ✅ Database Schema Hardening (PostgreSQL), ✅ Feature Completions (Previously Stub/Missing), ✅ Service Layer Hardening, Summary of Changes, 📋 Summary Statistics, 📋 V3.0 Summary Statistics (+4 more)
 
-### Community 383 - "Community 383"
+### Community 291 - "Community 291"
 Cohesion: 0.15
 Nodes (12): 1. The "RoPE Metadata" TypeError, 2. The "Meta-Device" RuntimeError, 3. Audio Conditioning for LTX-2, 4. Infrastructure Stabilization, code:json ({), 🔍 Debugging & Critical Fixes, Environment, ✅ Final Status (+4 more)
 
-### Community 384 - "Community 384"
+### Community 292 - "Community 292"
 Cohesion: 0.15
 Nodes (12): 4.1 Analysis Pipeline Gaps, 4.2 Real Implementation Status, 4. Critical Missing API Endpoints, 6. Code Quality Issues, 7. Recommended Implementation Approach, **Dummy/Fallback Anti-Patterns:**, Executive Summary, Files Referenced (+4 more)
 
-### Community 385 - "Community 385"
+### Community 293 - "Community 293"
 Cohesion: 0.15
 Nodes (12): 1. Architecture Overview, 2. Networking Configuration, 3. Nginx Reverse Proxy Configuration, 4. Database Setup, 5. Environment Variables, 6. Access Information, code:bash (docker network connect ettametta_ettametta ettametta-nginx-1), code:nginx (location /api/v1/dify/ {) (+4 more)
 
-### Community 386 - "Community 386"
-Cohesion: 0.15
-Nodes (12): Communities, Community 0 - "Community 0", Community 1 - "Community 1", Community 2 - "Community 2", Community 3 - "Community 3", Community 4 - "Community 4", Corpus Check, God Nodes (most connected - your core abstractions) (+4 more)
-
-### Community 387 - "Community 387"
-Cohesion: 0.21
-Nodes (11): build_clips(), collect_video_assets(), main(), E2E Integration Test: Exotic Multi-Video Scenes with Custom Intro/Outro Styles =, Collect real video assets staged inside the Remotion public directory., Collect real video assets staged inside the Remotion public directory., Build Remotion clip objects from video file paths., Build Remotion clip objects from video file paths. (+3 more)
-
-### Community 388 - "Community 388"
-Cohesion: 0.23
-Nodes (11): main(), Test Content Editor skill, Test Content Editor skill, list available skills, list available skills, Test video generation, Test video generation, test_content_editor_skill() (+3 more)
-
-### Community 389 - "Community 389"
-Cohesion: 0.15
-Nodes (6): Generates an Advanced Substation Alpha (.ass) file for professional styling., Generates an Advanced Substation Alpha (.ass) file for professional styling., Generates a 'Viral Style' ASS file with word-by-word highlights.         This pr, QualityControl, Elite Production: Vision-Based Visual Auditor.     Extracts key frames and uses, Performs a multi-point visual audit of the rendered video.         Returns a sco
-
-### Community 390 - "Community 390"
+### Community 294 - "Community 294"
 Cohesion: 0.17
-Nodes (8): Upscale video to higher resolution using FFmpeg, Upscale video to higher resolution using FFmpeg, Apply frame interpolation for smoother motion using FFmpeg, Apply frame interpolation for smoother motion using FFmpeg, Complete pro workflow: Generate high-quality image → Animate with low motion → U, Complete pro workflow: Generate high-quality image → Animate with low motion → U, Takes a static 4K image and applies cinematic zooming/panning to create a video., Takes a static 4K image and applies cinematic zooming/panning to create a video.
+Nodes (6): Legacy alias for plan_monetization_strategy, Uses AI to plan where and how to insert affiliate links in video content., Call IntelligenceHub with resilient fallback, Actually processes the video file to add affiliate link insertions.         Uses, Matches a specific viral trend to the most relevant asset from the active strate, Automatically inserts affiliate links into video content via overlays or voiceov
 
-### Community 391 - "Community 391"
+### Community 295 - "Community 295"
 Cohesion: 0.17
-Nodes (8): Create OpenCV-based video processing when MoviePy hangs.         This is a simpl, Create OpenCV-based video processing when MoviePy hangs.         This is a simpl, Load video with timeout and fallback to OpenCV if it hangs., Load video with timeout and fallback to OpenCV if it hangs., OpenCV-based fallback for video loading.         Probes video properties and tri, OpenCV-based fallback for video loading.         Probes video properties and tri, Fetches a stock B-roll clip and overlays it onto the main video., Fetches a stock B-roll clip and overlays it onto the main video.
+Nodes (11): download_file(), generate_animation(), get_p4000_config(), health_check(), Serve generated video files, Get P4000-specific configuration and recommendations, P4000-specific startup checks, P4000-specific health check (+3 more)
 
-### Community 392 - "Community 392"
-Cohesion: 0.17
-Nodes (8): ProductionBatchRenderer, The Production Batch: Parallel Rendering Engine (10/10) ========================, High-Throughput Parallel Renderer for Final Productions., High-Throughput Parallel Renderer for Final Productions., Worker function for parallel variant rendering, Worker function for parallel variant rendering, Parallelizes the rendering of multiple production variants, Parallelizes the rendering of multiple production variants
-
-### Community 393 - "Community 393"
-Cohesion: 0.17
-Nodes (8): Create Premiere track structure, Create Premiere track structure, Create media file list for Premiere, Create media file list for Premiere, Create effects list for Premiere, Create effects list for Premiere, Generate Adobe Premiere project template structure, Generate Adobe Premiere project template structure
-
-### Community 394 - "Community 394"
+### Community 296 - "Community 296"
 Cohesion: 0.21
 Nodes (8): check_video_requirements(), Single rejection reason with details, Professional video eligibility checker.     Videos must pass ALL requirements to, Check if video meets ALL professional requirements.          Returns:         {, Get human-readable recommendation, Standalone function to check all requirements.      Usage:         result = chec, RejectionReason, VideoEligibilityChecker
 
-### Community 395 - "Community 395"
-Cohesion: 0.17
-Nodes (8): DeploymentGateway, The Forge Gateway: Multi-Platform Distribution (10/10) =========================, Handles metadata optimization and multi-platform distribution., Handles metadata optimization and multi-platform distribution., Crafts a complete distribution package with captions and tags, Crafts a complete distribution package with captions and tags, Simulation: Pushing content to platforms, Simulation: Pushing content to platforms
-
-### Community 396 - "Community 396"
-Cohesion: 0.18
-Nodes (9): Check if service is enabled and available., Use LangChain for structured prompting with context.                  Args:, Use LangChain for structured prompting with context.                  Args:, Use LangChain for structured prompting with context.                  Args:, Parse LLM output into a Pydantic model.                  Args:             promp, Parse LLM output into a Pydantic model.                  Args:             promp, Parse LLM output into a Pydantic model.                  Args:             promp, Check if service is enabled and available. (+1 more)
-
-### Community 397 - "Community 397"
-Cohesion: 0.17
-Nodes (9): Returns a script that tries to bridge clips if available., Returns a script that tries to bridge clips if available., Returns a script that tries to bridge clips if available., Centralized AI call through IntelligenceHub, Centralized AI call through IntelligenceHub, Generates a structured script for a faceless video with Asset-Aware Narration., Centralized AI call through IntelligenceHub, Generates a structured script for a faceless video with Asset-Aware Narration. (+1 more)
-
-### Community 398 - "Community 398"
-Cohesion: 0.17
-Nodes (8): AutonomousVideoRemixer, Autonomous Video Remix Service ============================== Complete pipeline:, Fully autonomous video creation from discovered viral content.     Chains multip, Fully autonomous video creation from discovered viral content.     Chains multip, Generate script that matches the extracted clips., Generate script that matches the extracted clips., Generate AI voiceover for the script., Generate AI voiceover for the script.
-
-### Community 399 - "Community 399"
-Cohesion: 0.17
-Nodes (9): directions, frame, KenBurnsProps, safeDuration, scale, translateX, translateY, Clip (+1 more)
-
-### Community 400 - "Community 400"
-Cohesion: 0.17
-Nodes (9): Process a user message and determine the action., Process a user message and determine the action., Process a user message and determine the action., Routes the tool execution to the correct backend service or skill.         Stand, Routes the tool execution to the correct backend service or skill.         Stand, Routes the tool execution to the correct backend service or skill.         Stand, Works as the 'Director' for the Workforce Council., Works as the 'Director' for the Workforce Council. (+1 more)
-
-### Community 401 - "Community 401"
-Cohesion: 0.18
-Nodes (7): Decides if a narrative strategy should live or be rolled back.         Persists, Decides if a narrative strategy should live or be rolled back.         Persists, Communicates with Hermes and persists the forbidden status., Communicates with Hermes and persists the forbidden status., Assigns a video to the current open cohort with persistent state update., Update, main()
-
-### Community 402 - "Community 402"
-Cohesion: 0.2
-Nodes (11): get_image_recommended_settings(), get_model_settings(), get_recommended_settings(), list_providers(), ModelSettings, Model settings and recommended configurations for OpenCLAW skills. Each provider, Configuration for a model/provider, Get settings for a provider (+3 more)
-
-### Community 403 - "Community 403"
-Cohesion: 0.21
-Nodes (6): WaveSpeedAI browser automation skill - Tier 1 easy     Multiple AI models in one, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using WaveSpeedAI         Returns: { status: success/, WaveSpeedAISkill
-
-### Community 404 - "Community 404"
-Cohesion: 0.21
-Nodes (6): PikaSkill, Pika browser automation skill - Tier 1 easy     150 free credits monthly with un, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Pika         Returns: { status: success/failed,
-
-### Community 405 - "Community 405"
-Cohesion: 0.21
-Nodes (6): Seedance browser automation skill - Tier 1 easy     Built-in audio, dialogue, mu, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Seedance         Returns: { status: success/fai, SeedanceSkill
-
-### Community 406 - "Community 406"
-Cohesion: 0.21
-Nodes (6): HeyGenSkill, HeyGen browser automation skill - Tier 2 moderate     AI avatars, business video, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using HeyGen         Returns: { status: success/faile
-
-### Community 407 - "Community 407"
-Cohesion: 0.21
-Nodes (6): LeonardoSkill, Leonardo AI browser automation skill - Tier 1 easy     Also has image-to-video,, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Leonardo         Returns: { status: success/fai
-
-### Community 408 - "Community 408"
-Cohesion: 0.21
-Nodes (6): VideoAny browser automation skill - Tier 1 easy     Free uncensored video genera, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using VideoAny         Returns: { status: success/fai, VideoAnySkill
-
-### Community 409 - "Community 409"
-Cohesion: 0.21
-Nodes (6): Runway browser automation skill - Tier 1 easy     Professional quality, Gen-4 mo, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Runway         Returns: { status: success/faile, RunwaySkill
-
-### Community 410 - "Community 410"
-Cohesion: 0.21
-Nodes (6): HailuoSkill, Hailuo AI browser automation skill - Tier 1 easy     Good human motion and actio, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Hailuo         Returns: { status: success/faile
-
-### Community 411 - "Community 411"
-Cohesion: 0.21
-Nodes (6): MorphStudioSkill, Morph Studio browser automation skill - Tier 2 moderate     AI video generation, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Morph Studio         Returns: { status: success
-
-### Community 412 - "Community 412"
-Cohesion: 0.21
-Nodes (6): GenmoSkill, Genmo browser automation skill - Tier 2 moderate     Creative AI video generatio, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Genmo         Returns: { status: success/failed
-
-### Community 413 - "Community 413"
-Cohesion: 0.21
-Nodes (6): PaperclipOrganicSkill, Skill for Paperclip-style autonomous organic scaling and KPI monitoring.     Foc, Polymorphic entry point for OpenClaw agent., Record performance of an organic post., Analyzes past performance and suggests a scaling strategy (iterations)., Returns a decision for the Master Controller to act upon.
-
-### Community 414 - "Community 414"
-Cohesion: 0.21
-Nodes (6): FrameloopSkill, Frameloop browser automation skill - Tier 1 easy     No watermark on free tier,, Clean up browser resources, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Frameloop         Returns: { status: success/fa
-
-### Community 415 - "Community 415"
-Cohesion: 0.17
-Nodes (8): _parse_count(), opencli-rs Service — Per-User Chrome Session Bridge ============================, Search a platform using the user's Chrome session.          Returns results in C, Search a platform using the user's Chrome session.          Returns results in C, Search a platform using the user's Chrome session.          Returns results in C, Get feed/trending content from a platform.          Args:             user_id: U, Get feed/trending content from a platform.          Args:             user_id: U, Get feed/trending content from a platform.          Args:             user_id: U
-
-### Community 416 - "Community 416"
-Cohesion: 0.23
-Nodes (11): apply_quantization(), generate_hunyuan(), generate_hunyuan_api(), generate_hunyuan_dummy(), load_hunyuan_local(), HunyuanVideo Inference Module  HunyuanVideo 1.5 is an advanced video generation, Generate video using Hunyuan API on Remote GPU, Raise error instead of generating garbage output (+3 more)
-
-### Community 417 - "Community 417"
-Cohesion: 0.17
-Nodes (9): Integration tests for video pipeline, Integration tests for video pipeline, Test video job tracking, Test video job tracking, Test transform pipeline, Test transform pipeline, Test content editor pipeline, Test content editor pipeline (+1 more)
-
-### Community 418 - "Community 418"
-Cohesion: 0.17
-Nodes (10): Test discovery scan endpoints., Test triggering a scan., Test scan with empty niches list., Test discovery scan endpoints., Test discovery scan endpoints., Test triggering a scan., Test triggering a scan., Test scan with empty niches list. (+2 more)
-
-### Community 419 - "Community 419"
+### Community 297 - "Community 297"
 Cohesion: 0.21
 Nodes (6): FlywheelService, The 'Find Winners Fast' Flywheel.     Automates the Kill & Scale loop:     - Pru, Runs an evolution cycle across all active niches in the platform., Calculates the 10/10 growth score.         score = (CTR * 0.4) + (retention * 0., 1. Fetches metrics for all variants of a parent job.         2. Scores them., Bridge to real YouTube metrics via the publisher.
 
-### Community 420 - "Community 420"
-Cohesion: 0.18
-Nodes (11): get_content_comments(), get_publish_history(), get_publish_jobs(), Analytics routes for published content — comments, metrics sync, job listing, an, Syncs live metrics from the social platform to the database for a specific post., Returns active publish jobs for the current user.     Includes items that are in, Fetch comments for a published post., sync_content_metrics() (+3 more)
-
-### Community 421 - "Community 421"
+### Community 298 - "Community 298"
 Cohesion: 0.17
-Nodes (11): auto_broadcast(), generate_package(), get_supported_platforms(), publish_multi_platform(), Core publishing routes — platforms, package generation, single/multi-platform po, Publish video to multiple platforms at once.     - Authenticated platforms will, Publish video to multiple platforms at once.     - Authenticated platforms will, Get list of all supported platforms for publishing (+3 more)
+Nodes (6): Determine base Remotion executable and initial arguments., Wrap the Remotion execution with 'nice' priority adjustment if available., Extract frame duration arguments safely from props., Attempts to read the container memory limit from cgroups (v1 or v2)., Gets memory limit in MB dynamically, scaling to host/container constraints., Safely builds the executable program and argument array for Remotion rendering.
 
-### Community 422 - "Community 422"
+### Community 299 - "Community 299"
+Cohesion: 0.2
+Nodes (8): JobIdAdapter, Recursively estimates memory size of input objects synchronously to prevent DOS, Fast-fail structured validation checks on rendering parameters to prevent wastin, Base exception for Remotion rendering service errors., Fatal error indicating malformed input, missing assets, or invalid schema that c, Prefixes log messages with [Job ID] if present in extra context., RemotionError, RemotionFatalError
+
+### Community 300 - "Community 300"
+Cohesion: 0.2
+Nodes (6): The Signal Bus & Feature Store (9.9/10) =====================================  H, Standardizes raw platform signals and maintains a time-series Feature Store., Normalizes and persists a social signal, Computes the 2nd derivative of engagement velocity, Returns the full temporal feature vector for the Forecaster, SignalBus
+
+### Community 301 - "Community 301"
+Cohesion: 0.21
+Nodes (7): demo(), Step 3: Generate AI video based on content analysis insights.                  A, Complete end-to-end pipeline: discovery → analysis → AI video generation., Advanced pipeline: Discover → Analyze → Generate multiple AI videos → Compile in, End-to-end pipeline for viral content discovery → AI analysis → AI video generat, Step 1: Discover trending content via CloakBrowser         Step 2: Analyze disco, ViralContentPipeline
+
+### Community 302 - "Community 302"
+Cohesion: 0.29
+Nodes (5): BotManager, Start the Master Bot from settings if configured., Auto-start bots for fetched users., Create a task and keep a strong reference to prevent garbage collection., startup_event()
+
+### Community 303 - "Community 303"
+Cohesion: 0.2
+Nodes (11): get_image_recommended_settings(), get_model_settings(), get_recommended_settings(), list_providers(), ModelSettings, Model settings and recommended configurations for OpenCLAW skills. Each provider, Configuration for a model/provider, Get settings for a provider (+3 more)
+
+### Community 304 - "Community 304"
+Cohesion: 0.21
+Nodes (6): PaperclipOrganicSkill, Skill for Paperclip-style autonomous organic scaling and KPI monitoring.     Foc, Polymorphic entry point for OpenClaw agent., Record performance of an organic post., Analyzes past performance and suggests a scaling strategy (iterations)., Returns a decision for the Master Controller to act upon.
+
+### Community 305 - "Community 305"
+Cohesion: 0.21
+Nodes (6): KaiberSkill, Clean up browser resources, Kaiber browser automation skill - Tier 1 easy platform     Clean UI, straightfor, Polymorphic entry point for OpenClaw agent., Initialize stealth browser session, Generate video from prompt using Kaiber         Returns: { status: success/faile
+
+### Community 306 - "Community 306"
 Cohesion: 0.27
-Nodes (11): Save a Q&A result as markdown so it gets extracted into the graph on next --upda, save_query_result(), Tests for graphify.ingest.save_query_result, test_answer_in_body(), test_file_created(), test_filename_format(), test_frontmatter_question(), test_frontmatter_type() (+3 more)
+Nodes (3): fetch_b_roll(), Downloads a stock video file to a local path with retries., StockService
 
-### Community 423 - "Community 423"
+### Community 307 - "Community 307"
 Cohesion: 0.17
-Nodes (12): _cursor_install(), _cursor_uninstall(), Write .cursor/rules/graphify.mdc with alwaysApply: true., Remove .cursor/rules/graphify.mdc., cursor install writes .cursor/rules/graphify.mdc., cursor install does not overwrite an existing rule file., cursor uninstall removes the rule file., cursor uninstall does nothing if rule was never written. (+4 more)
+Nodes (7): Test Suite for API Configuration ================================= Tests for con, Test that ENABLE_LANGCHAIN=true enables the service, Test that ENABLE_CREWAI=true enables the service, Test AI_VIDEO_PROVIDER environment variable, Test DEFAULT_QUALITY_TIER environment variable, Test environment variable handling, TestEnvironmentVariables
 
-### Community 424 - "Community 424"
+### Community 308 - "Community 308"
+Cohesion: 0.24
+Nodes (11): generate_animatediff(), generate_from_image_animatediff(), load_motion_adapter(), load_sd15_animatediff(), load_sdxl_animatediff(), AnimateDiff Inference Module for ettametta  AnimateDiff adds motion to Stable Di, Generate animated video using AnimateDiff, Animate a static image (+3 more)
+
+### Community 309 - "Community 309"
+Cohesion: 0.23
+Nodes (11): apply_quantization(), generate_ltx(), generate_ltx_api(), generate_ltx_dummy(), load_ltx_local(), LTX-Video Inference Module  LTX-Video is an motion-optimized video generation mo, Generate video using LTX-Video (480p), Generate video using LTX API on Remote GPU (+3 more)
+
+### Community 310 - "Community 310"
+Cohesion: 0.23
+Nodes (11): apply_quantization(), generate_hunyuan(), generate_hunyuan_api(), generate_hunyuan_dummy(), load_hunyuan_local(), HunyuanVideo Inference Module  HunyuanVideo 1.5 is an advanced video generation, Generate video using Hunyuan API on Remote GPU, Raise error instead of generating garbage output (+3 more)
+
+### Community 311 - "Community 311"
+Cohesion: 0.23
+Nodes (11): generate_wan_api(), generate_wan_t2v(), generate_wan_v2v(), load_wan_t2v(), load_wan_v2v(), Wan 2.2 Inference Module  Wan 2.2 is an open-source video generation model from, Transform video using Wan 2.2 V2V, Generate video using real API call to remote GPU node (+3 more)
+
+### Community 312 - "Community 312"
+Cohesion: 0.18
+Nodes (11): ErrorReport, get_security_events(), get_security_status(), Reports frontend errors to the backend for logging.     Accessible to all authen, Returns the current security health score and recent threat events.     Requires, Manually triggers a full system integrity audit.     Requires administrative pri, Returns the raw list of security events from the sentinel.     Requires authenti, Triggers a neural bias neutrality scan across the cluster. (+3 more)
+
+### Community 313 - "Community 313"
+Cohesion: 0.17
+Nodes (9): directions, frame, KenBurnsProps, safeDuration, scale, translateX, translateY, Clip (+1 more)
+
+### Community 314 - "Community 314"
 Cohesion: 0.17
 Nodes (11): Best Practices, Environment Variables, Future Enhancements, Overview, Performance Considerations, Playwright Configuration (`playwright.config.ts`), Security Considerations, Step 4: Autonomous Operations - Implementation Summary (+3 more)
 
-### Community 425 - "Community 425"
+### Community 315 - "Community 315"
 Cohesion: 0.17
 Nodes (11): 1. Google Colab Setup (The GPU Side), 2. OCI Server Integration (The Controller Side), 3. Maintenance & Limitations, 4. Verification, code:python (# --- Ettametta One-Click Colab Render Node ---), code:bash (nano /home/ubuntu/ettametta/.env), code:bash (RENDER_NODE_URL=https://xxxx-xxxx.ngrok-free.app), code:bash (sudo docker-compose restart api celery_worker) (+3 more)
 
-### Community 426 - "Community 426"
+### Community 316 - "Community 316"
 Cohesion: 0.17
 Nodes (11): Adding to Jenkins, API Keys Configuration Guide, code:bash (# Core (generate yourself)), Environment Variables Table, Phase 1: Basic Pipeline (Start Here), Phase 2: Social Integration, Phase 3: Monetization, Phase 4: Premium Features (+3 more)
 
-### Community 427 - "Community 427"
+### Community 317 - "Community 317"
 Cohesion: 0.17
 Nodes (11): Architecture Context, code:python (from google.colab import drive), code:python (!pip install fastapi uvicorn diffusers transformers accelera), code:python (import os), code:bash (# In the RunPod terminal), code:bash (ssh ubuntu@<your-instance-ip>), code:bash (git clone https://your-repo-url.com/ettametta.git), Option 1: The "Free forever" Route (Google Colab) (+3 more)
 
-### Community 428 - "Community 428"
+### Community 318 - "Community 318"
 Cohesion: 0.17
 Nodes (11): 1. Visual Direction, 2. Core Styles, 3. Screen-Specific Logic, 4. Shared Components, Color Palette, Design System: Synthetic Intelligence OS (Ettametta Mobile), Layout & Spacing, Screen 1: Viral Discovery (Dashboard) (+3 more)
 
-### Community 429 - "Community 429"
-Cohesion: 0.17
-Nodes (11): Code — clone these 3 repos, code:bash (git clone https://github.com/karpathy/nanoGPT), code:block2 (raw/), code:bash (pip install graphifyy), code:block4 (/graphify ./raw), Corpus (52 files), How to run, Images — save these 4 (+3 more)
-
-### Community 430 - "Community 430"
-Cohesion: 0.17
-Nodes (12): code:block10 (You are a graphify extraction subagent. Read the files liste), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:block8 (spawn_agent(agent_type="worker", message="Your task is to pe), code:block9 (result = wait_agent(handle); close_agent(handle)   # repeat ) (+4 more)
-
-### Community 431 - "Community 431"
+### Community 319 - "Community 319"
 Cohesion: 0.18
-Nodes (7): CookieManager, Returns the path to the YouTube cookies file if it is valid., Returns the path to the YouTube cookies file if it is valid., Updates the cookie file with new content (Netscape format)., Updates the cookie file with new content (Netscape format)., 10/10 Production: Automated Cookie Guardian.     Ensures that yt-dlp has valid s, 10/10 Production: Automated Cookie Guardian.     Ensures that yt-dlp has valid s
+Nodes (10): Verify state transitions of CircuitBreaker., Verify that failure in HALF_OPEN state transitions back to OPEN immediately., Verify engine-specific failure tracking., Verify manual reset of CircuitBreaker., Verify OptimizationService integrates correctly with CircuitBreaker., test_circuit_breaker_engine_specific(), test_circuit_breaker_half_open_failure(), test_circuit_breaker_reset() (+2 more)
 
-### Community 432 - "Community 432"
+### Community 320 - "Community 320"
+Cohesion: 0.2
+Nodes (5): ModelRegistry, 10/10 Governance: Manages the lifecycle of Neural Oracle weights.     Supports v, Registers a new challenger model version., Promotes a version to the active 'Champion' model., Returns the filesystem path to the current active weights.
+
+### Community 321 - "Community 321"
+Cohesion: 0.24
+Nodes (6): CircuitBreaker, Execute a function with circuit breaker protection, Manually reset the circuit breaker, Circuit breaker for external API calls.          Usage:         breaker = Circui, Check if execution is allowed, Record a successful call
+
+### Community 322 - "Community 322"
+Cohesion: 0.2
+Nodes (6): Check availability of optional heavy dependencies., Generate a detailed report of missing dependencies and their impact., is_package_available(), Decorator or helper to verify a package is available before running a function., Check if a python package is installed in the current environment., require_package()
+
+### Community 323 - "Community 323"
+Cohesion: 0.22
+Nodes (5): Claw4ScienceSkill, Skill for transforming technical/academic data into "Science-Pop" viral scripts., Polymorphic entry point for OpenClaw agent., Uses LLM to rewrite dense scientific data into a viral short-form script., Fetch specialized scientific trends (Placeholder for metadata search).
+
+### Community 324 - "Community 324"
+Cohesion: 0.24
+Nodes (5): NicheSkill, Polymorphic entry point for OpenClaw agent., Triggers a deep scan for a new niche., Gets specific trends for a niche., Triggers the Reverse Monetization pipeline for a detected trend.         Calls /
+
+### Community 325 - "Community 325"
+Cohesion: 0.24
+Nodes (6): Find videos for specific scenes, Create a production plan without executing video production, OpenClaw skill for producing complete videos from scene descriptions.     Automa, Execute scene-based video production., Produce a complete video from scene descriptions, SceneBasedVideoSkill
+
+### Community 327 - "Community 327"
+Cohesion: 0.24
+Nodes (5): OutreachSkill, Standardized mission execution.         Routes to the correct adapter based on t, Commands the core system to dispatch an outbound email/broadcast message., Commands the core system to dispatch a WhatsApp message., Commands the core system to dispatch a Social DM.
+
+### Community 328 - "Community 328"
+Cohesion: 0.24
+Nodes (6): Ettametta Transcription Service     Uses Faster-Whisper for high-speed local tra, Lazy loading of the Faster-Whisper model with fallback support., Transcribes an audio file. Offloads to remote if RENDER_NODE_URL is set,, Sends audio to a remote render node for transcription., _transcribe_local(), TranscriptionService
+
+### Community 329 - "Community 329"
+Cohesion: 0.18
+Nodes (4): End-to-End Automation Loop Tests ================================ Real-world val, End-to-End test suite for the autonomous pipeline., Verify that the Sentinel watcher can be triggered., TestAutomationE2E
+
+### Community 331 - "Community 331"
 Cohesion: 0.24
 Nodes (5): GlobalFeatureStore, 10/10 Distributed Memory: Shared Feature Store for Cluster-Wide Intelligence., Stores signal features with a 24h default TTL., Retrieves raw features for a niche from the cluster memory., Specific helper for high-velocity signal monitoring.
 
-### Community 433 - "Community 433"
-Cohesion: 0.22
-Nodes (6): CircuitBreaker, Simple circuit breaker to prevent cascading failures, Execute the content team workflow with dynamic tasks., Execute the content team workflow with dynamic tasks., Execute the content team workflow with dynamic tasks., Execute the content team workflow with dynamic tasks.
+### Community 332 - "Community 332"
+Cohesion: 0.2
+Nodes (6): RecoveryService: Runtime-Callable State Reconstruction.  Responsible for reconst, Stateful Recovery & Consistency Engine.     Reconstructs volatile memory from pe, Reconstructs all analytics and experimentation states., Ensures Redis 'active_batch' pointers are correct for each strategy., Returns recovery service health info., RecoveryService
 
-### Community 434 - "Community 434"
+### Community 333 - "Community 333"
 Cohesion: 0.18
-Nodes (8): ForecasterPipeline, The Forecaster Pipeline: Predictive Ingestion (9.9/10) =========================, Orchestrates the training and inference of the early-virality model., Orchestrates the training and inference of the early-virality model., Gathers Signal-to-Performance pairs and retrains the Neural Oracle., Gathers Signal-to-Performance pairs and retrains the Neural Oracle., Predicts the virality probability for a new niche, Predicts the virality probability for a new niche
+Nodes (10): get_publishing_status(), init_oauth_auth(), publish_video(), PublishRequest, Publishing API Routes ===================== Endpoints for publishing videos to s, Initiate OAuth flow for connecting social media accounts.     Supported platform, Publish a video to a social media platform.          Requires OAuth connection t, Check if a platform is connected and ready for publishing by verifying stored to (+2 more)
 
-### Community 435 - "Community 435"
+### Community 334 - "Community 334"
+Cohesion: 0.2
+Nodes (10): get_content_comments(), get_publish_history(), get_publish_jobs(), Analytics routes for published content — comments, metrics sync, job listing, an, Syncs live metrics from the social platform to the database for a specific post., Returns active publish jobs for the current user.     Includes items that are in, Fetch comments for a published post., sync_content_metrics() (+2 more)
+
+### Community 335 - "Community 335"
+Cohesion: 0.18
+Nodes (5): fakeUser, footer, header, section, zapIcon
+
+### Community 336 - "Community 336"
+Cohesion: 0.18
+Nodes (10): _animate_persona(), download_video(), _generate_video(), GenerationRequest, PersonaRequest, Background task to generate persona animation via SadTalker/LivePortrait, Receives image + text, kicks off deepfake animation., Background task to synthesize and save video via Diffusers (+2 more)
+
+### Community 337 - "Community 337"
 Cohesion: 0.18
 Nodes (10): activeIndex, baseFontSize, cleanWord, EMOJI_MAP, frame, KineticCaptionsProps, visibleWords, { width, fps } (+2 more)
 
-### Community 436 - "Community 436"
-Cohesion: 0.2
-Nodes (9): check_module_available(), elevenlabs_key(), engine(), fish_endpoint(), generate_voiceover(), Synthesizes text to speech using the selected engine., Synthesizes text to speech using the selected engine with circuit breakers and r, Synthesizes text to speech using the selected engine with circuit breakers and r (+1 more)
-
-### Community 437 - "Community 437"
-Cohesion: 0.2
-Nodes (7): BrowserAgentService, Ettametta Browser Agent Service     Uses browser-use + playwright for autonomous, Uses an autonomous agent to research a specific trend or topic., Uses an autonomous agent to research a specific trend or topic., Returns a LangChain-compatible LLM instance for the browser agent., Returns a LangChain-compatible LLM instance for the browser agent., Ettametta Browser Agent Service     Uses browser-use + playwright for autonomous
-
-### Community 438 - "Community 438"
-Cohesion: 0.2
-Nodes (7): AgentZeroSkill, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Sends control commands (start/stop/status) to Agent Zero.         Uses API calls, Sends control commands (start/stop/status) to Agent Zero.         Uses API calls, OpenClaw skill to control the autonomous Agent Zero Director., OpenClaw skill to control the autonomous Agent Zero Director.
-
-### Community 439 - "Community 439"
-Cohesion: 0.2
-Nodes (7): Skill for programmatic React-based video rendering via @remotion/cli.     Provid, Skill for programmatic React-based video rendering via @remotion/cli.     Provid, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Executes a remotion render command.         Example: npx remotion render <comp-i, Executes a remotion render command.         Example: npx remotion render <comp-i, RemotionRenderSkill
-
-### Community 440 - "Community 440"
-Cohesion: 0.18
-Nodes (8): Check if opencli is enabled and binary exists., Check if opencli is enabled and binary exists., Save Chrome session cookies for a user+platform.          Args:             user, Save Chrome session cookies for a user+platform.          Args:             user, Check if opencli is enabled and binary exists., Verify if a user's session for a platform is valid.          Returns:, Verify if a user's session for a platform is valid.          Returns:, Verify if a user's session for a platform is valid.          Returns:
-
-### Community 441 - "Community 441"
-Cohesion: 0.2
-Nodes (9): Test content scheduling, Test content scheduling, Comprehensive API route testing, Test health check endpoint, Comprehensive API route testing, Comprehensive API route testing, Test health check endpoint, Test health check endpoint (+1 more)
-
-### Community 442 - "Community 442"
-Cohesion: 0.18
-Nodes (9): Test video transformation endpoints., Test video transformation endpoints., Test that transform endpoint requires authentication., Test that transform endpoint requires authentication., Test that transform endpoint requires authentication., Test transformation with missing source URL., Test transformation with missing source URL., Test transformation with missing source URL. (+1 more)
-
-### Community 443 - "Community 443"
-Cohesion: 0.2
-Nodes (9): Test login endpoints., Test login endpoints., Test login endpoints., Test login with valid credentials., Test login with valid credentials., Test login with missing credentials., Test login with missing credentials., Test login with missing credentials. (+1 more)
-
-### Community 444 - "Community 444"
-Cohesion: 0.22
-Nodes (6): AIWorker, check_whisper_available(), Returns health of local AI drivers., Transcribes audio using fast-whisper locally., Analyze content using Groq's high-speed Llama-3., Analyze content using Groq's high-speed Llama-3.
-
-### Community 446 - "Community 446"
-Cohesion: 0.18
-Nodes (10): Atomic update for job status from internal workers., Atomic update for job status from internal workers., update_internal_job(), notify_job_update_sync(), Synchronous utility (for Celery) to publish job updates to Redis., Synchronous utility (for Celery) to publish job updates to Redis., Synchronous utility (for Celery) to publish job updates to Redis., Synchronous utility (for Celery) to publish job updates to Redis. (+2 more)
-
-### Community 447 - "Community 447"
-Cohesion: 0.18
-Nodes (10): get_connected_platforms(), get_monetization_goals(), get_revenue_summary(), Revenue & Monetization API Routes ================================= Endpoints fo, Get revenue summary for the last N days.     Includes platform breakdown and dai, Get revenue summary for the last N days.     Includes platform breakdown and dai, Get current monetization goals and progress tracking., Get current monetization goals and progress tracking. (+2 more)
-
-### Community 448 - "Community 448"
-Cohesion: 0.24
-Nodes (10): load_enhancers(), main(), Simpler upscale using ffmpeg with super resolution filter, Simpler upscale using ffmpeg with super resolution filter, Load GFPGAN and Real-ESRGAN models, Load GFPGAN and Real-ESRGAN models, Upscale and enhance a video, Upscale and enhance a video (+2 more)
-
-### Community 449 - "Community 449"
-Cohesion: 0.18
-Nodes (7): When no issues, prints success message and returns True., When no issues, prints success message and returns True., When issues exist, prints details and returns False., When issues exist, prints details and returns False., Multiple issues are printed sorted by file and line., Multiple issues are printed sorted by file and line., TestPrintReport
-
-### Community 450 - "Community 450"
-Cohesion: 0.22
-Nodes (10): build_graph(), cluster(), cohesion_score(), Leiden community detection on NetworkX graphs. Splits oversized communities. Ret, Run Leiden community detection. Returns {community_id: [node_ids]}.      Communi, Build a NetworkX graph from graphify node/edge dicts.      Preserves original ed, Run a second Leiden pass on a community subgraph to split it further., Ratio of actual intra-community edges to maximum possible. (+2 more)
-
-### Community 451 - "Community 451"
-Cohesion: 0.18
-Nodes (6): Trend Graph Engine (9.9/10) ===========================  Graph-based topics rela, Relational brain that maps attention flow between topics., Creates or strengthens a relationship between topics, Identifies topics that are likely to 'jump' platforms based          on establis, Returns topics closely linked in the attention graph, TrendGraph
-
-### Community 452 - "Community 452"
-Cohesion: 0.25
-Nodes (4): Config, HttpClientFactory, RateLimiter, Throttle
-
-### Community 453 - "Community 453"
+### Community 338 - "Community 338"
 Cohesion: 0.18
 Nodes (10): API Endpoint Summary, code:block1 (┌───────────────────────────────────────────────────────────), code:block2 (┌───────────────────────────────────────────────────────────), code:block3 (┌───────────────────────────────────────────────────────────), code:block4 (┌───────────────────────────────────────────────────────────), Data Models & Relationships, High-Level System Overview, Tier-Based Feature Access (+2 more)
 
-### Community 454 - "Community 454"
+### Community 339 - "Community 339"
+Cohesion: 0.18
+Nodes (10): 1. SIDEBAR NAVIGATION, 2. DASHBOARD PAGE (`/`), 3. LOGIN PAGE (`/login`), 4. REGISTER PAGE (`/register`), Buttons/Clickables:, Buttons/Clickables:, Buttons/Clickables:, Buttons/Links: (+2 more)
+
+### Community 340 - "Community 340"
 Cohesion: 0.18
 Nodes (10): 1. Network Architecture, 2. Nginx Proxy & CORS Hardening, 3. Security & Encryption, 4. Dify Application Setup (Manual), 5. Connecting Ollama, Centralized CORS Management, code:bash (docker exec -it ettametta-dify-api flask reset-encrypt-key-p), Dify Infrastructure Integration Walkthrough (+2 more)
 
-### Community 455 - "Community 455"
+### Community 341 - "Community 341"
 Cohesion: 0.18
 Nodes (11): 10.1 Integration Tests for API Routes, 10.2 OAuth Flow E2E Tests, 10.3 Video Pipeline Tests, 10.4 Discovery Scanner Tests, 10.5 E2E Framework Setup (Playwright/Cypress), 10. Comprehensive Testing Suite, code:python (# api/tests/test_routes/test_auth.py), code:python (# api/tests/fixtures/video.py) (+3 more)
 
-### Community 456 - "Community 456"
+### Community 342 - "Community 342"
 Cohesion: 0.18
 Nodes (11): 1.1 Discovery → Creation → Publishing Pipeline, 1.2 Monetization Flow, 1. Critical User Journey Analysis, code:block1 (Discovery UI: ✅ Real (YouTube/TikTok API calls)), code:block2 (Affiliate Links: ✅ Real (database operations work)), **CURRENT STATE:**, **CURRENT STATE:**, **GAPS IDENTIFIED:** (+3 more)
 
-### Community 457 - "Community 457"
+### Community 343 - "Community 343"
 Cohesion: 0.18
 Nodes (10): 1. System Overview, 2. Networking & Middleware, 3. Core Use Cases Validation, 4. Current Optimizations, API Middleware (FastAPI), code:mermaid (graph TD), Ettametta Architecture Review, Reverse Proxy (Nginx) (+2 more)
 
-### Community 458 - "Community 458"
-Cohesion: 0.18
-Nodes (10): code:block1 (/graphify .                        # funziona con qualsiasi ), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Come funziona, Cosa ottieni, Costruito su graphify — Penpax, Installazione (+2 more)
-
-### Community 459 - "Community 459"
-Cohesion: 0.18
-Nodes (10): Πώς λειτουργεί, Εγκατάσταση, Χρήση, Τι λαμβάνετε, Απόρρητο, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install) (+2 more)
-
-### Community 460 - "Community 460"
-Cohesion: 0.18
-Nodes (10): Apa yang Anda Dapatkan, Cara Kerja, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Dibangun di atas graphify — Penpax, Instalasi (+2 more)
-
-### Community 461 - "Community 461"
-Cohesion: 0.18
-Nodes (10): Co získáte, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Instalace, Jak to funguje, Postaveno na graphify — Penpax (+2 more)
-
-### Community 462 - "Community 462"
-Cohesion: 0.18
-Nodes (10): code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Gizlilik, graphify üzerine inşa edildi — Penpax, Kullanım, Kurulum (+2 more)
-
-### Community 463 - "Community 463"
-Cohesion: 0.18
-Nodes (10): code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Gebouwd op graphify — Penpax, Gebruik, Hoe het werkt, Installatie (+2 more)
-
-### Community 464 - "Community 464"
-Cohesion: 0.18
-Nodes (10): Asennus, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Käyttö, Mitä saat, Miten se toimii (+2 more)
-
-### Community 465 - "Community 465"
-Cohesion: 0.18
-Nodes (10): วิธีการทำงาน, การติดตั้ง, การใช้งาน, สิ่งที่คุณได้รับ, ความเป็นส่วนตัว, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install) (+2 more)
-
-### Community 466 - "Community 466"
-Cohesion: 0.18
-Nodes (10): Användning, Byggt på graphify — Penpax, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Hur det fungerar, Installation (+2 more)
-
-### Community 467 - "Community 467"
-Cohesion: 0.18
-Nodes (10): Cách hoạt động, Cài đặt, Được xây dựng trên graphify — Penpax, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Những gì bạn nhận được (+2 more)
-
-### Community 468 - "Community 468"
-Cohesion: 0.18
-Nodes (10): Bruk, Bygget på graphify — Penpax, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Hva du får, Hvordan det fungerer (+2 more)
-
-### Community 469 - "Community 469"
-Cohesion: 0.18
-Nodes (10): Ce obțineți, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Confidențialitate, Construit pe graphify — Penpax, Cum funcționează (+2 more)
-
-### Community 470 - "Community 470"
-Cohesion: 0.18
-Nodes (10): A graphify-ra épülve — Penpax, Adatvédelem, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Használat, Hogyan működik (+2 more)
-
-### Community 471 - "Community 471"
-Cohesion: 0.18
-Nodes (10): 運作原理, 安裝, 使用方式, 您會得到什麼, 隱私, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install) (+2 more)
-
-### Community 472 - "Community 472"
-Cohesion: 0.18
-Nodes (10): Brug, Bygget på graphify — Penpax, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Hvad du får, Installation (+2 more)
-
-### Community 473 - "Community 473"
-Cohesion: 0.18
-Nodes (10): Як це працює, Встановлення, Використання, Що ви отримуєте, Конфіденційність, code:block1 (/graphify .), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install) (+2 more)
-
-### Community 474 - "Community 474"
-Cohesion: 0.18
-Nodes (10): Co otrzymujesz, code:block1 (/graphify .                        # działa na dowolnym fold), code:block2 (graphify-out/), code:bash (uv tool install graphifyy && graphify install), code:block4 (/graphify .), Instalacja, Jak to działa, Prywatność (+2 more)
-
-### Community 475 - "Community 475"
-Cohesion: 0.18
-Nodes (11): code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:block8 ([Agent tool call 1: files 1-15]), code:block9 (You are a graphify extraction subagent. Read the files liste), Part A - Structural extraction for code files (+3 more)
-
-### Community 476 - "Community 476"
-Cohesion: 0.18
-Nodes (11): code:block10 ([Agent tool call 1: files 1-15, subagent_type="general-purpo), code:block11 (You are a graphify extraction subagent. Read the files liste), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), Part A - Structural extraction for code files (+3 more)
-
-### Community 477 - "Community 477"
-Cohesion: 0.18
-Nodes (11): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:block8 (@agent Chunk CHUNK_NUM of TOTAL_CHUNKS: [extraction prompt b), code:block9 (You are a graphify extraction subagent. Read the files liste), Part A - Structural extraction for code files (+3 more)
-
-### Community 478 - "Community 478"
-Cohesion: 0.18
-Nodes (11): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:block8 (Task(description="Your task is to perform the following. Fol), code:block9 (You are a graphify extraction subagent. Read the files liste), Part A - Structural extraction for code files (+3 more)
-
-### Community 479 - "Community 479"
-Cohesion: 0.18
-Nodes (11): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:block8 ([Agent tool call 1: files 1-15]), code:block9 (You are a graphify extraction subagent. Read the files liste), Part A - Structural extraction for code files (+3 more)
-
-### Community 480 - "Community 480"
-Cohesion: 0.27
-Nodes (10): login(), main(), Test Content Editor providers, Test an API-based provider (no browser needed), Test Pollinations (free, no login), test_agent(), test_api_provider(), test_content_editor() (+2 more)
-
-### Community 481 - "Community 481"
-Cohesion: 0.22
-Nodes (7): main(), Step 5: Process with Remotion titles, Step 5: Process with Remotion titles, Step 1-2: Download video, Step 1-2: Download video, step1_download(), step5_process()
-
-### Community 482 - "Community 482"
-Cohesion: 0.2
-Nodes (9): Adding a new language extractor, Architecture, code:json ({), code:bash (pytest tests/ -q), Confidence labels, Extraction output schema, Module responsibilities, Security (+1 more)
-
-### Community 483 - "Community 483"
+### Community 344 - "Community 344"
 Cohesion: 0.24
 Nodes (3): AIJob, AIJobOrchestrator, AI Job Orchestrator - Smart Batching and VRAM Optimization
 
-### Community 484 - "Community 484"
-Cohesion: 0.33
-Nodes (9): assemble_master(), ensure_tunnel(), fetch_likeness_image(), generate_shot(), main(), poll_and_download(), Scrapes DuckDuckGo Images for an HD portrait of the requested character,     dow, Scrapes DuckDuckGo Images for an HD portrait of the requested character,     dow (+1 more)
+### Community 345 - "Community 345"
+Cohesion: 0.29
+Nodes (4): main_test(), Fetches an HD portrait for the requested character.         Tries: DuckDuckGo HT, Requests an Image-to-Video generation using the remote RTX 6000 node., StoryboardService
 
-### Community 485 - "Community 485"
-Cohesion: 0.18
-Nodes (8): Approve or reject a pending DAG for PARTIAL mode.          Called by REST routes, Approve or reject a pending DAG for PARTIAL mode.          Called by REST routes, Approve or reject a pending DAG for PARTIAL mode.          Called by REST routes, Approve or reject a pending DAG for PARTIAL mode.          Called by REST routes, Get the pending DAG preview for a job (for API polling)., Get the pending DAG preview for a job (for API polling)., Get the pending DAG preview for a job (for API polling)., Get the pending DAG preview for a job (for API polling).
+### Community 346 - "Community 346"
+Cohesion: 0.2
+Nodes (5): InferenceGateway, 10/10 Scalability: The Unified Entry Point for Distributed Intelligence.     Dec, Request a prediction from the Neural Oracle.         In a multi-node setup, this, Orchestrates a cluster-wide model update., Returns the vitals of the distributed intelligence layer.
 
-### Community 486 - "Community 486"
+### Community 347 - "Community 347"
+Cohesion: 0.22
+Nodes (5): 10/10 Production: The Lean Swarm Governor.     Monitors CPU and memory to enforc, Returns the degradation mode for high-throughput production.         Modes: 'STA, Determines if the system is too busy to start a new heavy production task., Adaptive thread count for FFmpeg to prevent system-wide lag., ResourceGovernor
+
+### Community 348 - "Community 348"
 Cohesion: 0.22
 Nodes (5): CookieManager, Parses standard Netscape/Curl cookie file format.         Format: domain  flag, Returns a dictionary of cookies for a specific platform.         Expects files l, Checks if a cookie file exists for the platform., Handles loading and parsing Netscape-formatted cookies from the ./cookies direct
 
-### Community 487 - "Community 487"
-Cohesion: 0.22
-Nodes (5): CausalAnalyst, 10/10 Reflex: The Ground-Truth Reflection Engine.     Analyzes the 'Regret' betw, 10/10 Reflex: The Ground-Truth Reflection Engine.     Analyzes the 'Regret' betw, Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is, Identifies the 'Why' behind prediction errors.
-
-### Community 488 - "Community 488"
+### Community 349 - "Community 349"
 Cohesion: 0.2
-Nodes (6): PerformanceLedger, Performance Ledger: The Truth Layer (10/10) ====================================, Record the delta between hope and reality, Record the delta between hope and reality, Dashboard Report: How honest is the system?, Dashboard Report: How honest is the system?
+Nodes (6): Test circuit breaker integration., Verify circuit breaker opens after threshold failures., Verify circuit breaker closes after successful call., Test engine-specific failure tracking., Test engine success resets failure count., TestGenerativeServiceCircuitBreaker
 
-### Community 489 - "Community 489"
-Cohesion: 0.2
-Nodes (9): Verify that modulated values respect their defined mathematical boundaries., Verify that modulated values respect their defined mathematical boundaries., Verify that the same seed produces identical modulated configs, while different, Verify that the same seed produces identical modulated configs, while different, Verify that theme presets correctly override base configurations and apply their, Verify that theme presets correctly override base configurations and apply their, test_apply_theme_presets(), test_stochastic_modulator_clamping_limits() (+1 more)
+### Community 350 - "Community 350"
+Cohesion: 0.24
+Nodes (8): 5. Visual Improvements, After, Before, computeHMAC(), RateLimitMiddleware(), RequireAuth(), AuthConfig, main()
 
-### Community 490 - "Community 490"
-Cohesion: 0.2
-Nodes (6): Orchestrates the entire reverse monetization flow.         Returns the Shopify/P, Orchestrates the entire reverse monetization flow.         Returns the Shopify/P, Hits an image generation API.          We use pollinations.ai for free, fast pro, Hits an image generation API.          We use pollinations.ai for free, fast pro, Publishes the design to Print-on-Demand (POD) via Printful API.         Enforces, Publishes the design to Print-on-Demand (POD) via Printful API.         Enforces
+### Community 351 - "Community 351"
+Cohesion: 0.24
+Nodes (6): PaperclipKPITool, Record and compare KPIs to previous baseline., Simple heuristic for autonomous scaling., Entry point for Agent Zero tool execution., Paperclip KPI tracking tool for Agent Zero., run()
 
-### Community 491 - "Community 491"
-Cohesion: 0.2
-Nodes (9): BrandRevealProps, frame, logoOpacity, logoScale, logoSpring, textOpacity, textSpring, textTranslateY (+1 more)
+### Community 353 - "Community 353"
+Cohesion: 0.24
+Nodes (5): Free academic research skill using OpenAlex API (no API key required).     Sourc, Polymorphic entry point for OpenClaw agent., Search for academic papers on a topic.         Uses OpenAlex API - free, no API, Find trending topics in academic literature., ResearchSkill
 
-### Community 492 - "Community 492"
-Cohesion: 0.36
-Nodes (5): Config, Forces an upload to the cloud provider, regardless of self.provider setting., Generates a presigned URL (Cloud) or returns a local static URL path.         Th, Uploads a file to the configured provider.         Returns the object key (Cloud, StorageService
-
-### Community 493 - "Community 493"
-Cohesion: 0.22
-Nodes (9): get_all_llm_providers(), get_llm_api_key(), get_llm_setting(), Get LLM API key from vault with priority:     1. User-specific override (UserSet, Get LLM API key from vault with priority:     1. User-specific override (UserSet, Get LLM setting from vault, Get LLM setting from vault, Get list of available LLM providers that have valid API keys (+1 more)
-
-### Community 494 - "Community 494"
-Cohesion: 0.2
-Nodes (5): Execute Python code in a separate process for isolation., Execute JavaScript code via Node.js., Comprehensive security validation for code execution.         Returns list of se, Rate limiting for code execution to prevent abuse., Execute code for custom processing using subprocess isolation with enhanced secu
-
-### Community 495 - "Community 495"
-Cohesion: 0.2
-Nodes (5): test_circuit_breaker_integration(), test_initialization(), test_routing_with_open_circuit(), TestCircuitBreaker, TestUnifiedLLMService
-
-### Community 496 - "Community 496"
-Cohesion: 0.2
-Nodes (9): notify_system_log_async(), notify_system_log_sync(), Synchronous utility to publish system logs to Redis and persist to DB., Synchronous utility to publish system logs to Redis and persist to DB., Synchronous utility to publish system logs to Redis and persist to DB., Asynchronous utility to publish system logs to Redis and persist to DB., Asynchronous utility to publish system logs to Redis and persist to DB., Broadcasts a log message to the UI console and local logger. (+1 more)
-
-### Community 497 - "Community 497"
-Cohesion: 0.2
-Nodes (7): AlgorithmSentinel, Monitors platform performance shifts and suggests pivots.     Currently uses pro, Monitors platform performance shifts and suggests pivots.     Currently uses pro, Monitors platform performance shifts and suggests pivots.     Currently uses pro, Returns the 'Algorithm Sync' score and potential risks.         Tries to generat, Returns the 'Algorithm Sync' score and potential risks.         Caches results t, Returns the 'Algorithm Sync' score and potential risks.         Caches results t
-
-### Community 498 - "Community 498"
-Cohesion: 0.2
-Nodes (9): FreeVideoProviderService, Multi-provider AI video generation service.     Supports multiple free-tier vide, Multi-provider AI video generation service.     Supports multiple free-tier vide, Apply style preset to prompt, Multi-provider AI video generation service.     Supports multiple free-tier vide, Apply style preset to prompt, Apply style preset to prompt, Apply style preset to prompt (+1 more)
-
-### Community 499 - "Community 499"
-Cohesion: 0.2
-Nodes (8): Generate video using ZSky AI API, Generate video using ZSky AI API, Poll ZSky job until completion, Poll ZSky job until completion, Generate video using ZSky AI API, Generate video using ZSky AI API, Poll ZSky job until completion, Poll ZSky job until completion
-
-### Community 500 - "Community 500"
-Cohesion: 0.2
-Nodes (8): Generate video with specific provider, Generate video with specific provider, Generate video with specific provider, Generate video with specific provider, Generate video using Luma Dream Machine, Generate video using Luma Dream Machine, Generate video using Luma Dream Machine, Generate video using Luma Dream Machine
-
-### Community 501 - "Community 501"
-Cohesion: 0.2
-Nodes (8): Get API key for a specific provider, Get API key for a specific provider, Get ordered list of all available providers, Get API key for a specific provider, Get ordered list of all available providers, Get ordered list of all available providers, Get API key for a specific provider, Get ordered list of all available providers
-
-### Community 502 - "Community 502"
-Cohesion: 0.22
-Nodes (7): LumaSkill, Skill for interacting with Luma Dream Machine (Browser-based AI Video)., Skill for interacting with Luma Dream Machine (Browser-based AI Video)., Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Generate video from prompt using Luma Dream Machine, Generate video from prompt using Luma Dream Machine
-
-### Community 503 - "Community 503"
-Cohesion: 0.27
-Nodes (5): NicheSkill, Polymorphic entry point for OpenClaw agent., Triggers a deep scan for a new niche., Gets specific trends for a niche., Triggers the Reverse Monetization pipeline for a detected trend.         Calls /
-
-### Community 504 - "Community 504"
-Cohesion: 0.27
-Nodes (5): OutreachSkill, Standardized mission execution.         Routes to the correct adapter based on t, Commands the core system to dispatch an outbound email/broadcast message., Commands the core system to dispatch a WhatsApp message., Commands the core system to dispatch a Social DM.
-
-### Community 505 - "Community 505"
+### Community 354 - "Community 354"
 Cohesion: 0.24
 Nodes (6): MonetizationService, Real Monetization & Revenue Tracking Service ===================================, Find the top performing video from the list., Get real monetization goals.          In a full implementation, this would query, Tracks real revenue and monetization metrics., Get real revenue summary based on published content performance.
 
-### Community 506 - "Community 506"
+### Community 355 - "Community 355"
+Cohesion: 0.27
+Nodes (9): generate_cogvideo(), generate_cogvideo_api(), generate_cogvideo_dummy(), load_cogvideo_model(), CogVideoX Inference Module  CogVideoX is an open-source text-to-video model from, Generate video using CogVideoX API on Remote GPU, Raise error instead of generating garbage output, Load CogVideoX model with optional quantization (+1 more)
+
+### Community 356 - "Community 356"
+Cohesion: 0.2
+Nodes (5): Test that Wan API sends the correct payload to the remote GPU node., Test that Mochi API sends the correct payload to the remote GPU node., Test that VideoProcessor downloads remote assets during assembly., TestHardenedVideoInference, TestHardenedVideoProcessor
+
+### Community 357 - "Community 357"
 Cohesion: 0.22
-Nodes (7): get_auth_token(), E2E Flow Tests Tests complete user workflows: Login → Discovery → Create → Publi, Test: Nexus composition flow, Test: Nexus composition flow, Login and get auth token, TestNexusFlow, token()
+Nodes (7): get_auth_token(), Integration Tests Tests database transactions, service integrations, and cross-e, Integration tests for LLM service, Integration tests for Persona, TestLLMIntegration, TestPersonaIntegration, token()
 
-### Community 507 - "Community 507"
+### Community 358 - "Community 358"
+Cohesion: 0.24
+Nodes (5): AIWorker, check_whisper_available(), Returns health of local AI drivers., Transcribes audio using fast-whisper locally., Analyze content using Groq's high-speed Llama-3.
+
+### Community 359 - "Community 359"
+Cohesion: 0.27
+Nodes (9): _build_availability(), EngineAvailability, get_engines_availability(), GET /engines/availability — per-engine readiness report for the dashboard.  Phas, Return per-engine readiness. The dashboard engine selector should call this., Per-engine readiness snapshot for the dashboard engine selector., Return True iff the corresponding settings field is non-empty., Compute the per-engine status snapshot. (+1 more)
+
+### Community 360 - "Community 360"
 Cohesion: 0.2
-Nodes (9): clear_dependency_overrides(), override_current_user(), Clear FastAPI dependency overrides before and after each test, Clear FastAPI dependency overrides before and after each test, Create a test user and seed their credit balance, Create a test user and seed their credit balance, FastAPI dependency override to retrieve the test user from the active request se, FastAPI dependency override to retrieve the test user from the active request se (+1 more)
+Nodes (9): cancel_scheduled_post(), get_scheduled_posts(), get_suggested_times(), Scheduling routes — schedule posts, list scheduled, cancel scheduled, and get AI, Cancel a scheduled post before it publishes., Returns AI-suggested optimal posting windows., Get scheduled posts waiting for publish., Schedules a video for later publishing. (+1 more)
 
-### Community 508 - "Community 508"
-Cohesion: 0.2
-Nodes (7): Test affiliate link management, Test affiliate link management, Test affiliate link management, Test video generation with custom image, Test video generation with custom image, Test invalid video generation request (missing required prompt), Test invalid video generation request (missing required prompt)
+### Community 361 - "Community 361"
+Cohesion: 0.24
+Nodes (5): Deletes files from cloud storage that are older than specified days., Calculates the total size of the output directory in bytes., Monitors disk usage and migrates files to OCI if over threshold., Moves a single file to OCI and updates DB references., StorageManager
 
-### Community 509 - "Community 509"
-Cohesion: 0.2
-Nodes (7): Integration tests for publishing, Integration tests for publishing, Test all platforms available, Test all platforms available, Test OAuth URLs available, Test OAuth URLs available, TestPublishingIntegration
-
-### Community 510 - "Community 510"
-Cohesion: 0.2
-Nodes (7): Integration tests for Discovery service, Integration tests for Discovery service, Test discovery pagination, Test discovery pagination, Test discovery → nexus flow, Test discovery → nexus flow, TestDiscoveryIntegration
-
-### Community 511 - "Community 511"
-Cohesion: 0.2
-Nodes (8): Authentication Endpoint Tests ============================ Integration tests for, Test token refresh endpoints., Test getting current user with valid token., Test token refresh endpoints., Test token refresh endpoints., Test getting current user with valid token., Test getting current user with valid token., TestTokenRefresh
-
-### Community 512 - "Community 512"
-Cohesion: 0.2
-Nodes (8): Test user registration endpoints., Test user registration endpoints., Test registering a new user., Test registering a new user., Test registering with missing required fields., Test registering with missing required fields., Test registering with missing required fields., TestRegistration
-
-### Community 513 - "Community 513"
-Cohesion: 0.2
-Nodes (10): api_error_exception_handler(), Handler for custom APIError types., api_error_exception_handler(), Handler for custom APIError types., api_error_response(), api_exception_handler(), Convert APIError to JSONResponse., Convert APIError to JSONResponse. (+2 more)
-
-### Community 514 - "Community 514"
-Cohesion: 0.22
-Nodes (7): text(), health_check(), Health check with dependency verification., Health check with dependency verification., migrate_statuses(), verify(), verify_async()
-
-### Community 515 - "Community 515"
+### Community 362 - "Community 362"
 Cohesion: 0.29
 Nodes (9): fix_class_config(), fix_datetime_utcnow(), get_python_files(), main(), process_file(), Replace pydantic v1-style 'class Config:' with model_config = ConfigDict()., Get all .py files recursively, skipping .git, venv, node_modules., Process a single file. Returns 1 if changed, 0 if not. (+1 more)
 
-### Community 516 - "Community 516"
-Cohesion: 0.29
-Nodes (4): main_test(), Scrapes DuckDuckGo Images for an HD portrait of the requested character,, Requests an Image-to-Video generation using the remote RTX 6000 node., StoryboardService
+### Community 363 - "Community 363"
+Cohesion: 0.2
+Nodes (9): BrandRevealProps, frame, logoOpacity, logoScale, logoSpring, textOpacity, textSpring, textTranslateY (+1 more)
 
-### Community 518 - "Community 518"
-Cohesion: 0.29
-Nodes (5): main(), NewServer(), process(), validate(), Server
-
-### Community 519 - "Community 519"
+### Community 364 - "Community 364"
 Cohesion: 0.2
 Nodes (9): 10. Credits Page (`/credits`), 11. Autonomous Page (`/autonomous`), 14. Implementation Recommendation, 1. Sidebar Navigation (Shell), Current State Assessment, Executive Summary, Gap: Trading Page, Priority: Real First, Fallback Second (+1 more)
 
-### Community 520 - "Community 520"
+### Community 365 - "Community 365"
 Cohesion: 0.2
 Nodes (10): 4.1 Content Discovery, 4.2 Video Generation, 4.3 Creation (No-Face), 4.4 Publishing, 4.5 Analytics, 4.6 Monetization (Empire), 4.7 Credits & Billing, 4.8 Autonomous (Agent Zero) (+2 more)
 
-### Community 521 - "Community 521"
+### Community 366 - "Community 366"
 Cohesion: 0.2
 Nodes (9): 1. Top 10 High-Computing Capacity Providers (2026), 2. Shortlist: High Capacity Under $1.00/hr, 3. Deep Dive: Hyperscalers (Enterprise Stability), 4. Why Not Vast.ai for Production?, 5. ettametta Recommendation: RunPod, Alibaba Cloud, GPU Infrastructure Guide: Scaling ettametta, Oracle Cloud (OCI) (+1 more)
 
-### Community 522 - "Community 522"
+### Community 367 - "Community 367"
 Cohesion: 0.2
 Nodes (10): 11.1 Environment Validation on Startup, 11.2 Consistent Error Handling, 11.3 Rate Limiting Middleware, 11.4 API Versioning, 11. Production Quality Gates, code:python (# api/schemas/error.py), code:python (# api/utils/rate_limiter.py), code:block12 (/api/v1/auth/login      → Original) (+2 more)
 
-### Community 523 - "Community 523"
+### Community 368 - "Community 368"
 Cohesion: 0.2
 Nodes (10): B.10 ADMIN OPERATIONS (UC-10), B.2 VIDEO GENERATION (UC-2), B.3 VIDEO ENHANCEMENT (UC-3), B.4 NEXUS COMPOSITION (UC-4), B.5 PUBLISHING (UC-5), B.6 MONETIZATION (UC-6), B.7 ANALYTICS (UC-7), B.8 SUBSCRIPTION & BILLING (UC-8) (+2 more)
 
-### Community 524 - "Community 524"
+### Community 369 - "Community 369"
 Cohesion: 0.2
 Nodes (9): 10. Trading Page (`/trading`), 11. Credits Page (`/credits`), 12. Autonomous Page (`/autonomous`), 1. Navigation & Shell, Executive Summary, Recommendation: Real-First Implementation Plan, Sidebar (Main Menu), Status: ❌ STUB - NO REAL IMPLEMENTATION (+1 more)
 
-### Community 525 - "Community 525"
+### Community 370 - "Community 370"
 Cohesion: 0.2
 Nodes (9): 1. FRONTEND: RESILIENCE & UX, 2. BACKEND & MIDDLEWARE, 3. NETWORKING & INFRASTRUCTURE, 4. MONETIZATION & BUSINESS, 5. QUALITY & E2E TESTING, 6. USE CASES & AI ENGINE, Executive Summary, 🛠 Top 3 Recommended Actions (Pre-Launch) (+1 more)
 
-### Community 526 - "Community 526"
-Cohesion: 0.2
-Nodes (10): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:block8 (You are a graphify extraction subagent. Read the files liste), code:bash ($(cat .graphify_python) -c "), Part A - Structural extraction for code files, Part B - Semantic extraction (parallel subagents) (+2 more)
-
-### Community 527 - "Community 527"
+### Community 371 - "Community 371"
 Cohesion: 0.42
 Nodes (8): main(), test_cinema_launch(), test_interpreter(), test_knowledge_base(), test_proxy(), test_researcher(), test_sentinel(), test_vllm()
 
-### Community 528 - "Community 528"
+### Community 372 - "Community 372"
 Cohesion: 0.22
 Nodes (8): commitBtn, nodeLabel, posts, previewBtn, simulatedBadge, statusLabel, statusText, velocityDisplay
 
-### Community 529 - "Community 529"
+### Community 373 - "Community 373"
+Cohesion: 0.39
+Nodes (8): assemble_master(), ensure_tunnel(), fetch_likeness_image(), generate_shot(), main(), poll_and_download(), Scrapes DuckDuckGo Images for an HD portrait of the requested character,     dow, run_storyboard()
+
+### Community 374 - "Community 374"
 Cohesion: 0.22
-Nodes (6): Score videos WITH EXPLANATIONS - not just numbers.          Each score includes:, Score videos WITH EXPLANATIONS - not just numbers.          Each score includes:, Generate human-readable reasoning for score, Generate human-readable reasoning for score, Generate considerations for the editor, Generate considerations for the editor
+Nodes (5): ProductionBatchRenderer, The Production Batch: Parallel Rendering Engine (10/10) ========================, High-Throughput Parallel Renderer for Final Productions., Worker function for parallel variant rendering, Parallelizes the rendering of multiple production variants
 
-### Community 530 - "Community 530"
-Cohesion: 0.22
-Nodes (8): code:block1 (detect()  →  extract()  →  build_graph()  →  cluster()  →  a), Pipeline, generate_audio_conditioning(), load_encodec(), load_tts(), Generate real audio conditioning for LTX-2 19B.     Returns (audio_hidden_states, Generate real audio conditioning for LTX-2 19B.     Returns (audio_hidden_states, warmup()
-
-### Community 531 - "Community 531"
-Cohesion: 0.25
-Nodes (5): NarrativePlanner, 10/10 Intelligence: The Narrative Reasoning Model (NRM).     Decomposes topics i, Creates a high-level Narrative Blueprint for the attention economy., Creates a high-level Narrative Blueprint for the attention economy., 10/10 Intelligence: The Narrative Reasoning Model (NRM).     Decomposes topics i
-
-### Community 532 - "Community 532"
-Cohesion: 0.22
-Nodes (6): Create CapCut video track structure, Create CapCut video track structure, Create CapCut audio track structure, Create CapCut audio track structure, Generate CapCut project template, Generate CapCut project template
-
-### Community 533 - "Community 533"
-Cohesion: 0.22
-Nodes (6): Create production overview, Create production overview, Generate detailed step-by-step editing instructions, Generate detailed step-by-step editing instructions, Create troubleshooting guide for common issues, Create troubleshooting guide for common issues
-
-### Community 534 - "Community 534"
+### Community 375 - "Community 375"
 Cohesion: 0.28
 Nodes (3): EconomicController, 10/10 Production: The Imperial Treasury.     Tracks virtual credits and enforces, Checks if the budget allows for the requested action.
 
-### Community 535 - "Community 535"
+### Community 376 - "Community 376"
 Cohesion: 0.22
-Nodes (6): DriftMonitor, Drift Monitor: Accuracy Audit (10/10) =====================================  Mon, The Self-Correction Audit Layer., The Self-Correction Audit Layer., Calculates Mean Absolute Error for the last N productions, Calculates Mean Absolute Error for the last N productions
+Nodes (5): DeploymentGateway, The Forge Gateway: Multi-Platform Distribution (10/10) =========================, Handles metadata optimization and multi-platform distribution., Crafts a complete distribution package with captions and tags, Simulation: Pushing content to platforms
 
-### Community 536 - "Community 536"
+### Community 377 - "Community 377"
 Cohesion: 0.22
-Nodes (6): Download videos using yt-dlp., Download videos using yt-dlp., Add burned-in captions to the video., Add burned-in captions to the video., Complete autonomous video creation pipeline:         1. Discover viral videos ma, Complete autonomous video creation pipeline:         1. Discover viral videos ma
+Nodes (6): Exception, CircuitBreakerOpenError, Raised when circuit breaker is open, Helper to drain subprocess stdout and log rendering progress., Helper to drain subprocess stderr and accumulate error logs., Cleans up transient json files and sandboxed asset subdirectories safely,
 
-### Community 537 - "Community 537"
+### Community 378 - "Community 378"
+Cohesion: 0.25
+Nodes (4): BaseNode, Deterministic hash used for content-addressable caching., Convenience base class for DAG nodes.      Subclasses override ``execute()`` and, Override to include additional fields in the cache key.          By default incl
+
+### Community 379 - "Community 379"
 Cohesion: 0.22
-Nodes (6): Returns comprehensive security status with health score and recent events., Returns comprehensive security status with health score and recent events., Calculate dynamic security health score., Calculate dynamic security health score., Check overall system integrity., Check overall system integrity.
+Nodes (9): 3. Page Redesigns, Analytics Page (`app/analytics/page.tsx`), Creation Page (`app/creation/page.tsx`), Dashboard Page (`app/dashboard/page.tsx`), Landing Page (`app/page.tsx`), Login Page (`app/login/page.tsx`), Register Page (`app/register/page.tsx`), Settings Page (`app/settings/page.tsx`) (+1 more)
 
-### Community 538 - "Community 538"
+### Community 380 - "Community 380"
+Cohesion: 0.31
+Nodes (8): build_clips(), collect_video_assets(), main(), E2E Integration Test: Exotic Multi-Video Scenes with Custom Intro/Outro Styles =, Collect real video assets staged inside the Remotion public directory., Build Remotion clip objects from video file paths., Render a single test video with specified exotic options., render_test_video()
+
+### Community 381 - "Community 381"
+Cohesion: 0.22
+Nodes (5): The Prophet: Proactive Trend Detection (10/10) =================================, Detects low-saturation/high-velocity niches for early-mover advantage., Calculates growth rate of engagement over time, Simulates scanning Reddit/X for emergent niches.         Identifies 'Velocity Sp, TrendScanner
+
+### Community 382 - "Community 382"
 Cohesion: 0.28
 Nodes (5): MessageDispatcher, Sends an outbound message to a specific identifier.         In a real scenario w, Sends an outbound message via Telegram Bot API natively.         Uses the defaul, Sends an outbound message via Twilio API.         Tries the real API first, and, Handles outbound messaging across multiple platforms.     Decoupled from incomin
 
-### Community 539 - "Community 539"
-Cohesion: 0.22
-Nodes (3): PopularSkills, Pre-configured popular skills relevant to ettametta., Pre-configured popular skills relevant to ettametta.
-
-### Community 540 - "Community 540"
-Cohesion: 0.22
-Nodes (7): Test: Create content from discovery, Test: Create content from discovery, Get available providers, Get available providers, Start video transformation, Start video transformation, TestContentCreationFlow
-
-### Community 541 - "Community 541"
-Cohesion: 0.22
-Nodes (7): Test: Publish to social platforms, Test: Publish to social platforms, Get available platforms, Get available platforms, Get connected accounts, Get connected accounts, TestPublishingFlow
-
-### Community 542 - "Community 542"
+### Community 383 - "Community 383"
 Cohesion: 0.28
-Nodes (7): Video Generation Models Package  Local and Remote video generation models for et, generate_mochi(), generate_mochi_api(), load_mochi_model(), Mochi-1 Inference Module  Mochi-1 is a state-of-the-art open-source video genera, Generate video using Mochi-1, Generate video using Replicate/Fal.ai API or Remote GPU
+Nodes (4): NoFaceSkill, Polymorphic entry point for OpenClaw agent., Triggers text-based script generation for a given topic., Generates and validates a viral hook for a topic.
 
-### Community 543 - "Community 543"
+### Community 384 - "Community 384"
+Cohesion: 0.28
+Nodes (4): Polymorphic entry point for OpenClaw agent., Checks the health of the platform services., Retrieves video storage usage metrics., SystemSkill
+
+### Community 385 - "Community 385"
+Cohesion: 0.28
+Nodes (4): Polymorphic entry point for OpenClaw agent., Returns the current security health score and recent threat events., Triggers a security audit and lockdown., SecuritySkill
+
+### Community 386 - "Community 386"
+Cohesion: 0.28
+Nodes (5): IntelligentWorkflowSkill, OpenClaw skill for "Tier 10" intelligent discovery and narrative fusion., Polymorphic entry point for OpenClaw agent., Perform a resilient multi-platform scan, Trigger an autonomous narrative fusion production job
+
+### Community 387 - "Community 387"
 Cohesion: 0.22
-Nodes (7): Integration tests for monetization, Integration tests for monetization, Test empire dashboard, Test empire dashboard, Test monetization reporting, Test monetization reporting, TestMonetizationIntegration
+Nodes (5): LangChainService, Any LangChain integration for advanced prompt management and LLM chaining.     D, Create an LLM chain with system and human prompts., Invoke a LangChain with input text., Create a sequence of prompts for multi-step processing.
 
-### Community 544 - "Community 544"
+### Community 388 - "Community 388"
 Cohesion: 0.22
-Nodes (7): Integration tests for analytics, Integration tests for analytics, Test aggregated stats, Test aggregated stats, Test data consistency across endpoints, Test data consistency across endpoints, TestAnalyticsIntegration
+Nodes (5): CrewAIService, Any CrewAI multi-agent orchestration integration.     Disabled by default - enab, Create a CrewAI agent with role and goal., Create a task for an agent., Run a crew with agents and tasks.
 
-### Community 546 - "Community 546"
-Cohesion: 0.31
-Nodes (7): proxy_ollama(), proxy_status(), proxy_streaming(), clean_json_response(), Attempts to clean, repair, and load JSON from an LLM response., Ultramodern JSON extraction and repair.     Uses json_repair to find and fix JSO, repair_and_load_json()
+### Community 389 - "Community 389"
+Cohesion: 0.33
+Nodes (4): Forces an upload to the cloud provider, regardless of self.provider setting., Generates a presigned URL (Cloud) or returns a local static URL path.         Th, Uploads a file to the configured provider.         Returns the object key (Cloud, StorageService
 
-### Community 547 - "Community 547"
-Cohesion: 0.22
-Nodes (9): compose_video(), get_nexus_stats(), Triggers the high-fidelity video assembly pipeline., Triggers the high-fidelity video assembly pipeline., Triggers the high-fidelity video assembly pipeline., Triggers the high-fidelity video assembly pipeline., Returns Nexus performance statistics., Returns Nexus performance statistics. (+1 more)
-
-### Community 548 - "Community 548"
-Cohesion: 0.22
-Nodes (5): GlobalReachAdapter, Translates video metadata using IntelligenceHub., Translates video metadata using IntelligenceHub., Translates a list of script segments for dubbing/subtitles., Translates a list of script segments for dubbing/subtitles.
-
-### Community 549 - "Community 549"
-Cohesion: 0.22
-Nodes (5): BrandingService, Fetch active brand for the given user and niche., Fetch active brand for the given user and niche., Autonomous Brand Factory:         Calls OpenClaw execute-tool to run the brandin, Autonomous Brand Factory:         Calls OpenClaw execute-tool to run the brandin
-
-### Community 550 - "Community 550"
+### Community 390 - "Community 390"
 Cohesion: 0.22
 Nodes (5): Rhythm Analysis Engine for Elite Cinematic Fusion ==============================, Analyzes audio files to extract rhythm markers and sync points., Extracts beat timestamps and onset strength from an audio file.          Args:, Finds the beat marker closest to a target timestamp.         Used to "snap" vide, RhythmEngine
 
-### Community 551 - "Community 551"
+### Community 391 - "Community 391"
+Cohesion: 0.25
+Nodes (6): get_auth_token(), E2E Flow Tests Tests complete user workflows: Login → Discovery → Create → Publi, Login and get auth token, Test: Monetization and empire, TestMonetizationFlow, token()
+
+### Community 392 - "Community 392"
 Cohesion: 0.22
-Nodes (8): cleanup_after_session(), Create a test database., Dispose the async engine once after the entire test session., Dispose the async engine once after the entire test session., Create a test database., Create a test database., Create a test database., test_db()
+Nodes (5): BaseSettings, Settings, Delegate to standalone validation function., Delegate to standalone validation logging function., Settings
 
-### Community 552 - "Community 552"
-Cohesion: 0.39
-Nodes (5): Analyzer, compute_score(), normalize(), Fixture: functions and methods that call each other - for call-graph extraction, run_analysis()
+### Community 393 - "Community 393"
+Cohesion: 0.28
+Nodes (7): Video Generation Models Package  Local and Remote video generation models for et, generate_mochi(), generate_mochi_api(), load_mochi_model(), Mochi-1 Inference Module  Mochi-1 is a state-of-the-art open-source video genera, Generate video using Mochi-1, Generate video using Replicate/Fal.ai API or Remote GPU
 
-### Community 553 - "Community 553"
+### Community 394 - "Community 394"
+Cohesion: 0.22
+Nodes (4): Verify handling of Go service timeout., Verify handling of Go service being down (Connection Error)., test_trigger_scan_bridge_failure(), test_trigger_scan_bridge_timeout()
+
+### Community 395 - "Community 395"
+Cohesion: 0.22
+Nodes (4): ExperimentBatcher, 10/10 Production: The Gated Rollout Engine (Stateful).     Groups videos into st, Standard: Stateful Recovery.         Loads all 'ROLLING_OUT' batches from Postgr, Creates a new experiment cohort and persists to Postgres.         Checks Strateg
+
+### Community 396 - "Community 396"
+Cohesion: 0.31
+Nodes (6): proxy_ollama(), proxy_streaming(), clean_json_response(), Attempts to clean, repair, and load JSON from an LLM response., Ultramodern JSON extraction and repair.     Uses json_repair to find and fix JSO, repair_and_load_json()
+
+### Community 397 - "Community 397"
+Cohesion: 0.22
+Nodes (8): get_zero_insights(), get_zero_status(), Returns the real-time status of the Agent Zero autonomous engine., Launches the autonomous director loop in the background., Sends a halt signal to the autonomous engine., Returns the latest strategy insights generated by Agent Zero., start_zero(), stop_zero()
+
+### Community 398 - "Community 398"
+Cohesion: 0.31
+Nodes (8): create_professional_video_content(), main(), produce_video_content(), Simulate the intelligent video discovery process, Create professional video content using intelligent discovery, Produce the final video content using scene-based orchestration, Main workflow execution, simulate_video_discovery()
+
+### Community 399 - "Community 399"
+Cohesion: 0.22
+Nodes (8): [activeDepartment, setActiveDepartment], Department, departmentColors, departments, fadeInUp, { t }, TeamMember, teamMembers
+
+### Community 400 - "Community 400"
 Cohesion: 0.22
 Nodes (8): code:block1 (Error: expect(locator).toBeVisible() failed), code:yaml (- generic [active] [ref=e1]:), code:ts (1   | import { test, expect } from '@playwright/test';), Error details, Instructions, Page snapshot, Test info, Test source
 
-### Community 554 - "Community 554"
+### Community 401 - "Community 401"
 Cohesion: 0.22
 Nodes (9): Assertions, code:typescript (await expect(page).toHaveURL('/autonomous');), code:typescript (await expect(page.locator('text=Launch Director')).toBeVisib), code:typescript (await expect(page.locator('h1')).toContainText('Agent Zero')), code:typescript (await expect(page.locator('.glass-card')).toHaveCount(4);), Count, Element Visibility, Text Content (+1 more)
 
-### Community 555 - "Community 555"
-Cohesion: 0.22
-Nodes (8): code:block1 (TimeoutError: page.waitForURL: Timeout 60000ms exceeded.), code:yaml (- generic [active] [ref=e1]:), code:ts (1   | import { test, expect } from '@playwright/test';), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 556 - "Community 556"
-Cohesion: 0.22
-Nodes (8): code:block1 (TimeoutError: page.waitForURL: Timeout 60000ms exceeded.), code:yaml (- generic [ref=e1]:), code:ts (1   | import { test, expect } from '@playwright/test';), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 557 - "Community 557"
-Cohesion: 0.22
-Nodes (8): code:block1 (TimeoutError: page.waitForURL: Timeout 60000ms exceeded.), code:yaml (- generic [ref=e1]:), code:ts (49  |     });), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 558 - "Community 558"
+### Community 402 - "Community 402"
 Cohesion: 0.22
 Nodes (8): Action Required, Action Required, code:bash (ssh-keygen -t rsa -b 4096 -f ~/.ssh/ettametta_new -N ""), code:bash (git remote add origin git@github.com:psalmprax/ettametta.git), GitHub Token Exposure, RSA Private Key (`key_raw.txt`), SECURITY: Key Rotation Required, Summary of Removed Files
 
-### Community 559 - "Community 559"
+### Community 403 - "Community 403"
 Cohesion: 0.22
 Nodes (8): Acceptance Bar, Browser E2E, code:bash (cd /home/ubuntu/ettametta), code:bash (python3 scripts/production_smoke_test.py \), code:bash (DATABASE_URL="$DATABASE_URL" REDIS_URL="$REDIS_URL" \), Fast Remote Check, Production Smoke Testing, Video Render Smoke
 
-### Community 560 - "Community 560"
+### Community 404 - "Community 404"
 Cohesion: 0.22
 Nodes (9): 2.1 AI/Video Generation, 2.3 Authentication & User Management, 2. Core Feature Implementation Status, code:block4 (Auth Flow: ✅ Real (JWT, database users)), **ENGINES STATUS MATRIX:**, **GAPS:**, **ISSUES:**, **REAL IMPLEMENTATION REQUIREMENTS:** (+1 more)
 
-### Community 561 - "Community 561"
+### Community 405 - "Community 405"
 Cohesion: 0.22
 Nodes (9): [API & Voiceover Services], code:dockerfile (# Install Remotion dependencies), [MODIFY] [Dockerfile](file:///home/psalmprax/ettametta/api/Dockerfile), [MODIFY] [Dockerfile](file:///home/psalmprax/ettametta/api/Dockerfile), [MODIFY] [Dockerfile](file:///home/psalmprax/ettametta/services/voiceover/Dockerfile), [MODIFY] [requirements.txt](file:///home/psalmprax/ettametta/api/requirements.txt), [MODIFY] [requirements.txt](file:///home/psalmprax/ettametta/services/voiceover/requirements.txt), Proposed Changes (+1 more)
 
-### Community 562 - "Community 562"
+### Community 406 - "Community 406"
 Cohesion: 0.22
 Nodes (8): 10. Trading Page (`/trading`), 11. Autonomous Page (`/autonomous`), 12. Settings Page (`/settings`), 9. Credits Page (`/credits`), Executive Summary, Files Reviewed, Quick Status Overview, UI/Buttons/Clickables/Menus - Complete Gap Analysis
 
-### Community 563 - "Community 563"
+### Community 407 - "Community 407"
 Cohesion: 0.22
 Nodes (8): 1. Install Playwright (if not already installed), 2. Run tests against local dashboard, 3. Run tests against remote server, 4. Generate HTML test report, 5. Run with headed mode (watch tests execute), 6. Run with tracing enabled, Playwright Auth Flow Test Script, Run the following commands to execute the tests:
 
-### Community 564 - "Community 564"
-Cohesion: 0.22
-Nodes (8): code:block1 (Error: expect(locator).toBeVisible() failed), code:yaml (- generic [active] [ref=e1]:), code:ts (1  | import { test, expect } from '@playwright/test';), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 565 - "Community 565"
-Cohesion: 0.22
-Nodes (8): After it runs, code:block1 (raw/), code:bash (pip install graphifyy), code:block3 (/graphify ./raw), How to run, Input files, Reproducible Example, What to expect
-
-### Community 566 - "Community 566"
-Cohesion: 0.22
-Nodes (9): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Part A - Structural extraction for code files, Part B - Semantic extraction (parallel subagents), Part C - Merge AST + semantic into final extraction (+1 more)
-
-### Community 567 - "Community 567"
-Cohesion: 0.22
-Nodes (9): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Part A - Structural extraction for code files, Part B - Semantic extraction (parallel subagents), Part C - Merge AST + semantic into final extraction (+1 more)
-
-### Community 568 - "Community 568"
-Cohesion: 0.22
-Nodes (9): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Part A - Structural extraction for code files, Part B - Semantic extraction (parallel subagents), Part C - Merge AST + semantic into final extraction (+1 more)
-
-### Community 569 - "Community 569"
-Cohesion: 0.22
-Nodes (8): code:block1 (TimeoutError: page.waitForURL: Timeout 60000ms exceeded.), code:yaml (- generic [active] [ref=e1]:), code:ts (1   | import { test, expect } from '@playwright/test';), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 570 - "Community 570"
-Cohesion: 0.22
-Nodes (8): code:block1 (TimeoutError: page.waitForURL: Timeout 60000ms exceeded.), code:yaml (- generic [ref=e1]:), code:ts (1   | import { test, expect } from '@playwright/test';), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 571 - "Community 571"
-Cohesion: 0.22
-Nodes (8): code:block1 (TimeoutError: page.waitForURL: Timeout 60000ms exceeded.), code:yaml (- generic [ref=e1]:), code:ts (49  |     });), Error details, Instructions, Page snapshot, Test info, Test source
-
-### Community 572 - "Community 572"
-Cohesion: 0.31
-Nodes (5): CommandCenter, Empire Command Center: Operational War Room (10/10) ============================, The Operational Heart: High-fidelity system monitoring., The Operational Heart: High-fidelity system monitoring., Full-throttle operational view
-
-### Community 573 - "Community 573"
+### Community 408 - "Community 408"
 Cohesion: 0.25
 Nodes (6): get_logger(), Initialize OpenTelemetry and Structured Logging., Returns a logger that is compatible with structured logging.     In the future,, Injects trace_id and span_id into log records for OTEL correlation., setup_observability(), TraceContextFilter
 
-### Community 574 - "Community 574"
+### Community 409 - "Community 409"
+Cohesion: 0.32
+Nodes (3): InternalJobClient, Helper to try primary then fallback URL, Client for internal services to communicate with the API.     Used for database
+
+### Community 410 - "Community 410"
+Cohesion: 0.32
+Nodes (4): BaseHTTPMiddleware, RequestLoggingMiddleware, SecurityHeadersMiddleware, TracingMiddleware
+
+### Community 411 - "Community 411"
 Cohesion: 0.25
-Nodes (6): Verify that a video cannot be assigned to two experiments simultaneously., Verify that a video cannot be assigned to two experiments simultaneously., Verify that 'Killed' strategies cannot spawn new cohorts., Verify that 'Killed' strategies cannot spawn new cohorts., test_experiment_isolation_duplicates(), test_killed_strategy_rejection()
+Nodes (3): Alternative: Edit using MoviePy (more Pythonic, better for text overlays), TextClip, Assembles multi-scene stories with precise voice-visual alignment.
 
-### Community 575 - "Community 575"
-Cohesion: 0.46
-Nodes (7): main(), Step 3: Transcribe video audio, Step 4: Analyze video with VLM, run_transcription(), run_vlm_analysis(), test_transcription(), test_vlm_analysis()
-
-### Community 576 - "Community 576"
-Cohesion: 0.39
-Nodes (7): get_torch_install_command(), is_amd_gpu(), is_apple_silicon(), is_intel_gpu(), is_nvidia_gpu(), Returns the optimal pip install command for the current hardware., Returns the optimal pip install command for the current hardware.
-
-### Community 577 - "Community 577"
+### Community 412 - "Community 412"
 Cohesion: 0.25
-Nodes (7): get_engine_action(), is_free(), is_premium(), Engine Configuration for Video Generation Externalized mappings - loaded from se, Get audit action for engine, with fallback, Check if engine is free tier, Check if requires premium
+Nodes (4): Upscale video to higher resolution using FFmpeg, Apply frame interpolation for smoother motion using FFmpeg, Complete pro workflow: Generate high-quality image → Animate with low motion → U, Takes a static 4K image and applies cinematic zooming/panning to create a video.
 
-### Community 578 - "Community 578"
+### Community 413 - "Community 413"
 Cohesion: 0.25
-Nodes (5): Generates manual video editing instructions and templates, Generates manual video editing instructions and templates, CONVERTS AI CRITIQUE INTO ACTIONABLE EDITING COMMANDS (Tier 10), CONVERTS AI CRITIQUE INTO ACTIONABLE EDITING COMMANDS (Tier 10), VideoProductionAssistant
+Nodes (4): Find successful video templates in a niche, Execute video lead discovery operations., Discover high-performing video leads, Analyze a specific video's performance
 
-### Community 579 - "Community 579"
+### Community 414 - "Community 414"
+Cohesion: 0.29
+Nodes (5): main(), Step 5: Process with Remotion titles, Step 1-2: Download video, step1_download(), step5_process()
+
+### Community 415 - "Community 415"
+Cohesion: 0.32
+Nodes (3): QualityControl, Vision-Based Visual Auditor using FFmpeg probes and frame analysis., Performs a multi-point visual audit of the rendered video.
+
+### Community 416 - "Community 416"
+Cohesion: 0.25
+Nodes (5): Tests for NexusOrchestrator initialization., Output directory is created on init., Remotion circuit breaker is initialized and closed., Dependencies dict is populated with availability flags., TestOrchestratorInit
+
+### Community 417 - "Community 417"
+Cohesion: 0.25
+Nodes (4): CookieManager, Returns the path to the YouTube cookies file if it is valid., Updates the cookie file with new content (Netscape format)., 10/10 Production: Automated Cookie Guardian.     Ensures that yt-dlp has valid s
+
+### Community 418 - "Community 418"
 Cohesion: 0.25
 Nodes (4): ExperimentController, Classifies the next content mission., Dynamic tuning: If system is performing poorly, increase exploration., 10/10 Autonomy: The Imperial Exploration vs Exploitation Engine.     Decides whe
 
-### Community 580 - "Community 580"
+### Community 419 - "Community 419"
 Cohesion: 0.29
 Nodes (4): CodeInterpreterService, Initializes the interpreter with local-first configuration., Executes a natural language command by translating it to code., Code Interpreter Service     Uses Open Interpreter to execute code locally via n
 
-### Community 581 - "Community 581"
+### Community 420 - "Community 420"
+Cohesion: 0.25
+Nodes (5): ForecasterPipeline, The Forecaster Pipeline: Predictive Ingestion (9.9/10) =========================, Orchestrates the training and inference of the early-virality model., Gathers Signal-to-Performance pairs and retrains the Neural Oracle., Predicts the virality probability for a new niche
+
+### Community 421 - "Community 421"
+Cohesion: 0.25
+Nodes (4): Helper to verify disk space is sufficient before writing., Write serialized bytes to a temp file, flush/fsync, and atomically replace the d, Safely delete the temp file if it exists, ignoring exceptions., Helper to serialize props to disk atomically with disk checks and retries. Execu
+
+### Community 422 - "Community 422"
+Cohesion: 0.29
+Nodes (3): CausalAnalyst, 10/10 Reflex: The Ground-Truth Reflection Engine.     Analyzes the 'Regret' betw, Identifies the 'Why' behind prediction errors.
+
+### Community 423 - "Community 423"
+Cohesion: 0.25
+Nodes (4): PerformanceLedger, Performance Ledger: The Truth Layer (10/10) ====================================, Record the delta between hope and reality, Dashboard Report: How honest is the system?
+
+### Community 424 - "Community 424"
 Cohesion: 0.29
 Nodes (4): Training Pipeline for Oracle Retraining (True 10/10) ===========================, Records a new training sample: [Features -> Metric], Triggers Oracle retraining if enough data has been collected, TrainingPipeline
 
-### Community 582 - "Community 582"
-Cohesion: 0.25
-Nodes (6): Apply stochastic style modulation., Apply stochastic style modulation., Verify that modulator injects missing keys or dictionary structures gracefully., Verify that modulator injects missing keys or dictionary structures gracefully., test_missing_config_structures(), modulate_style()
-
-### Community 583 - "Community 583"
-Cohesion: 0.25
-Nodes (7): CloakPlatformConfig, get_all_platform_keys(), get_platform_config(), CloakBrowser Platform Configuration Registry  Defines how each platform should b, Retrieve a platform config by key., Return all available platform keys., Configuration for a single platform's CloakBrowser scraping.
-
-### Community 584 - "Community 584"
-Cohesion: 0.25
-Nodes (5): DiscoveryResearcherService, Discovery Researcher Service     Uses GPT Researcher to perform autonomous, deep, Runs an autonomous research task on a given query., Runs an autonomous research task on a given query., Discovery Researcher Service     Uses GPT Researcher to perform autonomous, deep
-
-### Community 585 - "Community 585"
-Cohesion: 0.25
-Nodes (6): Analyzes a candidate for viral patterns with real transcript extraction., Extracts transcript from video via yt-dlp., Analyzes a candidate for viral patterns with real transcript extraction., Analyzes a candidate for viral patterns with real transcript extraction., Extracts transcript from video via yt-dlp., Extracts transcript from video via yt-dlp.
-
-### Community 586 - "Community 586"
-Cohesion: 0.25
-Nodes (6): audit_content_quality(), check_content_freshness(), Professional content audit based on 30+ quality indicators.     Returns quality, Check if content is within the 'Viral Sweet Spot' (1-30 days old).     Returns a, Audits candidates for quality and applies appropriate score and flags., Audits candidates for quality and applies appropriate score and flags.
-
-### Community 587 - "Community 587"
-Cohesion: 0.25
-Nodes (5): Test complexity-based provider routing., Test low complexity routes to ollama., Test medium complexity routes to gemini when available., Test high complexity routes to openai when available., TestIntelligenceHubComplexityRouting
-
-### Community 588 - "Community 588"
+### Community 425 - "Community 425"
 Cohesion: 0.32
-Nodes (4): Polymorphic entry point for OpenClaw agent., Checks the health of the platform services., Retrieves video storage usage metrics., SystemSkill
+Nodes (4): CommandCenter, Empire Command Center: Operational War Room (10/10) ============================, The Operational Heart: High-fidelity system monitoring., Full-throttle operational view
 
-### Community 589 - "Community 589"
-Cohesion: 0.32
-Nodes (4): Polymorphic entry point for OpenClaw agent., Returns the current security health score and recent threat events., Triggers a security audit and lockdown., SecuritySkill
-
-### Community 590 - "Community 590"
+### Community 426 - "Community 426"
 Cohesion: 0.29
-Nodes (5): PublishingSkill, Polymorphic entry point for OpenClaw agent., Polymorphic entry point for OpenClaw agent., Finds a completed job and publishes it., Finds a completed job and publishes it.
+Nodes (4): Scans the Skool Discovery marketplace to identify trending niches     where user, Extracts community data from the hydrated JSON state.         This is a robust e, Scrapes the discovery page. If a niche is provided, it tries to search or filter, SkoolScanner
 
-### Community 591 - "Community 591"
-Cohesion: 0.32
-Nodes (4): NoFaceSkill, Polymorphic entry point for OpenClaw agent., Triggers text-based script generation for a given topic., Generates and validates a viral hook for a topic.
-
-### Community 592 - "Community 592"
-Cohesion: 0.25
-Nodes (6): Get the session directory for a specific user., Get the session directory for a specific user., Get the session directory for a specific user., Get the opencli config path for a user., Get the opencli config path for a user., Get the opencli config path for a user.
-
-### Community 593 - "Community 593"
-Cohesion: 0.25
-Nodes (6): Get the cookie file path for a user+platform, with global fallback., Get the cookie file path for a user+platform, with global fallback., Get the cookie file path for a user+platform, with global fallback., Remove session cookies for a user+platform., Remove session cookies for a user+platform., Remove session cookies for a user+platform.
-
-### Community 594 - "Community 594"
-Cohesion: 0.25
-Nodes (6): Get all platform session statuses for a user., Get all platform session statuses for a user., Get all platform session statuses for a user., Get a summary of all platform connections for a user., Get a summary of all platform connections for a user., Get a summary of all platform connections for a user.
-
-### Community 595 - "Community 595"
-Cohesion: 0.32
-Nodes (3): CircuitBreaker, Simple circuit breaker to prevent cascading failures, _run_opencli()
-
-### Community 596 - "Community 596"
-Cohesion: 0.25
-Nodes (5): Test: Discover trends → Select → Create video, Select a niche to monitor, Analyze a trending video, Analyze a trending video, TestDiscoveryToCreationFlow
-
-### Community 597 - "Community 597"
+### Community 427 - "Community 427"
 Cohesion: 0.29
-Nodes (6): get_auth_token(), Integration Tests Tests database transactions, service integrations, and cross-e, Integration tests for LLM service, Integration tests for LLM service, TestLLMIntegration, token()
+Nodes (4): BrowserAgentService, Uses an autonomous agent to research a specific trend or topic., Returns a LangChain-compatible LLM instance for the browser agent., Ettametta Browser Agent Service     Uses browser-use + playwright for autonomous
 
-### Community 598 - "Community 598"
+### Community 428 - "Community 428"
+Cohesion: 0.36
+Nodes (5): chat_messages(), completion_messages(), DifyClient, Client for Dify.ai Application API.     Supports Chat, Completion, and Workflow, run_workflow()
+
+### Community 429 - "Community 429"
 Cohesion: 0.25
-Nodes (7): Test discovery search endpoints., Test discovery search endpoints., Test that search endpoint requires authentication., Test that search endpoint requires authentication., Test discovery search endpoints., Test that search endpoint requires authentication., TestDiscoverySearch
+Nodes (4): AffiliateTool, Recommends high-converting products/links based on video script., Registers a new affiliate link in the database., Standardized Tool for Agent Zero to manage affiliate links and monetization.
 
-### Community 599 - "Community 599"
+### Community 430 - "Community 430"
+Cohesion: 0.29
+Nodes (4): AgentZeroSkill, Polymorphic entry point for OpenClaw agent., Sends control commands (start/stop/status) to Agent Zero.         Uses API calls, OpenClaw skill to control the autonomous Agent Zero Director.
+
+### Community 431 - "Community 431"
+Cohesion: 0.29
+Nodes (4): LumaSkill, Skill for interacting with Luma Dream Machine (Browser-based AI Video)., Polymorphic entry point for OpenClaw agent., Generate video from prompt using Luma Dream Machine
+
+### Community 432 - "Community 432"
+Cohesion: 0.29
+Nodes (4): Skill for programmatic React-based video rendering via @remotion/cli.     Provid, Polymorphic entry point for OpenClaw agent., Executes a remotion render command.         Example: npx remotion render <comp-i, RemotionRenderSkill
+
+### Community 433 - "Community 433"
 Cohesion: 0.25
-Nodes (7): Test niche management endpoints., Test niche management endpoints., Test listing niches with authentication., Test listing niches with authentication., Test niche management endpoints., Test listing niches with authentication., TestDiscoveryNiches
+Nodes (5): Integration tests for video pipeline, Test video job tracking, Test transform pipeline, Test content editor pipeline, TestVideoIntegration
 
-### Community 600 - "Community 600"
-Cohesion: 0.25
-Nodes (7): Test content analysis endpoints., Test content analysis endpoints., Test analyzing a content candidate., Test analyzing a content candidate., Test content analysis endpoints., Test analyzing a content candidate., TestDiscoveryAnalyze
-
-### Community 601 - "Community 601"
-Cohesion: 0.25
-Nodes (7): Test that generate endpoint requires authentication., Test AI video generation endpoints., Test AI video generation endpoints., Test that generate endpoint requires authentication., Test that generate endpoint requires authentication., Test AI video generation endpoints., TestVideoGeneration
-
-### Community 602 - "Community 602"
-Cohesion: 0.25
-Nodes (7): Test Remotion rendering endpoints., Test Remotion rendering endpoints., Test that Remotion endpoint requires authentication., Test that Remotion endpoint requires authentication., Test Remotion rendering endpoints., Test that Remotion endpoint requires authentication., TestRemotion
-
-### Community 603 - "Community 603"
+### Community 434 - "Community 434"
 Cohesion: 0.43
 Nodes (7): AuditService, log(), log_ai_decision(), log_content_moderation(), log_human_oversight(), log_model_card(), log_provider_success()
 
-### Community 604 - "Community 604"
+### Community 435 - "Community 435"
 Cohesion: 0.25
-Nodes (7): download_video(), preview_video(), Video Preview and Download API Routes ====================================== End, Preview a generated video by streaming it to the browser.     Returns the video, Preview a generated video by streaming it to the browser.     Returns the video, Download a generated video as an attachment.     Forces browser to download rath, Download a generated video as an attachment.     Forces browser to download rath
+Nodes (7): get_connected_platforms(), get_monetization_goals(), get_revenue_summary(), Revenue & Monetization API Routes ================================= Endpoints fo, Get revenue summary for the last N days.     Includes platform breakdown and dai, Get current monetization goals and progress tracking., List connected monetization platforms and their status.
 
-### Community 605 - "Community 605"
+### Community 436 - "Community 436"
 Cohesion: 0.25
-Nodes (7): opencli_post(), opencli_post_multi(), opencli-rs routes — Chrome-session-based publishing as an alternative to platfor, Post content to a platform using the user's Chrome session (via opencli-rs)., Post content to a platform using the user's Chrome session (via opencli-rs)., Post to multiple platforms using the user's Chrome sessions., Post to multiple platforms using the user's Chrome sessions.
+Nodes (7): AutoEditRequest, autonomous_video_edit(), BrollRequest, Autonomous Video Editing API Routes =================================== Endpoint, Fully autonomous video editing pipeline.     Takes raw clips + script and produc, Intelligently insert B-roll footage based on keyword matching.     Analyzes main, smart_broll_insertion()
 
-### Community 606 - "Community 606"
+### Community 437 - "Community 437"
+Cohesion: 0.36
+Nodes (3): ConnectionManager, Callback for the DistributedEventBus to broadcast events to WS clients, Listens to both legacy PubSub and modern Redis Streams (Event Bus).
+
+### Community 438 - "Community 438"
+Cohesion: 0.36
+Nodes (7): load_enhancers(), main(), Simpler upscale using ffmpeg with super resolution filter, Load GFPGAN and Real-ESRGAN models, Upscale and enhance a video, upscale_video(), upscale_with_ffmpeg()
+
+### Community 439 - "Community 439"
 Cohesion: 0.25
-Nodes (7): MultiPlatformPublishRequest, OpenCLIPostRequest, PublishRequest, Shared constants, Pydantic models, and helper utilities for the publish module., Resolve a human-readable platform name to its canonical key., Resolve a human-readable platform name to its canonical key., resolve_platform_key()
+Nodes (4): When no issues, prints success message and returns True., When issues exist, prints details and returns False., Multiple issues are printed sorted by file and line., TestPrintReport
 
-### Community 608 - "Community 608"
+### Community 440 - "Community 440"
+Cohesion: 0.29
+Nodes (4): captureError(), GlobalErrorBoundary, Props, State
+
+### Community 442 - "Community 442"
+Cohesion: 0.29
+Nodes (6): I18nContext, I18nContextType, LanguageSwitcher(), TranslationKey, Translations, useI18n()
+
+### Community 443 - "Community 443"
 Cohesion: 0.25
 Nodes (7): Attribution, Contributor Covenant Code of Conduct, Enforcement, Enforcement Responsibilities, Our Pledge, Our Standards, Scope
 
-### Community 609 - "Community 609"
+### Community 444 - "Community 444"
 Cohesion: 0.25
 Nodes (8): 9. Settings Page (`/settings`), API Keys, Engine Settings, Monetization Settings, Password, Profile Settings, Settings Gaps, Subscription
 
-### Community 610 - "Community 610"
-Cohesion: 0.25
-Nodes (7): 2. DASHBOARD PAGE (`/`), 3. LOGIN PAGE (`/login`), 4. REGISTER PAGE (`/register`), Buttons/Clickables:, Buttons/Clickables:, Buttons/Clickables:, UI/Buttons/Clickables/Menus Use Case Gap Analysis
-
-### Community 611 - "Community 611"
-Cohesion: 0.25
-Nodes (7): 1.1 Non-Admin Settings Save Is a No-Op — `settings/page.tsx:207`, 1.2 Global Error Reporting Hits Non-Existent Endpoint — `GlobalErrorBoundary.tsx:44`, 1.3 Affiliate Link Listing Returns 405 — `empire/page.tsx:122`, EXECUTIVE SUMMARY, SECTION 1: CRITICAL GAPS (Must Fix Immediately), SECTION 9: MISSING USE CASE SCENARIOS (Not Covered By Any Page), Viral Forge — UI/Backend Gap Analysis (March 2026)
-
-### Community 612 - "Community 612"
+### Community 445 - "Community 445"
 Cohesion: 0.25
 Nodes (8): 3.1 `_synthesize_veo3` — `services/video_engine/synthesis_service.py:354`, 3.2 `_synthesize_wan` — `services/video_engine/synthesis_service.py:366`, 3.3 Motion Graphics Overlay — `services/video_engine/motion_graphics.py:134`, 3.4 Persona TTS — `services/video_engine/persona_service.py:26`, 3.5 `ModelManager.acquire_model` — `services/video_engine/synthesis_service.py:40`, 3.6 `start_time` Undefined — `wan_inference.py:109,153` and `mochi_inference.py:86`, 3.7 Digital Product Strategy — `services/monetization/strategies/digital_product.py`, SECTION 3: STUB/PLACEHOLDER SERVICES THAT NEED REAL IMPLEMENTATIONS
 
-### Community 613 - "Community 613"
+### Community 446 - "Community 446"
 Cohesion: 0.25
-Nodes (8): Auth (`/auth`) — 10 endpoints, Credits (`/credits`) — 9 endpoints, Discovery (`/discovery`) — 8 endpoints, Monetization (`/monetization`) — 10 endpoints, Other Modules — Summary, Publishing (`/publish`) — 16 endpoints, SECTION 8: COMPLETE ENDPOINT-TO-UI MAP, Video (`/video`) — 6 endpoints
+Nodes (7): 5.1 Silent Error Failures (Console-Only), 5.2 False Positive Feedback, 5.3 Missing Error Boundaries, EXECUTIVE SUMMARY, SECTION 5: ERROR HANDLING GAPS, SECTION 9: MISSING USE CASE SCENARIOS (Not Covered By Any Page), Viral Forge — UI/Backend Gap Analysis (March 2026)
 
-### Community 614 - "Community 614"
+### Community 447 - "Community 447"
 Cohesion: 0.25
 Nodes (8): 2.1 Security Module — 3 endpoints, zero UI, 2.2 Persona Module — 2 endpoints, zero UI, 2.3 Trading Module — 5 endpoints, zero UI, 2.4 AI Agent Module — 4 endpoints, zero UI, 2.5 Publishing Gaps — Missing controls, 2.6 Monetization Gaps — Missing triggers, 2.7 Other Orphaned Endpoints, SECTION 2: BACKEND ENDPOINTS WITH NO FRONTEND UI (21 Orphaned)
 
-### Community 615 - "Community 615"
+### Community 448 - "Community 448"
 Cohesion: 0.25
-Nodes (7): 3. Real Payment Processor Integration, 8. Shopify Commerce Setup, code:python (# services/payment/stripe_service.py), ettametta: Expansion Blueprint, Implementation Priority (Updated), Phase 2: Payment Integration (Point 3), Phase 5: Commerce Integration (Point 8)
+Nodes (8): Auth (`/auth`) — 10 endpoints, Credits (`/credits`) — 9 endpoints, Discovery (`/discovery`) — 8 endpoints, Monetization (`/monetization`) — 10 endpoints, Other Modules — Summary, Publishing (`/publish`) — 16 endpoints, SECTION 8: COMPLETE ENDPOINT-TO-UI MAP, Video (`/video`) — 6 endpoints
 
-### Community 616 - "Community 616"
+### Community 449 - "Community 449"
+Cohesion: 0.25
+Nodes (7): 4. Load Testing & Performance Tuning, 8. Shopify Commerce Setup, code:bash (# Install k6 for load testing), ettametta: Expansion Blueprint, Implementation Priority (Updated), Phase 3: Performance & Scale (Point 4), Phase 5: Commerce Integration (Point 8)
+
+### Community 450 - "Community 450"
 Cohesion: 0.25
 Nodes (7): 1. Request Initiation (Local Ettametta API), 2. Job Handshake (Remote GPU Node), 3. Model Materialization (Weight Loading), 4. Diffusion Inference (The AI Core), 5. Post-Processing & Encoding, 6. Retrieval (Download), LTX-2 Video Synthesis Lifecycle
 
-### Community 617 - "Community 617"
+### Community 451 - "Community 451"
 Cohesion: 0.25
 Nodes (8): 3.1 Discovery Page Components, 3.2 Creation Page Components, 3.3 Publishing Page Components, 3. UI Component Realness Analysis, **PARTIAL COMPONENTS:**, **STUB COMPONENTS:**, **STUB COMPONENTS:**, **WORKING COMPONENTS:**
 
-### Community 618 - "Community 618"
+### Community 452 - "Community 452"
 Cohesion: 0.25
 Nodes (8): 8.1 Strategy Management, 8.2 Monetization Engine, 8.3 Affiliate Management, 8.4 Auto-Merch, 8.5 Commerce, 8.6 AI Recommendations, 8.7 Blueprints, 8. Empire Page (`/empire`)
 
-### Community 619 - "Community 619"
+### Community 453 - "Community 453"
 Cohesion: 0.25
 Nodes (7): Code Complexity, Code Duplication, Code Quality Evaluation, Code Style Consistency, Documentation Quality, Maintainability Factors, Testing Coverage and Patterns
 
-### Community 620 - "Community 620"
+### Community 454 - "Community 454"
 Cohesion: 0.25
 Nodes (7): Brand & Style, Colors, Components, Elevation & Depth, Layout & Spacing, Shapes, Typography
 
-### Community 621 - "Community 621"
-Cohesion: 0.25
-Nodes (7): Optional network calls, Reporting a Vulnerability, Security Model, Security Policy, Supported Versions, Threat Surface, What graphify does NOT do
+### Community 455 - "Community 455"
+Cohesion: 0.43
+Nodes (6): _has_skills(), Test Content Editor skill, list available skills, test_content_editor_skill(), test_discovery_skill(), test_skills_loaded()
 
-### Community 622 - "Community 622"
-Cohesion: 0.25
-Nodes (7): code:block1 (raw/), code:bash (pip install graphifyy), code:block3 (/graphify ./raw), Corpus (5 files), How to run, Mixed Corpus Benchmark, What to expect
+### Community 456 - "Community 456"
+Cohesion: 0.38
+Nodes (4): 10/10 Production Orchestrator for Multi-Scene Viral Content.     Features: Pydan, Uses LLM to break a topic into a validated narrative sequence., End-to-end production pipeline., TopicFusionOrchestrator
 
-### Community 623 - "Community 623"
-Cohesion: 0.25
-Nodes (7): Corpus Check, God Nodes (most connected - your core abstractions), Graph Report - /home/safi/graphify-benchmark  (2026-04-04), Knowledge Gaps, Suggested Questions, Summary, Surprising Connections (you probably didn't know these)
+### Community 457 - "Community 457"
+Cohesion: 0.48
+Nodes (6): get_torch_install_command(), is_amd_gpu(), is_apple_silicon(), is_intel_gpu(), is_nvidia_gpu(), Returns the optimal pip install command for the current hardware.
 
-### Community 624 - "Community 624"
-Cohesion: 0.25
-Nodes (7): code:block1 (raw/), code:bash (pip install graphifyy), code:block3 (/graphify ./raw), Corpus (6 files), How to run, httpx Corpus Benchmark, What to expect
-
-### Community 625 - "Community 625"
-Cohesion: 0.32
-Nodes (6): get_current_user(), login(), create_access_token(), decode_access_token(), DirectBcryptWrapper, verify_password()
-
-### Community 626 - "Community 626"
+### Community 458 - "Community 458"
 Cohesion: 0.29
-Nodes (7): generate_animatediff(), generate_video(), generate_with_model(), Specific entry for AnimateDiff animation workflows, Generate a video with the loaded model, Specific entry for AnimateDiff animation workflows, Generate a video with the loaded model
+Nodes (3): GlobalReachAdapter, Translates video metadata using IntelligenceHub., Translates a list of script segments for dubbing/subtitles.
 
-### Community 627 - "Community 627"
-Cohesion: 0.29
-Nodes (7): clear_gpu(), clear_hunyuan_model(), encode_prompt_ltx2(), load_vlm(), Clear HunyuanVideo model from GPU to free memory, Phase 1: Encode with T5 then EVICT from VRAM, Phase 1: Encode with T5 then EVICT from VRAM
+### Community 459 - "Community 459"
+Cohesion: 0.33
+Nodes (3): NarrativePlanner, Creates a high-level Narrative Blueprint for the attention economy., 10/10 Intelligence: The Narrative Reasoning Model (NRM).     Decomposes topics i
 
-### Community 628 - "Community 628"
+### Community 460 - "Community 460"
 Cohesion: 0.33
 Nodes (3): PersonaService, Generate TTS audio for persona animation.         Tries voiceover service, then, Orchestrates the animation of a personalized persona video via external renderin
 
-### Community 629 - "Community 629"
+### Community 461 - "Community 461"
 Cohesion: 0.29
-Nodes (6): Background task to execute Remotion render., Background task to execute Remotion render., Triggers a programmatic Remotion render in the background.     Requires authenti, Triggers a programmatic Remotion render in the background.     Requires authenti, run_render_task(), trigger_render()
+Nodes (4): _format_srt_time(), Run a subprocess command. Raises subprocess.CalledProcessError on non-zero exit., Export word-level timestamps as an SRT subtitle sidecar file.          Groups wo, _run_subprocess()
 
-### Community 630 - "Community 630"
-Cohesion: 0.29
-Nodes (5): _check_crewai_available(), Check if CrewAI and required dependencies are available., Check if CrewAI and required dependencies are available., Check if CrewAI and required dependencies are available., Check if CrewAI and required dependencies are available.
+### Community 462 - "Community 462"
+Cohesion: 0.33
+Nodes (4): IncidentReportingService, Standard 3.12: Compliance Hardening (EU AI Act Article 71).     Handles the diss, Triggers all active incident webhooks., Sync wrapper for use in Celery or non-async contexts.
 
-### Community 631 - "Community 631"
-Cohesion: 0.29
-Nodes (3): _check_langchain_available(), Audit compatibility for intelligence frameworks., Returns status of agentic frameworks including the new Hermes Skill Engine.
-
-### Community 632 - "Community 632"
+### Community 463 - "Community 463"
 Cohesion: 0.29
 Nodes (4): The Strategist: Psychological Angle Engine (10/10) =============================, Selects the best psychological framing for a content topic., Uses LLM context (simulated) to pick the framing with the          highest predi, ViralStrategist
 
-### Community 633 - "Community 633"
+### Community 464 - "Community 464"
 Cohesion: 0.33
 Nodes (3): Performs a deep semantic audit., AI Production Reviewer.      Audits the final production package against viral p, ViralCritic
 
-### Community 634 - "Community 634"
+### Community 465 - "Community 465"
 Cohesion: 0.29
-Nodes (5): Retry wrapper for remotion render with exponential backoff, Retry wrapper for remotion render with exponential backoff and circuit breaking, Retry wrapper for remotion render with exponential backoff and circuit breaking, Retry wrapper for remotion render with exponential backoff and circuit breaking, Retry wrapper for remotion render with exponential backoff and circuit breaking
+Nodes (4): DriftMonitor, Drift Monitor: Accuracy Audit (10/10) =====================================  Mon, The Self-Correction Audit Layer., Calculates Mean Absolute Error for the last N productions
 
-### Community 635 - "Community 635"
-Cohesion: 0.33
-Nodes (6): create_cinema_video_task(), Run async coroutine in sync context (Celery worker), Celery task wrapper for AutoCreator.create_cinema_video., Celery task wrapper for AutoCreator.create_cinema_video., Run async coroutine in sync context (Celery worker), run_async()
-
-### Community 636 - "Community 636"
-Cohesion: 0.29
-Nodes (4): Generates a viral thumbnail using Pollinations.ai (free/open).         Downloads, Generates a viral thumbnail using Pollinations.ai (free/open).         Downloads, Generates a viral thumbnail using Pollinations.ai (free/open).         Downloads, ThumbnailGenerator
-
-### Community 637 - "Community 637"
-Cohesion: 0.29
-Nodes (5): detect_niche_from_topic(), Auto-detect the most relevant niche based on topic keywords., Auto-detect the most relevant niche based on topic keywords., Discover viral videos using the intelligent workflow., Discover viral videos using the intelligent workflow.
-
-### Community 638 - "Community 638"
-Cohesion: 0.29
-Nodes (3): EmpireModeScheduler, Lazy-initialize the Groq client to prevent crash on import when GROQ_API_KEY is, Re-spins a successful script for a new niche to avoid duplicate content flags.
-
-### Community 640 - "Community 640"
+### Community 466 - "Community 466"
 Cohesion: 0.29
 Nodes (6): code:tsx (import { BaseLayout } from "@/components/layout/BaseLayout";), Design System Unification - Summary, Migration Path, Next Steps, Overview, Result
 
-### Community 641 - "Community 641"
+### Community 467 - "Community 467"
 Cohesion: 0.29
-Nodes (6): ChapterOverlayProps, entry, frame, opacity, slideX, { width, height, fps }
+Nodes (3): BrandingService, Fetch active brand for the given user and niche., Autonomous Brand Factory:         Calls OpenClaw execute-tool to run the brandin
 
-### Community 642 - "Community 642"
+### Community 468 - "Community 468"
 Cohesion: 0.29
-Nodes (6): Verify that generate_video_effect returns directions instead of code., Verify that generate_video_effect returns directions instead of code., Verify that the interpreter cannot access sensitive modules even if it tries., Verify that the interpreter cannot access sensitive modules even if it tries., test_interpreter_isolation(), test_native_effect_delegation()
+Nodes (6): pipeline(), generate_audio_conditioning(), load_encodec(), load_tts(), Generate real audio conditioning for LTX-2 19B.     Returns (audio_hidden_states, warmup()
 
-### Community 643 - "Community 643"
+### Community 469 - "Community 469"
+Cohesion: 0.29
+Nodes (4): BaseEttamettaAgent, AlgorithmSentinel, Monitors platform performance shifts and suggests pivots.     Currently uses pro, Returns the 'Algorithm Sync' score and potential risks.         Caches results t
+
+### Community 470 - "Community 470"
 Cohesion: 0.33
-Nodes (5): get_template(), PromptTemplateManager, Manage reusable prompt templates for ettametta agent., Manage reusable prompt templates for ettametta agent., render_template()
+Nodes (6): get_all_llm_providers(), get_llm_api_key(), get_llm_setting(), Get LLM API key from vault with priority:     1. User-specific override (UserSet, Get LLM setting from vault, Get list of available LLM providers that have valid API keys
 
-### Community 644 - "Community 644"
+### Community 471 - "Community 471"
+Cohesion: 0.33
+Nodes (3): PublishingSkill, Polymorphic entry point for OpenClaw agent., Finds a completed job and publishes it.
+
+### Community 472 - "Community 472"
+Cohesion: 0.33
+Nodes (3): Polymorphic entry point for OpenClaw agent., Triggers a programmatic video render using Remotion., RenderSkill
+
+### Community 474 - "Community 474"
 Cohesion: 0.29
-Nodes (5): Test: Analytics and reporting, Test: Analytics and reporting, Get dashboard summary, Get dashboard summary, TestAnalyticsFlow
+Nodes (4): Test: Discover trends → Select → Create video, Select a niche to monitor, Analyze a trending video, TestDiscoveryToCreationFlow
 
-### Community 645 - "Community 645"
+### Community 475 - "Community 475"
 Cohesion: 0.29
-Nodes (5): Test: Autonomous agent flows, Test: Autonomous agent flows, Check zero inference status, Check zero inference status, TestAutonomousFlow
+Nodes (4): Integration tests for publishing, Test all platforms available, Test OAuth URLs available, TestPublishingIntegration
 
-### Community 646 - "Community 646"
+### Community 476 - "Community 476"
 Cohesion: 0.29
-Nodes (6): Test discovery trend endpoints., Test discovery trend endpoints., Test that trends endpoint requires authentication., Test that trends endpoint requires authentication., Test that trends endpoint requires authentication., TestDiscoveryTrends
+Nodes (4): Integration tests for Discovery service, Test discovery pagination, Test discovery → nexus flow, TestDiscoveryIntegration
 
-### Community 647 - "Community 647"
+### Community 477 - "Community 477"
 Cohesion: 0.29
-Nodes (5): Test that niches list requires authentication., Test that niches list requires authentication., Test that niches list requires authentication., Test search without query parameter still works (query is optional)., Test search without query parameter still works (query is optional).
+Nodes (6): Verify StrategyService correctly delegates to CrewAI if enabled., Verify NexusOrchestrator uses LangChain vibes during assembly., Verify LangChain service can analyze vibes and record success., test_crewai_strategy_delegation(), test_langchain_vibe_analysis(), test_nexus_cognitive_pipeline_integration()
 
-### Community 649 - "Community 649"
+### Community 478 - "Community 478"
 Cohesion: 0.29
 Nodes (3): Uploads a local file to S3 and returns the URL., Downloads an asset from S3 to a local path., StorageService
 
-### Community 650 - "Community 650"
+### Community 479 - "Community 479"
+Cohesion: 0.33
+Nodes (4): decode_access_token(), get_current_user(), Verify and extract original state from signed state parameter., verify_oauth_state()
+
+### Community 480 - "Community 480"
 Cohesion: 0.29
-Nodes (5): Executes a named multi-fault scenario.         Returns a report of what was inje, Executes a named multi-fault scenario.         Returns a report of what was inje, Appends an injection event to the history buffer., Appends an injection event to the history buffer., handler()
+Nodes (6): autonomous_video_remix(), get_remix_status(), Autonomous Video Remix API Routes ================================== Endpoints f, Fully autonomous video creation from discovered viral content.          Pipeline, Check status of a remix job with real-time progress updates.     Returns progres, RemixRequest
 
-### Community 651 - "Community 651"
+### Community 481 - "Community 481"
 Cohesion: 0.29
-Nodes (5): Get a specific job from either Video or Nexus tables, Get a specific job from either Video or Nexus tables, Get a specific job from either Video or Nexus tables, Delete a job from either Video or Nexus tables, Delete a job from either Video or Nexus tables
+Nodes (3): ErrorBoundary, Props, State
 
-### Community 652 - "Community 652"
-Cohesion: 0.43
-Nodes (6): EventServiceProvider, NotifyAdmins, OrderPlaced, SendWelcomeEmail, ShipOrder, UserRegistered
+### Community 482 - "Community 482"
+Cohesion: 0.29
+Nodes (6): ChapterOverlayProps, entry, frame, opacity, slideX, { width, height, fps }
 
-### Community 653 - "Community 653"
+### Community 483 - "Community 483"
 Cohesion: 0.29
 Nodes (6): Reporting a Vulnerability, Response Timeline, Security Measures, Security Policy, Supported Versions, What to include
 
-### Community 654 - "Community 654"
+### Community 484 - "Community 484"
 Cohesion: 0.29
 Nodes (7): code:bash (SKIP_WEB_SERVER=1 BASE_URL=http://127.0.0.1:3000 npx playwri), code:bash (SKIP_WEB_SERVER=1 BASE_URL=http://127.0.0.1:3000 npx playwri), code:bash (npx playwright show-report), Generate HTML Report, Generate JSON Report, Reporting, View Report
 
-### Community 655 - "Community 655"
+### Community 485 - "Community 485"
 Cohesion: 0.29
 Nodes (6): 1. Hardware Requirement, 2. Software Stack, 3. Implementation Files, LTX-2 Cloud Deployment Plan (RunPod/Vast.ai), Proposed Strategy, Verification
 
-### Community 656 - "Community 656"
+### Community 486 - "Community 486"
 Cohesion: 0.29
 Nodes (7): 8. Empire Page (`/empire`), Affiliate Links, Auto-Merch, Empire Gaps, Revenue & Recommendations, Sentinel Status, Strategy Cloning
 
-### Community 657 - "Community 657"
+### Community 487 - "Community 487"
 Cohesion: 0.29
 Nodes (7): 9. Settings Page (`/settings`), API Keys, Engine Settings, Monetization Settings, Password, Profile Settings, Subscription
 
-### Community 658 - "Community 658"
-Cohesion: 0.29
-Nodes (6): code:block1 (Error: expect(locator).toBeVisible() failed), code:ts (1  | import { test, expect } from '@playwright/test';), Error details, Instructions, Test info, Test source
+### Community 488 - "Community 488"
+Cohesion: 0.33
+Nodes (5): downgrade(), Add metadata_json column to ab_tests for variant job tracking  Revision ID: 2026, Add metadata_json column to ab_tests., Remove metadata_json column from ab_tests., upgrade()
 
-### Community 659 - "Community 659"
-Cohesion: 0.29
-Nodes (6): On cross-reference detection, On keyword extraction, On storage, On the API layer, Open questions, Research Notes
+### Community 489 - "Community 489"
+Cohesion: 0.33
+Nodes (5): downgrade(), Add impression tracking to affiliate_links  Phase 14: Auto-Insert Affiliate Link, Add impression_count + last_impression_at to affiliate_links., Remove the impression-tracking columns (data loss)., upgrade()
 
-### Community 660 - "Community 660"
+### Community 490 - "Community 490"
+Cohesion: 0.33
+Nodes (4): Verify that a video cannot be assigned to two experiments simultaneously., Verify that 'Killed' strategies cannot spawn new cohorts., test_experiment_isolation_duplicates(), test_killed_strategy_rejection()
+
+### Community 491 - "Community 491"
 Cohesion: 0.47
-Nodes (5): main(), Reset circuit breakers so each scenario starts fresh., Reset circuit breakers so each scenario starts fresh., reset_all_circuit_breakers(), run_single_production()
+Nodes (5): main(), Step 3: Transcribe video audio, Step 4: Analyze video with VLM, run_transcription(), run_vlm_analysis()
 
-### Community 661 - "Community 661"
+### Community 492 - "Community 492"
 Cohesion: 0.47
 Nodes (5): main(), Step 3: Transcribe video using faster-whisper, Step 4: Analyze video with VLM using OpenAI Vision, test_step3_transcription(), test_step4_vlm_analysis()
 
-### Community 662 - "Community 662"
+### Community 493 - "Community 493"
 Cohesion: 0.33
 Nodes (5): deleteBtn, moreBtn, refreshBtn, sentinelCard, shareBtn
 
-### Community 663 - "Community 663"
-Cohesion: 0.4
-Nodes (6): load_ltx_19b_transformer(), _load_safetensor_weights(), Phase 2: Stream 19B Transformer (38GB BF16), Phase 2: Stream 19B Transformer (38GB BF16), _resolve_meta_parameters_and_buffers(), _set_nested_attribute()
+### Community 495 - "Community 495"
+Cohesion: 0.47
+Nodes (4): login(), create_access_token(), DirectBcryptWrapper, verify_password()
 
-### Community 665 - "Community 665"
+### Community 496 - "Community 496"
 Cohesion: 0.6
 Nodes (5): assemble_master(), fetch_likeness_image(), generate_shot(), main(), poll_and_download()
 
-### Community 666 - "Community 666"
-Cohesion: 0.33
-Nodes (4): Checks ffmpeg version for compatibility., Checks ffmpeg version for compatibility., Initializes the Video Engine with dynamic font resolution and FFmpeg patching., Initializes the Video Engine with dynamic font resolution and FFmpeg patching.
-
-### Community 667 - "Community 667"
-Cohesion: 0.33
-Nodes (4): Adds a soft, glowing atmospheric layer (f9)., Adds a soft, glowing atmospheric layer (f9)., Maps VLM visual insights (mood, predominant colors) to MoviePy visual effects., Maps VLM visual insights (mood, predominant colors) to MoviePy visual effects.
-
-### Community 668 - "Community 668"
-Cohesion: 0.33
-Nodes (4): Uses an LLM to generate specific tasks for the crew based on the topic., Uses an LLM to generate specific tasks for the crew based on the topic., Uses an LLM to generate specific tasks for the crew based on the topic., Uses an LLM to generate specific tasks for the crew based on the topic.
-
-### Community 669 - "Community 669"
-Cohesion: 0.33
-Nodes (4): AnalyticsBridge, Analytics Bridge for Ettametta Ascension =======================================, Ingests metrics from TikTok, YouTube, and IG.     Triggers evolutionary learning, Ingest performance metrics and trigger reflection if thresholds are met.
-
-### Community 670 - "Community 670"
-Cohesion: 0.33
-Nodes (3): Extract wallet address for a given symbol, Generates a call to action for crypto tips/donations., Fetches crypto wallet addresses from database configuration.         Returns ava
-
-### Community 671 - "Community 671"
-Cohesion: 0.33
-Nodes (5): frame, opacity, RedditHookProps, scale, { width, height }
-
-### Community 672 - "Community 672"
-Cohesion: 0.33
-Nodes (4): JobState, JobStateMachine, Standard 1.1: Event-Driven State Machine for Video Job lifecycles.     Ensures s, Standard 1.1: Event-Driven State Machine for Video Job lifecycles.     Ensures s
-
-### Community 673 - "Community 673"
-Cohesion: 0.33
-Nodes (4): Test authentication flow, Test successful login, Test invalid password, TestAuthFlow
-
-### Community 674 - "Community 674"
-Cohesion: 0.33
-Nodes (5): Smoke test for all UI pages, Smoke test for all UI pages, Test all dashboard pages load, Test all dashboard pages load, TestUISmokeTest
-
-### Community 675 - "Community 675"
-Cohesion: 0.33
-Nodes (5): Integration tests for Nexus, Integration tests for Nexus, Test nexus: queue → stats → jobs → blueprints, Test nexus: queue → stats → jobs → blueprints, TestNexusIntegration
-
-### Community 676 - "Community 676"
-Cohesion: 0.33
-Nodes (5): Integration tests for A/B testing, Integration tests for A/B testing, Test A/B testing flows, Test A/B testing flows, TestABTestingIntegration
-
-### Community 677 - "Community 677"
-Cohesion: 0.33
-Nodes (5): Integration tests for credits/billing, Integration tests for credits/billing, Test credits: balance → packages → transactions, Test credits: balance → packages → transactions, TestCreditsIntegration
-
-### Community 678 - "Community 678"
-Cohesion: 0.33
-Nodes (5): Integration tests for autonomous agents, Integration tests for autonomous agents, Test agent: zero → chat → capabilities, Test agent: zero → chat → capabilities, TestAgentIntegration
-
-### Community 679 - "Community 679"
-Cohesion: 0.33
-Nodes (5): Integration tests for settings, Integration tests for settings, Test settings: filters → preferences → system, Test settings: filters → preferences → system, TestSettingsIntegration
-
-### Community 680 - "Community 680"
-Cohesion: 0.33
-Nodes (4): Runs a mission-critical check of environment variables.         Returns a dict w, Runs a mission-critical check of environment variables.         Returns a dict w, Print a formatted validation report., Print a formatted validation report.
-
-### Community 681 - "Community 681"
-Cohesion: 0.33
-Nodes (4): Starts a background loop that randomly injects faults at the given intensity., Starts a background loop that randomly injects faults at the given intensity., Background loop that fires random faults at the given interval., Background loop that fires random faults at the given interval.
-
-### Community 682 - "Community 682"
-Cohesion: 0.33
-Nodes (6): get_nexus_queue(), Returns current job queue status., Returns current job queue status., Returns current job queue status., Returns current job queue status., Returns current job queue status.
-
-### Community 683 - "Community 683"
-Cohesion: 0.33
-Nodes (6): get_nexus_telemetry(), Returns real-time health and performance metrics for the Nexus cluster., Returns real-time health and performance metrics for the Nexus cluster., Returns real-time health and performance metrics for the Nexus cluster., Returns real-time health and performance metrics for the Nexus cluster., Returns real-time health and performance metrics for the Nexus cluster.
-
-### Community 684 - "Community 684"
-Cohesion: 0.33
-Nodes (6): get_job_preview(), Returns the scene breakdown and discovered assets for a Nexus job.     Used for, Returns the scene breakdown and discovered assets for a Nexus job.     Used for, Returns the scene breakdown and discovered assets for a Nexus job.     Used for, Returns the scene breakdown and discovered assets for a Nexus job.     Used for, Returns the scene breakdown and discovered assets for a Nexus job.     Used for
-
-### Community 685 - "Community 685"
-Cohesion: 0.33
-Nodes (3): CPU_VideoEditor, Complete video editor running on CPU infrastructure, Demonstrate complete video production workflow on CPU
-
-### Community 686 - "Community 686"
-Cohesion: 0.33
-Nodes (4): PromoGenerator, Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is, Generates a high-conversion promotional script for an affiliate product., Generates a high-conversion promotional script for an affiliate product.
-
-### Community 687 - "Community 687"
-Cohesion: 0.33
-Nodes (3): InterpreterTool, Executes code securely in a sandboxed environment., Standardized Tool for Agent Zero to execute custom Python/JS code.     Enables d
-
-### Community 688 - "Community 688"
-Cohesion: 0.33
-Nodes (5): event_loop(), _prevent_redis_connections(), Test Configuration and Fixtures ================================ Shared test fix, Provide a properly managed event loop per test function.      pytest-asyncio v1., Prevent any real Redis connections during tests.      When ``src.api.routes.ws``
-
-### Community 689 - "Community 689"
-Cohesion: 0.67
-Nodes (4): AppServiceProvider, CashierGateway, PaymentGateway, StripeGateway
-
-### Community 690 - "Community 690"
-Cohesion: 0.33
-Nodes (5): Animal, -initWithName, -speak, Dog, -fetch
-
-### Community 691 - "Community 691"
-Cohesion: 0.33
-Nodes (6): 1. `agent_zero_autonomous.spec.ts`, 2. `autonomous_operations.spec.ts`, 3. `test_helpers.ts`, 4. `simple_autonomous_test.spec.ts`, 5. `README.md`, Files Created
-
-### Community 692 - "Community 692"
-Cohesion: 0.33
-Nodes (6): Authentication Issues, Browser Dependencies, code:bash (# Install system dependencies), Element Not Found, Tests Timing Out, Troubleshooting
-
-### Community 693 - "Community 693"
-Cohesion: 0.33
-Nodes (6): 4. Nexus Page (`/nexus`), AI Agent Chat, Blueprint Section, Cluster Manager, Nexus Gaps, Persona Lab
-
-### Community 694 - "Community 694"
-Cohesion: 0.33
-Nodes (6): 2. Discovery Page (`/discovery`), Content Cards Actions, Discovery Gaps, Header Controls, Mode Selector, Neural Config Drawer
-
-### Community 695 - "Community 695"
-Cohesion: 0.33
-Nodes (6): 9.1 Shopify Integration, 9.2 AWS S3 Cloud Storage for Revenue, 9.3 Premium AI Services, 9.4 Revenue Analytics, 9. Monetization Full Implementation, Phase 6: Monetization Enhancement (NEW - Priority P0)
-
-### Community 696 - "Community 696"
-Cohesion: 0.33
-Nodes (6): [API Configuration], [Infrastructure], [MODIFY] [config.py](file:///home/psalmprax/ettametta/api/config.py), [MODIFY] [main.py](file:///home/psalmprax/ettametta/api/main.py), [NEW] [.env.production.template](file:///home/psalmprax/ettametta/.env.production.template), Phase 76: Critical Gap Resolution (P0/P1)
-
-### Community 697 - "Community 697"
-Cohesion: 0.33
-Nodes (6): 8. Empire Page (`/empire`), Affiliate Links, Auto-Merch, Revenue & Recommendations, Sentinel Status, Strategy Cloning
-
-### Community 698 - "Community 698"
-Cohesion: 0.33
-Nodes (5): Design decisions, Document Pipeline Architecture, Extending the pipeline, How data flows, Module responsibilities
-
-### Community 699 - "Community 699"
+### Community 497 - "Community 497"
 Cohesion: 0.33
 Nodes (3): MockDownloader, Simulate a download by returning the local mock asset., Testing Maturity: Fast-Track Mock Downloader.     Returns local placeholder asse
 
-### Community 701 - "Community 701"
-Cohesion: 0.5
-Nodes (4): Test remotion rendering, Test remotion rendering, run_remotion_test(), test_remotion()
+### Community 498 - "Community 498"
+Cohesion: 0.33
+Nodes (3): Query Dify provider for video vibe data., Query LangChain provider for video vibe data., Primary vibe check using Dify, with LangChain fallback.
 
-### Community 702 - "Community 702"
+### Community 499 - "Community 499"
+Cohesion: 0.33
+Nodes (3): InterpreterTool, Executes code securely in a sandboxed environment., Standardized Tool for Agent Zero to execute custom Python/JS code.     Enables d
+
+### Community 500 - "Community 500"
+Cohesion: 0.33
+Nodes (4): AnalyticsBridge, Analytics Bridge for Ettametta Ascension =======================================, Ingests metrics from TikTok, YouTube, and IG.     Triggers evolutionary learning, Ingest performance metrics and trigger reflection if thresholds are met.
+
+### Community 502 - "Community 502"
 Cohesion: 0.4
-Nodes (4): Test basic video fusion with existing files, Test basic video fusion with existing files, Test basic video fusion with existing files, test_video_fusion()
+Nodes (3): AIBridge, NewAIBridge(), NewDiscoveryService()
 
-### Community 703 - "Community 703"
+### Community 503 - "Community 503"
 Cohesion: 0.4
-Nodes (5): get_model_info(), Unload current model from VRAM, Get info about a specific model, Unload current model from VRAM, unload_model()
+Nodes (3): PublicDomainScanner, Scans Archive.org and Pexels for relevant historical and stock footage., Internal scan logic for a specific query string
 
-### Community 704 - "Community 704"
-Cohesion: 0.5
-Nodes (4): main(), Run the full Nexus pipeline for a single style., Run the full Nexus pipeline for a single style., test_style()
+### Community 504 - "Community 504"
+Cohesion: 0.33
+Nodes (3): DiscoveryResearcherService, Runs an autonomous research task on a given query., Discovery Researcher Service     Uses GPT Researcher to perform autonomous, deep
 
-### Community 705 - "Community 705"
+### Community 505 - "Community 505"
+Cohesion: 0.33
+Nodes (3): Triggers a headless Remotion render with the specified props., Standardized Tool for Agent Zero to trigger Remotion video renders., RenderTool
+
+### Community 506 - "Community 506"
+Cohesion: 0.33
+Nodes (3): MarketScreenerTool, AI-driven tool for sentiment analysis and niche screening.     Helps Agent Zero, Screens raw trend data for sentiment and conversion potential.
+
+### Community 507 - "Community 507"
+Cohesion: 0.33
+Nodes (3): DiscoveryTool, Searches for trending niches across multi-platform scanners., Standardized Tool for Agent Zero to access the ettametta Discovery Engine.
+
+### Community 508 - "Community 508"
+Cohesion: 0.33
+Nodes (3): Process a user message and determine the action., Routes the tool execution to the correct backend service or skill.         Stand, Works as the 'Director' for the Workforce Council.
+
+### Community 510 - "Community 510"
+Cohesion: 0.4
+Nodes (4): get_template(), PromptTemplateManager, Manage reusable prompt templates for ettametta agent., render_template()
+
+### Community 512 - "Community 512"
+Cohesion: 0.33
+Nodes (4): Test: Publish to social platforms, Get available platforms, Get connected accounts, TestPublishingFlow
+
+### Community 513 - "Community 513"
+Cohesion: 0.33
+Nodes (4): Test authentication flow, Test successful login, Test invalid password, TestAuthFlow
+
+### Community 514 - "Community 514"
+Cohesion: 0.33
+Nodes (4): Test: Create content from discovery, Get available providers, Start video transformation, TestContentCreationFlow
+
+### Community 515 - "Community 515"
+Cohesion: 0.33
+Nodes (4): Integration tests for analytics, Test aggregated stats, Test data consistency across endpoints, TestAnalyticsIntegration
+
+### Community 516 - "Community 516"
+Cohesion: 0.33
+Nodes (4): Integration tests for monetization, Test empire dashboard, Test monetization reporting, TestMonetizationIntegration
+
+### Community 517 - "Community 517"
+Cohesion: 0.33
+Nodes (5): download_video(), preview_video(), Video Preview and Download API Routes ====================================== End, Preview a generated video by streaming it to the browser.     Returns the video, Download a generated video as an attachment.     Forces browser to download rath
+
+### Community 518 - "Community 518"
+Cohesion: 0.33
+Nodes (3): CPU_VideoEditor, Complete video editor running on CPU infrastructure, Demonstrate complete video production workflow on CPU
+
+### Community 519 - "Community 519"
+Cohesion: 0.33
+Nodes (3): [isOpen, setIsOpen], [query, setQuery], router
+
+### Community 520 - "Community 520"
+Cohesion: 0.33
+Nodes (5): actionIconSize, frame, springValue, svgIconSize, { width, height, fps }
+
+### Community 521 - "Community 521"
+Cohesion: 0.33
+Nodes (5): frame, opacity, RedditHookProps, scale, { width, height }
+
+### Community 522 - "Community 522"
+Cohesion: 0.33
+Nodes (6): 1. `agent_zero_autonomous.spec.ts`, 2. `autonomous_operations.spec.ts`, 3. `test_helpers.ts`, 4. `simple_autonomous_test.spec.ts`, 5. `README.md`, Files Created
+
+### Community 523 - "Community 523"
+Cohesion: 0.33
+Nodes (6): Authentication Issues, Browser Dependencies, code:bash (# Install system dependencies), Element Not Found, Tests Timing Out, Troubleshooting
+
+### Community 524 - "Community 524"
+Cohesion: 0.33
+Nodes (6): 2. Discovery Page (`/discovery`), Content Cards Actions, Discovery Gaps, Header Controls, Mode Selector, Neural Config Drawer
+
+### Community 525 - "Community 525"
+Cohesion: 0.33
+Nodes (6): 4. Nexus Page (`/nexus`), AI Agent Chat, Blueprint Section, Cluster Manager, Nexus Gaps, Persona Lab
+
+### Community 526 - "Community 526"
+Cohesion: 0.33
+Nodes (6): 9.1 Shopify Integration, 9.2 AWS S3 Cloud Storage for Revenue, 9.3 Premium AI Services, 9.4 Revenue Analytics, 9. Monetization Full Implementation, Phase 6: Monetization Enhancement (NEW - Priority P0)
+
+### Community 527 - "Community 527"
+Cohesion: 0.33
+Nodes (6): [API Configuration], [Infrastructure], [MODIFY] [config.py](file:///home/psalmprax/ettametta/api/config.py), [MODIFY] [main.py](file:///home/psalmprax/ettametta/api/main.py), [NEW] [.env.production.template](file:///home/psalmprax/ettametta/.env.production.template), Phase 76: Critical Gap Resolution (P0/P1)
+
+### Community 528 - "Community 528"
+Cohesion: 0.33
+Nodes (6): 8. Empire Page (`/empire`), Affiliate Links, Auto-Merch, Revenue & Recommendations, Sentinel Status, Strategy Cloning
+
+### Community 529 - "Community 529"
+Cohesion: 0.4
+Nodes (4): Run migrations in 'offline' mode.      This configures the context with just a U, Run migrations in 'online' mode.      In this scenario we need to create an Engi, run_migrations_offline(), run_migrations_online()
+
+### Community 531 - "Community 531"
+Cohesion: 0.4
+Nodes (4): generate_animatediff_laptop(), get_p4000_recommendations(), Get P4000-specific recommendations, Laptop-optimized AnimateDiff generation with memory management for P4000 8GB GPU
+
+### Community 532 - "Community 532"
 Cohesion: 0.4
 Nodes (3): AttentionSimulator, Heuristic-based Attention Flow Simulation (CPU Optimized), 10/10 Pre-Viz: Simulates how human attention will decay over the Story Blueprint
 
-### Community 706 - "Community 706"
-Cohesion: 0.4
-Nodes (4): Renders a video using Remotion CLI., Main entrypoint orchestrating pre-validation, sandboxed asset preparation,, Main entrypoint orchestrating pre-validation, sandboxed asset preparation,, Main entrypoint orchestrating pre-validation, sandboxed asset preparation,
-
-### Community 708 - "Community 708"
-Cohesion: 0.4
-Nodes (4): Generic agent factory., Generic agent factory., Generic agent factory., Generic agent factory.
-
-### Community 709 - "Community 709"
-Cohesion: 0.4
-Nodes (3): Generates N variant prompts based on the original concept.                  Stra, Handles generation of high-frequency content variants for A/B/n testing.     Foc, VariantGenerator
-
-### Community 710 - "Community 710"
-Cohesion: 0.4
-Nodes (3): Perform vision audit to verify clip relevance., Use LLM to evaluate the relevance of the frame image., Perform vision audit to verify clip relevance.
-
-### Community 711 - "Community 711"
-Cohesion: 0.4
-Nodes (4): frame, NewsTickerProps, { width }, x
-
-### Community 712 - "Community 712"
-Cohesion: 0.4
-Nodes (4): Periodic background task to audit system integrity and security posture., Periodic background task to audit system integrity and security posture., Periodic background task to audit system integrity and security posture., system_audit_task()
-
-### Community 714 - "Community 714"
-Cohesion: 0.4
-Nodes (3): Load API keys from environment variables., Load API keys from environment variables., Load API keys from environment variables.
-
-### Community 716 - "Community 716"
-Cohesion: 0.4
-Nodes (3): Monitor API requests for security anomalies., Monitor API requests for security anomalies., Logs a security event to Redis for real-time monitoring.
-
-### Community 717 - "Community 717"
-Cohesion: 0.4
-Nodes (4): Generate video using Playwright browser automation as fallback.         Uses Ope, Generate video using Playwright browser automation as fallback.         Uses Ope, Generate video using Playwright browser automation as fallback.         Uses Ope, Generate video using Playwright browser automation as fallback.         Uses Ope
-
-### Community 718 - "Community 718"
-Cohesion: 0.4
-Nodes (4): Generate video using browser automation (no API key required).         Falls bac, Generate video using browser automation (no API key required).         Falls bac, Generate video using browser automation (no API key required).         Falls bac, Generate video using browser automation (no API key required).         Falls bac
-
-### Community 719 - "Community 719"
-Cohesion: 0.4
-Nodes (4): Generate video using Haiper AI, Generate video using Haiper AI, Generate video using Haiper AI, Generate video using Haiper AI
-
-### Community 720 - "Community 720"
-Cohesion: 0.4
-Nodes (3): Returns real-time health for the dashboard., Returns real-time health for the dashboard., Returns real-time health for the dashboard.
-
-### Community 721 - "Community 721"
-Cohesion: 0.4
-Nodes (4): Returns health of browser automation and API drivers., Returns health of browser automation and API drivers., Returns health of browser automation and API drivers., Returns health of browser automation and API drivers.
-
-### Community 722 - "Community 722"
-Cohesion: 0.5
-Nodes (4): print_validation_report(), Log a formatted validation report., Runs a mission-critical check of environment variables.     Returns a dict with, validate_critical_config()
-
-### Community 723 - "Community 723"
-Cohesion: 0.4
-Nodes (3): Test: Credits and billing, Test: Credits and billing, TestCreditsFlow
-
-### Community 724 - "Community 724"
-Cohesion: 0.4
-Nodes (3): Test: Monetization and empire, Test: Monetization and empire, TestMonetizationFlow
-
-### Community 725 - "Community 725"
-Cohesion: 0.4
-Nodes (5): list_nexus_blueprints(), Returns the available Nexus production recipes/blueprints., Returns the available Nexus production recipes/blueprints., Returns the available Nexus production recipes/blueprints., Returns the available Nexus production recipes/blueprints.
-
-### Community 726 - "Community 726"
-Cohesion: 0.4
-Nodes (5): clear_nexus_jobs(), Clears the production job history for the current user., Clears the production job history for the current user., Clears the production job history for the current user., Clears the production job history for the current user.
-
-### Community 727 - "Community 727"
-Cohesion: 0.4
-Nodes (5): create_nexus_blueprint(), Creates a new custom Nexus blueprint., Creates a new custom Nexus blueprint., Creates a new custom Nexus blueprint., Creates a new custom Nexus blueprint.
-
-### Community 728 - "Community 728"
-Cohesion: 0.4
-Nodes (5): list_nexus_jobs(), Returns the latest production jobs for the Nexus matrix., Returns the latest production jobs for the Nexus matrix., Returns the latest production jobs for the Nexus matrix., Returns the latest production jobs for the Nexus matrix.
-
-### Community 729 - "Community 729"
-Cohesion: 0.7
-Nodes (4): main(), test_groq(), test_tiktok(), test_youtube()
-
-### Community 730 - "Community 730"
-Cohesion: 0.5
-Nodes (4): main(), Attempt to import a module and return success status., Main verification function., verify_import()
-
-### Community 731 - "Community 731"
-Cohesion: 0.5
-Nodes (4): create_scene_based_demo_video(), main(), Create a demo video by fusing existing test videos, Create a demo video by fusing existing test videos
-
-### Community 733 - "Community 733"
-Cohesion: 0.4
-Nodes (4): Apply a referral code (when new user signs up), Apply a referral code (when new user signs up), Apply a referral code (when new user signs up), Apply a referral code (when new user signs up)
-
-### Community 734 - "Community 734"
+### Community 533 - "Community 533"
 Cohesion: 0.4
 Nodes (4): extract_video_id_from_url(), get_youtube_streaming_url(), Get video streaming URL using YouTube Data API.     Supports both Public (API Ke, Extract video ID from various YouTube URL formats.
 
-### Community 735 - "Community 735"
-Cohesion: 0.5
-Nodes (3): audit_endpoint(), get_frontend_calls(), run_audit()
-
-### Community 736 - "Community 736"
+### Community 535 - "Community 535"
 Cohesion: 0.4
-Nodes (5): mock_groq(), Mock Groq API responses., Mock Groq API responses., Mock Groq API responses., Mock Groq API responses.
+Nodes (3): Generates N variant prompts based on the original concept.                  Stra, Handles generation of high-frequency content variants for A/B/n testing.     Foc, VariantGenerator
 
-### Community 737 - "Community 737"
-Cohesion: 0.5
-Nodes (3): MyApp.Accounts.User, create(), validate()
-
-### Community 739 - "Community 739"
+### Community 538 - "Community 538"
 Cohesion: 0.4
-Nodes (4): NetworkError, connectionFailed, timeout, unauthorized
+Nodes (4): Verify that generate_video_effect returns directions instead of code., Verify that the interpreter cannot access sensitive modules even if it tries., test_interpreter_isolation(), test_native_effect_delegation()
 
-### Community 740 - "Community 740"
+### Community 540 - "Community 540"
+Cohesion: 0.4
+Nodes (3): MetasearchScanner, Metasearch scanner that combines Google Trends and Google Search for      compre, Combines Google Trends and Google Search results for comprehensive discovery.
+
+### Community 541 - "Community 541"
+Cohesion: 0.4
+Nodes (3): GoogleTrendsScanner, Google Trends scanner for discovering trending topics.     Uses free Google Tren, Fetches trending searches related to the niche from Google Trends.         Uses
+
+### Community 542 - "Community 542"
+Cohesion: 0.5
+Nodes (5): load_ltx_19b_transformer(), _load_safetensor_weights(), Phase 2: Stream 19B Transformer (38GB BF16), _resolve_meta_parameters_and_buffers(), _set_nested_attribute()
+
+### Community 544 - "Community 544"
+Cohesion: 0.5
+Nodes (4): print_validation_report(), Log a formatted validation report., Runs a mission-critical check of environment variables.     Returns a dict with, validate_critical_config()
+
+### Community 545 - "Community 545"
+Cohesion: 0.4
+Nodes (3): Test: Autonomous agent flows, Check zero inference status, TestAutonomousFlow
+
+### Community 546 - "Community 546"
+Cohesion: 0.4
+Nodes (3): Test: Analytics and reporting, Get dashboard summary, TestAnalyticsFlow
+
+### Community 547 - "Community 547"
+Cohesion: 0.4
+Nodes (4): Background task to execute Remotion render., Triggers a programmatic Remotion render in the background.     Requires authenti, run_render_task(), trigger_render()
+
+### Community 548 - "Community 548"
+Cohesion: 0.5
+Nodes (4): main(), Attempt to import a module and return success status., Main verification function., verify_import()
+
+### Community 549 - "Community 549"
+Cohesion: 0.4
+Nodes (4): burnOpacity, burnTranslateX, CinematicOverlayProps, frame
+
+### Community 550 - "Community 550"
+Cohesion: 0.4
+Nodes (4): frame, NewsTickerProps, { width }, x
+
+### Community 551 - "Community 551"
 Cohesion: 0.4
 Nodes (5): CI/CD Integration, code:yaml (name: E2E Tests), code:yaml (e2e:), GitHub Actions Example, GitLab CI Example
 
-### Community 741 - "Community 741"
-Cohesion: 0.4
-Nodes (5): 3. Creation Page (`/creation`), Creation Gaps, Hook Analysis Panel, Input Controls, Script Workspace
-
-### Community 742 - "Community 742"
+### Community 552 - "Community 552"
 Cohesion: 0.4
 Nodes (5): 6. Publishing Page (`/publishing`), Deploy Modal, History & Scheduled, Platform Connection, Publishing Gaps
 
-### Community 743 - "Community 743"
+### Community 553 - "Community 553"
 Cohesion: 0.4
 Nodes (5): 7. Analytics Page (`/analytics`), Analytics Gaps, Auto-Pilot, Data Fetching, Reports
 
-### Community 744 - "Community 744"
+### Community 554 - "Community 554"
 Cohesion: 0.4
 Nodes (5): 12. Use Case Scenario Coverage, Content Discovery Pipeline, Monetization Pipeline, Publishing Pipeline, Video Generation Pipeline
 
-### Community 745 - "Community 745"
+### Community 555 - "Community 555"
+Cohesion: 0.4
+Nodes (5): 3. Creation Page (`/creation`), Creation Gaps, Hook Analysis Panel, Input Controls, Script Workspace
+
+### Community 556 - "Community 556"
 Cohesion: 0.4
 Nodes (5): Conclusion:, Coverage Statistics:, Identified GAPS (Prioritized):, Implementation Priority:, SUMMARY
 
-### Community 746 - "Community 746"
+### Community 557 - "Community 557"
 Cohesion: 0.4
 Nodes (5): P0 — Fix Today (Broken Core Flows), P1 — This Week (Orphaned Backend → UI Wiring), P2 — Next Sprint (Missing Features), P3 — Technical Debt, SECTION 7: ACTIONABLE FIX LIST (Priority Order)
 
-### Community 747 - "Community 747"
-Cohesion: 0.4
-Nodes (5): Next Steps (Updated Roadmap), Week 1-2: Critical Infrastructure, Week 3-4: Testing Foundation, Week 5-6: Quality Gates, Week 7-8: Advanced Features
-
-### Community 748 - "Community 748"
+### Community 558 - "Community 558"
 Cohesion: 0.4
 Nodes (5): 1. External API Keys Configuration, 2. GPU Node Setup for Video Generation, code:bash (# Add to .env), code:block2 (┌─────────────────────────────────────────┐), Phase 1: External API Integrations (Points 1-2)
 
-### Community 749 - "Community 749"
+### Community 559 - "Community 559"
+Cohesion: 0.4
+Nodes (5): Next Steps (Updated Roadmap), Week 1-2: Critical Infrastructure, Week 3-4: Testing Foundation, Week 5-6: Quality Gates, Week 7-8: Advanced Features
+
+### Community 560 - "Community 560"
 Cohesion: 0.4
 Nodes (4): 1. Market Comparison: ettametta vs. The Giants, 2. Our Strategic Moat: The "AI Director", 3. Positioning Summary, ettametta: Competitive Landscape & Market Positioning (2026)
 
-### Community 750 - "Community 750"
+### Community 561 - "Community 561"
 Cohesion: 0.4
 Nodes (5): 🔴 CRITICAL (Must Fix Before Production), 🟠 HIGH Priority, 🟢 LOW Priority, 🟡 MEDIUM Priority, PART C: Critical Gaps - Priority Order
 
-### Community 751 - "Community 751"
+### Community 562 - "Community 562"
 Cohesion: 0.4
 Nodes (5): 2.2 Trading Service, code:block3 (Status: DISABLED (ENABLE_TRADING=false)), **CURRENT STATE:**, **REAL IMPLEMENTATION REQUIREMENTS:**, **WHY DISABLED?**
 
-### Community 752 - "Community 752"
-Cohesion: 0.4
-Nodes (5): code:yaml (celery_worker:), [Infrastructure & Deployment], [MODIFY] [docker-compose.yml](file:///home/psalmprax/ettametta/docker-compose.yml), Proposed Changes, [Remote Server: 38.54.12.83]
-
-### Community 753 - "Community 753"
+### Community 563 - "Community 563"
 Cohesion: 0.4
 Nodes (5): [MODIFY] `remote_ai_setup/main.py`, [MODIFY] `remote_ai_setup/requirements.txt`, Phase 84: Expanding Remote AI (Whisper + Llama), [Setup Components], [VRAM Optimization]
 
-### Community 754 - "Community 754"
+### Community 564 - "Community 564"
 Cohesion: 0.4
-Nodes (5): 4. Nexus Page (`/nexus`), AI Agent Chat, Blueprint Section, Cluster Manager, Persona Lab
+Nodes (5): code:yaml (celery_worker:), [Infrastructure & Deployment], [MODIFY] [docker-compose.yml](file:///home/psalmprax/ettametta/docker-compose.yml), Proposed Changes, [Remote Server: 38.54.12.83]
 
-### Community 755 - "Community 755"
+### Community 565 - "Community 565"
 Cohesion: 0.4
 Nodes (5): 2. Discovery Page (`/discovery`), Content Cards, Header Section, Mode Selector, Neural Config Drawer
 
-### Community 756 - "Community 756"
+### Community 566 - "Community 566"
+Cohesion: 0.4
+Nodes (5): 4. Nexus Page (`/nexus`), AI Agent Chat, Blueprint Section, Cluster Manager, Persona Lab
+
+### Community 567 - "Community 567"
 Cohesion: 0.4
 Nodes (5): Critical Gaps - What Needs Real Implementation, ✅ FIXED - P0 (2026-04-04), P1 - Major Feature Gaps (Still Pending), P2 - Noticeable Gaps, P3 - Nice to Have
 
-### Community 757 - "Community 757"
-Cohesion: 0.4
-Nodes (5): 7.1 Data Views, 7.2 A/B Testing, 7.3 Export, 7.4 Optimization, 7. Analytics Page (`/analytics`)
-
-### Community 758 - "Community 758"
-Cohesion: 0.4
-Nodes (5): 5.1 Pipeline Configuration, 5.2 Persona Lab, 5.3 AI Agent Chat, 5.4 Activity Stream, 5. Nexus Page (`/nexus`)
-
-### Community 759 - "Community 759"
+### Community 568 - "Community 568"
 Cohesion: 0.4
 Nodes (5): 6.1 Account Management, 6.2 Deployment, 6.3 Settings Toggles, 6.4 Post Management, 6. Publishing Page (`/publishing`)
 
-### Community 760 - "Community 760"
+### Community 569 - "Community 569"
+Cohesion: 0.4
+Nodes (5): 7.1 Data Views, 7.2 A/B Testing, 7.3 Export, 7.4 Optimization, 7. Analytics Page (`/analytics`)
+
+### Community 570 - "Community 570"
 Cohesion: 0.4
 Nodes (5): 2.1 Search & Filter Use Cases, 2.2 Content Actions, 2.3 Generative Mode, 2.4 Neural Config Panel, 2. Discovery Page (`/discovery`)
 
-### Community 761 - "Community 761"
+### Community 571 - "Community 571"
 Cohesion: 0.4
-Nodes (5): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), For --update (incremental re-extraction)
+Nodes (5): 5.1 Pipeline Configuration, 5.2 Persona Lab, 5.3 AI Agent Chat, 5.4 Activity Stream, 5. Nexus Page (`/nexus`)
 
-### Community 762 - "Community 762"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 763 - "Community 763"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 764 - "Community 764"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 765 - "Community 765"
-Cohesion: 0.4
-Nodes (5): code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -c "), For --update (incremental re-extraction)
-
-### Community 766 - "Community 766"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 767 - "Community 767"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 768 - "Community 768"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 769 - "Community 769"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 770 - "Community 770"
-Cohesion: 0.4
-Nodes (5): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), For --update (incremental re-extraction)
-
-### Community 792 - "Community 792"
+### Community 596 - "Community 596"
 Cohesion: 0.83
 Nodes (3): api_get(), api_post(), main()
 
-### Community 794 - "Community 794"
+### Community 597 - "Community 597"
 Cohesion: 0.5
-Nodes (3): Test the complete scene-based video production workflow, Test the complete scene-based video production workflow, test_scene_based_video_production()
+Nodes (4): curl_youtube(), Scrape YouTube - prioritize newest content, Use yt-dlp for YouTube extraction, scrape_youtube()
 
-### Community 795 - "Community 795"
-Cohesion: 0.67
-Nodes (3): main(), Test downloading a video from discovered content, test_download()
-
-### Community 798 - "Community 798"
-Cohesion: 0.5
-Nodes (3): find_best_storage(), Identifies the largest writable partition from common GPU server mount points., Identifies the largest writable partition from common GPU server mount points.
-
-### Community 799 - "Community 799"
-Cohesion: 0.5
-Nodes (3): Maintain conversation context with memory.                  Args:             us, Maintain conversation context with memory.                  Args:             us, Maintain conversation context with memory.                  Args:             us
-
-### Community 801 - "Community 801"
-Cohesion: 0.5
-Nodes (3): Uses Groq with parallel batching and high-speed models to rank candidates., Uses Groq with parallel batching and high-speed models to rank candidates., Uses Groq with parallel batching and high-speed models to rank candidates.
-
-### Community 802 - "Community 802"
-Cohesion: 0.5
-Nodes (4): complete(), Generate a completion using any available LLM provider.     Falls back to altern, Generate a completion using any available LLM provider.     Falls back to altern, Generate a completion using any available LLM provider.     Falls back to altern
-
-### Community 803 - "Community 803"
-Cohesion: 0.5
-Nodes (3): Convert product URL to affiliate link.          Args:             product_url: D, Convert product URL to affiliate link.          Args:             product_url: D, Convert product URL to affiliate link.          Args:             product_url: D
-
-### Community 804 - "Community 804"
-Cohesion: 0.5
-Nodes (3): Deep analysis of a specific video's performance and viral potential.          Ar, Deep analysis of a specific video's performance and viral potential.          Ar, Deep analysis of a specific video's performance and viral potential.          Ar
-
-### Community 805 - "Community 805"
-Cohesion: 0.5
-Nodes (3): Calculate estimated commission.          Args:             product_price: Produc, Calculate estimated commission.          Args:             product_price: Produc, Calculate estimated commission.          Args:             product_price: Produc
-
-### Community 806 - "Community 806"
-Cohesion: 0.5
-Nodes (4): chat(), Chat completion using message history with any LLM provider., Chat completion using message history with any LLM provider., Chat completion using message history with any LLM provider.
-
-### Community 807 - "Community 807"
-Cohesion: 0.5
-Nodes (3): Return list of supported platforms with their capabilities., Return list of supported platforms with their capabilities., Return list of supported platforms with their capabilities.
-
-### Community 808 - "Community 808"
-Cohesion: 0.5
-Nodes (3): Check if service is enabled., Check if service is enabled., Check if service is enabled.
-
-### Community 809 - "Community 809"
-Cohesion: 0.5
-Nodes (3): Analyzes transcript content, user-selected style, and VLM visual insights to dec, Analyzes transcript content, user-selected style, and VLM visual insights to dec, Analyzes transcript content, user-selected style, and VLM visual insights to dec
-
-### Community 810 - "Community 810"
+### Community 598 - "Community 598"
 Cohesion: 0.67
 Nodes (3): main(), Test full pipeline: download -> transcribe -> analyze -> process, test_full_pipeline()
 
-### Community 811 - "Community 811"
-Cohesion: 0.5
-Nodes (3): Check if opencli-rs binary is installed., Check if opencli-rs binary is installed., Check if opencli-rs binary is installed.
+### Community 599 - "Community 599"
+Cohesion: 0.67
+Nodes (3): main(), Test downloading a video from discovered content, test_download()
 
-### Community 812 - "Community 812"
-Cohesion: 0.5
-Nodes (3): Find successful video templates and patterns in a niche.          Args:, Find successful video templates and patterns in a niche.          Args:, Find successful video templates and patterns in a niche.          Args:
+### Community 602 - "Community 602"
+Cohesion: 0.67
+Nodes (3): main(), Run the full Nexus pipeline for a single style., test_style()
 
-### Community 813 - "Community 813"
+### Community 604 - "Community 604"
 Cohesion: 0.5
-Nodes (3): High-speed asset procurement bridge.         Downloads identified viral leads fo, High-speed asset procurement bridge.         Downloads identified viral leads fo, High-speed asset procurement bridge.         Downloads identified viral leads fo
+Nodes (3): grant_monthly_subscription_credits(), Periodic Celery tasks for the payment/credit system.  Currently includes: - ``gr, Grant monthly subscription credits to all users on paid tiers.      The task run
 
-### Community 814 - "Community 814"
+### Community 605 - "Community 605"
+Cohesion: 0.67
+Nodes (3): init_pipeline(), Synthesizes a short video clip using local GPU infrastructure.     Returns the a, synthesize_local_task()
+
+### Community 606 - "Community 606"
+Cohesion: 0.67
+Nodes (3): GetNextUserAgent(), initUserAgents(), UserAgentConfig
+
+### Community 611 - "Community 611"
 Cohesion: 0.5
-Nodes (3): Schedules a video or variant for upload, Schedules a video or variant for upload, Schedules a video or variant for upload
+Nodes (3): Smoke test for all UI pages, Test all dashboard pages load, TestUISmokeTest
 
-### Community 815 - "Community 815"
+### Community 612 - "Community 612"
 Cohesion: 0.5
-Nodes (3): AI identifies related sub-niches and triggers background scans., AI identifies related sub-niches and triggers background scans., AI identifies related sub-niches and triggers background scans.
+Nodes (3): Integration tests for A/B testing, Test A/B testing flows, TestABTestingIntegration
 
-### Community 816 - "Community 816"
+### Community 613 - "Community 613"
 Cohesion: 0.5
-Nodes (3): Comprehensive search for content candidates across DB and Live Scanners., Comprehensive search for content candidates across DB and Live Scanners., Comprehensive search for content candidates across DB and Live Scanners.
+Nodes (3): Integration tests for credits/billing, Test credits: balance → packages → transactions, TestCreditsIntegration
 
-### Community 817 - "Community 817"
+### Community 614 - "Community 614"
 Cohesion: 0.5
-Nodes (3): Post content to a platform using the user's session.          Args:, Post content to a platform using the user's session.          Args:, Post content to a platform using the user's session.          Args:
+Nodes (3): Integration tests for Nexus, Test nexus: queue → stats → jobs → blueprints, TestNexusIntegration
 
-### Community 818 - "Community 818"
+### Community 615 - "Community 615"
 Cohesion: 0.5
-Nodes (3): Perform an interaction on platform content (like, comment, follow, etc.)., Perform an interaction on platform content (like, comment, follow, etc.)., Perform an interaction on platform content (like, comment, follow, etc.).
+Nodes (3): Integration tests for autonomous agents, Test agent: zero → chat → capabilities, TestAgentIntegration
 
-### Community 819 - "Community 819"
+### Community 616 - "Community 616"
 Cohesion: 0.5
-Nodes (3): Test user settings update, Test user settings update, Test user settings update
+Nodes (3): Integration tests for settings, Test settings: filters → preferences → system, TestSettingsIntegration
 
-### Community 820 - "Community 820"
+### Community 617 - "Community 617"
 Cohesion: 0.5
-Nodes (3): Test user registration, Test user registration, Test user registration
+Nodes (4): get_referral_stats(), get_referrals(), Get user's referrals with stats, Get referral statistics
 
-### Community 821 - "Community 821"
-Cohesion: 0.5
-Nodes (3): Test performance analytics, Test performance analytics, Test performance analytics
-
-### Community 822 - "Community 822"
-Cohesion: 0.5
-Nodes (4): db_session(), Database session for testing, Database session for testing, isolated per test function, Database session for testing, isolated per test function
-
-### Community 823 - "Community 823"
-Cohesion: 0.5
-Nodes (3): Test premium video generation with pro workflow, Test premium video generation with pro workflow, Test premium video generation with pro workflow
-
-### Community 824 - "Community 824"
-Cohesion: 0.5
-Nodes (3): Test trending content discovery, Test trending content discovery, Test trending content discovery
-
-### Community 825 - "Community 825"
-Cohesion: 0.5
-Nodes (3): Test A/B test creation, Test A/B test creation, Test A/B test creation
-
-### Community 826 - "Community 826"
-Cohesion: 0.5
-Nodes (3): Test subscription management, Test subscription management, Test subscription management
-
-### Community 827 - "Community 827"
-Cohesion: 0.5
-Nodes (3): Integration tests for Persona, Integration tests for Persona, TestPersonaIntegration
-
-### Community 828 - "Community 828"
-Cohesion: 0.5
-Nodes (3): Trigger E2E remote generation and poll for results., Trigger E2E remote generation and poll for results., test_remote_e2e()
-
-### Community 829 - "Community 829"
-Cohesion: 0.5
-Nodes (3): Test listing jobs with authentication., Test listing jobs with authentication., Test listing jobs with authentication.
-
-### Community 830 - "Community 830"
-Cohesion: 0.5
-Nodes (3): Test generation with invalid engine., Test generation with invalid engine., Test generation with invalid engine.
-
-### Community 831 - "Community 831"
-Cohesion: 0.5
-Nodes (3): Test login with non-existent username., Test login with non-existent username., Test login with non-existent username.
-
-### Community 832 - "Community 832"
-Cohesion: 0.5
-Nodes (3): Test registering with an existing username fails., Test registering with an existing username fails., Test registering with an existing username fails.
-
-### Community 833 - "Community 833"
-Cohesion: 0.5
-Nodes (3): Test registering with an invalid email format., Test registering with an invalid email format., Test registering with an invalid email format.
-
-### Community 834 - "Community 834"
-Cohesion: 0.5
-Nodes (3): Test that the first registered user becomes admin., Test that the first registered user becomes admin., Test that the first registered user becomes admin.
-
-### Community 835 - "Community 835"
-Cohesion: 0.5
-Nodes (3): Test registering with an existing email fails., Test registering with an existing email fails., Test registering with an existing email fails.
-
-### Community 836 - "Community 836"
-Cohesion: 0.5
-Nodes (3): Test getting current user without token., Test getting current user without token., Test getting current user without token.
-
-### Community 837 - "Community 837"
-Cohesion: 0.5
-Nodes (3): Test getting current user with invalid token., Test getting current user with invalid token., Test getting current user with invalid token.
-
-### Community 838 - "Community 838"
-Cohesion: 0.5
-Nodes (3): Test login with wrong password., Test login with wrong password., Test login with wrong password.
-
-### Community 839 - "Community 839"
-Cohesion: 0.5
-Nodes (3): get_user_rate_limit(), Returns a rate limit string based on the user's subscription tier.     Falls bac, Returns a rate limit string based on the user's subscription tier.     Falls bac
-
-### Community 841 - "Community 841"
-Cohesion: 0.5
-Nodes (4): get_db(), Async dependency for database sessions., Async dependency for database sessions., Async dependency for database sessions.
-
-### Community 842 - "Community 842"
-Cohesion: 0.5
-Nodes (3): Listens for 'system_config_reload' signals from Redis and re-initializes      fr, Listens for 'system_config_reload' signals from Redis and re-initializes      fr, start_hot_reload_listener()
-
-### Community 843 - "Community 843"
-Cohesion: 0.5
-Nodes (3): Input validation error., Input validation error., ValidationError
-
-### Community 844 - "Community 844"
-Cohesion: 0.5
-Nodes (3): Tests the FULL AI-driven documentary creation flow.     This uses AutoCreator to, Tests the FULL AI-driven documentary creation flow.     This uses AutoCreator to, test_documentary_flow()
-
-### Community 846 - "Community 846"
-Cohesion: 0.5
-Nodes (3): demonstrate_real_video_production(), Demonstrate actual video production with real dependencies, Demonstrate actual video production with real dependencies
-
-### Community 847 - "Community 847"
+### Community 623 - "Community 623"
 Cohesion: 0.83
 Nodes (3): main(), poll_and_download(), submit_job()
 
-### Community 848 - "Community 848"
-Cohesion: 0.5
-Nodes (3): demonstrate_complete_workflow(), Demonstrate the complete video production workflow, Demonstrate the complete video production workflow
+### Community 625 - "Community 625"
+Cohesion: 0.67
+Nodes (3): create_scene_based_demo_video(), main(), Create a demo video by fusing existing test videos
 
-### Community 850 - "Community 850"
+### Community 626 - "Community 626"
 Cohesion: 0.5
-Nodes (3): populate_niches(), Populate default niches for discovery, Populate default niches for discovery
+Nodes (3): frame, noiseOpacity, VFXShaderProps
 
-### Community 855 - "Community 855"
+### Community 627 - "Community 627"
 Cohesion: 0.5
-Nodes (4): Blueprints, Niches, Personas, Test Data
+Nodes (3): { durationInFrames }, frame, ProgressTrackerProps
 
-### Community 856 - "Community 856"
+### Community 628 - "Community 628"
 Cohesion: 0.5
 Nodes (4): Adding New Tests, Debugging, Maintenance, Updating Test Data
 
-### Community 857 - "Community 857"
+### Community 629 - "Community 629"
+Cohesion: 0.5
+Nodes (4): Blueprints, Niches, Personas, Test Data
+
+### Community 630 - "Community 630"
 Cohesion: 0.5
 Nodes (4): 13. Critical Gaps Summary (Real-First Priority), Tier 1: MUST HAVE (Launch Critical), Tier 2: SHOULD HAVE (Feature Complete), Tier 3: NICE TO HAVE (Polish)
 
-### Community 858 - "Community 858"
+### Community 631 - "Community 631"
 Cohesion: 0.5
 Nodes (4): 5. Transformation Page (`/transformation`), Filter Toggles, Job Queue, New Job Modal
 
-### Community 859 - "Community 859"
-Cohesion: 0.5
-Nodes (4): 7. NEXUS PAGE (`/nexus`), Buttons/Clickables:, GAPS:, Use Cases Covered:
-
-### Community 860 - "Community 860"
-Cohesion: 0.5
-Nodes (4): 5. DISCOVERY PAGE (`/discovery`), Buttons/Clickables:, GAPS:, Use Cases Covered:
-
-### Community 861 - "Community 861"
-Cohesion: 0.5
-Nodes (4): 8. AUTONOMOUS PAGE (`/autonomous`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
-
-### Community 862 - "Community 862"
-Cohesion: 0.5
-Nodes (4): 10. PUBLISHING PAGE (`/publishing`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
-
-### Community 863 - "Community 863"
-Cohesion: 0.5
-Nodes (4): 9. TRANSFORMATION PAGE (`/transformation`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
-
-### Community 864 - "Community 864"
-Cohesion: 0.5
-Nodes (4): 6. CREATION PAGE (`/creation`), Buttons/Clickables:, GAPS:, Use Cases Covered:
-
-### Community 865 - "Community 865"
-Cohesion: 0.5
-Nodes (4): 16. ADMIN PAGE (`/admin`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
-
-### Community 866 - "Community 866"
-Cohesion: 0.5
-Nodes (4): 15. SETTINGS PAGE (`/settings`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
-
-### Community 867 - "Community 867"
-Cohesion: 0.5
-Nodes (4): 12. EMPIRE PAGE (`/empire`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
-
-### Community 868 - "Community 868"
+### Community 632 - "Community 632"
 Cohesion: 0.5
 Nodes (4): 14. TRADING PAGE (`/trading`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
 
-### Community 869 - "Community 869"
+### Community 633 - "Community 633"
 Cohesion: 0.5
 Nodes (4): 13. CREDITS PAGE (`/credits`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
 
-### Community 870 - "Community 870"
+### Community 634 - "Community 634"
+Cohesion: 0.5
+Nodes (4): 9. TRANSFORMATION PAGE (`/transformation`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
+
+### Community 635 - "Community 635"
+Cohesion: 0.5
+Nodes (4): 7. NEXUS PAGE (`/nexus`), Buttons/Clickables:, GAPS:, Use Cases Covered:
+
+### Community 636 - "Community 636"
+Cohesion: 0.5
+Nodes (4): 10. PUBLISHING PAGE (`/publishing`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
+
+### Community 637 - "Community 637"
+Cohesion: 0.5
+Nodes (4): 8. AUTONOMOUS PAGE (`/autonomous`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
+
+### Community 638 - "Community 638"
 Cohesion: 0.5
 Nodes (4): 11. ANALYTICS PAGE (`/analytics`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
 
-### Community 871 - "Community 871"
+### Community 639 - "Community 639"
 Cohesion: 0.5
-Nodes (4): 5.1 Silent Error Failures (Console-Only), 5.2 False Positive Feedback, 5.3 Missing Error Boundaries, SECTION 5: ERROR HANDLING GAPS
+Nodes (4): 5. DISCOVERY PAGE (`/discovery`), Buttons/Clickables:, GAPS:, Use Cases Covered:
 
-### Community 872 - "Community 872"
+### Community 640 - "Community 640"
+Cohesion: 0.5
+Nodes (4): 16. ADMIN PAGE (`/admin`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
+
+### Community 641 - "Community 641"
+Cohesion: 0.5
+Nodes (4): 6. CREATION PAGE (`/creation`), Buttons/Clickables:, GAPS:, Use Cases Covered:
+
+### Community 642 - "Community 642"
+Cohesion: 0.5
+Nodes (4): 12. EMPIRE PAGE (`/empire`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
+
+### Community 643 - "Community 643"
+Cohesion: 0.5
+Nodes (4): 15. SETTINGS PAGE (`/settings`), Buttons/Clickables:, GAPS: None - all covered., Use Cases Covered:
+
+### Community 644 - "Community 644"
 Cohesion: 0.5
 Nodes (4): FULLY REAL (24 services), PARTIAL (4 services), SECTION 6: SERVICES CLASSIFICATION SUMMARY, STUB/PLACEHOLDER (3 items)
 
-### Community 873 - "Community 873"
+### Community 645 - "Community 645"
 Cohesion: 0.5
-Nodes (4): Generative Synthesis Engines, Output Formats, Transformation Filters (VideoProcessor), Transformation Pipeline Reference
+Nodes (4): 1.1 Non-Admin Settings Save Is a No-Op — `settings/page.tsx:207`, 1.2 Global Error Reporting Hits Non-Existent Endpoint — `GlobalErrorBoundary.tsx:44`, 1.3 Affiliate Link Listing Returns 405 — `empire/page.tsx:122`, SECTION 1: CRITICAL GAPS (Must Fix Immediately)
 
-### Community 874 - "Community 874"
+### Community 646 - "Community 646"
 Cohesion: 0.5
 Nodes (4): 5. Production OAuth Credentials, 6. Cloud Storage Configuration, 7. External AI Services, Phase 4: Credential & OAuth Configuration (Points 5-7)
 
-### Community 875 - "Community 875"
+### Community 647 - "Community 647"
 Cohesion: 0.5
-Nodes (4): Areas Needing Improvement, code:typescript (// Tries real API first, falls back to deterministic data on), Current Pattern (Already Good), PART D: Real-First Implementation Status
+Nodes (4): Generative Synthesis Engines, Output Formats, Transformation Filters (VideoProcessor), Transformation Pipeline Reference
 
-### Community 876 - "Community 876"
+### Community 648 - "Community 648"
 Cohesion: 0.5
 Nodes (4): ❌ DON'T add fallback without real attempt first, ❌ DON'T create more dummies/simulations/placeholders, ❌ DON'T wait for user to implement, PART E: What NOT to Do (No More Placeholders)
 
-### Community 877 - "Community 877"
+### Community 649 - "Community 649"
 Cohesion: 0.5
 Nodes (4): 5. Implementation Priority Matrix, **PHASE 1 - Critical (Must Fix Now):**, **PHASE 2 - High Priority (Fix Next):**, **PHASE 3 - Medium Priority (Nice to Have):**
 
-### Community 878 - "Community 878"
+### Community 650 - "Community 650"
 Cohesion: 0.5
-Nodes (4): [NEW] [test_integration_discovery.py](file:///home/psalmprax/ettametta/api/tests/test_integration_discovery.py), [NEW] [test_integration_video.py](file:///home/psalmprax/ettametta/api/tests/test_integration_video.py), Phase 77: Expanded E2E & Integration Testing, [Test Suites]
+Nodes (4): Areas Needing Improvement, code:typescript (// Tries real API first, falls back to deterministic data on), Current Pattern (Already Good), PART D: Real-First Implementation Status
 
-### Community 879 - "Community 879"
-Cohesion: 0.5
-Nodes (4): [Inference Features], [NEW] `remote_ai_setup/`, Phase 83: Remote AI API Deployment (VPS), [Setup Components]
-
-### Community 880 - "Community 880"
-Cohesion: 0.5
-Nodes (4): [CI Configuration], [MODIFY] [.github/workflows/ci.yml](file:///home/psalmprax/ettametta/.github/workflows/ci.yml), [MODIFY] [Jenkinsfile](file:///home/psalmprax/ettametta/Jenkinsfile), Phase 81: CI/CD E2E Integration & Sync
-
-### Community 881 - "Community 881"
+### Community 651 - "Community 651"
 Cohesion: 0.5
 Nodes (4): [COMMAND] `npm install` in `e2e/`, [Fixes], Phase 80: E2E Remediation & Validation, [RENAME] `e2e/conftest.ts` -> `e2e/playwright.config.ts`
 
-### Community 882 - "Community 882"
+### Community 652 - "Community 652"
 Cohesion: 0.5
-Nodes (4): 7. Analytics Page (`/analytics`), Auto-Pilot, Data Fetching, Reports
+Nodes (4): [Inference Features], [NEW] `remote_ai_setup/`, Phase 83: Remote AI API Deployment (VPS), [Setup Components]
 
-### Community 883 - "Community 883"
+### Community 653 - "Community 653"
+Cohesion: 0.5
+Nodes (4): [NEW] [test_integration_discovery.py](file:///home/psalmprax/ettametta/api/tests/test_integration_discovery.py), [NEW] [test_integration_video.py](file:///home/psalmprax/ettametta/api/tests/test_integration_video.py), Phase 77: Expanded E2E & Integration Testing, [Test Suites]
+
+### Community 654 - "Community 654"
+Cohesion: 0.5
+Nodes (4): [CI Configuration], [MODIFY] [.github/workflows/ci.yml](file:///home/psalmprax/ettametta/.github/workflows/ci.yml), [MODIFY] [Jenkinsfile](file:///home/psalmprax/ettametta/Jenkinsfile), Phase 81: CI/CD E2E Integration & Sync
+
+### Community 655 - "Community 655"
 Cohesion: 0.5
 Nodes (4): 3. Creation Page (`/creation`), Hook Analysis Panel, Input Controls, Script Workspace
 
-### Community 884 - "Community 884"
+### Community 656 - "Community 656"
+Cohesion: 0.5
+Nodes (4): 7. Analytics Page (`/analytics`), Auto-Pilot, Data Fetching, Reports
+
+### Community 657 - "Community 657"
 Cohesion: 0.5
 Nodes (4): Implementation Priority Matrix, Tier 1: Must Have Working (Launch Critical), Tier 2: Should Have Working (Feature Complete), Tier 3: Nice to Have (Polish)
 
-### Community 885 - "Community 885"
-Cohesion: 0.5
-Nodes (4): 5. Transformation Page (`/transformation`), Filter Toggles, Job Queue, New Job Modal
-
-### Community 886 - "Community 886"
-Cohesion: 0.5
-Nodes (4): 6. Publishing Page (`/publishing`), Deploy Modal, History & Scheduled, Platform Connection
-
-### Community 887 - "Community 887"
+### Community 658 - "Community 658"
 Cohesion: 0.5
 Nodes (4): CRITICAL GAPS (No Real Implementation), HIGH GAPS (Partial Implementation), MEDIUM GAPS (UI Exists, Needs Testing), Summary: Gap Analysis by Severity
 
-### Community 888 - "Community 888"
+### Community 659 - "Community 659"
 Cohesion: 0.5
-Nodes (4): Already Real (✅ Working), Need Real Implementation (In Priority Order), Stub/Fallback Checklist, Stubs That Should Be Removed
+Nodes (4): 6. Publishing Page (`/publishing`), Deploy Modal, History & Scheduled, Platform Connection
 
-### Community 889 - "Community 889"
+### Community 660 - "Community 660"
 Cohesion: 0.5
-Nodes (4): 4.1 Job Creation, 4.2 Job Management, 4.3 Filter Configuration, 4. Transformation Page (`/transformation`)
+Nodes (4): 5. Transformation Page (`/transformation`), Filter Toggles, Job Queue, New Job Modal
 
-### Community 890 - "Community 890"
-Cohesion: 0.5
-Nodes (4): 3.1 Script Generation, 3.2 Script Editing, 3.3 Export & Launch, 3. Creation Page (`/creation`)
-
-### Community 891 - "Community 891"
+### Community 661 - "Community 661"
 Cohesion: 0.5
 Nodes (4): FIXED - HIGH Priority, LOW Priority (Nice to Have), REMAINING - MEDIUM Priority, Summary of Gaps - Updated 2026-04-04
 
-### Community 892 - "Community 892"
+### Community 662 - "Community 662"
 Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify query
+Nodes (4): 3.1 Script Generation, 3.2 Script Editing, 3.3 Export & Launch, 3. Creation Page (`/creation`)
 
-### Community 893 - "Community 893"
+### Community 663 - "Community 663"
 Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify path
+Nodes (4): Already Real (✅ Working), Need Real Implementation (In Priority Order), Stub/Fallback Checklist, Stubs That Should Be Removed
 
-### Community 894 - "Community 894"
+### Community 664 - "Community 664"
 Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify explain
+Nodes (4): 4.1 Job Creation, 4.2 Job Management, 4.3 Filter Configuration, 4. Transformation Page (`/transformation`)
 
-### Community 895 - "Community 895"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify query
-
-### Community 896 - "Community 896"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify path
-
-### Community 897 - "Community 897"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify explain
-
-### Community 898 - "Community 898"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify explain
-
-### Community 899 - "Community 899"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify query
-
-### Community 900 - "Community 900"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify path
-
-### Community 901 - "Community 901"
-Cohesion: 0.5
-Nodes (4): code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -m graphify save-result --question "Path from NODE_A ), For /graphify path
-
-### Community 902 - "Community 902"
-Cohesion: 0.5
-Nodes (4): code:powershell (python -c "), code:powershell (python -c "), code:powershell (python -m graphify save-result --question "QUESTION" --answe), For /graphify query
-
-### Community 903 - "Community 903"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify query
-
-### Community 904 - "Community 904"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify path
-
-### Community 905 - "Community 905"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify path
-
-### Community 906 - "Community 906"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify query
-
-### Community 907 - "Community 907"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify explain
-
-### Community 908 - "Community 908"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify query
-
-### Community 909 - "Community 909"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify explain
-
-### Community 910 - "Community 910"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify query
-
-### Community 911 - "Community 911"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify explain
-
-### Community 912 - "Community 912"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify query
-
-### Community 913 - "Community 913"
-Cohesion: 0.5
-Nodes (4): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), For /graphify path
-
-### Community 919 - "Community 919"
-Cohesion: 0.67
-Nodes (3): health_check(), Basic health check with model status, Basic health check with model status
-
-### Community 920 - "Community 920"
-Cohesion: 0.67
-Nodes (3): load_model(), Load a model into VRAM, Load a model into VRAM
-
-### Community 921 - "Community 921"
-Cohesion: 0.67
-Nodes (3): load_ltx_base_components(), Phase 0: Shared components (VAE, Tokenizer, Scheduler), Phase 0: Shared components (VAE, Tokenizer, Scheduler)
-
-### Community 922 - "Community 922"
-Cohesion: 0.67
-Nodes (3): cleanup_old_files(), Periodic cleanup of old files in CONTENT_DIR., Periodic cleanup of old files in CONTENT_DIR.
-
-### Community 923 - "Community 923"
-Cohesion: 0.67
-Nodes (3): delete_file(), Background task to delete a file after download., Background task to delete a file after download.
-
-### Community 924 - "Community 924"
-Cohesion: 0.67
-Nodes (3): push_heartbeat_loop(), Persistent Push Heartbeat to circumvent Firewalls on Vast.ai / RunPod, Persistent Push Heartbeat to circumvent Firewalls on Vast.ai / RunPod
-
-### Community 925 - "Community 925"
-Cohesion: 0.67
-Nodes (3): download_model(), Download a model to local storage, Download a model to local storage
-
-### Community 926 - "Community 926"
-Cohesion: 0.67
-Nodes (3): delete_model(), Delete a model from local storage, Delete a model from local storage
-
-### Community 927 - "Community 927"
-Cohesion: 0.67
-Nodes (3): Skip eager loading to avoid OOM - model loads lazily on first request., Skip eager loading to avoid OOM - model loads lazily on first request., startup_event()
-
-### Community 960 - "Community 960"
-Cohesion: 0.67
-Nodes (3): Trigger a full Lead-to-Edit compilation cycle for a niche., Trigger a full Lead-to-Edit compilation cycle for a niche., viral_loop_compilation()
-
-### Community 961 - "Community 961"
-Cohesion: 0.67
-Nodes (3): get_webhook_events(), Get recent webhook events (admin only), Get recent webhook events (admin only)
-
-### Community 962 - "Community 962"
-Cohesion: 0.67
-Nodes (3): Retry publishing a video that was pending authentication.     Called after user, Retry publishing a video that was pending authentication.     Called after user, retry_publish()
-
-### Community 978 - "Community 978"
+### Community 703 - "Community 703"
 Cohesion: 0.67
 Nodes (3): Agent Zero Scenarios, Nexus Flow Scenarios, Test Scenarios
 
-### Community 980 - "Community 980"
+### Community 705 - "Community 705"
 Cohesion: 0.67
-Nodes (3): 1. SIDEBAR NAVIGATION, Buttons/Links:, Engine Status Matrix (Sidebar):
+Nodes (3): 3. Real Payment Processor Integration, code:python (# services/payment/stripe_service.py), Phase 2: Payment Integration (Point 3)
 
-### Community 981 - "Community 981"
-Cohesion: 0.67
-Nodes (3): 4. Load Testing & Performance Tuning, code:bash (# Install k6 for load testing), Phase 3: Performance & Scale (Point 4)
-
-### Community 982 - "Community 982"
+### Community 706 - "Community 706"
 Cohesion: 0.67
 Nodes (3): 8. Success Criteria, **Launch-Ready State:**, **Post-Launch Features:**
 
-### Community 983 - "Community 983"
+### Community 707 - "Community 707"
 Cohesion: 0.67
 Nodes (3): Hard Limits, Phase 86: Long-Duration Video Stress Test, Proposed Experiments
 
-### Community 984 - "Community 984"
+### Community 708 - "Community 708"
 Cohesion: 0.67
 Nodes (3): [NEW] [test_automation.py](file:///home/psalmprax/ettametta/api/tests/test_automation.py), Phase 62: Continuous E2E Validation, [Test Suite]
 
-### Community 985 - "Community 985"
+### Community 709 - "Community 709"
 Cohesion: 0.67
 Nodes (3): Immediate Actions, Real-First Approach (Already Implemented), Recommendations
 
-### Community 986 - "Community 986"
-Cohesion: 0.67
-Nodes (3): 1.1 Main Navigation Items, 1.2 Sidebar Interactions, 1. Sidebar Navigation
-
-### Community 987 - "Community 987"
+### Community 710 - "Community 710"
 Cohesion: 0.67
 Nodes (3): 13.1 Login (`/login`), 13.2 Register (`/register`), 13. Authentication Pages
 
-### Community 988 - "Community 988"
+### Community 711 - "Community 711"
 Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 989 - "Community 989"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
-
-### Community 990 - "Community 990"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag)
-
-### Community 991 - "Community 991"
-Cohesion: 0.67
-Nodes (3): code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For native CLAUDE.md integration
-
-### Community 992 - "Community 992"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
-
-### Community 993 - "Community 993"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 994 - "Community 994"
-Cohesion: 0.67
-Nodes (3): code:bash (python3 -m graphify.serve graphify-out/graph.json), code:json ({), Step 7d - MCP server (only if --mcp flag)
-
-### Community 995 - "Community 995"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag)
-
-### Community 996 - "Community 996"
-Cohesion: 0.67
-Nodes (3): code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For native CLAUDE.md integration
-
-### Community 997 - "Community 997"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag)
-
-### Community 998 - "Community 998"
-Cohesion: 0.67
-Nodes (3): code:bash (python3 -m graphify.serve graphify-out/graph.json), code:json ({), Step 7d - MCP server (only if --mcp flag)
-
-### Community 999 - "Community 999"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
-
-### Community 1000 - "Community 1000"
-Cohesion: 0.67
-Nodes (3): code:powershell (python -m graphify.serve graphify-out/graph.json), code:json ({), Step 7d - MCP server (only if --mcp flag)
-
-### Community 1001 - "Community 1001"
-Cohesion: 0.67
-Nodes (3): code:powershell (python -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 1002 - "Community 1002"
-Cohesion: 0.67
-Nodes (3): code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For native CLAUDE.md integration
-
-### Community 1003 - "Community 1003"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:block28 (Graph complete. Outputs in PATH_TO_DIR/graphify-out/), Step 9 - Save manifest, update cost tracker, clean up, and report
-
-### Community 1004 - "Community 1004"
-Cohesion: 0.67
-Nodes (3): code:bash (LOCAL_PATH=$(graphify clone <github-url> [--branch <branch>]), code:bash (# Clone each repo, run the full pipeline on each, then merge), Step 0 - Clone GitHub repo(s) (only if a GitHub URL was given)
-
-### Community 1005 - "Community 1005"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag)
-
-### Community 1006 - "Community 1006"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:block26 (Graph complete. Outputs in PATH_TO_DIR/graphify-out/), Step 9 - Save manifest, update cost tracker, clean up, and report
-
-### Community 1007 - "Community 1007"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 1008 - "Community 1008"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
-
-### Community 1009 - "Community 1009"
-Cohesion: 0.67
-Nodes (3): code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For native CLAUDE.md integration
-
-### Community 1010 - "Community 1010"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
-
-### Community 1011 - "Community 1011"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 1012 - "Community 1012"
-Cohesion: 0.67
-Nodes (3): code:bash (python3 -m graphify.serve graphify-out/graph.json), code:json ({), Step 7d - MCP server (only if --mcp flag)
-
-### Community 1013 - "Community 1013"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 1014 - "Community 1014"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:block25 (Graph complete. Outputs in PATH_TO_DIR/graphify-out/), Step 9 - Save manifest, update cost tracker, clean up, and report
-
-### Community 1015 - "Community 1015"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag)
-
-### Community 1016 - "Community 1016"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:block4 (Corpus: X files · ~Y words), Step 2 - Detect files
-
-### Community 1017 - "Community 1017"
-Cohesion: 0.67
-Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
-
-### Community 1018 - "Community 1018"
-Cohesion: 0.67
-Nodes (3): code:bash (graphify trae install       # or: graphify trae-cn install), code:bash (graphify trae uninstall     # or: graphify trae-cn uninstall), For native AGENTS.md integration (Trae)
+Nodes (3): 1.1 Main Navigation Items, 1.2 Sidebar Interactions, 1. Sidebar Navigation
 
 ## Knowledge Gaps
-- **8499 isolated node(s):** `Demo: Discover content → Analyze → Generate AI videos`, `Demo: Discover → Analyze → Generate → Compile into final video`, `Run migrations in 'offline' mode.      This configures the context with just a U`, `Run migrations in 'online' mode.      In this scenario we need to create an Engi`, `Merge multiple heads  Revision ID: merge_heads_2026 Revises: 001_create_user_tab` (+8494 more)
+- **5780 isolated node(s):** `Demo: Discover content → Analyze → Generate AI videos`, `Demo: Discover → Analyze → Generate → Compile into final video`, `Run migrations in 'offline' mode.      This configures the context with just a U`, `Run migrations in 'online' mode.      In this scenario we need to create an Engi`, `Merge multiple heads  Revision ID: merge_heads_2026 Revises: 001_create_user_tab` (+5775 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **520 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **443 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `success_response()` connect `Community 1` to `Community 0`, `Community 2`, `Community 514`, `Community 4`, `Community 5`, `Community 10`, `Community 20`, `Community 159`, `Community 160`, `Community 546`, `Community 547`, `Community 420`, `Community 421`, `Community 682`, `Community 683`, `Community 684`, `Community 50`, `Community 959`, `Community 447`, `Community 962`, `Community 71`, `Community 338`, `Community 725`, `Community 726`, `Community 727`, `Community 728`, `Community 216`, `Community 222`, `Community 353`, `Community 99`, `Community 625`, `Community 371`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
-- **Why does `next` connect `Community 21` to `Community 258`, `Community 36`, `Community 4`, `Community 670`, `Community 590`, `Community 79`, `Community 686`, `Community 81`, `Community 18`, `Community 176`, `Community 312`, `Community 158`, `Community 63`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
-- **Why does `OpenClawBaseSkill` connect `Community 13` to `Community 8`, `Community 10`, `Community 403`, `Community 148`, `Community 20`, `Community 404`, `Community 406`, `Community 408`, `Community 409`, `Community 410`, `Community 411`, `Community 412`, `Community 157`, `Community 413`, `Community 414`, `Community 407`, `Community 290`, `Community 35`, `Community 291`, `Community 34`, `Community 45`, `Community 47`, `Community 438`, `Community 439`, `Community 183`, `Community 65`, `Community 197`, `Community 198`, `Community 75`, `Community 588`, `Community 589`, `Community 590`, `Community 79`, `Community 591`, `Community 106`, `Community 107`, `Community 244`, `Community 372`, `Community 502`, `Community 503`, `Community 504`, `Community 405`, `Community 126`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
-- **Are the 414 inferred relationships involving `str` (e.g. with `execute_content_discovery()` and `execute_scene_planning()`) actually correct?**
-  _`str` has 414 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 390 inferred relationships involving `OpenClawBaseSkill` (e.g. with `LandingPageSkill` and `WorkflowStep`) actually correct?**
-  _`OpenClawBaseSkill` has 390 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 318 inferred relationships involving `UserDB` (e.g. with `StripeMockObject` and `PaymentService`) actually correct?**
-  _`UserDB` has 318 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 236 inferred relationships involving `success_response()` (e.g. with `create_checkout_session()` and `get_subscription()`) actually correct?**
-  _`success_response()` has 236 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `next` connect `Community 194` to `Community 294`, `Community 7`, `Community 306`, `Community 19`, `Community 146`, `Community 150`, `Community 471`, `Community 24`, `Community 25`, `Community 26`, `Community 30`, `Community 607`?**
+  _High betweenness centrality (0.064) - this node is a cross-community bridge._
+- **Why does `CircuitBreaker` connect `Community 8` to `Community 1`, `Community 2`, `Community 257`, `Community 7`, `Community 9`, `Community 11`, `Community 139`, `Community 14`, `Community 147`, `Community 22`, `Community 30`, `Community 160`, `Community 299`, `Community 428`, `Community 302`, `Community 306`, `Community 180`, `Community 55`, `Community 56`, `Community 192`, `Community 205`, `Community 94`, `Community 111`, `Community 118`, `Community 119`, `Community 122`, `Community 127`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
+- **Why does `success_response()` connect `Community 6` to `Community 0`, `Community 5`, `Community 9`, `Community 12`, `Community 143`, `Community 16`, `Community 17`, `Community 18`, `Community 25`, `Community 26`, `Community 285`, `Community 286`, `Community 34`, `Community 162`, `Community 42`, `Community 435`, `Community 436`, `Community 312`, `Community 59`, `Community 192`, `Community 197`, `Community 70`, `Community 333`, `Community 78`, `Community 77`, `Community 334`, `Community 219`, `Community 480`, `Community 359`, `Community 360`, `Community 617`, `Community 495`, `Community 244`, `Community 245`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Are the 247 inferred relationships involving `success_response()` (e.g. with `list_tiers()` and `create_checkout_session()`) actually correct?**
+  _`success_response()` has 247 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 155 inferred relationships involving `UserDB` (e.g. with `StripeMockObject` and `TestCreateJobSignature`) actually correct?**
+  _`UserDB` has 155 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 100 inferred relationships involving `SystemJobStatus` (e.g. with `TestCreateJobSignature` and `TestMetadataMergeOrder`) actually correct?**
+  _`SystemJobStatus` has 100 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 33 inferred relationships involving `VideoLeadScanner` (e.g. with `MockTorch` and `nn`) actually correct?**
+  _`VideoLeadScanner` has 33 INFERRED edges - model-reasoned connections that need verification._

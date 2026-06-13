@@ -1,53 +1,32 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
+import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import dynamic from "next/dynamic";
 
 const NeuralCore = dynamic(() => import("@/components/ui/NeuralCore"), { ssr: false });
 import { withRealFallback } from "@/lib/real_first_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { DesignCard } from "@/components/ui/DesignCard";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
-import { Blueprint, ScriptOutput, HookAnalysis, ScriptSegment } from "@/lib/types";
+import { ScriptOutput } from "@/lib/types";
 import {
-    Sparkles,
-    Zap,
-    Cpu,
-    CheckCircle2,
     RefreshCw,
-    Play,
     Edit3,
     ShieldAlert,
-    Plus,
-    Film,
-    Wand2,
-    Target,
     ChevronDown,
-    Globe,
     Brain,
-    Palette,
-    Layers,
-    Monitor,
-    Database,
-    ZapOff,
     Terminal,
-    Dna,
-    Network,
     ArrowRight,
     Command,
-    Infinity as InfinityIcon,
-    Radio,
     Clapperboard,
     Mic2,
     Loader2,
-    Search,
     PlaySquare,
     FileVideo,
     Coins
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useNiches } from "@/hooks/useNiches";
@@ -70,7 +49,7 @@ function VoiceForgePanel() {
             return;
         }
         setIsGenerating(true);
-        const token = await getAuthToken();
+        const token = getAuthToken();
         if (!token) {
             setIsGenerating(false);
             return;
@@ -88,11 +67,13 @@ function VoiceForgePanel() {
             
             if (response.ok) {
                 const data = await response.json();
+                if (data.url) setAudioUrl(data.url);
                 toast.success("Voice template generated");
             } else {
                 toast.error("Failed to generate voice");
             }
         } catch (error) {
+            console.error("Voice generation error:", error);
             toast.error("Voice generation error");
         } finally {
             setIsGenerating(false);
@@ -108,8 +89,9 @@ function VoiceForgePanel() {
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Input Text</label>
+                    <label htmlFor="inputText" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Input Text</label>
                     <textarea
+                        id="inputText"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="Enter text to synthesize..."
@@ -118,8 +100,9 @@ function VoiceForgePanel() {
                 </div>
 
                 <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Voice Model</label>
+                    <label htmlFor="voiceModel" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Voice Model</label>
                     <select
+                        id="voiceModel"
                         value={voice}
                         onChange={(e) => setVoice(e.target.value)}
                         className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
@@ -143,7 +126,9 @@ function VoiceForgePanel() {
 
                 {audioUrl && (
                     <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                        <audio controls src={audioUrl} className="w-full" />
+                        <audio controls src={audioUrl} className="w-full">
+                            <track kind="captions" />
+                        </audio>
                     </div>
                 )}
             </div>
@@ -164,7 +149,7 @@ function ScriptEnginePanel() {
             return;
         }
         setIsGenerating(true);
-        const token = await getAuthToken();
+        const token = getAuthToken();
         if (!token) {
             setIsGenerating(false);
             return;
@@ -204,8 +189,9 @@ function ScriptEnginePanel() {
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Topic</label>
+                    <label htmlFor="scriptTopic" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Topic</label>
                     <input
+                        id="scriptTopic"
                         type="text"
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
@@ -215,8 +201,9 @@ function ScriptEnginePanel() {
                 </div>
 
                 <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Niche</label>
+                    <label htmlFor="scriptNiche" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Niche</label>
                     <select
+                        id="scriptNiche"
                         value={niche}
                         onChange={(e) => setNiche(e.target.value)}
                         className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
@@ -236,8 +223,9 @@ function ScriptEnginePanel() {
                 </div>
 
                 <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Duration (seconds)</label>
+                    <label htmlFor="scriptDuration" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Duration (seconds)</label>
                     <input
+                        id="scriptDuration"
                         type="number"
                         value={duration}
                         onChange={(e) => setDuration(Number(e.target.value))}
@@ -273,6 +261,73 @@ function ScriptEnginePanel() {
     );
 }
 
+function JobItem({ job }: { readonly job: any }) {
+    let statusColor = 'bg-yellow-500/20 text-yellow-400';
+    const status = job.status?.toLowerCase();
+    
+    if (status === 'completed') {
+        statusColor = 'bg-emerald-500/20 text-emerald-400';
+    } else if (status === 'failed') {
+        statusColor = 'bg-rose-500/20 text-rose-400';
+    }
+
+    return (
+        <div className="p-3 bg-white/5 rounded-lg border border-white/5">
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-white truncate flex-1">{job.title || job.prompt || "Remix Video"}</span>
+                <span className={`text-[8px] px-2 py-1 rounded-full ml-2 ${statusColor}`}>
+                    {status === 'processing' ? 'PROCESSING' : (job.status?.toUpperCase() || 'UNKNOWN')}
+                </span>
+            </div>
+            
+            {/* Progress bar for processing jobs */}
+            {job.status === 'processing' && job.progress !== undefined && (
+                <div className="mb-2">
+                    <div className="flex justify-between text-[8px] text-zinc-500 mb-1">
+                        <span>{job.current_step || 'Processing...'}</span>
+                        <span>{job.progress}%</span>
+                    </div>
+                    <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-violet-500 transition-all duration-500"
+                            style={{ width: `${job.progress}%` }}
+                        />
+                    </div>
+                </div>
+            )}
+            
+            <span className="text-[8px] text-zinc-500 block mb-2">
+                {new Date(job.created_at).toLocaleString()}
+            </span>
+            
+            {/* Preview and Download buttons for completed videos */}
+            {(job.status === 'completed' || job.status === 'COMPLETED') && (job.output_path || job.result?.output_path) && (
+                <div className="flex gap-2 mt-2">
+                    <button
+                        onClick={() => window.open(`/api/v1/video/preview/${job.id}`, '_blank')}
+                        className="flex-1 px-3 py-1.5 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                        <PlaySquare className="h-3 w-3" />
+                        Preview
+                    </button>
+                    <button
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `/api/v1/video/download/${job.id}`;
+                            link.download = `remix_${job.id}.mp4`;
+                            link.click();
+                        }}
+                        className="flex-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                        <FileVideo className="h-3 w-3" />
+                        Download
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 const AI_ENGINES = [
     // Always works — no API key needed
     { id: "lite4k", name: "Cinematic Parallax", free: true, needsKey: false, credits: 5, description: "FLUX image + motion — works out of the box" },
@@ -302,18 +357,79 @@ function VisualCorePanel() {
     const [mode, setMode] = useState<"generate" | "remix">("generate");
     const [provider, setProvider] = useState("lite4k");
     const [niche, setNiche] = useState("Auto-Detect");
+    const [configKeys, setConfigKeys] = useState<Record<string, boolean>>({});
     const [currentJobId, setCurrentJobId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [jobs, setJobs] = useState<any[]>([]);
 
     // Auto-refresh credit balance every 2 minutes
     const refreshRef = useRef(refreshCredits);
-    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current = refreshCredits;
+    }, [refreshCredits]);
+
     useEffect(() => {
         refreshRef.current();
         const interval = setInterval(() => refreshRef.current(), 120_000);
         return () => clearInterval(interval);
     }, []);
+
+    // Fetch settings to check which API keys are configured
+    useEffect(() => {
+        const abortController = new AbortController();
+        
+        const fetchConfig = async () => {
+            const token = getAuthToken();
+            if (!token) return;
+            try {
+                const response = await fetch(`${API_BASE}/settings/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    signal: abortController.signal
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const engineKeys = [
+                        "runway_api_key", "pika_api_key", "luma_api_key", 
+                        "zsky_api_key", "kling_api_key", "pixverse_api_key",
+                        "replicate_api_key", "stability_api_key", "haiper_api_key"
+                    ];
+                    const keyMap: Record<string, boolean> = {};
+                    for (const key of engineKeys) {
+                        const settingsData = data?.data || data;
+                        const val = settingsData?.[key];
+                        keyMap[key] = !!val && val !== "" && val !== "********";
+                    }
+                    if (!abortController.signal.aborted) {
+                        setConfigKeys(keyMap);
+                    }
+                }
+            } catch (e: any) {
+                if (e?.name === 'AbortError') return;
+                console.error("Failed to fetch engine config:", e);
+            }
+        };
+        fetchConfig();
+        
+        return () => abortController.abort();
+    }, []);
+
+    // Filter AI engines based on configured API keys
+    const availableEngines = useMemo(() => {
+        return AI_ENGINES.filter(engine => {
+            if (!engine.needsKey) return true; // Always show free engines
+            // Check if this engine's API key is configured
+            const keyName = `${engine.id}_api_key`;
+            return configKeys[keyName];
+        });
+    }, [configKeys]);
+
+    // If current selected engine is no longer available, switch to first available
+    useEffect(() => {
+        const isAvailable = availableEngines.some(e => e.id === provider);
+        if (!isAvailable && availableEngines.length > 0) {
+            setProvider(availableEngines[0].id);
+        }
+    }, [availableEngines, provider]);
 
     // Derived state
     const selectedEngine = useMemo(() => AI_ENGINES.find(e => e.id === provider), [provider]);
@@ -351,6 +467,7 @@ function VisualCorePanel() {
                 }
             } catch (error) {
                 console.error("Polling error:", error);
+                toast.error("Polling error — check console for details");
                 clearInterval(pollInterval);
                 setCurrentJobId(null);
                 setIsGenerating(false);
@@ -366,7 +483,7 @@ function VisualCorePanel() {
             return;
         }
         setIsGenerating(true);
-        const token = await getAuthToken();
+        const token = getAuthToken();
         if (!token) {
             setIsGenerating(false);
             return;
@@ -445,7 +562,7 @@ function VisualCorePanel() {
 
     useEffect(() => {
         const fetchJobs = async () => {
-            const token = await getAuthToken();
+            const token = getAuthToken();
             if (!token) return;
             
             try {
@@ -462,6 +579,7 @@ function VisualCorePanel() {
                 }
             } catch (error) {
                 console.error("Failed to fetch jobs:", error);
+                toast.error("Failed to load job history");
             }
         };
         fetchJobs();
@@ -539,15 +657,22 @@ function VisualCorePanel() {
                     <div>
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block flex items-center justify-between">
                             <span>AI Engine <span className="text-zinc-600 font-normal">— generates from prompt</span></span>
-                            <button
-                                onClick={() => refreshCredits()}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors group"
-                                title="Refresh credit balance"
-                            >
-                                <Coins className="h-3 w-3 text-amber-400" />
-                                <span className="text-[9px] font-bold text-amber-400 tabular-nums">{credits ?? '—'}</span>
-                                <RefreshCw className="h-2.5 w-2.5 text-amber-500/50 group-hover:text-amber-400 group-hover:rotate-180 transition-all" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] text-zinc-600">
+                                    {availableEngines.length < AI_ENGINES.length 
+                                        ? `${availableEngines.length} of ${AI_ENGINES.length} available` 
+                                        : `${AI_ENGINES.length} engines`}
+                                </span>
+                                <button
+                                    onClick={() => refreshCredits()}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors group"
+                                    title="Refresh credit balance"
+                                >
+                                    <Coins className="h-3 w-3 text-amber-400" />
+                                    <span className="text-[9px] font-bold text-amber-400 tabular-nums">{credits ?? '—'}</span>
+                                    <RefreshCw className="h-2.5 w-2.5 text-amber-500/50 group-hover:text-amber-400 group-hover:rotate-180 transition-all" />
+                                </button>
+                            </div>
                         </label>
                         <div className="relative">
                             <select
@@ -556,21 +681,21 @@ function VisualCorePanel() {
                                 className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50 appearance-none"
                             >
                                 <optgroup label="⚡ No API Key Needed">
-                                    {AI_ENGINES.filter(e => !e.needsKey && !e.description.includes('GPU')).map(eng => (
+                                    {availableEngines.filter(e => !e.needsKey && !e.description.includes('GPU')).map(eng => (
                                         <option key={eng.id} value={eng.id}>
                                             {eng.name} <span className="text-zinc-500">— {eng.credits > 0 ? `${eng.credits}¢` : 'Free'}</span>
                                         </option>
                                     ))}
                                 </optgroup>
-                                <optgroup label="🔑 Requires API Key">
-                                    {AI_ENGINES.filter(e => e.needsKey && !e.description.includes('GPU')).map(eng => (
+                                <optgroup label="🔑 API Keys Configured">
+                                    {availableEngines.filter(e => e.needsKey && !e.description.includes('GPU')).map(eng => (
                                         <option key={eng.id} value={eng.id}>
                                             {eng.name} <span className="text-zinc-500">— {eng.credits > 0 ? `${eng.credits}¢` : 'Free'}</span>
                                         </option>
                                     ))}
                                 </optgroup>
                                 <optgroup label="🖥️ GPU Node Required">
-                                    {AI_ENGINES.filter(e => e.description.includes('GPU')).map(eng => (
+                                    {availableEngines.filter(e => e.description.includes('GPU')).map(eng => (
                                         <option key={eng.id} value={eng.id}>
                                             {eng.name} <span className="text-zinc-500">— {eng.credits > 0 ? `${eng.credits}¢` : 'Free'}</span>
                                         </option>
@@ -589,6 +714,13 @@ function VisualCorePanel() {
                                 return `${eng.description} — ${costLabel}`;
                             })()}
                         </p>
+                        {configKeys && Object.keys(configKeys).length > 0 && (
+                            <div className="mt-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">
+                                    Engines requiring API keys are hidden unless configured in Settings
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -632,63 +764,7 @@ function VisualCorePanel() {
                     <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Recent Jobs</h4>
                     <div className="space-y-2">
                         {jobs.map((job) => (
-                            <div key={job.id} className="p-3 bg-white/5 rounded-lg border border-white/5">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-white truncate flex-1">{job.title || job.prompt || "Remix Video"}</span>
-                                    <span className={`text-[8px] px-2 py-1 rounded-full ml-2 ${
-                                        job.status === 'completed' || job.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
-                                        job.status === 'failed' || job.status === 'FAILED' ? 'bg-rose-500/20 text-rose-400' :
-                                        'bg-yellow-500/20 text-yellow-400'
-                                    }`}>
-                                        {job.status === 'processing' ? 'PROCESSING' : job.status.toUpperCase()}
-                                    </span>
-                                </div>
-                                
-                                {/* Progress bar for processing jobs */}
-                                {job.status === 'processing' && job.progress !== undefined && (
-                                    <div className="mb-2">
-                                        <div className="flex justify-between text-[8px] text-zinc-500 mb-1">
-                                            <span>{job.current_step || 'Processing...'}</span>
-                                            <span>{job.progress}%</span>
-                                        </div>
-                                        <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-violet-500 transition-all duration-500"
-                                                style={{ width: `${job.progress}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                <span className="text-[8px] text-zinc-500 block mb-2">
-                                    {new Date(job.created_at).toLocaleString()}
-                                </span>
-                                
-                                {/* Preview and Download buttons for completed videos */}
-                                {(job.status === 'completed' || job.status === 'COMPLETED') && (job.output_path || job.result?.output_path) && (
-                                    <div className="flex gap-2 mt-2">
-                                        <button
-                                            onClick={() => window.open(`/api/v1/video/preview/${job.id}`, '_blank')}
-                                            className="flex-1 px-3 py-1.5 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <PlaySquare className="h-3 w-3" />
-                                            Preview
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const link = document.createElement('a');
-                                                link.href = `/api/v1/video/download/${job.id}`;
-                                                link.download = `remix_${job.id}.mp4`;
-                                                link.click();
-                                            }}
-                                            className="flex-1 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <FileVideo className="h-3 w-3" />
-                                            Download
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <JobItem key={job.id} job={job} />
                         ))}
                     </div>
                 </div>
@@ -702,18 +778,18 @@ function VisualCorePanel() {
 function CreationContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { niches, isLoading: isLoadingNiches } = useNiches();
+    const { niches: _niches, isLoading: _isLoadingNiches } = useNiches();
     
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "genesis");
     const [prompt, setPrompt] = useState(searchParams.get("seed") || "");
-    const [niche, setNiche] = useState("Motivation");
-    const [activeStack, setActiveStack] = useState<"cloud" | "os">("cloud");
+    const [niche, _setNiche] = useState("Motivation");
+    const [activeStack, _setActiveStack] = useState<"cloud" | "os">("cloud");
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<ScriptOutput | null>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["CREATION_HUB_READY", "AWAITING_NEURAL_SEED"]);
     const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
 
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: systemLogs, status: _status, pulse } = useTelemetry();
 
     useEffect(() => {
         const engine = searchParams.get("engine");
@@ -730,7 +806,7 @@ function CreationContent() {
         setIsGenerating(true);
         setActionLogs((prev: string[]) => [`[SIGNAL] Initializing Generation: ${prompt.slice(0, 30)}...`, ...prev]);
         
-        const token = await getAuthToken();
+        const token = getAuthToken();
         if (!token) {
             setIsGenerating(false);
             return;
@@ -762,7 +838,7 @@ function CreationContent() {
     const handleLaunchCinema = async () => {
         if (!prompt) return;
         setIsCinemaLaunching(true);
-        const token = await getAuthToken();
+        const token = getAuthToken();
         if (!token) return;
 
         await withRealFallback<any>((signal) => fetch(`${API_BASE}/no-face/launch-cinema`, {
@@ -803,7 +879,7 @@ function CreationContent() {
 
     useEffect(() => {
         const fetchHistory = async () => {
-            const token = await getAuthToken();
+            const token = getAuthToken();
             if (!token) return;
             await withRealFallback<any[]>((signal) => fetch(`${API_BASE}/publish/history`, {
                     headers: { Authorization: `Bearer ${token}` }

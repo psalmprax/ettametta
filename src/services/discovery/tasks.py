@@ -229,6 +229,25 @@ async def _persist_analysis_report(
                 f"(viral_score={report.viral_score:.0f}, "
                 f"velocity={row.viral_score_velocity:.2f})"
             )
+
+            # ── 10-05: Push WebSocket notification so the frontend can stop polling ──
+            try:
+                from src.api.routes.ws import notify_job_update_sync
+
+                notify_job_update_sync({
+                    "type": "analysis_complete",
+                    "candidate_id": candidate_id,
+                    "task_id": task_id,
+                    "viral_score": report.viral_score,
+                    "recommended_style": report.recommended_style(),
+                    "status": "COMPLETED",
+                })
+            except Exception as ws_err:  # pragma: no cover - non-fatal
+                logger.warning(
+                    f"[Discovery Task] WS notification failed for {candidate_id}: "
+                    f"{ws_err} (non-fatal)"
+                )
+
             return True
     except Exception as e:  # pragma: no cover - defensive
         logger.exception(

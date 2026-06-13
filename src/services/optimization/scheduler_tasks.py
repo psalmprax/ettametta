@@ -17,15 +17,21 @@ from sqlalchemy import select
 logger = logging.getLogger(__name__)
 
 
-PLATFORM_PUBLISHERS = {
-    "youtube": "services.optimization.youtube_publisher.base_youtube_service",
-    "youtube_shorts": "services.optimization.youtube_publisher.base_youtube_service",
-    "tiktok": "services.optimization.tiktok_publisher.base_tiktok_service",
-    "instagram": "services.optimization.instagram_publisher.base_instagram_service",
-    "facebook": "services.optimization.facebook_publisher.base_facebook_publisher_service",
-    "linkedin": "services.optimization.linkedin_publisher.base_linkedin_publisher_service",
-    "x": "services.optimization.x_publisher.base_x_publisher_service",
+# NOTE: Module paths start from the project root (src/ is in PYTHONPATH via the Celery
+# worker entry point or Docker container setup). All publisher references use the full
+# ``src.services.optimization.<publisher>.<singleton>`` path.
+PLATFORM_PUBLISHERS: dict[str, str] = {
+    "youtube": "src.services.optimization.youtube_publisher.base_youtube_service",
+    "youtube_shorts": "src.services.optimization.youtube_publisher.base_youtube_service",
+    "tiktok": "src.services.optimization.tiktok_publisher.base_tiktok_service",
+    "instagram": "src.services.optimization.instagram_publisher.base_instagram_service",
+    "facebook": "src.services.optimization.facebook_publisher.base_facebook_publisher_service",
+    "linkedin": "src.services.optimization.linkedin_publisher.base_linkedin_publisher_service",
+    "x": "src.services.optimization.x_publisher.base_x_publisher_service",
 }
+
+# Maximum retry attempts per scheduled post
+MAX_SCHEDULE_RETRIES = 3
 
 
 def _get_publisher(platform: str):
@@ -64,14 +70,31 @@ async def _check_and_post_scheduled_internal(task_self):
             pending_posts = result.scalars().all()
 
             logger.info(
-                f"[Scheduler] Found {len(pending_posts)} pending posts to process"
+                f"[Scheduler] Found {len(pending_posts)} pending posts to process (batch cycle at {now.isoformat()})"
             )
+            
+            if len(pending_posts) == 0:
+                return {
+                    "processed": 0,
+                    "failed": 0,
+                    "total": 0,
+                    "status": SystemJobStatus.COMPLETED,
+                    "message": "No pending posts found",
+                }
 
             for post in pending_posts:
+                post_id = post.id
+                platform = post.platform
+                user_id = post.user_id
+                account_id = post.account_id
+                video_path = post.video_path
+                
                 try:
+                    logger.info(f"[Scheduler] Processing post {post_id}: platform={platform}, video={video_path}")
+                    
                     meta_dict = post.metadata_json
                     if not meta_dict:
-                        logger.error(f"[Scheduler] No metadata for post {post.id}")
+                        logger.error(f"[Scheduler] No metadata for post {post_id}")
                         post.status = ContentPublishStatus.FAILED
                         post.error_message = "No metadata available"
                         await db.commit()
@@ -79,38 +102,40 @@ async def _check_and_post_scheduled_internal(task_self):
                         continue
 
                     metadata = PostMetadata(**meta_dict)
+                    logger.info(f"[Scheduler] Post {post_id}: loaded metadata title="{metadata.title}"")
 
+                    # Check authentication tokens
                     user_tokens = await token_manager.get_token_data(
-                        post.platform, post.user_id
+                        platform, user_id
                     )
                     if not user_tokens:
-                        logger.error(
-                            f"[Scheduler] No tokens for user {post.user_id} on platform {post.platform}"
+                        logger.warning(
+                            f"[Scheduler] Post {post_id}: No auth tokens for user {user_id} on {platform}. Skipping."
                         )
                         post.status = ContentPublishStatus.FAILED
-                        post.error_message = "No authentication tokens"
+                        post.error_message = f"No authentication tokens for {platform}"
                         await db.commit()
                         failed += 1
                         continue
 
-                    publisher = _get_publisher(post.platform)
+                    # Dynamically load the platform publisher
+                    publisher = _get_publisher(platform)
                     if not publisher:
                         logger.error(
-                            f"[Scheduler] No publisher for platform: {post.platform}"
+                            f"[Scheduler] Post {post_id}: No publisher available for platform '{platform}'"
                         )
                         post.status = ContentPublishStatus.FAILED
-                        post.error_message = f"Platform {post.platform} not supported"
+                        post.error_message = f"Platform '{platform}' publisher not found"
                         await db.commit()
                         failed += 1
                         continue
 
-                    # Adjust to nearest peak window (no-op: peak window info already used at schedule time)
-
+                    logger.info(f"[Scheduler] Post {post_id}: Uploading to {platform}...")
                     url = await publisher.upload_video(
-                        post.video_path,
+                        video_path,
                         metadata,
-                        user_id=post.user_id,
-                        account_id=post.account_id,
+                        user_id=user_id,
+                        account_id=account_id,
                     )
 
                     if url:
@@ -118,38 +143,36 @@ async def _check_and_post_scheduled_internal(task_self):
                         post.published_at = datetime.datetime.now(
                             datetime.timezone.utc
                         ).replace(tzinfo=None)
+                        post.error_message = None
 
                         history = PublishedContentDB(
                             title=metadata.title,
-                            platform=post.platform,
+                            platform=platform,
                             status=ContentPublishStatus.PUBLISHED,
                             source_uri=url,
-                            account_id=post.account_id,
-                            user_id=post.user_id,
+                            account_id=account_id,
+                            user_id=user_id,
                             niche=getattr(metadata, "niche", None),
                         )
                         db.add(history)
 
-                        logger.info(
-                            f"[Scheduler] Successfully published post {post.id}: {url}"
-                        )
+                        logger.info(f"[Scheduler] ✅ Post {post_id} published successfully: {url}")
                     else:
                         post.status = ContentPublishStatus.FAILED
-                        post.error_message = "Upload failed - no URL returned"
-                        logger.warning(f"[Scheduler] Post {post.id} upload failed")
+                        post.error_message = "Upload failed - publisher returned no URL"
+                        logger.warning(f"[Scheduler] ❌ Post {post_id} upload failed (no URL returned)")
                         failed += 1
 
                 except Exception as e:
-                    logger.exception(f"[Scheduler] Post {post.id} failed: {e}")
+                    logger.exception(f"[Scheduler] ❌ Post {post_id} failed with exception: {e}")
                     post.status = ContentPublishStatus.FAILED
                     post.error_message = str(e)[:500]
                     failed += 1
-                    # In a real async task, we'd handle retries differently,
-                    # but for now we follow the existing pattern of flagging as FAILED.
 
                 await db.commit()
                 processed += 1
 
+            logger.info(f"[Scheduler] Batch complete: {processed} processed, {failed} failed out of {len(pending_posts)}")
             return {
                 "processed": processed,
                 "failed": failed,
@@ -190,8 +213,8 @@ async def _retry_failed_posts_internal():
             failed_posts = result.scalars().all()
 
             for post in failed_posts:
-                retry_count = getattr(post, "retry_count", 0)
-                max_retries = getattr(post, "max_retries", 3)
+                retry_count = getattr(post, "retry_count", 0) or 0
+                max_retries = MAX_SCHEDULE_RETRIES
 
                 if retry_count < max_retries:
                     post.status = ContentPublishStatus.PENDING
@@ -239,11 +262,11 @@ async def _retry_missed_schedules_internal():
 
             for post in missed_posts:
                 retry_count = getattr(post, "retry_count", 0) or 0
-                max_retries = 3
+                max_retries = MAX_SCHEDULE_RETRIES
 
                 if retry_count >= max_retries:
                     logger.warning(
-                        f"[Scheduler] Post {post.id} reached max retries ({retry_count})"
+                        f"[Scheduler] Post {post.id} reached max retries ({retry_count}/{MAX_SCHEDULE_RETRIES})"
                     )
                     post.status = ContentPublishStatus.FAILED
                     post.error_message = f"Max retries exceeded ({retry_count})"

@@ -2,9 +2,9 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "solid" | "elevated" | "subtle" | "accent";
-  withBorder?: boolean;
-  className?: string;
+  readonly variant?: "solid" | "elevated" | "subtle" | "accent";
+  readonly withBorder?: boolean;
+  readonly className?: string;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(

@@ -4,8 +4,8 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ErrorNodeProps {
-    message?: string;
-    onRetry?: () => void;
+    readonly message?: string;
+    readonly onRetry?: () => void;
 }
 
 export function ErrorNode({ message = "Neural Link Interrupted", onRetry }: ErrorNodeProps) {

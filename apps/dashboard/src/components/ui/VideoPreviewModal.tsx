@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Download, Share2, Zap } from "lucide-react";
 
 interface VideoPreviewModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    videoUrl: string | null;
-    originalUrl?: string | null;
-    title?: string;
-    status?: string | null;
-    onProceedToTransformation?: () => void;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
+    readonly videoUrl: string | null;
+    readonly originalUrl?: string | null;
+    readonly title?: string;
+    readonly status?: string | null;
+    readonly onProceedToTransformation?: () => void;
 }
 
 export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title, status, onProceedToTransformation }) => {

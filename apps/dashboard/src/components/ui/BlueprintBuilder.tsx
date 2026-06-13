@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2, Save, Database, Cpu, Sparkles, Share2, RefreshCw } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { X, Trash2, Save, Database, Cpu, Sparkles, Share2, RefreshCw } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn, safeRandomUUID } from "@/lib/utils";
 import { toast } from "sonner";
 import { NodeType } from "./NexusNode";
@@ -13,9 +13,9 @@ import { BlueprintNode, Blueprint } from "@/lib/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface BlueprintBuilderProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: (newBlueprint: Blueprint) => void;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
+    readonly onSuccess: (newBlueprint: Blueprint) => void;
 }
 
 export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilderProps) {
@@ -137,8 +137,6 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
         setIsSaving(false);
     };
 
-    if (!isOpen) return null;
-
     // Handle escape key
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -158,6 +156,8 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">

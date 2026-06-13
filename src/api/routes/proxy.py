@@ -199,7 +199,8 @@ async def proxy_streaming(url: str, body: dict, translate: bool):
         async with httpx.AsyncClient(timeout=600.0) as client:
             async with client.stream("POST", url, json=body) as resp:
                 async for chunk in resp.aiter_lines():
-                    if not chunk: continue
+                    if not chunk:
+                        continue
                     if translate:
                         try:
                             ollama_data = json.loads(chunk)
@@ -211,7 +212,8 @@ async def proxy_streaming(url: str, body: dict, translate: bool):
                                 "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": "stop" if done else None}]
                             }
                             yield f"data: {json.dumps(openai_chunk)}\n\n".encode('utf-8')
-                            if done: yield b"data: [DONE]\n\n"
+                            if done:
+                                yield b"data: [DONE]\n\n"
                         except Exception:
                             yield f"data: {chunk}\n\n".encode('utf-8')
                     else:

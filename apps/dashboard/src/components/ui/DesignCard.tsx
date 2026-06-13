@@ -3,26 +3,26 @@
 import React, { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { CheckCircle2, MoreVertical, CreditCard, Trash2, RotateCcw, Share2, Activity, Zap } from "lucide-react";
+import { MoreVertical, CreditCard, RotateCcw, Share2, Activity, Zap } from "lucide-react";
 
 interface DesignCardProps {
-  title: string;
-  status?: "Current" | "Active" | "Inactive" | "Offline" | "Live Polling" | "Syncing" | "Completed" | "Scheduled" | "Nominal" | "Optimized" | "Archived" | "Story" | (string & {});
-  metrics: {
+  readonly title: string;
+  readonly status?: "Current" | "Active" | "Inactive" | "Offline" | "Live Polling" | "Syncing" | "Completed" | "Scheduled" | "Nominal" | "Optimized" | "Archived" | "Story" | (string & {});
+  readonly metrics: {
     label: string;
     value: string | number;
     progress?: number; // 0-100
     color?: string;
   }[];
-  footerInfo?: string;
-  toolsStatus?: "Online" | "Offline" | "Live Polling" | "Syncing" | "Archived" | (string & {});
-  onClick?: () => void;
-  actions?: ReactNode;
-  onRefresh?: () => void;
-  onDelete?: () => void;
-  onShare?: () => void;
-  onMore?: () => void;
-  credits?: number;
+  readonly footerInfo?: string;
+  readonly toolsStatus?: "Online" | "Offline" | "Live Polling" | "Syncing" | "Archived" | (string & {});
+  readonly onClick?: () => void;
+  readonly actions?: ReactNode;
+  readonly onRefresh?: () => void;
+  readonly onDelete?: () => void;
+  readonly onShare?: () => void;
+  readonly onMore?: () => void;
+  readonly credits?: number;
 }
 
 export function DesignCard({

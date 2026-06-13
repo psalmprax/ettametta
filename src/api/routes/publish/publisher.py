@@ -367,18 +367,23 @@ async def publish_video(
         if request.variant_b_title:
             new_test = ABTestDB(
                 content_id=str(new_post.id),
-                variant_a_title=metadata.title,
+                user_id=current_user.id,
+                variant_a_title=metadata.title or "Variant A",
+                variant_b_title=request.variant_b_title,
+                variant_a_description=metadata.description or None,
+                variant_b_description=request.variant_b_description,
                 variant_a_view_count=0,
                 variant_b_view_count=0,
                 variant_a_click_count=0,
                 variant_b_click_count=0,
                 variant_a_conversion_count=0,
                 variant_b_conversion_count=0,
+                target_metric="views",
                 status=ABTestStatus.ACTIVE,
             )
             db.add(new_test)
             await db.commit()
-            logger.info(f"[A/B Testing] Initialized test for post {new_post.id}")
+            logger.info(f"[A/B Testing] Initialized test {new_test.id} for post {new_post.id}")
 
         return success_response(
             data={"status": "success", "url": url, "metadata": metadata}

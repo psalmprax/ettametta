@@ -445,6 +445,8 @@ class ABTestDB(Base):
     p_value = Column(Float, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     completed_at = Column(DateTime, nullable=True)
+    # Variant job IDs + output paths for multi-variant publishing
+    metadata_json = Column(JSON, default=dict, nullable=True)
 
 
 class ScheduledPostDB(Base):
@@ -754,6 +756,28 @@ class IncidentWebhookDB(Base):
     secret = Column(String, nullable=True)  # HMAC secret for signing
     is_active = Column(Boolean, default=True)
     last_triggered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
+
+class UserNotificationDB(Base):
+    """In-app notifications for users.
+
+    Used by the NotificationCenter frontend component and the Stripe webhook
+    (subscription.deleted) to surface billing events and other system
+    notifications directly to users.
+    """
+
+    __tablename__ = "user_notifications"
+
+    id = Column(
+        String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    type = Column(String(20), default="system", nullable=False)  # security, billing, system, job
+    title = Column(String(200), nullable=False)
+    message = Column(String(500), nullable=True)
+    link = Column(String(500), nullable=True)
+    read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 

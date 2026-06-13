@@ -34,6 +34,7 @@ class UserDB(Base):
     whatsapp_number = Column(String, unique=True, index=True, nullable=True)
     stripe_customer_id = Column(String, unique=True, index=True, nullable=True)
     stripe_subscription_id = Column(String, unique=True, index=True, nullable=True)
+    trial_ends_at = Column(DateTime, nullable=True)
     is_google_oauth = Column(Boolean, default=False)
     google_id = Column(String, nullable=True)
     api_keys = Column(JSON, nullable=True)

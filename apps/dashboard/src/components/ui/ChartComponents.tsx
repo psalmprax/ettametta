@@ -10,7 +10,6 @@ import {
     Area as RechartsArea,
     CartesianGrid as RechartsCartesianGrid
 } from "recharts";
-import { cn } from "@/lib/utils";
 
 // --- Custom Tooltip ---
 
@@ -72,13 +71,13 @@ export const ChartGrid = (props: any) => (
 // --- High Density Area Chart Wrapper ---
 
 interface AreaChartProps {
-    data: any[];
-    dataKey: string;
-    color?: string;
-    height?: number | string;
-    showGrid?: boolean;
-    showTooltip?: boolean;
-    gradientId?: string;
+    readonly data: any[];
+    readonly dataKey: string;
+    readonly color?: string;
+    readonly height?: number | string;
+    readonly showGrid?: boolean;
+    readonly showTooltip?: boolean;
+    readonly gradientId?: string;
 }
 
 export const AreaChartCustom = ({
@@ -121,7 +120,7 @@ export const AreaChartCustom = ({
 
 // --- Mini Area Chart for Cards ---
 
-export const MiniAreaChart = ({ data, color = "#22d3ee", height = 40 }: { data: any[], color?: string, height?: number }) => {
+export const MiniAreaChart = ({ data, color = "#22d3ee", height = 40 }: { readonly data: any[], readonly color?: string, readonly height?: number }) => {
     return (
         <div style={{ width: "100%", height, minWidth: 0, minHeight: 0 }}>
             <RechartsResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>

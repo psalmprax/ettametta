@@ -5,17 +5,14 @@ import DashboardLayout from "@/components/layout";
 import { 
     Activity, 
     Zap, 
-    TrendingUp, 
     CheckCircle2, 
     Plus, 
-    Trash2, 
     RefreshCw,
-    BarChart2,
     FlaskConical,
     Target,
     ArrowRight
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";

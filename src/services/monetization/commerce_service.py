@@ -1,5 +1,6 @@
 import logging
 import httpx
+import urllib.parse
 from typing import Any
 from src.api.utils.database import async_session_factory
 from sqlalchemy import select
@@ -61,7 +62,7 @@ class CommerceService:
         
         # In a real scenario, we'd add 'query' or 'tag' matching niche
         # For high-velocity discovery, we'll search by the niche name
-        search_url = f"{api_url}&title={niche}"
+        search_url = f"{api_url}&title={urllib.parse.quote(niche)}"
         
         headers = {
             "X-Shopify-Access-Token": token,

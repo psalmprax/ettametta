@@ -12,7 +12,6 @@ import {
   Search,
   Crown
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -40,7 +39,7 @@ const itemVariants: Variants = {
   }
 }
 
-function NavLink({ href, children }: { href: string, children: React.ReactNode }) {
+function NavLink({ href, children }: { readonly href: string, readonly children: React.ReactNode }) {
   return (
     <Link href={href} className="text-slate-600 hover:text-slate-900 font-medium transition-colors">
       {children}
@@ -48,7 +47,7 @@ function NavLink({ href, children }: { href: string, children: React.ReactNode }
   );
 }
 
-function MetricTile({ label, value }: { label: string, value: string }) {
+function MetricTile({ label, value }: { readonly label: string, readonly value: string }) {
   return (
     <motion.div variants={itemVariants} className="surface-elevated rounded-2xl hover:shadow-lg transition-all p-8 text-center group">
       <p className="text-4xl font-bold tracking-tight mb-2 text-slate-900 group-hover:text-indigo-600 transition-colors">{value}</p>
@@ -57,7 +56,7 @@ function MetricTile({ label, value }: { label: string, value: string }) {
   );
 }
 
-function StepCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+function StepCard({ icon, title, description }: { readonly icon: React.ReactNode, readonly title: string, readonly description: string }) {
   return (
     <motion.div variants={itemVariants} className="surface-card rounded-2xl border hover:shadow-lg transition-all text-left space-y-6 p-8 group">
       <div className="h-14 w-14 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -71,7 +70,7 @@ function StepCard({ icon, title, description }: { icon: React.ReactNode, title: 
   );
 }
 
-function PortfolioCard({ icon, title, description, tag, href }: { icon: React.ReactNode, title: string, description: string, tag: string, href: string }) {
+function PortfolioCard({ icon, title, description, tag, href }: { readonly icon: React.ReactNode, readonly title: string, readonly description: string, readonly tag: string, readonly href: string }) {
   return (
     <motion.div variants={itemVariants} className="surface-card rounded-2xl border hover:shadow-lg transition-all text-left space-y-6 p-8 group relative overflow-hidden">
       <div className="absolute top-5 right-5">

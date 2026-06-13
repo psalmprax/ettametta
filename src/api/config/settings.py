@@ -329,7 +329,9 @@ class Settings(BaseSettings):
     AMAZON_ASSOCIATES_TAG: str | None = None
     AMAZON_PAAPI_KEY: str | None = None
     AMAZON_PAAPI_TAG: str | None = None
+    AMAZON_PAAPI_SECRET: str | None = None
     IMPACT_RADIUS_API_KEY: str | None = None
+    IMPACT_ACCOUNT_SID: str | None = None
     SHAREASALE_API_KEY: str | None = None
 
     # Monetization

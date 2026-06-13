@@ -127,9 +127,16 @@ class AffiliateService:
             self.logger.warning("Amazon PA-API circuit breaker is OPEN")
             return []
 
-        from botocore.auth import SigV4
-        from botocore.awsrequest import AWSRequest
-        from botocore.credentials import Credentials
+        try:
+            from botocore.auth import SigV4
+            from botocore.awsrequest import AWSRequest
+            from botocore.credentials import Credentials
+        except ImportError:
+            self.logger.error(
+                "botocore is not installed. Install it with: pip install botocore"
+            )
+            self.amazon_circuit_breaker.record_failure()
+            return []
 
         # PA-API endpoint and region
         host = "webservices.amazon.com"
@@ -434,7 +441,7 @@ class AffiliateService:
 
         return results
 
-    async def generate_affiliate_link(
+    def generate_affiliate_link(
         self, product_url: str, network: str = "amazon"
     ) -> str:
         """
@@ -482,3 +489,4 @@ class AffiliateService:
 
 # Singleton instance
 affiliate_service = AffiliateService()
+base_affiliate_service = affiliate_service

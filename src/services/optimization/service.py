@@ -7,7 +7,6 @@ from src.services.monetization.service import base_monetization_service
 import json
 import logging
 import random
-import redis
 from typing import Any
 from sqlalchemy import select
 from tenacity import (

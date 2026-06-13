@@ -258,9 +258,9 @@ class AutonomousLeadGenerator:
     async def get_conversion_report(self) -> dict[str, Any]:
         """Generate comprehensive conversion report."""
         total_leads = len(self.leads_db)
-        qualified = sum(1 for l in self.leads_db.values() if l.score >= 50)
-        engaged = sum(1 for l in self.leads_db.values() if l.status == "engaged")
-        converted = sum(1 for l in self.leads_db.values() if l.status == "converted")
+        qualified = sum(1 for lead in self.leads_db.values() if lead.score >= 50)
+        engaged = sum(1 for lead in self.leads_db.values() if lead.status == "engaged")
+        converted = sum(1 for lead in self.leads_db.values() if lead.status == "converted")
 
         return {
             "total_leads": total_leads,
@@ -268,7 +268,7 @@ class AutonomousLeadGenerator:
             "engaged_leads": engaged,
             "converted_leads": converted,
             "conversion_rate": (converted / total_leads * 100) if total_leads > 0 else 0,
-            "avg_lead_score": sum(l.score for l in self.leads_db.values()) / total_leads if total_leads > 0 else 0,
+            "avg_lead_score": sum(lead.score for lead in self.leads_db.values()) / total_leads if total_leads > 0 else 0,
         }
 
 

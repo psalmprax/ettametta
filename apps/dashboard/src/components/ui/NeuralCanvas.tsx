@@ -1,18 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn, safeRandomUUID } from "@/lib/utils";
 import { 
-    X, 
     Plus, 
     Save, 
     Database, 
     Cpu, 
     Sparkles, 
-    Share2, 
-    RefreshCw, 
-    ChevronRight,
+    Share2,
     Settings2,
     Trash2
 } from "lucide-react";
@@ -25,15 +22,15 @@ interface NodePosition {
 }
 
 interface NeuralCanvasProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (blueprint: Blueprint) => void;
-    initialBlueprint?: Blueprint;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
+    readonly onSave: (blueprint: Blueprint) => void;
+    readonly initialBlueprint?: Blueprint;
 }
 
 export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: NeuralCanvasProps) {
     const [name, setName] = useState(initialBlueprint?.name || "");
-    const [description, setDescription] = useState(initialBlueprint?.description || "");
+    const [description, _setDescription] = useState(initialBlueprint?.description || "");
     const [nodes, setNodes] = useState<BlueprintNode[]>(initialBlueprint?.nodes || [
         { id: safeRandomUUID(), type: "ingress", label: "Scout Cluster", desc: "Trend source entry" }
     ]);
@@ -42,7 +39,7 @@ export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: Neur
         [{ id: nodes[0].id, x: 150, y: 350 }]
     );
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    const [_isSaving, _setIsSaving] = useState(false);
     
     const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -135,7 +132,7 @@ export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: Neur
                             if (i === positions.length - 1) return null;
                             const next = positions[i + 1];
                             const dx = next.x - (pos.x + 220);
-                            const dy = (next.y + 60) - (pos.y + 60);
+                            const _dy = (next.y + 60) - (pos.y + 60);
                             
                             const pathData = `M ${pos.x + 220} ${pos.y + 60} C ${pos.x + 220 + dx/2} ${pos.y + 60}, ${pos.x + 220 + dx/2} ${next.y + 60}, ${next.x} ${next.y + 60}`;
                             

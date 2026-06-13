@@ -18,7 +18,7 @@ const STAGE_DETAILS: Record<string, { desc: string; icon: any; default_metric: s
     render: { desc: "High-velocity parallel synthesis and encoding.", icon: Info, default_metric: "GPU Synthesis" }
 };
 
-export default React.memo(function ProcessingFlow({ steps, telemetry }: { steps: FlowStep[], telemetry?: any }) {
+export default React.memo(function ProcessingFlow({ steps, telemetry }: { readonly steps: FlowStep[], readonly telemetry?: any }) {
     const [selectedDetail, setSelectedDetail] = useState<string | null>(null);
     const completedSteps = steps.filter(s => s.status === 'complete').length;
 

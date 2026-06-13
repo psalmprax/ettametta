@@ -6,11 +6,11 @@ import { Activity, ShieldCheck, Zap, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface CommandPodProps {
-    name: string;
-    status: "nominal" | "degraded" | "critical" | "offline";
-    load: number; // 0-100
-    circuitBreaker: "closed" | "open" | "half-open";
-    description?: string;
+    readonly name: string;
+    readonly status: "nominal" | "degraded" | "critical" | "offline";
+    readonly load: number; // 0-100
+    readonly circuitBreaker: "closed" | "open" | "half-open";
+    readonly description?: string;
 }
 
 export function CommandPod({ name, status, load, circuitBreaker, description }: CommandPodProps) {

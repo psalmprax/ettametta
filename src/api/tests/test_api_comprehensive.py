@@ -4,7 +4,7 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from src.api.main import app
 from src.api.utils.database import SessionLocal, get_db
-from src.api.utils.models import UserDB, SubscriptionTier, UserRole
+from src.api.utils.user_models import UserDB, SubscriptionTier, UserRole
 from src.api.utils.credit_models import UserCreditDB, CreditTransactionDB
 from src.api.utils.auth import get_current_user
 from sqlalchemy import select
@@ -239,7 +239,7 @@ class TestSecurity:
         """Test API rate limiting"""
         # Send multiple requests quickly
         for _ in range(15):
-            response = client.get("/health")
+            client.get("/health")
 
         # Should eventually get 200 or 429
         response = client.get("/health")

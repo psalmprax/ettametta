@@ -60,7 +60,7 @@ async def test_full_pipeline():
     # Step 3: VLM Analysis (if available)
     print("\n[3/5] ANALYZING video content (VLM)...")
     try:
-        from src.services.video_engine.base_vlm_service import base_vlm_service
+        from src.services.video_engine.vlm_service import base_vlm_service
 
         visual_analysis = await base_vlm_service.analyze_video_content(test_video)
         if visual_analysis:
@@ -94,7 +94,7 @@ async def test_full_pipeline():
         }
 
         processed = await processor.process_full_pipeline(
-            test_video, output_name, enabled_filters=[], strategy=strategy
+            test_video, output_name, strategy=strategy
         )
 
         if processed and os.path.exists(processed):

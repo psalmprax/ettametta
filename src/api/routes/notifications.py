@@ -1,12 +1,14 @@
 """
-Notification Preferences API
-=============================
-Endpoints for managing user notification settings including email preferences.
+Notification Preferences & In-App Notifications
+================================================
+Endpoints for managing user notification settings (email/telegram) and
+for listing / managing in-app notifications surfaced in the frontend
+NotificationCenter component.
 """
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.database import get_db
 from src.api.utils.auth import get_current_user
@@ -129,6 +131,116 @@ async def unsubscribe_from_marketing(
         raise HTTPException(status_code=500, detail="Failed to unsubscribe")
 
     return success_response(data={"status": "unsubscribed", "email": current_user.email})
+
+
+@router.get("/")
+async def list_notifications(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    List in-app notifications for the current user, newest first.
+    Returns up to 50 notifications.
+    """
+    from src.api.utils.models import UserNotificationDB
+
+    stmt = (
+        select(UserNotificationDB)
+        .where(UserNotificationDB.user_id == current_user.id)
+        .order_by(desc(UserNotificationDB.created_at))
+        .limit(50)
+    )
+    result = await db.execute(stmt)
+    notes = result.scalars().all()
+
+    return success_response(
+        data=[
+            {
+                "id": n.id,
+                "type": n.type,
+                "title": n.title,
+                "message": n.message,
+                "link": n.link,
+                "read": n.read,
+                "timestamp": n.created_at.isoformat() if n.created_at else None,
+            }
+            for n in notes
+        ]
+    )
+
+
+@router.put("/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Mark a single notification as read."""
+    from src.api.utils.models import UserNotificationDB
+
+    stmt = (
+        update(UserNotificationDB)
+        .where(
+            UserNotificationDB.id == notification_id,
+            UserNotificationDB.user_id == current_user.id,
+        )
+        .values(read=True)
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+
+    return success_response(data={"status": "marked_read"})
+
+
+@router.put("/read-all")
+async def mark_all_notifications_read(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Mark all notifications as read for the current user."""
+    from src.api.utils.models import UserNotificationDB
+
+    stmt = (
+        update(UserNotificationDB)
+        .where(
+            UserNotificationDB.user_id == current_user.id,
+            UserNotificationDB.read == False,  # noqa: E712
+        )
+        .values(read=True)
+    )
+    await db.execute(stmt)
+    await db.commit()
+
+    return success_response(data={"status": "all_marked_read"})
+
+
+@router.get("/unread-count")
+async def get_unread_notification_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Return the count of unread in-app notifications for the current user.
+    Lightweight — avoids fetching the full 50-item list just to show a badge.
+    """
+    from sqlalchemy import func
+    from src.api.utils.models import UserNotificationDB
+
+    stmt = (
+        select(func.count())
+        .select_from(UserNotificationDB)
+        .where(
+            UserNotificationDB.user_id == current_user.id,
+            UserNotificationDB.read == False,  # noqa: E712
+        )
+    )
+    result = await db.execute(stmt)
+    count = result.scalar_one()
+
+    return success_response(data={"unread_count": count})
 
 
 @router.post("/test-email")

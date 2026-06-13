@@ -62,15 +62,14 @@ export default function LoginPage() {
         }
 
         try {
-            const formData = new FormData();
-            formData.append("username", username);
-            formData.append("password", password);
-
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000);
             const response = await fetch(`${API_BASE}/auth/login`, {
                 method: "POST",
-                body: formData,
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username, password }),
                 signal: controller.signal,
             });
             clearTimeout(timeoutId);

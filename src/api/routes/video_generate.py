@@ -1,7 +1,9 @@
 # Databricks notebook source
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from typing import Annotated
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
 from src.api.utils.models import VideoJobDB
@@ -44,20 +46,130 @@ class StoryRequest(BaseModel):
     style: str = "Cinematic"
 
 
+async def _dispatch_variant_task(
+    db: AsyncSession,
+    current_user_id: str,
+    body: GenerationRequest,
+    task_id: str,
+    variant: dict,
+    i: int,
+    parent_job_id: str,
+    credits_cost: int,
+) -> bool:
+    try:
+        generate_video_task.apply_async(
+            kwargs={
+                "prompt": variant.get("modified_prompt", body.prompt),
+                "engine": body.engine,
+                "style": variant.get("suggested_style", body.style),
+                "aspect_ratio": body.aspect_ratio,
+                "user_id": current_user_id,
+                "custom_image_uri": body.custom_image_uri,
+                "parent_id": parent_job_id,
+                "variant_index": i,
+                "request_id": get_request_id(),
+            },
+            task_id=task_id,
+        )
+        return True
+    except Exception as task_err:
+        logger.exception(f"Failed to dispatch variant {i} Celery task: {task_err}")
+        try:
+            stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+            res = await db.execute(stmt)
+            job_to_fail = res.scalar_one_or_none()
+            if job_to_fail:
+                job_to_fail.status = SystemJobStatus.FAILED
+                job_to_fail.error_message = f"Enqueuing failed: {task_err}"
+
+            await credit_service.add_credits(
+                user_id=current_user_id,
+                amount=credits_cost,
+                transaction_type="refund",
+                db=db,
+                description=f"Refund: Failed to queue variant {i}",
+                reference_id=task_id,
+                auto_commit=False,
+            )
+            await db.commit()
+        except Exception as refund_err:
+            await db.rollback()
+            logger.exception(f"Refund/fail update failed for variant {i}: {refund_err}")
+        return False
+
+async def _create_variant_jobs(
+    db: AsyncSession,
+    current_user_id: str,
+    body: GenerationRequest,
+    variant_prompts: list,
+    credits_cost: int,
+    action: CreditAction,
+    parent_job_id: str,
+    job_service: VideoJobService
+) -> list:
+    variant_info = []
+    try:
+        for i, variant in enumerate(variant_prompts):
+            task_id = str(uuid.uuid4())
+            
+            # Consume Credits with auto_commit=False (flushes to session)
+            success, msg = await credit_service.consume_credits(
+                user_id=current_user_id,
+                amount=credits_cost,
+                action=action,
+                db=db,
+                reference_id=task_id,
+                auto_commit=False,
+            )
+
+            if not success:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail=f"Credit failure for variant {i}: {msg}"
+                )
+
+            # Create Job for each variant via service layer
+            await job_service.create_job(
+                user_id=current_user_id,
+                title=f"Variant {i}: {variant.get('variant_name', 'Original')}",
+                engine=body.engine,
+                prompt=variant.get("modified_prompt", body.prompt),
+                style=variant.get("suggested_style", body.style),
+                status=SystemJobStatus.QUEUED,
+                job_id=task_id,
+                progress=0,
+                source_uri="Generation Prompt",
+                auto_commit=False,
+                extra_metadata={
+                    "parent_id": parent_job_id,
+                    "variant_index": i,
+                    "variant_logic": variant.get("logic", "N/A"),
+                    "hook_text": variant.get("hook_text", "N/A"),
+                },
+            )
+            variant_info.append((task_id, variant, i))
+
+        await db.commit()
+        return variant_info
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
 @router.post("/generate")
 @limiter.limit("5/minute")
 async def generate_single_video(
     request: Request,
     body: GenerationRequest,
-    current_user: UserDB = Depends(daily_limit_reached()),
-    db=Depends(get_db),
+    current_user: Annotated[UserDB, Depends(daily_limit_reached())],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Hardened AI video synthesis endpoint with atomic credit flow.
     """
     try:
         # Engine access check still manual because it depends on request body
-        await engine_access_required(body.engine)(current_user)
+        engine_access_required(body.engine)(current_user)
         # daily_limit_reached dependency already checked via Depends
         # Engine-specific billing action mapping
         engine_action = get_engine_action(body.engine)
@@ -79,8 +191,6 @@ async def generate_single_video(
         credits_cost = unit_cost
         variant_strategy = body.variant_strategy or "hook_variation"
         # --- ELITE GROWTH LOOP: MULTI-VARIANT GENERATION ---
-        num_variants = body.num_variants if body.num_variants > 0 else 1
-        variant_strategy = body.variant_strategy or "hook_variation"
 
         # 0. Generate Variant Prompts (Standard 4.1)
         variant_prompts = [{"modified_prompt": body.prompt, "variant_name": "Original"}]
@@ -101,98 +211,34 @@ async def generate_single_video(
         # Ensure we have a parent ID for grouping
         parent_job_id = str(uuid.uuid4())
         task_ids = []
-        variant_info = []
         job_service: VideoJobService = VideoJobService(db)
 
         # 1. Consume credits and create job entries first in a single transaction
-        try:
-            for i, variant in enumerate(variant_prompts):
-                task_id = str(uuid.uuid4())
-                
-                # Consume Credits with auto_commit=False (flushes to session)
-                success, msg = await credit_service.consume_credits(
-                    user_id=current_user.id,
-                    amount=credits_cost,
-                    action=action,
-                    db=db,
-                    reference_id=task_id,
-                    auto_commit=False,
-                )
-
-                if not success:
-                    raise HTTPException(
-                        status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                        detail=f"Credit failure for variant {i}: {msg}"
-                    )
-
-                # Create Job for each variant via service layer
-                await job_service.create_job(
-                    user_id=current_user.id,
-                    title=f"Variant {i}: {variant.get('variant_name', 'Original')}",
-                    engine=body.engine,
-                    prompt=variant.get("modified_prompt", body.prompt),
-                    style=variant.get("suggested_style", body.style),
-                    status=SystemJobStatus.QUEUED,
-                    job_id=task_id,
-                    progress=0,
-                    source_uri="Generation Prompt",
-                    auto_commit=False,
-                    extra_metadata={
-                        "parent_id": parent_job_id,
-                        "variant_index": i,
-                        "variant_logic": variant.get("logic", "N/A"),
-                        "hook_text": variant.get("hook_text", "N/A"),
-                    },
-                )
-                variant_info.append((task_id, variant, i))
-
-            await db.commit()
-        except Exception as e:
-            await db.rollback()
-            raise e
+        variant_info = await _create_variant_jobs(
+            db=db,
+            current_user_id=current_user.id,
+            body=body,
+            variant_prompts=variant_prompts,
+            credits_cost=credits_cost,
+            action=action,
+            parent_job_id=parent_job_id,
+            job_service=job_service
+        )
 
         # 2. Dispatch Tasks for each variant only after DB commit succeeded
         for task_id, variant, i in variant_info:
-            try:
-                generate_video_task.apply_async(
-                    kwargs={
-                        "prompt": variant.get("modified_prompt", body.prompt),
-                        "engine": body.engine,
-                        "style": variant.get("suggested_style", body.style),
-                        "aspect_ratio": body.aspect_ratio,
-                        "user_id": current_user.id,
-                        "custom_image_uri": body.custom_image_uri,
-                        "parent_id": parent_job_id,
-                        "variant_index": i,
-                        "request_id": get_request_id(),
-                    },
-                    task_id=task_id,
-                )
+            success = await _dispatch_variant_task(
+                db=db,
+                current_user_id=current_user.id,
+                body=body,
+                task_id=task_id,
+                variant=variant,
+                i=i,
+                parent_job_id=parent_job_id,
+                credits_cost=credits_cost,
+            )
+            if success:
                 task_ids.append(task_id)
-            except Exception as task_err:
-                logger.exception(f"Failed to dispatch variant {i} Celery task: {task_err}")
-                # Compensation workflow: mark job as failed and refund credits
-                try:
-                    stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
-                    res = await db.execute(stmt)
-                    job_to_fail = res.scalar_one_or_none()
-                    if job_to_fail:
-                        job_to_fail.status = SystemJobStatus.FAILED
-                        job_to_fail.error_message = f"Enqueuing failed: {task_err}"
-
-                    await credit_service.add_credits(
-                        user_id=current_user.id,
-                        amount=credits_cost,
-                        transaction_type="refund",
-                        db=db,
-                        description=f"Refund: Failed to queue variant {i}",
-                        reference_id=task_id,
-                        auto_commit=False,
-                    )
-                    await db.commit()
-                except Exception as refund_err:
-                    await db.rollback()
-                    logger.exception(f"Refund/fail update failed for variant {i}: {refund_err}")
 
         await audit_service.log(
             action=CreditAction.VIDEO_GENERATE_VARIANTS_START,
@@ -222,13 +268,18 @@ async def generate_single_video(
         return handle_exception(e)
 
 
-@router.post("/generate-story")
+@router.post(
+    "/generate-story",
+    responses={
+        402: {"description": "Payment Required - Insufficient credits or credit failure"}
+    },
+)
 async def start_story_generation(
     request: Request,
     body: StoryRequest,
-    current_user: UserDB = Depends(daily_limit_reached()),
-    credits_cost: int = Depends(credits_required("storytelling")),
-    db=Depends(get_db),
+    current_user: Annotated[UserDB, Depends(daily_limit_reached())],
+    credits_cost: Annotated[int, Depends(credits_required("storytelling"))],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Triggers a multi-scene storytelling narrative task.
@@ -318,7 +369,7 @@ async def start_story_generation(
             resource_type="VIDEO",
             resource_id=task_id,
             db=db,
-            data={"message": "Storytelling started", "task_id": task_id},
+            details={"message": "Storytelling started", "task_id": task_id},
         )
 
         return success_response(
@@ -330,13 +381,19 @@ async def start_story_generation(
         return handle_exception(e)
 
 
-@router.post("/retry/{job_id}")
+@router.post(
+    "/retry/{job_id}",
+    responses={
+        400: {"description": "Bad Request - Job is not in a failed state or has exceeded maximum retry attempts"},
+        404: {"description": "Not Found - Job not found"}
+    },
+)
 @limiter.limit("10/minute")
 async def retry_failed_job(
     request: Request,
     job_id: str,
-    current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Retry a failed video generation job.
@@ -436,11 +493,16 @@ async def retry_failed_job(
         return handle_exception(e)
 
 
-@router.get("/{job_id}/preview")
+@router.get(
+    "/{job_id}/preview",
+    responses={
+        404: {"description": "Not Found - Video job not found"}
+    },
+)
 async def get_video_preview(
     job_id: str,
-    current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Get video preview information including public URL and status.
@@ -472,10 +534,10 @@ async def get_video_preview(
 
 @router.get("/jobs")
 async def list_video_jobs(
+    current_user: Annotated[UserDB, Depends(get_current_user)],
+    job_service: Annotated[VideoJobService, Depends(get_video_job_service)],
     page: int = 1,
     limit: int = 10,
-    current_user: UserDB = Depends(get_current_user),
-    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """
     Get paginated list of user's video generation jobs.

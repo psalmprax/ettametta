@@ -99,7 +99,7 @@ def main():
                 print(f"   File size: {size} bytes ({size/1024/1024:.1f} MB)")
             break
         elif status == "FAILED":
-            print(f"\n❌ RENDER FAILED")
+            print("\n❌ RENDER FAILED")
             print(f"   Full data: {json.dumps(data, indent=2)[:1000]}")
             break
 

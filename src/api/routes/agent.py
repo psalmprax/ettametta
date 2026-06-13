@@ -193,12 +193,18 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
         metadata = getattr(skill, "metadata", {})
         
         category = "General"
-        if key in VIDEO_GEN: category = "Video Generation"
-        elif key in INTEL: category = "Intelligence"
-        elif key in CREATIVE: category = "Creative"
-        elif key in PROD: category = "Production"
-        elif key in OPS: category = "Operations"
-        elif key in BUSINESS: category = "Business"
+        if key in VIDEO_GEN:
+            category = "Video Generation"
+        elif key in INTEL:
+            category = "Intelligence"
+        elif key in CREATIVE:
+            category = "Creative"
+        elif key in PROD:
+            category = "Production"
+        elif key in OPS:
+            category = "Operations"
+        elif key in BUSINESS:
+            category = "Business"
 
         workers.append({
             "id": key,

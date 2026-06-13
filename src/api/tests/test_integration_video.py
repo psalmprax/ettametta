@@ -14,13 +14,13 @@ class TestVideoIntegration:
     """Test suite for the Video Engine integration."""
 
     @pytest.fixture
-    def processor(self):
+    def processor(self, tmp_path):
         """Initializes VideoProcessor with a temporary output dir."""
-        return VideoProcessor(output_dir="/tmp/test_outputs")
+        return VideoProcessor(output_dir=str(tmp_path / "test_outputs"))
 
-    def test_processor_initialization(self, processor):
+    def test_processor_initialization(self, processor, tmp_path):
         """Verify that the processor initializes with correct codec and font."""
-        assert processor.output_dir == "/tmp/test_outputs"
+        assert processor.output_dir == str(tmp_path / "test_outputs")
         assert processor.codec in ["h264_nvenc", "libx264"]
         assert os.path.exists(processor.font_path) or processor.font_path == "arial.ttf"
 
@@ -45,14 +45,14 @@ class TestVideoIntegration:
         
         # Simulating loading
         clip = mock_clip_class("test.mp4")
-        assert clip.duration == 10.0
+        assert clip.duration == pytest.approx(10.0)
         mock_clip_class.assert_called_with("test.mp4")
 
     @pytest.mark.asyncio
-    async def test_synthesis_task_routing(self, client):
+    async def test_synthesis_task_routing(self, client, tmp_path):
         """Verify that different synthesis engines route to appropriate tasks."""
         with patch("services.video_engine.synthesis_service.GenerativeService._synthesize_lite_4k") as mock_lite:
-            mock_lite.return_value = "/tmp/fake_output.mp4"
+            mock_lite.return_value = str(tmp_path / "fake_output.mp4")
             
             # This test requires authentication, so we mock the auth or use test client headers
             # Assuming INTERNAL_API_TOKEN works for these endpoints
@@ -80,8 +80,9 @@ class TestCeleryTaskConnectivity:
     def test_task_registration(self):
         """Check if core tasks are registered in the Celery app."""
         from src.api.utils.celery import celery_app
+        celery_app.loader.import_default_modules()
         registered_tasks = celery_app.tasks.keys()
         
         assert "discovery.sentinel_watcher" in registered_tasks
-        assert "video.transform" in registered_tasks
+        assert "video.download_and_process" in registered_tasks
         assert "video.generate" in registered_tasks

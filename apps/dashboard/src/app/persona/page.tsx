@@ -1,27 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import {
-    User,
     Users,
     Plus,
     Trash2,
     Play,
     Loader2,
     Sparkles,
-    Image,
-    Music,
     Terminal,
-    CheckCircle2,
-    XCircle,
-    RefreshCw,
-    FileVideo,
-    MessageSquare,
-    Eye,
-    Upload,
-    Camera,
-    Volume2
+    FileVideo
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -29,7 +18,7 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
@@ -42,7 +31,7 @@ interface Persona {
 }
 
 function PersonaContent() {
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: _systemLogs, status: _status, pulse: _pulse } = useTelemetry();
     const [activeEngine, setActiveEngine] = useState("list");
     const [personas, setPersonas] = useState<Persona[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +42,7 @@ function PersonaContent() {
     // Create form state
     const [newPersonaName, setNewPersonaName] = useState("");
     const [newPersonaImageUri, setNewPersonaImageUri] = useState("");
-    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [_showCreateForm, setShowCreateForm] = useState(false);
 
     // Generate form state
     const [generateTopic, setGenerateTopic] = useState("");
@@ -241,9 +230,10 @@ function PersonaContent() {
                                         <Loader2 className="h-8 w-8 text-rose-500 animate-spin" />
                                     </div>
                                 ) : personas.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-32 opacity-20">
-                                        <Users className="h-16 w-16 mb-4" />
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No personas registered</span>
+                                    <div className="flex flex-col items-center justify-center py-32 opacity-60">
+                                        <Users className="h-16 w-16 mb-4 text-zinc-500" />
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-400">No personas registered</span>
+                                        <span className="text-[8px] text-zinc-700 font-mono mt-2 uppercase tracking-widest">Create a persona to generate talking-head videos</span>
                                         <button
                                             onClick={() => setActiveEngine("create")}
                                             className="mt-6 text-xs text-rose-500 hover:text-rose-400 font-bold uppercase tracking-widest"

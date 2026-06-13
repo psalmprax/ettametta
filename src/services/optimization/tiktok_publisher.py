@@ -37,7 +37,10 @@ class TikTokPublisher(SocialPublisher):
         headers: dict,
     ) -> str | None:
         """TikTok-specific upload implementation with chunked uploads"""
-        if not headers:
+        # Check for actual auth — headers from get_auth_headers() is always a dict,
+        # so we need to explicitly check for an Authorization or Cookie value
+        has_auth = headers.get("Authorization") or headers.get("Cookie")
+        if not has_auth:
             logger.error(f"[TikTokPublisher] No authentication for user {user_id}")
             return None
 
@@ -61,7 +64,7 @@ class TikTokPublisher(SocialPublisher):
                 init_payload = {
                     "post_info": {
                         "title": metadata.title[:150],
-                        "privacy_level": "SELF_ONLY",
+                        "privacy_level": "PUBLIC_TO_EVERYONE",
                         "disable_duet": False,
                         "disable_comment": False,
                         "disable_stitch": False,

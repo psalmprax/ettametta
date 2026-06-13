@@ -3,7 +3,6 @@
 import React from "react";
 import DashboardLayout from "@/components/layout";
 import { ShieldCheck, FileText, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
 
 export default function TermsPage() {
     return (

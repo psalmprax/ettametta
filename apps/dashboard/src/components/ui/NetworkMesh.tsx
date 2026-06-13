@@ -2,21 +2,20 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { useMemo } from 'react';
 
-interface Node extends d3.SimulationNodeDatum {
+export interface Node extends d3.SimulationNodeDatum {
     id: string;
     group: number;
     label: string;
 }
 
-interface Link extends d3.SimulationLinkDatum<Node> {
+export interface Link extends d3.SimulationLinkDatum<Node> {
     value: number;
 }
 
 interface NetworkProps {
-    nodes: Node[];
-    links: Link[];
+    readonly nodes: Node[];
+    readonly links: Link[];
 }
 
 interface SimNode extends d3.SimulationNodeDatum {

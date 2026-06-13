@@ -5,16 +5,12 @@ Playwright-based headless browser with anti-detection for multi-platform content
 
 import asyncio
 import hashlib
-import json
 import logging
-import os
 import re
-import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Query
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cloakbrowser")

@@ -296,6 +296,37 @@ class NexusOrchestrator:
             if cap is not None:
                 cap.release()
 
+    async def _source_fill_clips(
+        self, niche: str, count: int = 4
+    ) -> list[str]:
+        """Source additional clips to fill duration gaps between sourced
+        footage and probed audio length (Phase 10-05 quick-win).
+
+        Uses stock service with niche fallback.  Returns local file paths.
+        """
+        from src.services.video_engine.stock_service import base_stock_service
+
+        paths: list[str] = []
+        urls = await base_stock_service.fetch_b_roll(niche, count=count)
+        for url in urls:
+            path = await base_stock_service.download_stock_video(url)
+            if path and os.path.exists(path) and os.path.getsize(path) > 1024:
+                paths.append(path)
+        if not paths:
+            # Last-resort fallback with generic niche prompt
+            fallback_urls = await base_stock_service.fetch_b_roll(
+                f"{niche} video", count=count
+            )
+            for url in fallback_urls:
+                path = await base_stock_service.download_stock_video(url)
+                if path and os.path.exists(path) and os.path.getsize(path) > 1024:
+                    paths.append(path)
+        self.logger.info(
+            "[Nexus] Fill-clip sourcing: acquired %d/%d paths for niche '%s'",
+            len(paths), count, niche,
+        )
+        return paths
+
     async def _prepare_remotion_clips(self, visual_paths: list[str]) -> list[dict[str, Any]]:
         """Parallelize metadata extraction via threads to avoid blocking the event loop."""
         counts = await asyncio.gather(
@@ -528,6 +559,60 @@ class NexusOrchestrator:
                 self.logger.error(f"[Nexus] Transcription failed: {e}")
         return []
 
+    @staticmethod
+    def _format_srt_time(seconds: float) -> str:
+        """Format a float-seconds value as an SRT timestamp ``HH:MM:SS,mmm``."""
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = int(seconds % 60)
+        ms = int((seconds % 1) * 1000)
+        return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+    def _export_srt(
+        self, words: list[dict[str, Any]], output_path: str
+    ) -> str | None:
+        """Export word-level timestamps as an SRT subtitle sidecar file.
+
+        Groups words into blocks of ~4 for readable subtitle chunks and
+        writes a standard SubRip file alongside the rendered video.
+
+        Returns *output_path* on success, ``None`` if there are no words.
+        """
+        if not words:
+            return None
+
+        # Group words into blocks of 3-5 for readable subtitle chunks
+        blocks: list[list[dict[str, Any]]] = []
+        current: list[dict[str, Any]] = []
+        for w in words:
+            current.append(w)
+            if len(current) >= 4:
+                blocks.append(current)
+                current = []
+        if current:
+            blocks.append(current)
+
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
+                for i, block in enumerate(blocks, 1):
+                    start = block[0]["start"]
+                    end = block[-1]["end"]
+                    text = " ".join(w["word"] for w in block)
+                    f.write(f"{i}\n")
+                    f.write(
+                        f"{self._format_srt_time(start)} --> "
+                        f"{self._format_srt_time(end)}\n"
+                    )
+                    f.write(f"{text}\n\n")
+            self.logger.info(
+                "[Nexus] Exported SRT captions: %d blocks → %s",
+                len(blocks), output_path,
+            )
+            return output_path
+        except OSError as e:
+            self.logger.error("[Nexus] Failed to write SRT file: %s", e)
+            return None
+
     async def _extract_thumbnail(self, job_id: str, visual_paths: list[str]) -> str:
         """Extract a thumbnail from the first clip."""
         thumb_dir = self._local_temp_dir / "thumbnails"
@@ -632,6 +717,7 @@ class NexusOrchestrator:
         blueprint_id: str = "story-factory",
         style: str = "CINEMATIC_DOC",
         job_metadata: dict[str, Any] | None = None,
+        preview_mode: bool = False,
     ) -> str:
         """
         High-fidelity video assembly using Remotion React engine with node-level tracking.
@@ -750,8 +836,62 @@ class NexusOrchestrator:
                 )
                 total_frames = max_frames
 
+            # ── Phase 10-05: Duration-aware clip sourcing & even-stretching ──
+            # If sourced clips don't cover the probed audio duration, source
+            # extra fill clips and evenly distribute the total frame budget
+            # across all clips.  This eliminates the naive looping in the
+            # Remotion composition.
+            total_clip_frames = sum(
+                c["duration_in_frames"] for c in audited_clips
+            )
+            if (
+                total_clip_frames > 0
+                and total_clip_frames < total_frames * 0.7
+            ):
+                gap_pct = (1 - total_clip_frames / max(total_frames, 1)) * 100
+                self.logger.info(
+                    "[Nexus] Clip coverage gap: %.0f%% (%d/%d frames). "
+                    "Sourcing fill clips...",
+                    gap_pct, total_clip_frames, total_frames,
+                )
+                extra_count = max(
+                    3, int(total_frames / 90) - len(audited_clips)
+                )
+                extra_paths = await self._source_fill_clips(
+                    niche, count=extra_count
+                )
+                if extra_paths:
+                    extra_clips = await self._prepare_remotion_clips(
+                        extra_paths
+                    )
+                    audited_clips.extend(extra_clips)
+                    self.logger.info(
+                        "[Nexus] Added %d fill clips (now %d total)",
+                        len(extra_clips), len(audited_clips),
+                    )
+
+            # Even-distribute clip durations to exactly fill the audio
+            if audited_clips and total_frames > 0:
+                per_clip = total_frames / len(audited_clips)
+                for clip in audited_clips:
+                    clip["duration_in_frames"] = int(per_clip)
+                self.logger.info(
+                    "[Nexus] Even-stretched %d clips to %.0f frames each "
+                    "(total=%d)",
+                    len(audited_clips), per_clip, total_frames,
+                )
+
             # 2.6 Word-level Transcription Node
             word_timestamps = await self._transcribe_master_audio(audio_uri)
+
+            # ── Phase 10-05: Export SRT captions ──
+            srt_path: str | None = None
+            if word_timestamps and audio_uri:
+                srt_path = (
+                    audio_uri.replace(".mp3", ".srt")
+                    .replace(".wav", ".srt")
+                )
+                self._export_srt(word_timestamps, srt_path)
 
             # 2.7 Thumbnail Extraction Node
             thumbnail_path = await self._extract_thumbnail(job_id, visual_paths or [])
@@ -778,6 +918,29 @@ class NexusOrchestrator:
                 "job_metadata": {**(job_metadata or {}), **remotion_flags},
                 **cta_props,
             }
+
+            # ── Phase 10-05: Preview mode (fast draft render) ──
+            if preview_mode:
+                preview_frame_cap = 900  # 30 seconds at 30fps
+                if total_frames > preview_frame_cap:
+                    self.logger.info(
+                        "[Nexus] Preview mode: capping total_frames "
+                        "from %d to %d for fast draft",
+                        total_frames, preview_frame_cap,
+                    )
+                    total_frames = preview_frame_cap
+                    props["video_duration_frames"] = preview_frame_cap
+                    props["duration_in_frames"] = preview_frame_cap
+                    # Re-stretch clips to match the capped frame budget
+                    if audited_clips:
+                        per_clip = total_frames / len(audited_clips)
+                        for clip in audited_clips:
+                            clip["duration_in_frames"] = int(per_clip)
+                props["preview_mode"] = True
+                if "job_metadata" in props and isinstance(
+                    props["job_metadata"], dict
+                ):
+                    props["job_metadata"]["remotion_scale"] = 0.5
 
             # Ensure all numeric properties in clips are integers
             for clip in props.get("clips", []):
@@ -839,6 +1002,7 @@ class NexusOrchestrator:
                         "output": rendered_path,
                         "duration": final_duration,
                         "publish_results": publish_results,
+                        "srt_captions_path": srt_path,
                     },
                 )
 

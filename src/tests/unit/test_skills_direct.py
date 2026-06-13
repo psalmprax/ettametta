@@ -4,11 +4,9 @@ Direct test of OpenCLAW skills - runs inside the openclaw container
 """
 
 import pytest
-import asyncio
 import sys
 import os
 
-from pathlib import Path
 
 PROJECT_DIR = "/app" if os.path.exists("/app") else "/root/ettametta"
 sys.path.insert(0, PROJECT_DIR)

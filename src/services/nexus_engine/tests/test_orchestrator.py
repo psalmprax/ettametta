@@ -5,6 +5,9 @@ import os
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
+# Ensure SECRET_KEY is set for test runs that trigger settings imports
+os.environ.setdefault("SECRET_KEY", "test_secret_key_for_orchestrator_tests")
+
 
 @pytest.fixture(autouse=True)
 def patch_asyncio_to_thread():
@@ -728,3 +731,539 @@ class TestAssembleVideoErrorHandling:
                 )
 
             assert "not found" in str(exc_info.value)
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# Phase 10-05: _source_fill_clips — duration-aware clip sourcing
+# ═════════════════════════════════════════════════════════════════════════
+
+
+class TestSourceFillClips:
+    """Tests for ``_source_fill_clips`` — fetches b-roll from stock
+    service to fill duration gaps between sourced footage and audio."""
+
+    @pytest.mark.asyncio
+    async def test_returns_paths_from_valid_downloads(self):
+        """When stock service returns valid URLs with valid downloads,
+        all paths are returned."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.services.video_engine.stock_service.base_stock_service"
+        ) as mock_stock:
+            mock_stock.fetch_b_roll = AsyncMock(return_value=[
+                "http://stock.example/1.mp4",
+                "http://stock.example/2.mp4",
+            ])
+            mock_stock.download_stock_video = AsyncMock(
+                side_effect=["/tmp/clip1.mp4", "/tmp/clip2.mp4"]
+            )
+
+            with patch(
+                "src.services.nexus_engine.orchestrator.os.path.exists",
+                return_value=True,
+            ), patch(
+                "src.services.nexus_engine.orchestrator.os.path.getsize",
+                return_value=2048,
+            ):
+                paths = await orch._source_fill_clips(
+                    "Motivation", count=3
+                )
+
+            assert len(paths) == 2
+            assert "/tmp/clip1.mp4" in paths
+            assert "/tmp/clip2.mp4" in paths
+            mock_stock.fetch_b_roll.assert_called_once_with(
+                "Motivation", count=3
+            )
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_generic_niche_on_empty_results(self):
+        """When the first fetch_b_roll returns no URLs, a fallback
+        fetch with ``{niche} video`` is attempted."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.services.video_engine.stock_service.base_stock_service"
+        ) as mock_stock:
+            # First call returns empty, fallback returns URLs
+            mock_stock.fetch_b_roll = AsyncMock(side_effect=[
+                [],  # primary — no results
+                ["http://stock.example/fallback.mp4"],  # fallback
+            ])
+            mock_stock.download_stock_video = AsyncMock(
+                return_value="/tmp/fallback.mp4"
+            )
+
+            with patch(
+                "src.services.nexus_engine.orchestrator.os.path.exists",
+                return_value=True,
+            ), patch(
+                "src.services.nexus_engine.orchestrator.os.path.getsize",
+                return_value=2048,
+            ):
+                paths = await orch._source_fill_clips(
+                    "ObscureNiche", count=2
+                )
+
+            assert len(paths) == 1
+            assert "/tmp/fallback.mp4" in paths
+            # Verify both calls were made
+            assert mock_stock.fetch_b_roll.call_count == 2
+            mock_stock.fetch_b_roll.assert_any_call(
+                "ObscureNiche video", count=2
+            )
+
+    @pytest.mark.asyncio
+    async def test_skips_downloads_that_fail(self):
+        """Downloads that return ``None`` or produce missing/small
+        files are silently skipped."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.services.video_engine.stock_service.base_stock_service"
+        ) as mock_stock:
+            mock_stock.fetch_b_roll = AsyncMock(return_value=[
+                "http://stock.example/good.mp4",
+                "http://stock.example/bad.mp4",  # download returns None
+                "http://stock.example/small.mp4",  # file too small
+            ])
+            mock_stock.download_stock_video = AsyncMock(side_effect=[
+                "/tmp/good.mp4",
+                None,  # failed download
+                "/tmp/small.mp4",
+            ])
+
+            # exists: True, True, True  |  getsize: 2048, 512, 100
+            with patch(
+                "src.services.nexus_engine.orchestrator.os.path.exists",
+                return_value=True,
+            ), patch(
+                "src.services.nexus_engine.orchestrator.os.path.getsize",
+                side_effect=[2048, 0, 100],  # small.mp4 is 100 bytes
+            ):
+                paths = await orch._source_fill_clips(
+                    "Tech", count=3
+                )
+
+            # Only the valid download (good.mp4) passes the size check
+            assert len(paths) == 1
+            assert "/tmp/good.mp4" in paths
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_all_fetches_fail(self):
+        """When both primary and fallback fetches return no usable
+        paths, an empty list is returned (graceful degradation)."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.services.video_engine.stock_service.base_stock_service"
+        ) as mock_stock:
+            # Both primary and fallback return empty URL lists
+            mock_stock.fetch_b_roll = AsyncMock(return_value=[])
+            mock_stock.download_stock_video = AsyncMock()
+
+            paths = await orch._source_fill_clips(
+                "NonexistentNiche", count=4
+            )
+
+            assert paths == []
+            assert mock_stock.fetch_b_roll.call_count == 2
+            mock_stock.download_stock_video.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_uses_default_count_of_4(self):
+        """When ``count`` is not specified, the default of 4 is used."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.services.video_engine.stock_service.base_stock_service"
+        ) as mock_stock:
+            mock_stock.fetch_b_roll = AsyncMock(return_value=[])
+
+            await orch._source_fill_clips("Motivation")
+
+            # Default count=4 should be used
+            mock_stock.fetch_b_roll.assert_any_call(
+                "Motivation", count=4
+            )
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# Phase 10-05: Gap-check + even-stretching logic inside assemble_video
+# ═════════════════════════════════════════════════════════════════════════
+
+
+class TestGapCheckAndEvenStretching:
+    """Tests for the duration-aware clip sourcing and even-distribution
+    logic added in Phase 10-05 inside ``assemble_video``.
+
+    The gap-check triggers ``_source_fill_clips`` when sourced clips
+    cover less than 70% of the probed ``total_frames``.  After any
+    fill clips are added, all clip durations are evenly distributed
+    to exactly fill the total frame budget."""
+
+    def _build_assemble_mocks(
+        self, mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
+        mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
+        clip_frame_counts,
+    ):
+        """Shared mock setup for assemble_video integration tests.
+
+        ``clip_frame_counts`` controls how many frames each clip
+        reports (drives the gap-check threshold).
+        """
+        mock_session = AsyncMock()
+        mock_session.__aenter__.return_value = mock_session
+        mock_sf.return_value = mock_session
+
+        mock_bp.return_value = {
+            "id": "test", "name": "Test",
+            "composition_id": "ViralClip", "nodes": [],
+        }
+        mock_lc.is_enabled.return_value = False
+        mock_sd.enabled = False
+        mock_remotion.render_video = AsyncMock(
+            return_value="/tmp/output.mp4"
+        )
+        mock_llm.analyze_image = AsyncMock(
+            return_value={"content": "YES"}
+        )
+        mock_ts.transcribe = AsyncMock(
+            return_value={"words": []}
+        )
+        mock_exists.return_value = True
+        mock_getsize.return_value = 2048
+
+        mock_instance = MagicMock()
+        frames_iter = iter(clip_frame_counts)
+        mock_instance.get.side_effect = lambda prop: {
+            7: next(frames_iter, 0),
+            5: 30.0,
+        }.get(prop, 0)
+        mock_cap.return_value = mock_instance
+
+    @pytest.mark.asyncio
+    async def test_gap_triggers_fill_clips_when_below_70_percent(
+        self, mock_notify
+    ):
+        """When total clip frames are < 70% of total_frames,
+        ``_source_fill_clips`` is called to bridge the gap."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.api.utils.database.async_session_factory"
+        ) as mock_sf, patch(
+            "src.services.nexus_engine.blueprints.get_blueprint_by_id"
+        ) as mock_bp, patch(
+            "src.services.langchain.service.langchain_service"
+        ) as mock_lc, patch(
+            "src.services.llm.service.unified_llm_service"
+        ) as mock_llm, patch(
+            "src.services.video_engine.remotion_service.base_remotion_service"
+        ) as mock_remotion, patch(
+            "src.services.audio.sound_design.sound_design_service"
+        ) as mock_sd, patch(
+            "src.services.audio.transcription_service.base_transcription_service"
+        ) as mock_ts, patch(
+            "src.services.nexus_engine.orchestrator.os.path.exists"
+        ) as mock_exists, patch(
+            "src.services.nexus_engine.orchestrator.os.path.getsize"
+        ) as mock_getsize, patch(
+            "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
+        ) as mock_cap:
+
+            # Clip has only 30 frames, but total_frames is 300 (10%)
+            self._build_assemble_mocks(
+                mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
+                mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
+                clip_frame_counts=[30],
+            )
+
+            with patch.object(
+                orch, "_update_node_status",
+                AsyncMock(),
+            ), patch.object(
+                orch, "_determine_total_frames",
+                AsyncMock(return_value=300),
+            ), patch.object(
+                orch, "_source_fill_clips",
+                AsyncMock(return_value=[]),
+            ) as mock_fill:
+                await orch.assemble_video(
+                    job_id="job-gap-001",
+                    niche="tech",
+                    script_segments=[
+                        {"text": "S1", "type": "hook"}
+                    ],
+                    voiceover_paths=["/tmp/voice.mp3"],
+                    visual_paths=["/tmp/clip.mp4"],
+                )
+
+                # Gap was detected (30 < 300*0.7=210) → fill called
+                mock_fill.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_gap_skipped_when_above_70_percent(
+        self, mock_notify
+    ):
+        """When total clip frames are >= 70% of total_frames,
+        ``_source_fill_clips`` is NOT called."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.api.utils.database.async_session_factory"
+        ) as mock_sf, patch(
+            "src.services.nexus_engine.blueprints.get_blueprint_by_id"
+        ) as mock_bp, patch(
+            "src.services.langchain.service.langchain_service"
+        ) as mock_lc, patch(
+            "src.services.llm.service.unified_llm_service"
+        ) as mock_llm, patch(
+            "src.services.video_engine.remotion_service.base_remotion_service"
+        ) as mock_remotion, patch(
+            "src.services.audio.sound_design.sound_design_service"
+        ) as mock_sd, patch(
+            "src.services.audio.transcription_service.base_transcription_service"
+        ) as mock_ts, patch(
+            "src.services.nexus_engine.orchestrator.os.path.exists"
+        ) as mock_exists, patch(
+            "src.services.nexus_engine.orchestrator.os.path.getsize"
+        ) as mock_getsize, patch(
+            "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
+        ) as mock_cap:
+
+            # Clip has 270 frames, total_frames is 300 (90%)
+            self._build_assemble_mocks(
+                mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
+                mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
+                clip_frame_counts=[270],
+            )
+
+            with patch.object(
+                orch, "_update_node_status",
+                AsyncMock(),
+            ), patch.object(
+                orch, "_determine_total_frames",
+                AsyncMock(return_value=300),
+            ), patch.object(
+                orch, "_source_fill_clips",
+                AsyncMock(return_value=[]),
+            ) as mock_fill:
+                await orch.assemble_video(
+                    job_id="job-gap-002",
+                    niche="tech",
+                    script_segments=[
+                        {"text": "S1", "type": "hook"}
+                    ],
+                    voiceover_paths=["/tmp/voice.mp3"],
+                    visual_paths=["/tmp/clip.mp4"],
+                )
+
+                # No gap (270 >= 300*0.7=210) → fill NOT called
+                mock_fill.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_even_stretching_distributes_frames_equally(
+        self, mock_notify
+    ):
+        """After gap-check, all clip durations are evenly distributed
+        to exactly fill the total frame budget."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.api.utils.database.async_session_factory"
+        ) as mock_sf, patch(
+            "src.services.nexus_engine.blueprints.get_blueprint_by_id"
+        ) as mock_bp, patch(
+            "src.services.langchain.service.langchain_service"
+        ) as mock_lc, patch(
+            "src.services.llm.service.unified_llm_service"
+        ) as mock_llm, patch(
+            "src.services.video_engine.remotion_service.base_remotion_service"
+        ) as mock_remotion, patch(
+            "src.services.audio.sound_design.sound_design_service"
+        ) as mock_sd, patch(
+            "src.services.audio.transcription_service.base_transcription_service"
+        ) as mock_ts, patch(
+            "src.services.nexus_engine.orchestrator.os.path.exists"
+        ) as mock_exists, patch(
+            "src.services.nexus_engine.orchestrator.os.path.getsize"
+        ) as mock_getsize, patch(
+            "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
+        ) as mock_cap:
+
+            # 4 clips × 250 frames each
+            self._build_assemble_mocks(
+                mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
+                mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
+                clip_frame_counts=[250, 250, 250, 250],
+            )
+
+            captor: dict = {}
+            async def _capture_props(*args, **kwargs):
+                captor["props"] = kwargs.get("props", {})
+                return "/tmp/output.mp4"
+
+            with patch.object(
+                orch, "_update_node_status",
+                AsyncMock(),
+            ), patch.object(
+                orch, "_determine_total_frames",
+                AsyncMock(return_value=400),
+            ), patch.object(
+                orch, "_source_fill_clips",
+                AsyncMock(return_value=[]),
+            ), patch.object(
+                orch, "_retry_remotion_render",
+                AsyncMock(side_effect=_capture_props),
+            ):
+                await orch.assemble_video(
+                    job_id="job-even-001",
+                    niche="tech",
+                    script_segments=[
+                        {"text": "S1", "type": "hook"}
+                    ],
+                    voiceover_paths=["/tmp/voice.mp3"],
+                    visual_paths=[
+                        f"/tmp/clip_{i}.mp4" for i in range(4)
+                    ],
+                )
+
+            # All 4 clips should be evenly stretched to 400/4=100
+            clips = captor["props"]["clips"]
+            assert len(clips) == 4
+            for clip in clips:
+                assert clip["duration_in_frames"] == 100, (
+                    f"Expected 100, got {clip['duration_in_frames']}"
+                )
+            assert captor["props"]["video_duration_frames"] == 400
+
+    @pytest.mark.asyncio
+    async def test_even_stretching_zeroed_when_no_clips(
+        self, mock_notify
+    ):
+        """When no valid clips survive the pipeline, the even-stretch
+        block simply does nothing (no division by zero)."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.api.utils.database.async_session_factory"
+        ) as mock_sf, patch(
+            "src.services.nexus_engine.blueprints.get_blueprint_by_id"
+        ) as mock_bp:
+
+            mock_session = AsyncMock()
+            mock_session.__aenter__.return_value = mock_session
+            mock_sf.return_value = mock_session
+            mock_bp.return_value = {
+                "id": "test", "name": "Test",
+                "composition_id": "ViralClip", "nodes": [],
+            }
+
+            with patch.object(
+                orch, "_update_node_status", AsyncMock()
+            ), patch(
+                "src.services.nexus_engine.orchestrator.os.path.exists",
+                return_value=True,
+            ), patch(
+                "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
+            ) as mock_cap:
+                mock_instance = MagicMock()
+                mock_instance.get.return_value = 0  # no frames
+                mock_cap.return_value = mock_instance
+
+                with pytest.raises(
+                    RuntimeError, match="No valid video clips"
+                ):
+                    await orch.assemble_video(
+                        job_id="job-even-002",
+                        niche="tech",
+                        script_segments=[
+                            {"text": "S1", "type": "hook"}
+                        ],
+                        voiceover_paths=["/tmp/voice.mp3"],
+                        visual_paths=["/tmp/invalid.mp4"],
+                    )
+
+    @pytest.mark.asyncio
+    async def test_even_stretching_handles_single_clip(self):
+        """A single clip gets all frames (it already had all frames)."""
+        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+
+        orch = NexusOrchestrator()
+
+        with patch(
+            "src.api.utils.database.async_session_factory"
+        ) as mock_sf, patch(
+            "src.services.nexus_engine.blueprints.get_blueprint_by_id"
+        ) as mock_bp, patch(
+            "src.services.langchain.service.langchain_service"
+        ) as mock_lc, patch(
+            "src.services.llm.service.unified_llm_service"
+        ) as mock_llm, patch(
+            "src.services.video_engine.remotion_service.base_remotion_service"
+        ) as mock_remotion, patch(
+            "src.services.audio.sound_design.sound_design_service"
+        ) as mock_sd, patch(
+            "src.services.audio.transcription_service.base_transcription_service"
+        ) as mock_ts, patch(
+            "src.services.nexus_engine.orchestrator.os.path.exists"
+        ) as mock_exists, patch(
+            "src.services.nexus_engine.orchestrator.os.path.getsize"
+        ) as mock_getsize, patch(
+            "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
+        ) as mock_cap:
+
+            self._build_assemble_mocks(
+                mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
+                mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
+                clip_frame_counts=[300],
+            )
+
+            captor: dict = {}
+            async def _capture_props(*args, **kwargs):
+                captor["props"] = kwargs.get("props", {})
+                return "/tmp/output.mp4"
+
+            with patch.object(
+                orch, "_update_node_status",
+                AsyncMock(),
+            ), patch.object(
+                orch, "_determine_total_frames",
+                AsyncMock(return_value=300),
+            ), patch.object(
+                orch, "_retry_remotion_render",
+                AsyncMock(side_effect=_capture_props),
+            ):
+                await orch.assemble_video(
+                    job_id="job-even-003",
+                    niche="tech",
+                    script_segments=[
+                        {"text": "S1", "type": "hook"}
+                    ],
+                    voiceover_paths=["/tmp/voice.mp3"],
+                    visual_paths=["/tmp/single.mp4"],
+                )
+
+            clips = captor["props"]["clips"]
+            assert len(clips) == 1
+            assert clips[0]["duration_in_frames"] == 300

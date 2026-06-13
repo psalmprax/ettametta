@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Remove orphaned filter CSS function lines from nexus/page.tsx"""
 
-import re
 
 path = '/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/nexus/page.tsx'
 with open(path, 'r') as f:
@@ -49,7 +48,7 @@ content = content.replace('filter: filterStyle\n                                
 if content != original:
     with open(path, 'w') as f:
         f.write(content)
-    print(f"\nFixed! Wrote changes.")
+    print("\nFixed! Wrote changes.")
     print(f"Removed {removed} orphaned lines")
 else:
     print("No changes needed")

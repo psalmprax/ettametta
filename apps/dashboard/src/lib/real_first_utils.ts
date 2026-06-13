@@ -106,10 +106,20 @@ export async function withRealFallback<T>(
         }
     }
 
-    if (!options.silent && !(lastError?.message?.includes("401") || lastError?.message === "Unauthorized")) {
+    // ── Default notification on fallback ──────────────────────────────────
+    // If the caller did not explicitly silence errors or provide their own
+    // onFallback, we show a generic toast so the user knows something went
+    // wrong instead of silently rendering placeholder data.
+    const isAuthError = lastError?.message?.includes("401") || lastError?.message === "Unauthorized";
+    if (!options.silent && !isAuthError) {
         console.error("Real-First Fatal Signal Break:", lastError);
         if (options.errorMessage) {
             toast.error(options.errorMessage);
+        } else if (!options.onFallback) {
+            // No custom onFallback provided → show a generic offline warning
+            toast.warning("Connection issue — showing cached data", {
+                duration: 4000,
+            });
         }
     }
 

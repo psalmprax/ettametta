@@ -423,18 +423,35 @@ class VisionAuditNode(BaseNode):
         cv2.imwrite(frame_path, frame)
 
         audit_prompt = (
-            f"Does this video frame match the description: '{prompt}'? "
-            "Answer with YES or NO followed by a brief reason."
+            f"Rate how well this video frame matches the description: "
+            f"'{prompt}'. Return a score from 0 (not at all) to 100 "
+            f"(perfect match), followed by a brief reason. "
+            f"Example: '85 - good match, similar colors and composition'"
         )
 
         try:
             audit_result = await unified_llm_service.analyze_image(frame_path, audit_prompt)
-            content = audit_result.get("content", "YES").upper() if audit_result else "YES"
-            passed = "YES" in content and "NO" not in content
-            return {"passed": passed, "reason": content[:60], "video_path": video_path}
+            content = audit_result.get("content", "50") if audit_result else "50"
+            # Parse numeric score from LLM response (first 1-3 digit number)
+            import re
+            score_match = re.search(r"(\d{1,3})", str(content))
+            score = int(score_match.group(1)) if score_match else 50
+            score = max(0, min(100, score))
+            passed = score >= 40  # Minimum relevance threshold: 40/100
+            return {
+                "passed": passed,
+                "score": score,
+                "reason": str(content)[:80],
+                "video_path": video_path,
+            }
         except Exception as e:
             logger.warning("[DAG:VisionAudit] Vision audit failed: %s", e)
-            return {"passed": True, "reason": f"audit_error: {e}", "video_path": video_path}
+            return {
+                "passed": True,
+                "score": 50,
+                "reason": f"audit_error: {e}",
+                "video_path": video_path,
+            }
         finally:
             if os.path.exists(frame_path):
                 os.remove(frame_path)

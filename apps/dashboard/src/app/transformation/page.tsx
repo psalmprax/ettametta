@@ -1,38 +1,31 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useMemo, useCallback } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { DesignCard } from "@/components/ui/DesignCard";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import {
     Video,
     Layers,
-    Cpu,
-    Play,
     Clock,
-    Settings2,
     Eye,
-    Film,
     Sparkles,
     CheckCircle2,
     RefreshCw,
-    ArrowUpRight,
-    PlusCircle,
     Link as LinkIcon,
-    Circle,
-    X,
     Monitor,
     Loader2,
     Activity,
     Box,
     Terminal,
     Target,
-    Zap,
-    ZapOff
+    ZapOff,
+    Lock
 } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -246,9 +239,10 @@ function TransformationContent() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col items-center gap-4 opacity-10">
-                                                <Video className="h-16 w-16" />
-                                                <span className="text-[10px] font-bold uppercase tracking-[0.5em]">Feed Offline</span>
+                                            <div className="flex flex-col items-center gap-3 opacity-40">
+                                                <Video className="h-16 w-16 text-zinc-600" />
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">Feed Offline</span>
+                                                <span className="text-[8px] text-zinc-700 uppercase tracking-widest font-mono">Awaiting job dispatch...</span>
                                             </div>
                                         )}
                                     </div>
@@ -265,20 +259,26 @@ function TransformationContent() {
                                                 <LinkIcon className="h-4 w-4 text-rose-500" />
                                                 Auto-Inject Affiliate Nodes
                                             </Button>
-                                            <Button 
-                                                disabled={!selectedJob}
-                                                className="w-full h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3"
-                                            >
-                                                <Sparkles className="h-4 w-4 text-violet-400" />
-                                                Neural Upscale (4K)
-                                            </Button>
-                                            <Button 
-                                                disabled={!selectedJob}
-                                                className="w-full h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3"
-                                            >
-                                                <Target className="h-4 w-4 text-cyan-400" />
-                                                Test Drive Generation
-                                            </Button>
+                                            <Tooltip content="Coming in v1.2 — Upscales videos to 4K using Real-ESRGAN. Requires GPU node.">
+                                                <Button 
+                                                    disabled={true}
+                                                    className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3 cursor-not-allowed opacity-40"
+                                                >
+                                                    <Sparkles className="h-4 w-4 text-violet-400" />
+                                                    Neural Upscale (4K)
+                                                    <Lock className="h-3 w-3 text-zinc-600 ml-auto" />
+                                                </Button>
+                                            </Tooltip>
+                                            <Tooltip content="Coming in v1.2 — Generates a 15s quick preview from your prompt for rapid iteration.">
+                                                <Button 
+                                                    disabled={true}
+                                                    className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3 cursor-not-allowed opacity-40"
+                                                >
+                                                    <Target className="h-4 w-4 text-cyan-400" />
+                                                    Test Drive Generation
+                                                    <Lock className="h-3 w-3 text-zinc-600 ml-auto" />
+                                                </Button>
+                                            </Tooltip>
                                         </div>
                                     </div>
                                     <DesignCard 

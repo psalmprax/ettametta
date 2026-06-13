@@ -10,9 +10,9 @@ import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 
 interface MultiPublishModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess?: () => void;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
+    readonly onSuccess?: () => void;
 }
 
 const ALL_PLATFORMS = [

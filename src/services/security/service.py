@@ -5,6 +5,7 @@ import logging
 import socket
 import asyncio
 from src.api.utils.redis import get_sync_redis
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 

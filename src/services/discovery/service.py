@@ -18,7 +18,6 @@ except ImportError:
     faster_whisper = None
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
-from .tiktok_scanner import TikTokScanner
 from .cloak_scanner import CloakBrowserScanner
 from .cloak_tiktok_scanner import CloakTikTokScanner
 from .cloak_instagram_scanner import CloakInstagramScanner
@@ -27,17 +26,11 @@ from .cloak_x_scanner import CloakXScanner
 from .cloak_linkedin_scanner import CloakLinkedInScanner
 from .cloak_reddit_scanner import CloakRedditScanner
 from .cloak_twitch_scanner import CloakTwitchScanner
-from .reddit_scanner import base_reddit_service
-from .x_scanner import base_x_scanner_service
 from .public_domain_scanner import base_public_domain_service
 from .metasearch_scanner import base_metasearch_service
 from .rumble_scanner import base_rumble_service
-from .instagram_scanner import base_instagram_service
-from .facebook_scanner import base_facebook_scanner_service
-from .twitch_scanner import base_twitch_service
 from .snapchat_scanner import base_snapchat_service
 from .pinterest_scanner import base_pinterest_service
-from .linkedin_scanner import base_linkedin_scanner_service
 from .bilibili_scanner import base_bilibili_service
 from .skool_scanner import base_skool_service
 from .duckduckgo_scanner import base_duckduckgo_service
@@ -98,6 +91,7 @@ class DiscoveryService:
 
         # Video lead discovery capabilities
         self.video_lead_scanner = video_lead_scanner
+        self._scraper_url = _scraper_url
 
     async def _log(self, message: str, level: str = "INFO", job_id: str | None = None):
         """Broadcasts a discovery log message with JSON formatting and OTEL support."""
@@ -325,10 +319,10 @@ class DiscoveryService:
             self.global_scanners
             if deep_scan or tier != "free"
             else [
-                CloakXScanner(scraper_url=_scraper_url),
-                CloakInstagramScanner(scraper_url=_scraper_url),
-                CloakFacebookScanner(scraper_url=_scraper_url),
-                CloakTwitchScanner(scraper_url=_scraper_url),
+                CloakXScanner(scraper_url=self._scraper_url),
+                CloakInstagramScanner(scraper_url=self._scraper_url),
+                CloakFacebookScanner(scraper_url=self._scraper_url),
+                CloakTwitchScanner(scraper_url=self._scraper_url),
                 base_bilibili_service,
                 base_rumble_service,
             ]
@@ -424,27 +418,27 @@ class DiscoveryService:
             max_results=20,
         )
 
-        for l in swarm_leads:
+        for lead in swarm_leads:
             all_candidates.append(
                 ContentCandidate(
-                    id=l.video_id,
-                    platform=l.platform,
-                    source_uri=l.url,
-                    creator_name=l.creator,
-                    title=l.title,
-                    description=l.description,
-                    thumbnail_uri=l.thumbnail_uri or f"https://picsum.photos/seed/{l.video_id}/1280/720",
-                    view_count=l.view_count or 0,
-                    like_count=l.like_count or 0,
-                    comment_count=l.comment_count or 0,
-                    share_count=l.share_count or 0,
-                    engagement_score=l.engagement_score or 0.0,
-                    viral_score=l.viral_score or 0,
-                    duration_seconds=l.duration_seconds or 0.0,
-                    category=l.content_type or "video",
-                    niche=l.niche,
+                    id=lead.video_id,
+                    platform=lead.platform,
+                    source_uri=lead.url,
+                    creator_name=lead.creator,
+                    title=lead.title,
+                    description=lead.description,
+                    thumbnail_uri=lead.thumbnail_uri or f"https://picsum.photos/seed/{lead.video_id}/1280/720",
+                    view_count=lead.view_count or 0,
+                    like_count=lead.like_count or 0,
+                    comment_count=lead.comment_count or 0,
+                    share_count=lead.share_count or 0,
+                    engagement_score=lead.engagement_score or 0.0,
+                    viral_score=lead.viral_score or 0,
+                    duration_seconds=lead.duration_seconds or 0.0,
+                    category=lead.content_type or "video",
+                    niche=lead.niche,
                     metadata={
-                        **(getattr(l, "metadata_json", None) or {}),
+                        **(getattr(lead, "metadata_json", None) or {}),
                         "is_reupload": True,
                     },
                 )

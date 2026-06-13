@@ -2,9 +2,10 @@
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, Home, RefreshCcw } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 interface State {
@@ -15,7 +16,7 @@ interface State {
 // Dynamic Sentry loader
 const captureError = (error: Error, extra?: Record<string, unknown>) => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Sentry = require("@sentry/react");
     Sentry.captureException(error, { extra });
   } catch {
@@ -33,9 +34,9 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-    captureError(error, { componentStack: errorInfo.componentStack });
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {            console.error("Uncaught error:", error, errorInfo);
+            toast.error("An unexpected error occurred — the dashboard may not function correctly");
+            captureError(error, { componentStack: errorInfo.componentStack });
     this.reportErrorToAPI(error, errorInfo);
   }
 
@@ -53,6 +54,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
       });
     } catch (e) {
       console.error("Failed to report error to API:", e);
+      toast.error("Failed to report error — backend may be unreachable");
     }
   };
 

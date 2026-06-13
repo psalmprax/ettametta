@@ -5,40 +5,29 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import {
     Cpu,
     Play,
-    Pause,
     Activity,
     Terminal,
     Search,
     Layers,
     Share2,
-    RefreshCw,
-    AlertCircle,
-    CheckCircle2,
-    AlertOctagon,
-    Zap,
-    Target,
-    ShieldCheck,
-    Dna,
     Radar,
-    Clock,
-    Sparkles,
-    ArrowUpRight
+    Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE, WS_BASE } from "@/lib/config";
+import { API_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 
 function AutonomousContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: systemLogs, status, pulse: _pulse } = useTelemetry();
     
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "launch");
     const [isRunning, setIsRunning] = useState(false);
@@ -46,7 +35,7 @@ function AutonomousContent() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [currentStep, setCurrentStep] = useState("IDLE");
     const [insights, setInsights] = useState<any>(null);
-    const [lastRun, setLastRun] = useState<number | null>(null);
+    const [_lastRun, setLastRun] = useState<number | null>(null);
     const [nextRun, setNextRun] = useState<number | null>(null);
 
     useEffect(() => {
@@ -222,9 +211,10 @@ function AutonomousContent() {
                                                 <p className="text-zinc-500 text-sm leading-relaxed">{insights.hook}</p>
                                             </div>
                                         ) : (
-                                            <div className="h-32 flex flex-col items-center justify-center opacity-20">
-                                                <Radar className="h-10 w-10 animate-pulse" />
-                                                <span className="text-[8px] font-bold mt-2">LISTENING_FOR_PULSES</span>
+                                            <div className="h-32 flex flex-col items-center justify-center opacity-50">
+                                                <Radar className="h-10 w-10 animate-pulse text-zinc-500" />
+                                                <span className="text-[8px] font-bold mt-2 text-zinc-500 uppercase tracking-widest">Listening for Insights</span>
+                                                <span className="text-[7px] text-zinc-700 font-mono mt-1 uppercase tracking-widest">Insights appear once Agent Zero generates them</span>
                                             </div>
                                         )}
                                     </div>

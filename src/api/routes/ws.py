@@ -5,7 +5,6 @@ import logging
 import time
 from datetime import datetime, timedelta
 from src.api.utils.redis import get_async_redis, get_sync_redis
-from src.api.config import settings
 
 
 router = APIRouter(prefix="/ws", tags=["websockets"])

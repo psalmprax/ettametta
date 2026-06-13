@@ -135,7 +135,7 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
-export function I18nProvider({ children }: { children: ReactNode }) {
+export function I18nProvider({ children }: { readonly children: ReactNode }) {
   const [locale, setLocale] = useState('en');
 
   useEffect(() => {

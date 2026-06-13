@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Apply DAG layout improvements to nexus/page.tsx"""
-import sys
 
 path = "apps/dashboard/src/app/nexus/page.tsx"
 with open(path) as f:
@@ -53,7 +52,7 @@ helpers = '''
 '''
 
 m1 = "    }, [actionLogs, systemLogs]);\n\n    return (\n        <CommandCenterLayout"
-assert m1 in content, f"Marker 1 not found"
+assert m1 in content, "Marker 1 not found"
 content = content.replace(m1, "    }, [actionLogs, systemLogs]);\n" + helpers + "\n    return (\n        <CommandCenterLayout", 1)
 print("✓ Added DAG helpers")
 

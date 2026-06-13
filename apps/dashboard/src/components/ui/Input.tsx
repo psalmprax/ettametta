@@ -1,15 +1,14 @@
-/** @jsxImportSource react */
 "use client";
 
 import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  icon?: React.ReactNode;
-  variant?: "default" | "minimal";
-  fullWidth?: boolean;
+  readonly label?: string;
+  readonly error?: string;
+  readonly icon?: React.ReactNode;
+  readonly variant?: "default" | "minimal";
+  readonly fullWidth?: boolean;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(

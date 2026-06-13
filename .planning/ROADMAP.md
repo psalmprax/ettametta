@@ -15,18 +15,23 @@
 - [ ] **Phase 10: Discovery → Analysis → Video Pipeline Fix** - Repair the broken core user journey end-to-end
     - Promoted from `.planning/BACKLOG.md` item 999.1 (P0)
     - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
+    - [x] 10-02-PLAN.md — Celery task rewrite: persist AnalysisReport to DB
+    - [x] 10-03-PLAN.md — Read-side endpoint: GET /discovery/analysis/{content_id}
+    - [x] 10-04-PLAN.md — Thread AnalysisReport insights into video job dispatcher
+    - [x] 10-05-PLAN.md — Frontend wire + WebSocket push
+    - [x] 10-06-PLAN.md — E2E smoke test + observability
 - [ ] **Phase 11: Remove Veo3 Stub (Credit-Scam Fix)** - Stop the fake-Veo3 from charging 25 credits for a Pollinations.ai image
     - Promoted from `.planning/BACKLOG.md` item 999.2 (P0)
     - [x] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
 - [ ] **Phase 12: Wire Up Runway + Pika API Keys** - Activate the dormant Runway/Pika API integration by reading keys from settings and exposing /engines/availability
     - Promoted from `.planning/BACKLOG.md` item 999.3 (P0)
-    - [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
+    - [x] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
 - [ ] **Phase 13: Rewrite Luma API to Luma Ray** - Replace the deprecated `dream-machine` endpoint with the current Luma Ray API (`https://api.lumalabs.ai/v1/generations`) and add `LUMA_API_KEY` to settings
     - Promoted from `.planning/BACKLOG.md` item 999.4 (P0)
     - [x] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
-- [ ] **Phase 14: Affiliate Auto-Insert** - Wire up the Transformation page's "Auto-Inject Affiliate Nodes" button so it actually burns affiliate URLs into the rendered video via FFmpeg drawtext, with per-link impression tracking
+- [x] **Phase 14: Affiliate Auto-Insert** - Wire up the Transformation page's "Auto-Inject Affiliate Nodes" button so it actually burns affiliate URLs into the rendered video via FFmpeg drawtext, with per-link impression tracking
     - Promoted from `.planning/BACKLOG.md` item 999.5 (P1)
-    - [ ] 14-01-PLAN.md — drawtext URL burn-in + impression_count + tests
+    - [x] 14-01-PLAN.md — drawtext URL burn-in + impression_count + tests
 
 ## Phase Details
 
@@ -194,7 +199,7 @@
   4. After a successful render, each linked `AffiliateLinkDB.impression_count` is incremented (a new nullable column added via batch_alter_table)
   5. Unit tests cover: URL burn-in (FFmpeg drawtext filter contains the URL), impression_count increments, sanitization, missing-link fallback
 **Plans**: 1 plans (single commit)
-- [ ] 14-01-PLAN.md — drawtext URL burn-in + impression_count + tests
+- [x] 14-01-PLAN.md — drawtext URL burn-in + impression_count + tests
 
 ### Phase 11: Remove Veo3 Stub (Credit-Scam Fix)
 **Goal**: Stop users from being charged 25 credits for a fake Veo3 (the synthesis path silently falls through to a Pollinations.ai image+parallax)
@@ -225,17 +230,17 @@
 | 1. User Authentication and Settings | 5/6 | In Progress | - |
 | 2. Content Discovery | 3/3 | Complete    | 2026-04-17 |
 | 3. Basic Video Generation | 5/5 | Complete | 2026-04-15 |
-| 4. Advanced Video Generation | 0/1 | In Progress | - |
+| 4. Advanced Video Generation | 1/1 | **Complete** ✅ | 2026-06-13 (multi-scene storytelling verified — 4 services, 47 tests) |
 | 5. Multi-Platform Publishing | 1/2 | In Progress | - |
 | 6. Automated Scheduling Publishing | 3/3 | Complete | 2026-04-17 |
 | 7. Monetization | 1/2 | In Progress | - |
 | 8. Analytics | 1/2 | In Progress | - |
 | 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
-| 10. Discovery → Analysis → Video Pipeline Fix | 1/1 | In Progress | 2026-05-29 (10-01 Foundation complete) |
+| 10. Discovery → Analysis → Video Pipeline Fix | 6/6 | **Complete** ✅ | 2026-06-12 (Phase 10 shipped — all 6 plans) |
 | 11. Remove Veo3 Stub | 1/1 | Complete | 2026-05-29 (6a790f10) |
-| 12. Wire Up Runway + Pika | 0/1 | Not Started | - |
+| 12. Wire Up Runway + Pika | 1/1 | Complete | 2026-05-29 (f568a097) |
 | 13. Rewrite Luma API to Luma Ray | 1/1 | Complete | 2026-05-29 (f568a097) |
-| 14. Affiliate Auto-Insert | 0/1 | Not Started | - |
+| 14. Affiliate Auto-Insert | 1/1 | Complete | 2026-06-13 (phase complete — drawtext burn-in, impression tracking, 14 tests) |
 
 ---
 ## Related Documents
@@ -263,4 +268,4 @@
 
 ---
 
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10/11/12/13/14 promoted from BACKLOG.md 999.1/999.2/999.3/999.4/999.5; Related Documents section added)*
+*Roadmap created: 2026-04-08 — Last updated: 2026-06-13 (Phase 10 complete ✅ — Phase 14 complete ✅ — Affiliate Auto-Insert shipped)*

@@ -2,9 +2,8 @@
 
 import React, { ReactNode } from "react";
 import DashboardLayout from "@/components/layout";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Search, Filter, Download, Plus, RefreshCw } from "lucide-react";
+import { Search, Filter, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Tab {
@@ -14,15 +13,15 @@ interface Tab {
 }
 
 interface DashboardPageLayoutProps {
-  title: string;
-  subtitle?: string;
-  tabs?: Tab[];
-  activeTab?: string;
-  onTabChange?: (tabId: string) => void;
-  actions?: ReactNode;
-  children: ReactNode;
-  showSearch?: boolean;
-  searchPlaceholder?: string;
+  readonly title: string;
+  readonly subtitle?: string;
+  readonly tabs?: Tab[];
+  readonly activeTab?: string;
+  readonly onTabChange?: (tabId: string) => void;
+  readonly actions?: ReactNode;
+  readonly children: ReactNode;
+  readonly showSearch?: boolean;
+  readonly searchPlaceholder?: string;
 }
 
 export default function DashboardPageLayout({

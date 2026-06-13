@@ -23,19 +23,44 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { useTelemetry } from "@/context/TelemetryContext";
 
+interface SecurityStatus {
+    health_score?: number;
+    privacy_score?: number;
+    bias_score?: number;
+}
+
+interface AuditReport {
+    id: string;
+    platform: string;
+    status: string;
+    timestamp: string;
+    score?: number;
+    recommendations?: string[];
+    sprint_plan?: string;
+}
+
+interface BiasReport {
+    status?: string;
+    bias_score?: number;
+    scanned_entities?: number;
+}
+
+interface LogEntry {
+    level?: string;
+    message?: string;
+    timestamp: number;
+    module?: string;
+}
+
 export default function AuditsPage() {
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: systemLogs, status, pulse: _pulse } = useTelemetry();
     const [activeTab, setActiveTab] = useState<"account" | "security" | "bias" | "logs">("account");
     const [isLoading, setIsLoading] = useState(false);
-    const [securityStatus, setSecurityStatus] = useState<any>(null);
-    const [auditReports, setAuditReports] = useState<any[]>([]);
-    const [securityEvents, setSecurityEvents] = useState<any[]>([]);
-    const [biasReport, setBiasReport] = useState<any>(null);
+    const [securityStatus, setSecurityStatus] = useState<SecurityStatus | null>(null);
+    const [auditReports, setAuditReports] = useState<AuditReport[]>([]);
+    const [securityEvents, setSecurityEvents] = useState<unknown[]>([]);
+    const [biasReport, setBiasReport] = useState<BiasReport | null>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["GOVERNANCE_INITIALIZED", "SYNCHRONIZING_TRUST_MATRIX"]);
-
-    useEffect(() => {
-        fetchData();
-    }, [activeTab]);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -48,7 +73,7 @@ export default function AuditsPage() {
                 withRealFallback<any>((signal) => fetch(`${API_BASE}/security/status`, { headers, signal }),
                     { fallback: null, onSuccess: (data) => setSecurityStatus(data) }
                 ),
-                withRealFallback<any[]>((signal) => fetch(`${API_BASE}/security/events`, { headers, signal }),
+                withRealFallback<unknown[]>((signal) => fetch(`${API_BASE}/security/events`, { headers, signal }),
                     { fallback: [], onSuccess: (data) => setSecurityEvents(data) }
                 )
             ]);
@@ -56,18 +81,22 @@ export default function AuditsPage() {
         setIsLoading(false);
     };
 
+    useEffect(() => {
+        fetchData();
+    }, [activeTab]);
+
     const handleRunSecurityAudit = async () => {
         setIsLoading(true);
         const token = await getAuthToken();
         if (!token) return;
         setActionLogs(prev => [`[ACTION] Triggering Red Team Security Audit...`, ...prev]);
 
-        await withRealFallback<any>((signal) => fetch(`${API_BASE}/security/scan`, {
+        await withRealFallback<Record<string, SecurityStatus>>((signal) => fetch(`${API_BASE}/security/scan`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
-                fallback: { report: null },
+                fallback: { report: null as unknown as SecurityStatus },
                 onSuccess: (data) => {
                     toast.success("Security Audit Complete");
                     setSecurityStatus(data.report);
@@ -86,12 +115,12 @@ export default function AuditsPage() {
         if (!token) return;
         setActionLogs(prev => [`[ACTION] Triggering Bias Neutrality Scan...`, ...prev]);
 
-        await withRealFallback<any>((signal) => fetch(`${API_BASE}/security/bias-scan`, {
+        await withRealFallback<Record<string, BiasReport>>((signal) => fetch(`${API_BASE}/security/bias-scan`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
-                fallback: { report: null },
+                fallback: { report: null as unknown as BiasReport },
                 onSuccess: (data) => {
                     toast.success("Bias Scan Complete");
                     setBiasReport(data.report);
@@ -110,7 +139,7 @@ export default function AuditsPage() {
         if (!token) return;
         setActionLogs(prev => [`[ACTION] Dispatched compliance audit for ${platform}...`, ...prev]);
 
-        await withRealFallback<any>((signal) => fetch(`${API_BASE}/agent/account-audit`, {
+        await withRealFallback<Record<string, unknown>>((signal) => fetch(`${API_BASE}/agent/account-audit`, {
                 method: "POST",
                 headers: { 
                     "Authorization": `Bearer ${token}`,
@@ -128,9 +157,9 @@ export default function AuditsPage() {
                         platform,
                         status: "Success",
                         timestamp: new Date().toISOString(),
-                        score: data.score,
-                        recommendations: data.recommendations,
-                        sprint_plan: data.sprint_plan
+                        score: data.score as number,
+                        recommendations: data.recommendations as string[],
+                        sprint_plan: data.sprint_plan as string
                     }, ...prev]);
                 },
                 onFallback: () => toast.error("Audit Failed")
@@ -139,7 +168,7 @@ export default function AuditsPage() {
         setIsLoading(false);
     };
 
-    const handleDownloadReport = (report: any) => {
+    const handleDownloadReport = (report: AuditReport) => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -164,7 +193,7 @@ export default function AuditsPage() {
                     ].map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id as any)}
+                            onClick={() => setActiveTab(item.id as "account" | "security" | "bias" | "logs")}
                             className={cn(
                                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                                 activeTab === item.id ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -221,8 +250,8 @@ export default function AuditsPage() {
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
                                     {[
                                         ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
-                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "SECURITY" || l.module === "AGENT") : [])
-                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
+                                        ...(Array.isArray(systemLogs) ? systemLogs.filter((l: LogEntry) => l.module === "SECURITY" || l.module === "AGENT") : [])
+                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: LogEntry, i) => (
                                         <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
                                             <span className="text-zinc-700 shrink-0 select-none">{new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
                                             <span className="text-zinc-800 shrink-0 select-none">|</span>
@@ -255,8 +284,8 @@ export default function AuditsPage() {
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
                                     {[
                                         ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
-                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "SECURITY" || l.module === "AGENT") : [])
-                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
+                                        ...(Array.isArray(systemLogs) ? systemLogs.filter((l: LogEntry) => l.module === "SECURITY" || l.module === "AGENT") : [])
+                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: LogEntry, i) => (
                                         <div key={i} className="flex gap-4">
                                             <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                             <span className={cn(
@@ -275,7 +304,7 @@ export default function AuditsPage() {
     );
 }
 
-function TabButton({ active, onClick, icon: Icon, label }: any) {
+function TabButton({ active, onClick, icon: Icon, label }: { readonly active: boolean; readonly onClick: () => void; readonly icon: React.ElementType; readonly label: string }) {
     return (
         <button
             onClick={onClick}
@@ -290,7 +319,7 @@ function TabButton({ active, onClick, icon: Icon, label }: any) {
     );
 }
 
-function HealthMetric({ label, value, color }: any) {
+function HealthMetric({ label, value, color }: { readonly label: string; readonly value: string | number; readonly color?: string }) {
     return (
         <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-tight text-zinc-500">{label}</span>
@@ -299,7 +328,7 @@ function HealthMetric({ label, value, color }: any) {
     );
 }
 
-function AccountAuditSection({ onAudit, onDownload, reports }: any) {
+function AccountAuditSection({ onAudit, onDownload, reports }: { readonly onAudit: (p: string) => void; readonly onDownload: (r: AuditReport) => void; readonly reports: AuditReport[] }) {
     const platforms = ["youtube", "tiktok", "instagram", "facebook", "x", "linkedin"];
     
     return (
@@ -332,7 +361,7 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {reports.map((report: any) => (
+                        {reports.map((report: AuditReport) => (
                             <div key={report.id} className="glass-card p-6 flex items-center justify-between group hover:border-white/10 transition-all">
                                 <div className="flex items-center gap-6">
                                     <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
@@ -383,7 +412,7 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
     );
 }
 
-function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
+function SecurityAuditSection({ status, events, onScan, isLoading }: { readonly status: SecurityStatus | null; readonly events: unknown[]; readonly onScan: () => void; readonly isLoading: boolean }) {
     return (
         <div className="space-y-8">
             <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-10 rounded-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
@@ -413,22 +442,24 @@ function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 px-2">Live Threat Stream</h3>
                 <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 divide-y divide-white/5 rounded-2xl overflow-hidden">
                     {events?.length === 0 && <div className="p-10 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-700">No security events detected</div>}
-                    {events?.map((e: any, i: number) => (
+                    {events?.map((e: unknown, i: number) => {
+                        const message = typeof e === "string" ? e : (e as Record<string, unknown>)?.message as string || "Unknown event";
+                        return (
                         <div key={i} className="p-5 flex items-center justify-between group hover:bg-white/2 transition-colors">
                             <div className="flex items-center gap-4">
                                 <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                <span className="text-[11px] font-bold text-zinc-300">{e.message || e}</span>
+                                <span className="text-[11px] font-bold text-zinc-300">{message}</span>
                             </div>
                             <span className="text-[9px] font-bold text-zinc-700 uppercase tabular-nums">{new Date().toLocaleTimeString()}</span>
                         </div>
-                    ))}
+                    )})}
                 </div>
             </div>
         </div>
     );
 }
 
-function BiasScanSection({ onScan, report, isLoading }: any) {
+function BiasScanSection({ onScan, report, isLoading }: { readonly onScan: () => void; readonly report: BiasReport | null; readonly isLoading: boolean }) {
     return (
         <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 py-32 flex flex-col items-center justify-center text-center gap-8 rounded-2xl border-dashed">
             <div className="relative">

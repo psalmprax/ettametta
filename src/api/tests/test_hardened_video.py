@@ -1,6 +1,7 @@
 import pytest
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
+from src.api.config import settings
 from src.services.video_engine.models.wan_inference import generate_wan_api
 from src.services.video_engine.models.mochi_inference import generate_mochi_api
 from src.services.video_engine.processor import VideoProcessor
@@ -13,11 +14,11 @@ def mock_video_dir(tmp_path):
 
 @pytest.mark.anyio
 class TestHardenedVideoInference:
-    async def test_wan_api_request_structure(self, mock_video_dir):
+    def test_wan_api_request_structure(self, mock_video_dir):
         """Test that Wan API sends the correct payload to the remote GPU node."""
         mock_prompt = "A sunset over the mountains"
         
-        with patch("api.config.settings.RENDER_NODE_URL", "http://gpu-node:8000"):
+        with patch.object(settings, "RENDER_NODE_URL", "http://gpu-node:8000"):
             with patch("requests.post") as mock_post:
                 mock_post.return_value = MagicMock(
                     status_code=200,
@@ -31,15 +32,15 @@ class TestHardenedVideoInference:
                 assert os.path.exists(path)
                 
                 # Check payload
-                args, kwargs = mock_post.call_args
+                _, kwargs = mock_post.call_args
                 assert kwargs["json"]["prompt"] == mock_prompt
                 assert kwargs["json"]["model"] == "wan-2.2-t2v"
 
-    async def test_mochi_api_request_structure(self, mock_video_dir):
+    def test_mochi_api_request_structure(self, mock_video_dir):
         """Test that Mochi API sends the correct payload to the remote GPU node."""
         mock_prompt = "A cat running in a field"
         
-        with patch("api.config.settings.RENDER_NODE_URL", "http://gpu-node:8000"):
+        with patch.object(settings, "RENDER_NODE_URL", "http://gpu-node:8000"):
             with patch("requests.post") as mock_post:
                 mock_post.return_value = MagicMock(
                     status_code=200,

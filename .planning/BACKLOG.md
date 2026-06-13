@@ -135,24 +135,24 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ## P1 — High Value (Core User Journeys)
 
-### ~~999.5 — Auto-Insert Affiliate Links into Videos~~ ⮕ **PROMOTED → Phase 14 (2026-05-29)**
+### ~~999.5 — Auto-Insert Affiliate Links into Videos~~ ✅ **COMPLETE — Phase 14 shipped (2026-06-13)**
 **Source:** `docs/comprehensive_gap_analysis.md` §1.2, current `transformation/page.tsx` shows button but it doesn't work
 **Impact:** Monetization is broken end-to-end
 **Files:**
-- `src/api/routes/monetization.py` (no `auto-insert-links` endpoint exists)
-- `src/services/video_engine/post_processors/` (new — link injection pipeline)
-- `src/api/routes/transformation.py` (or similar) for the button
-- `apps/dashboard/src/app/transformation/page.tsx` (handleAutoLinks)
+- `src/api/routes/video_transform.py` (`POST /auto-insert-links` endpoint exists)
+- `src/services/monetization/service.py` (`plan_monetization_strategy`, `_plan_link_insertion`, `process_video_with_links`)
+- `src/services/video_engine/ffmpeg_utils.py` (`draw_text_overlay`)
+- `apps/dashboard/src/app/transformation/page.tsx` (`handleAutoLinks` wired to correct endpoint)
 
 **Tasks:**
-- [ ] Implement `POST /monetization/auto-insert-links` that takes a video job_id + user affiliate links
-- [ ] Use FFmpeg overlay to burn links into video (start/mid/end card + corner watermark)
-- [ ] Track per-link impression count
-- [ ] Wire up `transformation/page.tsx` `handleAutoLinks` to the real endpoint (currently no-op)
-- [ ] Tests for overlay positioning + persistence
+- [x] Implement `POST /video/auto-insert-links` that takes a `job_id` + calls `MonetizationEngine.plan_monetization_strategy()`
+- [x] Use FFmpeg drawtext overlay to burn links into video (start/mid/end card overlay)
+- [x] Track per-link impression count on `AffiliateLinkDB.impression_count`
+- [x] Wire up `transformation/page.tsx` `handleAutoLinks` to the real endpoint
+- [x] Tests for overlay positioning + persistence (14 tests)
 
 **Acceptance:** User clicks "Auto-Inject Affiliate Nodes" in transformation page → links appear on rendered video → impression count increments per view.
-**Status:** Promoted to Phase 14 in ROADMAP.md. Execution plan: `.planning/phases/14-affiliate-auto-insert/14-01-PLAN.md`.
+**Status:** ✅ **Complete.** Implemented in `.planning/phases/14-affiliate-auto-insert/14-01-PLAN.md`. All acceptance criteria met.
 
 ---
 

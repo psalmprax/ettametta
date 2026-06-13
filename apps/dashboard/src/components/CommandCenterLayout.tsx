@@ -4,39 +4,37 @@ import React, { useState, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { 
     Cpu, 
-    Terminal, 
     Activity, 
-    Layers, 
-    Zap, 
-    Database, 
-    Globe, 
     Settings,
-    Layout,
     ChevronLeft,
     ChevronRight,
     Search,
-    User,
     ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "./sidebar";
 
 interface CommandCenterLayoutProps {
-    children: React.ReactNode;
-    title?: string;
-    subtitle?: string;
-    leftPanel?: React.ReactNode;
-    rightPanel?: React.ReactNode;
+    readonly children: React.ReactNode;
+    readonly title?: string;
+    readonly subtitle?: string;
+    readonly leftPanel?: React.ReactNode;
+    readonly rightPanel?: React.ReactNode;
+    /** Additional WebSocket connections to show in the status indicator (e.g. discovery /ws/jobs).
+     *  The telemetry connection is always shown. */
+    readonly additionalWsConnections?: WsConnectionState[];
 }
 
 import { useTelemetry } from "@/context/TelemetryContext";
+import { WebSocketStatusIndicator, WsConnectionState } from "./WebSocketStatusIndicator";
 
 export default function CommandCenterLayout({ 
     children, 
     title = "COMMAND CENTER", 
     subtitle = "INTEL_OS_V4.2",
     leftPanel,
-    rightPanel 
+    rightPanel,
+    additionalWsConnections,
 }: CommandCenterLayoutProps) {
     const { pulse, status } = useTelemetry();
     const [isLeftExpanded, setIsLeftExpanded] = useState(true);
@@ -108,6 +106,12 @@ export default function CommandCenterLayout({
                     </div>
 
                     <div className="flex items-center gap-6">
+                        <WebSocketStatusIndicator
+                            connections={[
+                                { name: "Telemetry", status: status, reconnectAttempts: undefined },
+                                ...(additionalWsConnections || []),
+                            ]}
+                        />
                         <div className="flex flex-col items-end">
                             <span className="text-[10px] font-bold text-zinc-500 uppercase">System Uptime</span>
                             <span className="text-xs font-mono text-emerald-500">{pulse?.uptime || "00:00:00"}</span>

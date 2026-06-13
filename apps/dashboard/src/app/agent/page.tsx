@@ -10,20 +10,9 @@ import {
     User,
     Loader2,
     Sparkles,
-    Zap,
-    Brain,
-    Code,
     MessageSquare,
-    ChevronRight,
-    Activity,
-    ShieldCheck,
-    Globe,
-    Database,
-    Layers,
     Video,
-    FileText,
     Search,
-    BarChart3,
     Coins,
     RefreshCw
 } from "lucide-react";
@@ -55,12 +44,15 @@ interface AgentCapability {
 }
 
 function AgentContent() {
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const { agents, logs: _systemLogs, status: _status, pulse: _pulse } = useTelemetry();
     const { credits, refreshCredits } = useAuth();
 
     // Auto-refresh credit balance every 2 minutes
     const refreshRef = useRef(refreshCredits);
-    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current = refreshCredits;
+    }, [refreshCredits]);
+
     useEffect(() => {
         refreshRef.current();
         const interval = setInterval(() => refreshRef.current(), 120_000);
@@ -376,9 +368,10 @@ function AgentContent() {
                                     </div>
                                 ))}
                                 {capabilities.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center py-32 opacity-20">
-                                        <Cpu className="h-16 w-16 mb-4" />
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em]">Loading capabilities...</span>
+                                    <div className="flex flex-col items-center justify-center py-32 opacity-50">
+                                        <Cpu className="h-16 w-16 mb-4 text-zinc-600" />
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-zinc-500">Loading capabilities...</span>
+                                        <span className="text-[8px] text-zinc-700 font-mono mt-2 uppercase tracking-widest">Capabilities load from the agent server on connection</span>
                                     </div>
                                 )}
                             </div>

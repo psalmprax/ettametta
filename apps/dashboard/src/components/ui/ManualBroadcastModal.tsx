@@ -10,10 +10,10 @@ import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 
 interface ManualBroadcastModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    accounts: any[];
-    onSuccess: () => void;
+    readonly isOpen: boolean;
+    readonly onClose: () => void;
+    readonly accounts: any[];
+    readonly onSuccess: () => void;
 }
 
 export const ManualBroadcastModal: React.FC<ManualBroadcastModalProps> = ({ 

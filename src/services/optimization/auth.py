@@ -260,4 +260,6 @@ class TokenManager:
             )
 
 
-token_manager = TokenManager()
+base_token_manager_service = TokenManager()
+token_manager = base_token_manager_service
+
