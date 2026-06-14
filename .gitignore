@@ -197,8 +197,8 @@ src/data/
 src/engines/remote_ai_setup/gateway_state.db
 remote_ai_setup/gateway_state.db
 
-# IDE cache
-.refact/buddy/
+# IDE cache + AI tool session state (not source code)
+.refact/
 
 # Generated graph outputs
 graphify-out/
