@@ -66,6 +66,30 @@ interface PreviewScene {
     visual_prompt?: string;
     [key: string]: unknown;
 }
+
+const NEXUS_STYLE_OPTIONS = [
+    { id: "CINEMATIC_DOC", label: "Cinematic Doc" },
+    { id: "FAST_HYPE", label: "Fast Hype" },
+    { id: "REDDIT_STORY", label: "Reddit Story" },
+    { id: "ULTIMATE_TUTORIAL", label: "Tutorial" },
+    { id: "VOX_EXPLAINER", label: "Vox Explainer" },
+    { id: "NOIR_MYSTERY", label: "Noir Mystery" },
+    { id: "BROADCAST_NEWS", label: "Broadcast News" },
+    { id: "MOTIVATIONAL", label: "Motivational" },
+    { id: "FITNESS_MOTIVATION", label: "Fitness" },
+    { id: "GAMING_LORE", label: "Gaming Lore" },
+    { id: "RELATIONSHIP_DRAMA", label: "Relationship Drama" },
+    { id: "STOIC_WISDOM", label: "Stoic Wisdom" },
+];
+
+const NEXUS_CTA_TEMPLATE_OPTIONS = [
+    { id: "", label: "None" },
+    { id: "standard_subscribe", label: "Standard Subscribe" },
+    { id: "limited_offer", label: "Limited Offer" },
+    { id: "join_community", label: "Join Community" },
+    { id: "watch_more", label: "Watch More" },
+];
+
 function getSceneTypeStyles(type: string | undefined): string {
     switch (type) {
         case 'hook': return "bg-amber-500/10 text-amber-500 border-amber-500/20";
@@ -296,6 +320,9 @@ function NexusContent() {
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const [actionLogs, setActionLogs] = useState<string[]>(["NEXUS_CORE_ONLINE", "AWAITING_PIPELINE_ORCHESTRATION"]);
     const [creationMode, setCreationMode] = useState<'cinema' | 'blueprint'>('cinema');
+    const [nexusStyle, setNexusStyle] = useState("CINEMATIC_DOC");
+    const [nexusCtaText, setNexusCtaText] = useState("Follow for the next signal.");
+    const [nexusCtaTemplate, setNexusCtaTemplate] = useState("");
     
     // Persona Management State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -581,6 +608,10 @@ function NexusContent() {
         const payload: Record<string, unknown> = {
             niche: selectedNiche,
             cinema_mode: creationMode === 'cinema',
+            style: nexusStyle,
+            cta_text: nexusCtaText,
+            cta_type: "cta",
+            cta_template: nexusCtaTemplate || null,
         };
 
         // Only send blueprint_id when explicitly using blueprint mode
@@ -1004,6 +1035,37 @@ function NexusContent() {
                                                 <span className="text-[7px] text-amber-400/80 font-mono">Requires GPU Node — Configure RENDER_NODE_URL</span>
                                             </div>
                                         )}
+                                    </div>
+
+                                    {/* Blueprint Selector (visible only in blueprint mode) */}
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Creative System</label>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div className="relative">
+                                                <select
+                                                    value={nexusStyle}
+                                                    onChange={(e) => setNexusStyle(e.target.value)}
+                                                    className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                                                >
+                                                    {NEXUS_STYLE_OPTIONS.map(option => (
+                                                        <option key={option.id} value={option.id} className="bg-[#0F0F11] text-white">
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                                                    <ChevronDown className="w-4 h-4" />
+                                                </div>
+                                            </div>
+                                            <input
+                                                aria-label="CTA text"
+                                                value={nexusCtaText}
+                                                onChange={(e) => setNexusCtaText(e.target.value)}
+                                                maxLength={80}
+                                                placeholder="CTA text"
+                                                className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/30"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Blueprint Selector (visible only in blueprint mode) */}
@@ -1716,6 +1778,61 @@ scout.on("VIRAL_DETECT", async (data) => {
                                                         <span className="text-[8px] font-bold text-white uppercase">{preset.name}</span>
                                                     </button>
                                                 ))}
+                                            </div>
+                                        </div>
+                                        {/* Approval controls (PARTIAL mode) */}
+                                        <div className="pt-4">
+                                            <div className="text-sm text-zinc-400 pb-2">DAG Preview</div>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const token = await getAuthToken();
+                                                            const res = await fetch(`${API_BASE}/nexus/jobs/${previewJobId}/dag-approval`, {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                                                body: JSON.stringify({ approved: true }),
+                                                            });
+                                                            if (res.ok) {
+                                                                toast.success('DAG approved');
+                                                                setIsPreviewModalOpen(false);
+                                                            } else {
+                                                                toast.error('Failed to approve DAG');
+                                                            }
+                                                        } catch (e) {
+                                                            toast.error('Approve request failed');
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-md text-white"
+                                                >
+                                                    Approve
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const token = await getAuthToken();
+                                                            const res = await fetch(`${API_BASE}/nexus/jobs/${previewJobId}/dag-approval`, {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                                                body: JSON.stringify({ approved: false }),
+                                                            });
+                                                            if (res.ok) {
+                                                                toast.success('DAG rejected');
+                                                                setIsPreviewModalOpen(false);
+                                                            } else {
+                                                                toast.error('Failed to reject DAG');
+                                                            }
+                                                        } catch (e) {
+                                                            toast.error('Reject request failed');
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-rose-500 hover:bg-rose-600 rounded-md text-white"
+                                                >
+                                                    Reject
+                                                </button>
                                             </div>
                                         </div>
 

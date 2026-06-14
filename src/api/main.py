@@ -188,6 +188,50 @@ async def startup_event():
     asyncio.create_task(base_consistency_sentinel.start())
     logger.info("🛡️ [Startup] ConsistencySentinel enforcement loop activated.")
 
+    # ── EU AI Act Art. 11: Register Model Cards at Startup ──────────
+    from src.api.utils.audit_service import audit_service
+    known_models = [
+        {
+            "model": settings.OLLAMA_MODEL.split(":")[0],
+            "version": settings.OLLAMA_MODEL.split(":")[1] if ":" in settings.OLLAMA_MODEL else "latest",
+            "capabilities": ["text_generation", "chat", "reasoning"],
+            "limitations": ["local_cpu_performance", "no_vision", "limited_context_window"],
+            "training_data_summary": "Local LLM deployed via Ollama",
+        },
+        {
+            "model": settings.DEFAULT_VLM_MODEL,
+            "version": "1.0",
+            "capabilities": ["vision", "image_understanding", "multimodal_reasoning"],
+            "limitations": ["paid_api", "rate_limited"],
+            "training_data_summary": "Google Gemini multimodal model",
+        },
+        {
+            "model": "groq",
+            "version": "llama-3.3-70b-versatile",
+            "capabilities": ["text_generation", "chat", "fast_inference"],
+            "limitations": ["paid_api", "rate_limited", "no_vision"],
+            "training_data_summary": "Groq LPU inference for open-source LLMs",
+        },
+    ]
+    for m in known_models:
+        try:
+            asyncio.create_task(
+                audit_service.log_model_card(
+                    model=m["model"],
+                    version=m["version"],
+                    capabilities=m["capabilities"],
+                    limitations=m["limitations"],
+                    training_data_summary=m["training_data_summary"],
+                )
+            )
+        except Exception as model_card_err:
+            logger.warning(f"[Startup] Failed to register model card for {m['model']}: {model_card_err}")
+    logger.info("📋 [Startup] Registered model cards for known AI models (EU AI Act Art. 11).")
+
+    # ── Seed Nexus Blueprints into DB (FALLBACK_BLUEPRINTS → nexus_blueprints table) ──
+    from src.services.nexus_engine.blueprints import seed_blueprints
+    asyncio.create_task(seed_blueprints())
+
     # Agent Zero Auto-Resume
     from src.services.agent_zero.agent import base_agent_zero_service
 

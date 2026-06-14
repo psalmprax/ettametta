@@ -561,10 +561,9 @@ class RemotionService:
         timeout = getattr(settings, "REMOTION_TIMEOUT_SECONDS", 900)
 
         try:
-            async with asyncio.timeout(timeout):
-                await asyncio.gather(stdout_task, stderr_task, process.wait())
+            await asyncio.wait_for(asyncio.gather(stdout_task, stderr_task, process.wait()), timeout=timeout)
             self._check_process_returncode(process.returncode, stderr_accumulator, log)
-        except (TimeoutError, asyncio.CancelledError) as e:
+        except (asyncio.TimeoutError, asyncio.CancelledError) as e:
             # Request cancellation of the stdout/stderr stream readers
             stdout_task.cancel()
             stderr_task.cancel()
@@ -575,7 +574,7 @@ class RemotionService:
             # Unconditionally terminate the process to guarantee zero process leakage
             await self._terminate_process(process, log)
             
-            if isinstance(e, TimeoutError):
+            if isinstance(e, asyncio.TimeoutError):
                 log.error(f"Subprocess render timed out after {timeout} seconds.")
                 raise RemotionTransientError(f"Remotion CLI render timed out after {timeout} seconds.") from e
             else:

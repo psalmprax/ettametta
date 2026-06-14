@@ -35,6 +35,79 @@ logger = get_logger(__name__)
 tracer = trace.get_tracer(__name__)
 
 
+# ── Style-to-Composition Mapping ────────────────────────────────────────
+# Maps each Nexus video style to the most visually appropriate Remotion
+# composition.  Long-form compositions (18000 frames) accept full props
+# (clips, words, audio).  Short-form compositions (120 frames) are capped
+# and receive simplified props (title, subtitle, video_url, audio_url).
+
+COMPOSITION_STYLE_MAP: dict[str, str] = {
+    # Documentary / Narrative (→ CinematicAncient — astrolabe, celestial, timeless)
+    "CINEMATIC_DOC": "CinematicAncient",
+    "VOX_EXPLAINER": "CinematicAncient",
+    "DEEP_DIVE": "CinematicAncient",
+    "STOIC_WISDOM": "CinematicAncient",
+
+    # Mystery / Noir / Investigation (→ CinematicMinimal — clean, moody, understated)
+    "NOIR_MYSTERY": "CinematicMinimal",
+    "INVESTIGATION": "CinematicMinimal",
+    "RETRO_ARCHIVE": "CinematicMinimal",
+    "HORROR_CREEPY": "CinematicMinimal",
+
+    # Fast / Hype / Gaming (→ CinematicCyberpunk — HUD, scanlines, neon)
+    "FAST_HYPE": "CinematicCyberpunk",
+    "ESPORTS_HYPE": "CinematicCyberpunk",
+    "GAMING_LORE": "CinematicCyberpunk",
+    "FITNESS_MOTIVATION": "CinematicCyberpunk",
+    "TOP_LISTICLE": "CinematicCyberpunk",
+
+    # Motivational / Heartfelt (→ CinematicKinetic — kinetic typography)
+    "MOTIVATIONAL": "CinematicKinetic",
+    "HEARTFELT_NARRATIVE": "CinematicKinetic",
+
+    # Relationship / Emotional (→ CinematicIridescent — glass, beauty, fragility)
+    "RELATIONSHIP_DRAMA": "CinematicIridescent",
+
+    # Travel / Vlog (→ CinematicLiquid — liquid metal, fluid, dynamic)
+    "TRAVEL_VLOG": "CinematicLiquid",
+
+    # Product / Showcase (→ Cinematic3D — 3D extruded text, premium)
+    "PRODUCT_SHOWCASE": "Cinematic3D",
+
+    # Culinary / Tutorial (→ CinematicMinimal — clean instructional aesthetic)
+    "CULINARY_MASTERCLASS": "CinematicMinimal",
+    "ULTIMATE_TUTORIAL": "CinematicMinimal",
+
+    # Reddit / Persona / Podcast / Lofi (→ ViralClip — full production engine)
+    "REDDIT_STORY": "ViralClip",
+    "PERSONA_MONTAGE": "ViralClip",
+    "BROADCAST_NEWS": "ViralClip",
+    "REACTION_COMMENTARY": "ViralClip",
+    "LOFI_CHILL": "ViralClip",
+    "PODCAST_SIM": "ViralClip",
+}
+
+# Compositions registered with only 120 frames (4 seconds at 30fps) in Root.tsx
+SHORT_FORM_COMPOSITIONS: set[str] = {
+    "CinematicIridescent",
+    "CinematicPortal",
+    "CinematicCyberpunk",
+    "CinematicLiquid",
+    "CinematicPrism",
+    "CinematicLidar",
+    "CinematicKinetic",
+}
+
+# Compositions that accept the full ViralClip-style props (clips, words, timeline, etc.)
+FULL_FORM_COMPOSITIONS: set[str] = {
+    "ViralClip",
+    "CinematicMinimal",
+    "CinematicAncient",
+    "Cinematic3D",
+    "HormoziStyle",
+}
+
+
 def _run_subprocess(
     args: list[str],
     *,
@@ -947,9 +1020,57 @@ class NexusOrchestrator:
                 if "duration_in_frames" in clip:
                     clip["duration_in_frames"] = int(clip["duration_in_frames"])
 
+            # Resolve composition_id: style map > blueprint > default ViralClip
+            resolved_composition = COMPOSITION_STYLE_MAP.get(
+                style, blueprint.get("composition_id", "ViralClip")
+            )
+
+            # ── Short-form composition handling ──────────────────────
+            # Compositions with 120-frame defaults (CinematicPortal,
+            # CinematicCyberpunk, etc.) only accept minimal props and
+            # have a fixed short duration.  Simplify the props and cap
+            # total_frames accordingly.
+            if resolved_composition in SHORT_FORM_COMPOSITIONS:
+                short_max_frames = 120
+                if total_frames > short_max_frames:
+                    self.logger.info(
+                        "[Nexus] Short-form composition %s: capping "
+                        "total_frames from %d to %d",
+                        resolved_composition, total_frames, short_max_frames,
+                    )
+                    total_frames = short_max_frames
+
+                # Rebuild props for short-form composition
+                # (only title, subtitle, video_url, audio_url, cta)
+                # Don't pass duration_in_frames — short-form compositions
+                # have their defaults in Root.tsx (e.g. 120 frames for
+                # CinematicPortal). Passing --frames 0-120 would request
+                # frame 120 which is out of range (0-119).
+                props = {
+                    "title": niche.title(),
+                    "subtitle": vibe_data.get("explanation", "Analysis & Insights"),
+                    "video_url": props.get("video_url") or (
+                        props.get("clips", [{}])[0].get("url")
+                        if props.get("clips") else None
+                    ),
+                    "audio_url": audio_uri,
+                    "primary_color": vibe_data.get("primary_color", "#00D4FF"),
+                    "style": style,
+                    "job_metadata": {**(job_metadata or {}), **remotion_flags},
+                    **cta_props,
+                }
+            elif resolved_composition not in FULL_FORM_COMPOSITIONS:
+                # Unknown composition — keep ViralClip-style props but
+                # log a warning so we catch mismatches early
+                self.logger.warning(
+                    "[Nexus] Unknown composition '%s' for style '%s', "
+                    "passing full props (may be ignored by template)",
+                    resolved_composition, style,
+                )
+
             output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"
             rendered_path = await self._retry_remotion_render(
-                composition_id=blueprint.get("composition_id", "ViralClip"),
+                composition_id=resolved_composition,
                 props=props,
                 output_name=output_filename,
             )

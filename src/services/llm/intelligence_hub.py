@@ -8,6 +8,7 @@ from uuid import uuid4
 from src.api.config import settings
 from src.api.utils.tracing import get_request_id
 from src.api.utils.resilience import CircuitBreaker
+from src.api.utils.audit_service import AuditService
 from opentelemetry import trace
 from src.shared.observability import get_logger
 
@@ -207,6 +208,15 @@ class IntelligenceHub:
                     # Reset health on success
                     self.provider_health[p]["errors"] = 0
                     self.provider_health[p]["status"] = "healthy"
+                    # EU AI Act Art. 13: log AI decision (fire-and-forget, non-blocking)
+                    asyncio.create_task(
+                        AuditService.log_ai_decision(
+                            model=p,
+                            decision_type="llm_chat",
+                            input_summary=prompt,
+                            output_summary=result.get("response", ""),
+                        )
+                    )
                     return {**result, "request_id": request_id, "provider": p}
             except asyncio.TimeoutError:
                 timeout_val = provider_timeout or "global"

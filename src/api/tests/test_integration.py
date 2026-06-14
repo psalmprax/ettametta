@@ -17,7 +17,11 @@ def get_auth_token():
         f"{BASE_URL}/api/v1/auth/login",
         data={"username": TEST_USER, "password": TEST_PASS},
     )
-    return response.json()["access_token"]
+    body = response.json()
+    # The login endpoint wraps its payload in success_response → {"data": {...}}
+    if "data" in body:
+        return body["data"]["access_token"]
+    return body["access_token"]
 
 
 class TestDiscoveryIntegration:
@@ -113,7 +117,10 @@ class TestPublishingIntegration:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 200
-        platforms = response.json()["platforms"]
+        body = response.json()
+        # Handle success_response envelope
+        data = body.get("data", body)
+        platforms = data.get("platforms", data) if isinstance(data, dict) else data
         expected = ["youtube", "tiktok", "instagram", "facebook", "x", "linkedin"]
         for p in expected:
             assert p in platforms
@@ -166,7 +173,7 @@ class TestAnalyticsIntegration:
         ).json()
 
         # Posts
-        posts = requests.get(
+        posts_body = requests.get(
             f"{BASE_URL}/api/v1/analytics/posts",
             headers={"Authorization": f"Bearer {token}"},
         ).json()
@@ -179,6 +186,9 @@ class TestAnalyticsIntegration:
 
         # Verify data exists
         assert stats is not None
+        # Handle success_response envelope: {"data": {"posts": [...]}}
+        posts_data = posts_body.get("data", posts_body) if isinstance(posts_body, dict) else posts_body
+        posts = posts_data.get("posts", posts_data) if isinstance(posts_data, dict) else posts_data
         assert isinstance(posts, list)
 
 

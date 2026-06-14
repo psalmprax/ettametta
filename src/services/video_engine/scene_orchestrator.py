@@ -31,7 +31,9 @@ class SceneBasedVideoOrchestrator:
 
     def __init__(self):
         from src.services.discovery.video_lead_scanner import video_lead_scanner
+        from src.services.video_engine.remotion_service import base_remotion_service
         self.video_scanner = video_lead_scanner
+        self.remotion_service = base_remotion_service
         self.video_processor = VideoProcessor()
         self.monetization_engine = MonetizationEngine()
         self.output_dir = Path(settings.STORAGE_OUTPUT_DIR) / "scene_based_videos"
@@ -643,88 +645,60 @@ class SceneBasedVideoOrchestrator:
 
 
     async def _add_intro_clip(self, w: int, h: int, title: str, output_path: str) -> str | None:
-        """Appends a branded intro segment using Pillow, renders to file and returns path."""
+        """Generates a cinematic branded intro segment using Remotion Studio."""
+        import random
         try:
-            from moviepy import ColorClip, CompositeVideoClip, ImageClip
-            from PIL import Image, ImageDraw, ImageFont
-            import numpy as np
+            logger.info("Injecting Branded Intro segment (Remotion-based)...")
             
-            logger.info("Injecting Branded Intro segment (Pillow-based)...")
-            duration = 3.0
+            premium_intros = [
+                "CinematicLiquid", "CinematicPrism", "CinematicLidar",
+                "CinematicKinetic", "CinematicPortal", "CinematicCyberpunk",
+            ]
+            selected_intro = random.choice(premium_intros)
             
-            bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
+            props = {
+                "title": "ETTAMETTA PRESENTS",
+                "subtitle": title,
+                "duration_in_frames": 120,  # 4 seconds at 30 fps
+                "show_cta_overlay": False
+            }
             
-            img = Image.new('RGB', (w, h), color=(15, 15, 15))
-            draw = ImageDraw.Draw(img)
+            output_name = os.path.basename(output_path)
+            rendered_path = await self.remotion_service.render_video(selected_intro, props, output_name)
             
-            try:
-                font_size = h // 20
-                font = ImageFont.truetype(self.video_processor.font_path, font_size)
-            except Exception:
-                font = ImageFont.load_default()
-
-            cta_lines = ["ETTAMETTA PRESENTS", "", title]
-            total_h = len(cta_lines) * (font_size * 1.5)
-            current_y = (h - total_h) // 2
-            
-            for i, line in enumerate(cta_lines):
-                bbox = draw.textbbox((0, 0), line, font=font)
-                line_w = bbox[2] - bbox[0]
-                color = (255, 255, 255) if i != 0 else (100, 200, 255)
-                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=color)
-                current_y += font_size * 1.5
-            
-            img_array = np.array(img)
-            txt_clip = ImageClip(img_array).with_duration(duration)
-            
-            intro_segment = CompositeVideoClip([bg, txt_clip])
-            intro_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
-            intro_segment.close()
-            return output_path
+            if rendered_path and os.path.exists(rendered_path) and rendered_path != output_path:
+                import shutil
+                shutil.move(rendered_path, output_path)
+                return output_path
+            return rendered_path
         except Exception as e:
-            logger.exception(f"Failed to inject Intro: {e}")
+            logger.exception(f"Failed to inject Intro via Remotion: {e}")
             return None
 
     async def _add_engagement_cta(self, w: int, h: int, output_path: str) -> str | None:
-        """Appends a high-energy CTA segment using Pillow, renders to file and returns path."""
+        """Generates a high-energy CTA segment using Remotion Studio."""
         try:
-            from moviepy import ColorClip, CompositeVideoClip, ImageClip
-            from PIL import Image, ImageDraw, ImageFont
-            import numpy as np
+            logger.info("Injecting Engagement CTA segment (Remotion-based)...")
             
-            logger.info("Injecting Engagement CTA segment (Pillow-based)...")
-            duration = 4.0
+            props = {
+                "title": "",
+                "subtitle": "",
+                "duration_in_frames": 120,  # 4 seconds at 30 fps
+                "show_cta_overlay": True,
+                "cta_type": "engagement",
+                "cta_text": "LIKE • SHARE • FOLLOW • Hit the 🔔 for more!"
+            }
             
-            bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
+            output_name = os.path.basename(output_path)
+            rendered_path = await self.remotion_service.render_video("CinematicMinimal", props, output_name)
             
-            img = Image.new('RGB', (w, h), color=(15, 15, 15))
-            draw = ImageDraw.Draw(img)
-            
-            try:
-                font_size = h // 25
-                font = ImageFont.truetype(self.video_processor.font_path, font_size)
-            except Exception:
-                font = ImageFont.load_default()
-
-            cta_lines = ["LIKE • SHARE • FOLLOW", "", "Hit the 🔔 for more!"]
-            total_h = len(cta_lines) * (font_size * 1.5)
-            current_y = (h - total_h) // 2
-            
-            for line in cta_lines:
-                bbox = draw.textbbox((0, 0), line, font=font)
-                line_w = bbox[2] - bbox[0]
-                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=(255, 215, 0))
-                current_y += font_size * 1.5
-            
-            img_array = np.array(img)
-            txt_clip = ImageClip(img_array).with_duration(duration)
-            
-            cta_segment = CompositeVideoClip([bg, txt_clip])
-            cta_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
-            cta_segment.close()
-            return output_path
+            if rendered_path and os.path.exists(rendered_path) and rendered_path != output_path:
+                import shutil
+                shutil.move(rendered_path, output_path)
+                return output_path
+            return rendered_path
         except Exception as e:
-            logger.exception(f"Failed to inject CTA: {e}")
+            logger.exception(f"Failed to inject CTA via Remotion: {e}")
             return None
 
     async def _generate_video_thumbnail(self, video_path: str) -> str:

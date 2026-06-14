@@ -3,6 +3,15 @@ import { Composition } from 'remotion';
 import { ViralClip, viralClipSchema } from './Composition';
 import { CinematicMinimal, cinematicMinimalSchema } from './templates/CinematicMinimal';
 import { HormoziStyle, hormoziStyleSchema } from './templates/HormoziStyle';
+import { Cinematic3D, cinematic3DSchema } from './templates/Cinematic3D';
+import { CinematicAncient, cinematicAncientSchema } from './templates/CinematicAncient';
+import { CinematicIridescent, cinematicIridescentSchema } from './templates/CinematicIridescent';
+import { CinematicPortal, cinematicPortalSchema } from './templates/CinematicPortal';
+import { CinematicCyberpunk, cinematicCyberpunkSchema } from './templates/CinematicCyberpunk';
+import { CinematicLiquid, cinematicLiquidSchema } from './templates/CinematicLiquid';
+import { CinematicPrism, cinematicPrismSchema } from './templates/CinematicPrism';
+import { CinematicLidar, cinematicLidarSchema } from './templates/CinematicLidar';
+import { CinematicKinetic, cinematicKineticSchema } from './templates/CinematicKinetic';
 
 export const RemotionRoot: React.FC = () => {
     const [jobData, setJobData] = useState<any>(null);
@@ -91,6 +100,134 @@ export const RemotionRoot: React.FC = () => {
                     show_cta_overlay: true,
                     cta_type: 'cta',
                     cta_text: 'Link in bio'
+                }}
+            />
+            <Composition
+                id="Cinematic3D"
+                component={Cinematic3D}
+                durationInFrames={18000}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematic3DSchema}
+                defaultProps={{
+                    title: 'ETTAMETTA PRESENTS',
+                    subtitle: 'AI Documentary Engine',
+                    primary_color: '#00F2FE',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicAncient"
+                component={CinematicAncient}
+                durationInFrames={18000}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicAncientSchema}
+                defaultProps={{
+                    title: 'ETTAMETTA PRESENTS',
+                    subtitle: 'AI Documentary Engine',
+                    primary_color: '#FFD700',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicIridescent"
+                component={CinematicIridescent}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicIridescentSchema}
+                defaultProps={{
+                    title: 'AURORA',
+                    subtitle: 'COLLECTION',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicPortal"
+                component={CinematicPortal}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicPortalSchema}
+                defaultProps={{
+                    title: 'ANCIENT',
+                    subtitle: 'MYSTERY',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicCyberpunk"
+                component={CinematicCyberpunk}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicCyberpunkSchema}
+                defaultProps={{
+                    title: 'SYSTEM',
+                    subtitle: 'ONLINE',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicLiquid"
+                component={CinematicLiquid}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicLiquidSchema}
+                defaultProps={{
+                    title: 'LIQUID',
+                    subtitle: 'METAL',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicPrism"
+                component={CinematicPrism}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicPrismSchema}
+                defaultProps={{
+                    title: 'OPTICAL',
+                    subtitle: 'PRISM',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicLidar"
+                component={CinematicLidar}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicLidarSchema}
+                defaultProps={{
+                    title: 'LIDAR',
+                    subtitle: 'SCANNER',
+                    show_cta_overlay: false
+                }}
+            />
+            <Composition
+                id="CinematicKinetic"
+                component={CinematicKinetic}
+                durationInFrames={120}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicKineticSchema}
+                defaultProps={{
+                    title: 'KINETIC',
+                    subtitle: 'ENERGY',
+                    show_cta_overlay: false
                 }}
             />
         </>

@@ -56,6 +56,10 @@ export interface Blueprint {
 export interface NexusComposeRequest {
     niche: string;
     topic?: string;
+    style?: string;
+    cta_text?: string | null;
+    cta_type?: string;
+    cta_template?: string | null;
     visual_paths?: string[];
     voiceover_paths?: string[];
     music_path?: string | null;

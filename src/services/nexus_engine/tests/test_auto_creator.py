@@ -1,3 +1,4 @@
+# Databricks notebook source
 """
 Tests for Nexus Engine AutoCreator — Script Generation, Pipeline Orchestration, Circuit Breaker.
 """
@@ -12,6 +13,62 @@ pytestmark = pytest.mark.filterwarnings(
     "ignore::PendingDeprecationWarning",
     "ignore::sqlalchemy.exc.MovedIn20Warning"
 )
+
+
+class TestStyleAndCtaControls:
+    """Tests for user-facing style aliases and CTA overrides."""
+
+    def test_normalize_nexus_style_accepts_aliases(self):
+        from src.services.nexus_engine.auto_creator import normalize_nexus_style
+
+        assert normalize_nexus_style("fast") == "FAST_HYPE"
+        assert normalize_nexus_style("story") == "HEARTFELT_NARRATIVE"
+        assert normalize_nexus_style("reddit-story") == "REDDIT_STORY"
+        assert normalize_nexus_style("CINEMATIC_DOC") == "CINEMATIC_DOC"
+        assert normalize_nexus_style("unknown") == "CINEMATIC_DOC"
+
+    def test_apply_cta_override_replaces_existing_cta(self):
+        from src.services.nexus_engine.auto_creator import AutoCreator
+
+        script = [
+            {"type": "hook", "text": "Open strong"},
+            {"type": "cta", "text": "Old CTA"},
+        ]
+
+        updated = AutoCreator._apply_cta_override(script, "Join the list", "cta")
+
+        assert updated[-1]["text"] == "Join the list"
+        assert updated[-1]["type"] == "cta"
+        assert script[-1]["text"] == "Old CTA"
+
+    def test_apply_cta_override_appends_when_missing(self):
+        from src.services.nexus_engine.auto_creator import AutoCreator
+
+        updated = AutoCreator._apply_cta_override(
+            [{"type": "hook", "text": "Open strong"}],
+            "Follow for part two",
+            "engagement",
+        )
+
+        assert updated[-1]["type"] == "engagement"
+        assert updated[-1]["text"] == "Follow for part two"
+
+    def test_apply_cta_override_respects_template_duration(self):
+        from src.services.nexus_engine.auto_creator import AutoCreator
+        from src.services.nexus_engine.cta_templates import get_cta_template
+
+        template = get_cta_template("standard_subscribe")
+        assert template is not None
+
+        updated = AutoCreator._apply_cta_override(
+            [{"type": "hook", "text": "Open strong"}],
+            template.get_default_text(),
+            "cta",
+            cta_duration=template.duration_seconds,
+        )
+
+        assert updated[-1]["duration"] == template.duration_seconds
+        assert updated[-1]["text"] == template.get_default_text()
 
 
 class TestGenerateViralScript:
@@ -533,6 +590,7 @@ class TestHelperMethods:
         from src.services.nexus_engine.auto_creator import AutoCreator
 
         creator = AutoCreator()
+        creator._vision_audit = AsyncMock(return_value={"passed": True, "score": 90})
         segments = [
             {"text": "S1", "visual_prompt": "Sunset beach", "mood": "calm", "type": "hook"},
             {"text": "S2", "visual_prompt": "Mountain peaks", "mood": "epic", "type": "body"},

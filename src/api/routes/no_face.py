@@ -1,3 +1,4 @@
+# Databricks notebook source
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 
@@ -26,6 +27,9 @@ class ScriptRequest(BaseModel):
     script: list[dict] | None = None
     use_gpu: bool = False
     batch_count: int = 1
+    cta_text: str | None = None
+    cta_type: str = "cta"
+    cta_template: str | None = None
 
 
 class HookRequest(BaseModel):
@@ -174,7 +178,9 @@ async def launch_automated_video(
             engine=request.engine,
             script=script,
             use_gpu=request.use_gpu,
-            batch_count=request.batch_count
+            batch_count=request.batch_count,
+            cta_text=request.cta_text,
+            cta_template=request.cta_template,
         )
         
         return success_response(data={

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from src.api.utils.auth import get_current_user
-from src.api.utils.models import UserDB
+from src.api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/video", tags=["Video Preview/Download"])
 

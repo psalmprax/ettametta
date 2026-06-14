@@ -13,6 +13,12 @@ import { ProgressTracker } from './components/ProgressTracker';
 import { ChapterOverlay } from './components/ChapterOverlay';
 import { SceneTransition, TransitionType } from './components/SceneTransition';
 import { BrandReveal } from './components/BrandReveal';
+import { CyberpunkHUD } from './components/CyberpunkHUD';
+import { IridescentGlass } from './components/IridescentGlass';
+import { ThreeCanvas } from '@remotion/three';
+import { AncientPortal } from './components/AncientPortal';
+import { AncientAstrolabe } from './components/AncientAstrolabe';
+import { LiquidMetalSphere } from './components/LiquidMetalSphere';
 
 export const viralClipSchema = z.object({
     title: z.string(),
@@ -46,16 +52,44 @@ export const viralClipSchema = z.object({
     vignette_intensity: z.number().optional(),
     grain_opacity: z.number().optional(),
     style: z.string().optional(),
+    intro_style: z.enum(['brand_reveal', 'cyberpunk', 'iridescent', 'portal', 'astrolabe', 'liquid_metal']).optional(),
     job_metadata: z.record(z.string(), z.any()).optional()
 });
 
+// Auto-map video style/niche to intro style
+const INTRO_STYLE_MAP: Record<string, string> = {
+    'CINEMATIC_DOC': 'portal',
+    'DEEP_DIVE': 'astrolabe',
+    'NOIR_MYSTERY': 'astrolabe',
+    'INVESTIGATION': 'astrolabe',
+    'FAST_HYPE': 'cyberpunk',
+    'ESPORTS_HYPE': 'cyberpunk',
+    'GAMING_LORE': 'cyberpunk',
+    'FITNESS_MOTIVATION': 'cyberpunk',
+    'REDDIT_STORY': 'cyberpunk',
+    'MOTIVATIONAL': 'iridescent',
+    'STOIC_WISDOM': 'iridescent',
+    'HEARTFELT_NARRATIVE': 'iridescent',
+    'RELATIONSHIP_DRAMA': 'iridescent',
+    'TECH': 'portal',
+    'TRAVEL_VLOG': 'iridescent',
+    'PERSONA_MONTAGE': 'brand_reveal',
+    'TOP_LISTICLE': 'cyberpunk',
+    'PRODUCT_SHOWCASE': 'brand_reveal',
+    'SCIENCE': 'portal',
+    'HISTORY': 'astrolabe',
+    'SPIRITUALITY': 'astrolabe',
+};
+
 export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ 
-    title, video_url, audio_url, clips, words,
+    title, subtitle, video_url, audio_url, clips, words,
     show_cta_overlay, cta_type, cta_text,
     trademark_url, brand_name, primary_color, 
     vignette_intensity, grain_opacity,
-    style, job_metadata
+    style, intro_style, job_metadata
 }) => {
+    // Resolve intro style: explicit prop > auto-map from style > default brand_reveal
+    const effectiveIntroStyle = intro_style || (style ? INTRO_STYLE_MAP[style] : undefined) || 'brand_reveal';
     const frame = useCurrentFrame();
     const { fps, durationInFrames } = useVideoConfig();
 
@@ -137,8 +171,8 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     // Primary fix is in the orchestrator (duration-aware sourcing +
     // even-stretching); this is the safety net for edge cases.
     const _speedPattern = [1.0, 0.85, -1.0, 1.12];
-    const loopingClips: typeof resolvedClips = resolvedClips ? (() => {
-        const out: typeof resolvedClips = [];
+    const loopingClips = resolvedClips ? (() => {
+        const out: Array<{ url: string; duration_in_frames: number; _playbackRate?: number }> = [];
         let covered = 0;
         let repetition = 0;
         while (covered < durationInFrames && resolvedClips.length > 0) {
@@ -205,13 +239,123 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
                 />
             )}
 
-            {/* --- FEATURE: Brand Reveal Hook (First 2 Seconds) --- */}
-            <Sequence from={0} durationInFrames={fps * 2.5}>
-                <BrandReveal 
-                    brandName={brand_name} 
-                    logoUrl={resolvedTrademarkUrl} 
-                    primaryColor={primary_color} 
-                />
+            {/* --- FEATURE: Dynamic Intro (Configurable per Video) --- */}
+            <Sequence from={0} durationInFrames={fps * 4}>
+                {effectiveIntroStyle === 'cyberpunk' && (
+                    <CyberpunkHUD
+                        title={brand_name || title || 'ETTAMETTA'}
+                        subtitle={subtitle || 'AI Documentary Engine'}
+                        primaryColor={primary_color || '#00F0FF'}
+                        secondaryColor="#FF003C"
+                    />
+                )}
+                {effectiveIntroStyle === 'iridescent' && (
+                    <IridescentGlass
+                        title={brand_name || title || 'ETTAMETTA'}
+                        subtitle={subtitle || 'AI Documentary Engine'}
+                    />
+                )}
+                {effectiveIntroStyle === 'portal' && (
+                    <>
+                        <ThreeCanvas
+                            width={1080}
+                            height={1920}
+                            orthographic={false}
+                            camera={{ fov: 60, position: [0, 0, 5] }}
+                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        >
+                            <AncientPortal primaryColor={primary_color || '#FF4500'} />
+                        </ThreeCanvas>
+                        <div style={{
+                            position: 'absolute', bottom: '15%', width: '100%', textAlign: 'center', zIndex: 10,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center'
+                        }}>
+                            <h1 style={{
+                                color: 'white', fontSize: '60px', fontWeight: 300, letterSpacing: '15px',
+                                margin: 0, textTransform: 'uppercase',
+                                textShadow: '0 0 40px rgba(255, 69, 0, 0.8)'
+                            }}>
+                                {brand_name || title || 'ETTAMETTA'}
+                            </h1>
+                            <p style={{
+                                color: '#FFA07A', fontSize: '24px', fontWeight: 400,
+                                letterSpacing: '8px', margin: '15px 0 0 0', textTransform: 'uppercase',
+                                textShadow: '0 0 20px rgba(255, 69, 0, 0.5)'
+                            }}>
+                                {subtitle || 'AI Documentary Engine'}
+                            </p>
+                        </div>
+                    </>
+                )}
+                {effectiveIntroStyle === 'astrolabe' && (
+                    <>
+                        <ThreeCanvas
+                            width={1080}
+                            height={1920}
+                            camera={{ position: [0, 0, 12], fov: 45 }}
+                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        >
+                            <AncientAstrolabe primaryColor={primary_color || '#FFD700'} />
+                        </ThreeCanvas>
+                        <div style={{
+                            position: 'absolute', bottom: '15%', width: '100%', textAlign: 'center', zIndex: 10,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center'
+                        }}>
+                            <h1 style={{
+                                color: 'white', fontSize: '60px', fontWeight: 300, letterSpacing: '15px',
+                                margin: 0, textTransform: 'uppercase',
+                                textShadow: `0 0 30px ${primary_color || '#FFD700'}88`
+                            }}>
+                                {brand_name || title || 'ETTAMETTA'}
+                            </h1>
+                            <p style={{
+                                color: 'rgba(255,255,255,0.7)', fontSize: '24px', fontWeight: 600,
+                                letterSpacing: '5px', margin: '15px 0 0 0', textTransform: 'uppercase'
+                            }}>
+                                {subtitle || 'AI Documentary Engine'}
+                            </p>
+                        </div>
+                    </>
+                )}
+                {effectiveIntroStyle === 'liquid_metal' && (
+                    <>
+                        <ThreeCanvas
+                            width={1080}
+                            height={1920}
+                            camera={{ position: [0, 0, 5], fov: 45 }}
+                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        >
+                            <LiquidMetalSphere primaryColor={primary_color || '#00D4FF'} />
+                        </ThreeCanvas>
+                        <div style={{
+                            position: 'absolute', bottom: '15%', width: '100%', textAlign: 'center', zIndex: 10,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center'
+                        }}>
+                            <h1 style={{
+                                color: 'white', fontSize: '60px', fontWeight: 300, letterSpacing: '15px',
+                                margin: 0, textTransform: 'uppercase',
+                                textShadow: `0 0 40px ${primary_color || '#00D4FF'}66`
+                            }}>
+                                {brand_name || title || 'ETTAMETTA'}
+                            </h1>
+                            <p style={{
+                                color: 'rgba(0,212,255,0.7)', fontSize: '24px', fontWeight: 400,
+                                letterSpacing: '8px', margin: '15px 0 0 0', textTransform: 'uppercase',
+                                textShadow: `0 0 20px ${primary_color || '#00D4FF'}44`
+                            }}>
+                                {subtitle || 'AI Documentary Engine'}
+                            </p>
+                        </div>
+                    </>
+                )}
+                {/* Default: BrandReveal — also used as fallback for unrecognized styles */}
+                {effectiveIntroStyle === 'brand_reveal' && (
+                    <BrandReveal 
+                        brandName={brand_name} 
+                        logoUrl={resolvedTrademarkUrl} 
+                        primaryColor={primary_color} 
+                    />
+                )}
             </Sequence>
 
             {/* --- FEATURE: Ken Burns Background Engine with SceneTransitions --- */}

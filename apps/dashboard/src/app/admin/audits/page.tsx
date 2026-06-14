@@ -304,21 +304,6 @@ export default function AuditsPage() {
     );
 }
 
-function TabButton({ active, onClick, icon: Icon, label }: { readonly active: boolean; readonly onClick: () => void; readonly icon: React.ElementType; readonly label: string }) {
-    return (
-        <button
-            onClick={onClick}
-            className={cn(
-                "flex items-center gap-2 px-6 py-3 rounded-xl transition-all uppercase text-[10px] font-bold tracking-widest",
-                active ? "bg-white/5 text-white shadow-xl" : "text-zinc-600 hover:text-zinc-400"
-            )}
-        >
-            <Icon className={cn("h-4 w-4", active ? "text-cyan-400" : "text-zinc-700")} />
-            {label}
-        </button>
-    );
-}
-
 function HealthMetric({ label, value, color }: { readonly label: string; readonly value: string | number; readonly color?: string }) {
     return (
         <div className="flex items-center justify-between">

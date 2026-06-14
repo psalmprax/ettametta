@@ -139,6 +139,7 @@ function VoiceForgePanel() {
 function ScriptEnginePanel() {
     const [topic, setTopic] = useState("");
     const [niche, setNiche] = useState("Auto-Detect");
+    const [style, setStyle] = useState("CINEMATIC_DOC");
     const [duration, setDuration] = useState(60);
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<ScriptOutput | null>(null);
@@ -164,7 +165,7 @@ function ScriptEnginePanel() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic, niche: nichePayload, duration_seconds: duration })
+                body: JSON.stringify({ topic, niche: nichePayload, style, duration_seconds: duration })
             }),
             {
                 fallback: {} as ScriptOutput,
@@ -233,6 +234,20 @@ function ScriptEnginePanel() {
                         max={300}
                         className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
                     />
+                </div>
+
+                <div className="col-span-2">
+                    <label htmlFor="scriptStyle" className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Nexus Style</label>
+                    <select
+                        id="scriptStyle"
+                        value={style}
+                        onChange={(e) => setStyle(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                    >
+                        {NEXUS_STYLE_OPTIONS.map(option => (
+                            <option key={option.id} value={option.id}>{option.label}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
@@ -348,6 +363,21 @@ const AI_ENGINES = [
     { id: "cogvideo", name: "CogVideoX", free: false, needsKey: false, credits: 20, description: "Requires GPU node (RTX 8000)" },
     { id: "zeroscope", name: "Zeroscope", free: false, needsKey: false, credits: 10, description: "Requires GPU node (lightweight text-to-video, 8GB VRAM)" },
     { id: "animatediff", name: "AnimateDiff", free: false, needsKey: false, credits: 15, description: "Requires GPU node (image-to-video animation, 12GB VRAM)" },
+];
+
+const NEXUS_STYLE_OPTIONS = [
+    { id: "CINEMATIC_DOC", label: "Cinematic Doc" },
+    { id: "FAST_HYPE", label: "Fast Hype" },
+    { id: "REDDIT_STORY", label: "Reddit Story" },
+    { id: "ULTIMATE_TUTORIAL", label: "Tutorial" },
+    { id: "VOX_EXPLAINER", label: "Vox Explainer" },
+    { id: "NOIR_MYSTERY", label: "Noir Mystery" },
+    { id: "BROADCAST_NEWS", label: "Broadcast News" },
+    { id: "MOTIVATIONAL", label: "Motivational" },
+    { id: "FITNESS_MOTIVATION", label: "Fitness" },
+    { id: "GAMING_LORE", label: "Gaming Lore" },
+    { id: "RELATIONSHIP_DRAMA", label: "Relationship Drama" },
+    { id: "STOIC_WISDOM", label: "Stoic Wisdom" },
 ];
 
 function VisualCorePanel() {
@@ -784,6 +814,8 @@ function CreationContent() {
     const [prompt, setPrompt] = useState(searchParams.get("seed") || "");
     const [niche, _setNiche] = useState("Motivation");
     const [activeStack, _setActiveStack] = useState<"cloud" | "os">("cloud");
+    const [selectedStyle, setSelectedStyle] = useState("CINEMATIC_DOC");
+    const [ctaText, setCtaText] = useState("Follow for the next drop.");
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<ScriptOutput | null>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["CREATION_HUB_READY", "AWAITING_NEURAL_SEED"]);
@@ -818,7 +850,7 @@ function CreationContent() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic: prompt, niche, duration_seconds: 60, engine: activeStack })
+                body: JSON.stringify({ topic: prompt, niche, style: selectedStyle, duration_seconds: 60, engine: activeStack })
             }),
             {
                 fallback: {} as ScriptOutput,
@@ -847,7 +879,15 @@ function CreationContent() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic: prompt, niche, duration_seconds: 60, engine: activeStack, script: script?.segments || script })
+                body: JSON.stringify({
+                    topic: prompt,
+                    niche,
+                    style: selectedStyle,
+                    cta_text: ctaText,
+                    duration_seconds: 60,
+                    engine: activeStack,
+                    script: script?.segments || script
+                })
             }),
             {
                 fallback: null,
@@ -975,6 +1015,32 @@ function CreationContent() {
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div>
+                                                <label htmlFor="genesisStyle" className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block">Nexus Style</label>
+                                                <select
+                                                    id="genesisStyle"
+                                                    value={selectedStyle}
+                                                    onChange={(e) => setSelectedStyle(e.target.value)}
+                                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-violet-500/50"
+                                                >
+                                                    {NEXUS_STYLE_OPTIONS.map(option => (
+                                                        <option key={option.id} value={option.id}>{option.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label htmlFor="genesisCta" className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block">CTA</label>
+                                                <input
+                                                    id="genesisCta"
+                                                    value={ctaText}
+                                                    onChange={(e) => setCtaText(e.target.value)}
+                                                    maxLength={80}
+                                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-zinc-700 focus:outline-none focus:border-violet-500/50"
+                                                />
+                                            </div>
                                         </div>
 
                                         <Button 

@@ -1,3 +1,4 @@
+# Databricks notebook source
 """
 Automation Mode Configuration
 ==============================
@@ -44,17 +45,17 @@ logger = logging.getLogger(__name__)
 class AutomationMode(str, enum.Enum):
     """Three-tier automation model for the DAG video compiler."""
 
-    MANUAL = "MANUAL"
+    MANUAL = "manual"
     """User constructs DAG nodes by hand. No AI involvement in graph structure.
     This is the existing `use_dag=True` behavior — parallel asset sourcing
     via inline nodes, but the user defines the full pipeline."""
 
-    PARTIAL = "PARTIAL"
+    PARTIAL = "partial"
     """AI generates the DAG structure from a prompt, but execution pauses
     for user approval before rendering. The user can review generated nodes,
     edit params, and approve or reject. Best for iterative editing."""
 
-    FULL = "FULL"
+    FULL = "full"
     """End-to-end automation: prompt → AI generates DAG → auto-executes.
     No manual intervention. Uses semantic caching to detect similar prompts
     and reuse previous DAG subgraphs for efficiency."""
@@ -63,11 +64,11 @@ class AutomationMode(str, enum.Enum):
     def from_str(cls, value: str) -> "AutomationMode":
         """Parse a string value to AutomationMode, case-insensitive.
 
-        Accepts 'MANUAL', 'PARTIAL', 'FULL' (or any case variant).
+        Accepts 'manual', 'partial', 'full' (or any case variant).
         Falls back to MANUAL on unknown values.
         """
         try:
-            return cls(value.upper())
+            return cls(str(value).strip().lower())
         except ValueError:
             logger.warning(
                 "[AutomationMode] Unknown mode '%s', falling back to MANUAL",
@@ -78,7 +79,7 @@ class AutomationMode(str, enum.Enum):
     @classmethod
     def is_valid(cls, value: str) -> bool:
         try:
-            cls(value.upper())
+            cls(str(value).strip().lower())
             return True
         except ValueError:
             return False

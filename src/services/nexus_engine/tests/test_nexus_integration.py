@@ -25,9 +25,12 @@ class TestNexusComposeRequest:
         assert req.voiceover_paths is None
         assert req.script_segments is None
         assert req.automation_mode == "manual"
-        assert req.blueprint_id == "viral-reskin"
+        assert req.blueprint_id is None
         assert req.cinema_mode is False
         assert req.generate_thumbnail is False
+        assert req.style == "CINEMATIC_DOC"
+        assert req.cta_text is None
+        assert req.cta_type == "cta"
 
     def test_partial_automation_request(self):
         """PARTIAL mode should be accepted by the model."""
@@ -51,11 +54,24 @@ class TestNexusComposeRequest:
         assert req.job_metadata["auto_publish"] is True
 
     def test_blueprint_default(self):
-        """Default blueprint should be viral-reskin."""
+        """Default compose mode should use cinema/manual routing until a blueprint is selected."""
         req1 = NexusComposeRequest(niche="test")
         req2 = NexusComposeRequest(niche="test", blueprint_id="custom-bp")
-        assert req1.blueprint_id == "viral-reskin"
+        assert req1.blueprint_id is None
         assert req2.blueprint_id == "custom-bp"
+
+    def test_style_and_cta_fields_are_preserved(self):
+        """Creative controls should survive request parsing."""
+        req = NexusComposeRequest(
+            niche="AI Technology",
+            style="FAST_HYPE",
+            cta_text="Follow for part two",
+            cta_type="engagement",
+        )
+
+        assert req.style == "FAST_HYPE"
+        assert req.cta_text == "Follow for part two"
+        assert req.cta_type == "engagement"
 
 
 class TestNexusComposePipeline:

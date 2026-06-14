@@ -10,12 +10,14 @@ interface BrandRevealProps {
     brandName?: string;
     logoUrl?: string;
     primaryColor?: string;
+    subtitle?: string;
 }
 
 export const BrandReveal: React.FC<BrandRevealProps> = ({
     brandName = "ETTAMETTA",
     logoUrl,
-    primaryColor = "#00D4FF"
+    primaryColor = "#00D4FF",
+    subtitle
 }) => {
     const frame = useCurrentFrame();
     const { width, height, fps } = useVideoConfig();
@@ -174,7 +176,7 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                         wordBreak: 'break-word',
                         whiteSpace: 'normal'
                     }}>
-                        {brandName === "ETTAMETTA" ? "AI Documentary Engine" : "Powered by EttaMetta"}
+                        {subtitle || (brandName === "ETTAMETTA" ? "AI Documentary Engine" : "Powered by EttaMetta")}
                     </p>
                 </div>
             </div>

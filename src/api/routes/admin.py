@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Depends, Request, status, UploadFile, File
+from pydantic import BaseModel
 try:
     from dotenv import load_dotenv
 except ImportError:
@@ -20,6 +21,53 @@ from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
+
+
+# ── EU AI Act Compliance: Model Card Registration ──────────────────────
+
+
+class ModelCardRequest(BaseModel):
+    model: str
+    version: str
+    capabilities: list[str]
+    limitations: list[str]
+    training_data_summary: str | None = None
+
+
+@router.post("/compliance/model-card")
+async def register_model_card(
+    body: ModelCardRequest,
+    current_user: UserDB = Depends(admin_required),
+    db=Depends(get_db),
+):
+    """
+    Register a model card for EU AI Act Art. 11 documentation.
+    Records AI model capabilities, limitations, and training data provenance.
+    """
+    await audit_service.log_model_card(
+        model=body.model,
+        version=body.version,
+        capabilities=body.capabilities,
+        limitations=body.limitations,
+        training_data_summary=body.training_data_summary,
+        db=db,
+    )
+
+    # Also log as human oversight (Art. 14) — admin is manually registering the card
+    await audit_service.log_human_oversight(
+        action="MODEL_CARD_REGISTERED",
+        human_id=current_user.id,
+        reason=f"Registered model card for {body.model}:{body.version}",
+        db=db,
+    )
+
+    return success_response(
+        data={
+            "status": "model_card_registered",
+            "model": body.model,
+            "version": body.version,
+        }
+    )
 logger = logging.getLogger(__name__)
 
 @router.get("/system/env")
@@ -116,6 +164,15 @@ async def upload_env_file(
         db=db,
     )
 
+    # EU AI Act Art. 14: log human oversight for this admin decision
+    await audit_service.log_human_oversight(
+        action="ENV_CONFIG_OVERRIDE",
+        human_id=current_user.id,
+        override=True,
+        reason=f"Admin uploaded new .env file: {file.filename}",
+        db=db,
+    )
+
     return success_response(
         data={
             "message": "System environment (.env) updated and hot-swapped.",
@@ -142,6 +199,15 @@ async def restart_system(
         details={"initiated_by": current_user.username},
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
+        db=db,
+    )
+
+    # EU AI Act Art. 14: log human oversight for this admin decision
+    await audit_service.log_human_oversight(
+        action="SYSTEM_RESTART",
+        human_id=current_user.id,
+        override=True,
+        reason=f"System restart initiated by {current_user.username}",
         db=db,
     )
 
@@ -181,6 +247,16 @@ async def register_incident_webhook(
     )
     db.add(new_webhook)
     await db.commit()
+    await db.refresh(new_webhook)
+    
+    # EU AI Act Art. 14: log human oversight for configuring incident reporting
+    await audit_service.log_human_oversight(
+        action="COMPLIANCE_WEBHOOK_REGISTERED",
+        human_id=current_user.id,
+        reason=f"Registered incident webhook: {name or url}",
+        db=db,
+    )
+    
     return success_response(data={"id": new_webhook.id, "status": "Registered"})
 
 

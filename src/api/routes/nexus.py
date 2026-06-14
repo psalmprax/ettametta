@@ -29,6 +29,9 @@ class NexusComposeRequest(BaseModel):
     generate_thumbnail: bool = False
     cinema_mode: bool = False
     blueprint_id: str | None = Field(None, description="The Nexus blueprint to execute (e.g. 'viral-reskin'). When None and cinema_mode is True, runs the stock-footage + Remotion pipeline.")
+    style: str = Field("CINEMATIC_DOC", description="Cinematic style for the video")
+    cta_text: str | None = Field(None, description="Call to action text")
+    cta_type: str = Field("cta", description="Call to action type (cta or engagement)")
     job_metadata: dict | None = None
 
 
@@ -616,6 +619,35 @@ async def delete_nexus_job(
         raise HTTPException(status_code=404, detail="Job not found or unauthorized")
         
     return success_response(data={"status": "deleted", "id": job_id})
+
+
+class DAGApprovalRequest(BaseModel):
+    approved: bool
+
+
+@router.put("/jobs/{job_id}/dag-approval")
+async def approve_dag_job(
+    job_id: str,
+    req: DAGApprovalRequest,
+    current_user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    stmt = select(NexusJobDB).where(
+        NexusJobDB.id == job_id, NexusJobDB.user_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    from src.services.nexus_engine.auto_creator import base_creator_service
+    success = await base_creator_service.approve_dag(job_id, req.approved)
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to resolve approval gate (no pending approval found)"
+        )
+    return success_response(data={"job_id": job_id, "approved": req.approved})
 
 
 @router.get("/telemetry")

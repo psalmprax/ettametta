@@ -1,3 +1,4 @@
+# Databricks notebook source
 """Unit tests for all 3 automation modes (MANUAL/PARTIAL/FULL).
 
 Tests cover:
@@ -460,33 +461,43 @@ class TestPartialMode:
     async def test_approve_dag_api(self):
         """approve_dag() resolves the approval event correctly."""
         from src.services.nexus_engine.auto_creator import AutoCreator
-
         import asyncio
 
         creator = AutoCreator()
 
-        # Simulate a running approval gate
-        dag_preview = creator._build_dag_preview([{
-            "text": "Test",
-            "visual_prompt": "Test",
-            "mood": "neutral",
-            "type": "clip",
-            "dag_metadata": {"node_id": "t", "dag_type": "clip", "inputs": [], "duration_sec": 5},
-        }], "approve-job", "tech")
+        # Prepare a persisted DAG preview in the mocked DB
+        preview = {
+            "job_id": "approve-job",
+            "niche": "tech",
+            "segments_count": 1,
+            "estimated_duration_sec": 5,
+            "segments": [{"index": 0, "text": "Test", "visual_prompt": "Test", "mood": "neutral", "type": "clip", "dag_type": "clip", "inputs": []}],
+        }
 
-        # Store as pending
-        creator._pending_approvals["approve-job"] = await dag_preview
-        event = asyncio.Event()
-        creator._approval_events["approve-job"] = event
+        # Mock DB session to return a NexusJobDB-like object with job_metadata
+        mock_session = AsyncMock()
+        mock_session.__aenter__.return_value = mock_session
+        mock_job = MagicMock()
+        mock_job.job_metadata = {"dag_preview": preview}
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_job
+        mock_session.execute.return_value = mock_result
 
-        # Approve via API
-        result = await creator.approve_dag("approve-job", True)
-        assert result is True
-        assert event.is_set()  # Event should be triggered
+        with patch("src.api.utils.database.async_session_factory") as mock_sf:
+            mock_sf.return_value = mock_session
 
-        # Verify approval state
-        pending = creator._pending_approvals.get("approve-job", {})
-        assert pending.get("_approved") is True
+            # Ensure an in-process waiter exists so approve_dag will trigger it
+            event = asyncio.Event()
+            creator._approval_events["approve-job"] = event
+
+            # Approve via API — should load preview from DB, persist approval state, and set event
+            result = await creator.approve_dag("approve-job", True)
+            assert result is True
+            assert event.is_set()
+
+            # Verify persisted approval state written to the mocked job object
+            assert isinstance(mock_job.job_metadata, dict)
+            assert mock_job.job_metadata.get("dag_approval_state", {}).get("approved") is True
 
     @pytest.mark.asyncio
     async def test_approve_dag_nonexistent_job(self):
@@ -501,23 +512,36 @@ class TestPartialMode:
     async def test_get_pending_approval(self):
         """get_pending_approval() returns preview without internal metadata."""
         from src.services.nexus_engine.auto_creator import AutoCreator
-
         creator = AutoCreator()
-        preview = {
+
+        # Simulate persisted preview in DB (no in-memory preview)
+        persisted_preview = {
             "job_id": "poll-job",
             "niche": "tech",
             "segments_count": 2,
-            "_approved": False,  # Internal field
+            "_approved": False,  # internal marker that should be stripped
         }
-        creator._pending_approvals["poll-job"] = preview
 
-        result = await creator.get_pending_approval("poll-job")
-        assert result is not None
-        assert "_approved" not in result  # Internal fields stripped
-        assert result["job_id"] == "poll-job"
+        mock_session = AsyncMock()
+        mock_session.__aenter__.return_value = mock_session
+        mock_job = MagicMock()
+        mock_job.job_metadata = {"dag_preview": persisted_preview}
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_job
+        mock_session.execute.return_value = mock_result
 
-        result2 = await creator.get_pending_approval("unknown")
-        assert result2 is None
+        with patch("src.api.utils.database.async_session_factory") as mock_sf:
+            mock_sf.return_value = mock_session
+
+            result = await creator.get_pending_approval("poll-job")
+            assert result is not None
+            assert "_approved" not in result
+            assert result["job_id"] == "poll-job"
+
+            # Unknown job returns None
+            mock_result.scalar_one_or_none.return_value = None
+            result2 = await creator.get_pending_approval("unknown")
+            assert result2 is None
 
 
 # =============================================================================

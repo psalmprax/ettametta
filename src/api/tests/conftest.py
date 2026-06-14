@@ -45,7 +45,7 @@ mock_names = [
     "moviepy.video.io", "moviepy.video.io.VideoFileClip", "moviepy.video.compositing",
     "moviepy.audio.AudioClip", "moviepy.audio.fx", "moviepy.audio.fx.all", "moviepy.afx",
     "moviepy.audio.AudioClip.CompositeAudioClip",
-    "cv2", "numpy", "torch", "gtts", "easyocr", "PIL", "pil", "replicate", "fal_client", "remotion",
+    "cv2", "torch", "gtts", "easyocr", "PIL", "pil", "replicate", "fal_client", "remotion",
     "langsmith", "langsmith.testing", "langsmith.client",
     "opentelemetry", "opentelemetry.trace", "opentelemetry.context",
     "opentelemetry.instrumentation", "opentelemetry.instrumentation.celery",
@@ -104,11 +104,21 @@ def test_db():
 def client(test_db):
     """Create a test client for the FastAPI app."""
     from src.api.main import app
-    from src.api.utils.database import Base, engine
+    from src.api.utils.database import Base, engine, async_engine
     
+    # Wipe all table data via sync engine
     with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
+    
+    # Force the async engine to drop its connection pool so new async
+    # sessions see the clean state (SQLite uses separate connections
+    # for sync vs async drivers).
+    import asyncio
+    try:
+        asyncio.run(async_engine.dispose())
+    except RuntimeError:
+        pass  # Already inside an event loop — disposal will happen naturally
             
     with TestClient(app) as test_client:
         yield test_client

@@ -2,6 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Video, Audio, interpolate, useCurrentFrame, useVideoConfig, Sequence } from 'remotion';
 import { z } from 'zod';
 import { CTAOverlay } from '../components/CTAOverlay';
+import { BrandReveal } from '../components/BrandReveal';
 
 export const cinematicMinimalSchema = z.object({
     title: z.string(),
@@ -48,64 +49,13 @@ export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> 
 
             {/* Content Overlay */}
             {!showCtaNow && (
-                <AbsoluteFill style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: containerPadding,
-                    background: 'radial-gradient(circle, transparent 20%, rgba(10,10,11,0.8) 100%)',
-                    boxSizing: 'border-box'
-                }}>
-                    <div style={{ 
-                        textAlign: 'center', 
-                        opacity, 
-                        maxWidth: '90%', 
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center'
-                    }}>
-                        <div style={{
-                            height: '4px',
-                            width: '120px',
-                            background: `linear-gradient(to right, ${primary_color}, #4ADE80)`,
-                            borderRadius: '2px',
-                            margin: `0 auto ${lineMarginBottom}`,
-                            transform: `scaleX(${interpolate(frame, [0, 60], [0, 1], { extrapolateRight: 'clamp' })})`
-                        }} />
-
-                        <h1 style={{
-                            color: 'white',
-                            fontSize: titleFontSize,
-                            fontFamily: 'Inter, sans-serif',
-                            fontWeight: 800,
-                            letterSpacing: '-0.03em',
-                            lineHeight: 1.1,
-                            marginBottom: '24px',
-                            textShadow: `0 0 30px ${primary_color}4d`,
-                            wordBreak: 'break-word',
-                            whiteSpace: 'normal',
-                            maxWidth: '100%'
-                        }}>
-                            {title}
-                        </h1>
-
-                        <p style={{
-                            color: '#8E2DE2',
-                            fontSize: subtitleFontSize,
-                            fontFamily: 'Inter, sans-serif',
-                            textTransform: 'uppercase',
-                            letterSpacing: subtitleLetterSpacing,
-                            fontWeight: 500,
-                            margin: 0,
-                            wordBreak: 'break-word',
-                            whiteSpace: 'normal',
-                            maxWidth: '100%'
-                        }}>
-                            {subtitle}
-                        </p>
-                    </div>
-                </AbsoluteFill>
+                <Sequence durationInFrames={durationInFrames}>
+                    <BrandReveal 
+                        brandName={title} 
+                        subtitle={subtitle} 
+                        primaryColor={primary_color} 
+                    />
+                </Sequence>
             )}
 
             {/* 4. CTA Overlay */}

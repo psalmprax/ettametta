@@ -15,7 +15,15 @@
     "noEmit": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "types": ["react", "node"]
+    "types": ["react", "node"],
+    "baseUrl": ".",
+    "typeRoots": ["node_modules/@types"],
+    "paths": {
+      "react": ["node_modules/@types/react/index.d.ts"],
+      "react/*": ["node_modules/@types/react/*"],
+      "react-dom": ["node_modules/@types/react-dom/index.d.ts"],
+      "react-dom/*": ["node_modules/@types/react-dom/*"]
+    }
   },
   "include": ["src"]
 }

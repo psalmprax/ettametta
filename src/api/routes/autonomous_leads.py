@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Any
 
 from src.api.utils.auth import get_current_user
-from src.api.utils.models import UserDB
+from src.api.utils.user_models import UserDB
 from src.api.utils.api_responses import success_response
 from src.services.monetization.autonomous_lead_gen import base_autonomous_lead_gen
 

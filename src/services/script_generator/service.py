@@ -17,6 +17,27 @@ NICHE_TAXONOMY = {
     "Spirituality": ["meditation", "consciousness", "universe", "law of attraction", "manifestation", "energy", "chakras"]
 }
 
+SCRIPT_STYLE_ALIASES = {
+    "cinematic": "story",
+    "documentary": "story",
+    "fast": "aggressive",
+    "hype": "aggressive",
+    "tutorial": "educational",
+    "CINEMATIC_DOC": "story",
+    "HEARTFELT_NARRATIVE": "story",
+    "RELATIONSHIP_DRAMA": "story",
+    "ULTIMATE_TUTORIAL": "educational",
+    "VOX_EXPLAINER": "educational",
+    "DEEP_DIVE": "educational",
+    "FAST_HYPE": "aggressive",
+    "ESPORTS_HYPE": "aggressive",
+    "FITNESS_MOTIVATION": "aggressive",
+    "REDDIT_STORY": "story",
+    "MOTIVATIONAL": "motivation",
+    "STOIC_WISDOM": "motivation",
+    "LOFI_CHILL": "asmr",
+}
+
 
 def detect_niche_from_topic(topic: str) -> str:
     """Auto-detect the most relevant niche based on topic keywords."""
@@ -50,13 +71,14 @@ class ScriptGenerator:
             self._failures = 0
 
     async def _call_ai(self, prompt: str, session_id: str | None = None) -> str:
-        """Centralized AI call through IntelligenceHub"""
+        """Centralized AI call through IntelligenceHub — explicitly routed through Dify"""
         try:
             result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a Viral Content Narrator. You bridge and narrate relationships between videos for high-retention content. Output JSON ONLY.",
                 session_id=session_id,
-                json_mode=True
+                json_mode=True,
+                provider="dify"
             )
             return result["response"]
         except Exception as e:
@@ -103,13 +125,14 @@ class ScriptGenerator:
                 asset_context += f"Clip {i+1}: ID={clip.get('id')}, Title='{clip.get('title')}', Pattern='{analysis.get('content_type')}', Sentiment='{analysis.get('sentiment')}'\n"
 
         # 3. Build the mission prompt with Dynamism Engine (Tier 10.0 Upgrade)
+        style_key = SCRIPT_STYLE_ALIASES.get(style, style).lower()
         style_guidance = {
             "story": "Focus on a 'Character-Climbing' arc. Start with a relatable struggle and end with an unexpected triumph.",
             "educational": "Use the 'Inverted Pyramid' of curiosity. Start with a mind-blowing anomaly and explain the mechanics.",
             "aggressive": "High-velocity delivery. Rapid-fire facts. Use 'Staccato' rhythm in sentences.",
             "asmr": "Sensory-heavy descriptions. Slow pacing. Focus on texture and sound visual cues.",
             "motivation": "Emotional Crescendo. Start with low-energy vulnerability and build to high-energy breakthrough."
-        }.get(style.lower(), "Ensure high-retention pacing and viral delivery.")
+        }.get(style_key, "Ensure high-retention pacing and viral delivery.")
 
         prompt = f"""
         You are a Viral Narrative Architect. Your mission is to engineer a high-velocity {duration_sec}-second video script for the {niche} niche.
@@ -161,14 +184,15 @@ class ScriptGenerator:
             return self._get_fallback_script(topic, niche, clips)
 
     async def complete(self, prompt: str, system_prompt: str = "You are a Viral Content Analyst. Respond in plain text.") -> str:
-        """Generic AI completion for cross-service intelligence (Tournament Selection, etc)"""
+        """Generic AI completion for cross-service intelligence (Tournament Selection, etc) — routed through Dify"""
         if self.circuit_breaker.is_open():
             return ""
 
         try:
             result = await base_intelligence_service.chat(
                 prompt=prompt,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                provider="dify"
             )
             self.circuit_breaker.record_success()
             return result.get("response", "")

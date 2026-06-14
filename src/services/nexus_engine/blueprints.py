@@ -79,8 +79,14 @@ async def dag_execute_blueprint(
         SceneRenderNode,
     )
 
+    from src.services.nexus_engine.orchestrator import COMPOSITION_STYLE_MAP
+
     blueprint_id = blueprint.get("id", "unknown")
     composition_id = blueprint.get("composition_id", "ViralClip")
+    # Apply style-to-composition override (same as assemble_video in orchestrator)
+    style = inputs.get("style", "")
+    if style in COMPOSITION_STYLE_MAP:
+        composition_id = COMPOSITION_STYLE_MAP[style]
     niche = inputs.get("niche", "")
     inputs.get("topic", "") or niche
 
@@ -345,7 +351,7 @@ class DefaultEgressHandler:
                 "summary": f"Blueprint execution completed. Video saved to {video_path}",
             }
         return {
-            "finalized": False,
+            "finalized": True,
             "output_path": None,
             "summary": "Blueprint execution completed but no output file was produced (synthesis step returned None)",
         }
@@ -362,6 +368,7 @@ registry.register("egress", DefaultEgressHandler)
 # --- Fallback Blueprints ---
 
 FALLBACK_BLUEPRINTS = [
+    # ── Production Blueprints ────────────────────────────────────────
     {
         "id": "viral-reskin",
         "name": "Viral Re-skinner",
@@ -386,9 +393,191 @@ FALLBACK_BLUEPRINTS = [
             {"type": "egress", "label": "Neural Fusion", "desc": "Stitching segments."},
         ],
     },
+    # ── Long-Form Showcases (18000 frames / 10 min) ──────────────────
+    {
+        "id": "minimal-showcase",
+        "name": "Minimal Showcase",
+        "description": "Clean cinematic template with BrandReveal intro, background video, and CTA outro — suitable for documentary or vlog content.",
+        "composition_id": "CinematicMinimal",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for minimal aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating visual brief."},
+            {"type": "synthesis", "label": "Minimal Render", "desc": "Rendering CinematicMinimal via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "hormozi-showcase",
+        "name": "Hormozi Style Showcase",
+        "description": "High-energy word-by-word kinetic typography with colored borders — ideal for sales, marketing, and business content.",
+        "composition_id": "HormoziStyle",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing topic for hormone-style typography."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating word highlight brief."},
+            {"type": "synthesis", "label": "Hormozi Render", "desc": "Rendering HormoziStyle via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "cinematic3d-showcase",
+        "name": "3D Text Showcase",
+        "description": "3D extruded text rendered in WebGL with Three.js, floating over background video — premium branded intro.",
+        "composition_id": "Cinematic3D",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for 3D aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating 3D text brief."},
+            {"type": "synthesis", "label": "3D Render", "desc": "Rendering Cinematic3D via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "ancient-showcase",
+        "name": "Ancient Astrolabe Showcase",
+        "description": "Ancient astrolabe 3D artifact with celestial rings and gold typography overlay — historical, documentary, and stoic aesthetic.",
+        "composition_id": "CinematicAncient",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for ancient aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating astrolabe visual brief."},
+            {"type": "synthesis", "label": "Ancient Render", "desc": "Rendering CinematicAncient via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    # ── Short-Form Showcases (120 frames / 4 sec) ────────────────────
+    {
+        "id": "portal-showcase",
+        "name": "Portal Showcase",
+        "description": "Cinematic portal intro visual using the AncientPortal 3D WebGL component — short 4-second branded sting with Bloom post-processing.",
+        "composition_id": "CinematicPortal",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche and topic for portal aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating visual brief for portal render."},
+            {"type": "synthesis", "label": "Portal Render", "desc": "Rendering 3D portal composition via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output and publishing."},
+        ],
+    },
+    {
+        "id": "cyberpunk-showcase",
+        "name": "Cyberpunk HUD Showcase",
+        "description": "Cyberpunk HUD overlay with scanlines, rotating rings, and glowing text — high-energy gaming and tech aesthetic.",
+        "composition_id": "CinematicCyberpunk",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for cyberpunk aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating HUD visual brief."},
+            {"type": "synthesis", "label": "Cyberpunk Render", "desc": "Rendering CinematicCyberpunk via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "iridescent-showcase",
+        "name": "Iridescent Glass Showcase",
+        "description": "Iridescent glass morphing orb with iridescent border glow — elegant, premium beauty and relationship aesthetics.",
+        "composition_id": "CinematicIridescent",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for iridescent aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating glass visual brief."},
+            {"type": "synthesis", "label": "Iridescent Render", "desc": "Rendering CinematicIridescent via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "liquid-showcase",
+        "name": "Liquid Metal Showcase",
+        "description": "3D liquid metal morphing sphere with Bloom post-processing and overlay typography — fluid, dynamic, premium.",
+        "composition_id": "CinematicLiquid",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for liquid metal aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating liquid visual brief."},
+            {"type": "synthesis", "label": "Liquid Render", "desc": "Rendering CinematicLiquid via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "prism-showcase",
+        "name": "Prismatic Light Showcase",
+        "description": "3D prismatic light refraction with chromatic aberration, textual content rendered in WebGL — artistic and creative aesthetic.",
+        "composition_id": "CinematicPrism",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for prism aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating prism visual brief."},
+            {"type": "synthesis", "label": "Prism Render", "desc": "Rendering CinematicPrism via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "lidar-showcase",
+        "name": "Lidar Scanner Showcase",
+        "description": "3D lidar point cloud scanner with Glitch and Bloom post-processing, monospace typography — tech, investigative aesthetic.",
+        "composition_id": "CinematicLidar",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for lidar aesthetic."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating point cloud visual brief."},
+            {"type": "synthesis", "label": "Lidar Render", "desc": "Rendering CinematicLidar via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
+    {
+        "id": "kinetic-showcase",
+        "name": "Kinetic Typography Showcase",
+        "description": "Kinetic typography animation with bouncing, rotating, and scaling motion for each character — motivational and heartfelt content.",
+        "composition_id": "CinematicKinetic",
+        "nodes": [
+            {"type": "ingress", "label": "Topic Analysis", "desc": "Analyzing niche for kinetic typography."},
+            {"type": "cognition", "label": "Visual Brief", "desc": "Generating kinetic text brief."},
+            {"type": "synthesis", "label": "Kinetic Render", "desc": "Rendering CinematicKinetic via Remotion."},
+            {"type": "egress", "label": "Delivery", "desc": "Finalizing output."},
+        ],
+    },
 ]
 
 # --- Core API ---
+
+async def seed_blueprints() -> int:
+    """
+    Seed FALLBACK_BLUEPRINTS into the database if the nexus_blueprints
+    table is empty.  Returns the number of blueprints seeded.
+
+    Called automatically at server startup so DB-stored blueprints
+    persist across container restarts.  Idempotent — only seeds when
+    the table is empty.
+    """
+    from src.api.utils.database import AsyncSessionLocal
+    from sqlalchemy import func
+
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(select(func.count()).select_from(BlueprintDB))
+            count = result.scalar()
+            if count and count > 0:
+                logger.info("[Blueprints] DB already has %d blueprints, skipping seed.", count)
+                return 0
+
+            seeded = 0
+            for fb in FALLBACK_BLUEPRINTS:
+                # Check if this specific ID already exists (belt-and-suspenders)
+                exists = await db.execute(
+                    select(BlueprintDB).where(BlueprintDB.id == fb["id"])
+                )
+                if exists.scalar_one_or_none():
+                    continue
+
+                bp = BlueprintDB(
+                    id=fb["id"],
+                    name=fb["name"],
+                    description=fb.get("description", ""),
+                    composition_id=fb.get("composition_id", "ViralClip"),
+                    nodes=fb.get("nodes", []),
+                )
+                db.add(bp)
+                seeded += 1
+
+            await db.commit()
+            logger.info("[Blueprints] Seeded %d blueprints into database.", seeded)
+            return seeded
+        except Exception as e:
+            await db.rollback()
+            logger.warning("[Blueprints] Seed failed (non-blocking): %s", e)
+            return 0
+
 
 async def get_blueprints(db: AsyncSession) -> list[dict]:
     stmt = select(BlueprintDB)
@@ -396,7 +585,16 @@ async def get_blueprints(db: AsyncSession) -> list[dict]:
     blueprints = result.scalars().all()
     if not blueprints:
         return FALLBACK_BLUEPRINTS
-    return [{"id": bp.id, "name": bp.name, "description": bp.description, "nodes": bp.nodes} for bp in blueprints]
+    return [
+        {
+            "id": bp.id,
+            "name": bp.name,
+            "description": bp.description,
+            "composition_id": bp.composition_id,
+            "nodes": bp.nodes,
+        }
+        for bp in blueprints
+    ]
 
 async def execute_blueprint(
     blueprint: dict, inputs: dict, job_id: str,
@@ -486,4 +684,10 @@ async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> dict | Non
     bp = result.scalar_one_or_none()
     if not bp:
         return next((fb for fb in FALLBACK_BLUEPRINTS if fb["id"] == blueprint_id), FALLBACK_BLUEPRINTS[0])
-    return {"id": bp.id, "name": bp.name, "description": bp.description, "nodes": bp.nodes}
+    return {
+        "id": bp.id,
+        "name": bp.name,
+        "description": bp.description,
+        "composition_id": bp.composition_id,
+        "nodes": bp.nodes,
+    }

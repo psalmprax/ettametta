@@ -102,7 +102,7 @@ async def _check_and_post_scheduled_internal(task_self):
                         continue
 
                     metadata = PostMetadata(**meta_dict)
-                    logger.info(f"[Scheduler] Post {post_id}: loaded metadata title="{metadata.title}"")
+                    logger.info(f"[Scheduler] Post {post_id}: loaded metadata title='{metadata.title}'")
 
                     # Check authentication tokens
                     user_tokens = await token_manager.get_token_data(
