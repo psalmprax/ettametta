@@ -177,6 +177,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// fallow-ignore-next-line unused-export
 export function useI18n() {
   const context = useContext(I18nContext);
   if (!context) {

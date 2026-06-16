@@ -1,5 +1,6 @@
 "use client";
 
+// fallow-ignore-next-line invalid-client-exports — Next.js dynamic segment config
 export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";

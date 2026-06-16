@@ -58,6 +58,7 @@ import { DesignCard } from "@/components/ui/DesignCard";
 import { ThemeSwitcher } from "@/components/theme-toggle";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
+import { LanguageSwitcher } from "@/lib/i18n";
 
 const SettingsSchema = z.object({
     groq_api_key: z.string().optional(),
@@ -170,6 +171,10 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-zinc-400 font-bold uppercase">Theme Engine</span>
                   <ThemeSwitcher />
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase">Language</span>
+                  <LanguageSwitcher />
                 </div>
               </div>
               <Button onClick={handleSave} disabled={isSaving} className="w-full bg-violet-500 hover:bg-violet-400 text-white font-bold h-14 rounded-2xl">

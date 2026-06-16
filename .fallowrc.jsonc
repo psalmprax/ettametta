@@ -22,5 +22,8 @@
     //   "**/generated/**"     // OpenAPI, Protobuf codegen
     // ]
   },
-  "rules": {}
+  "rules": {
+    "unused-dependencies": "off",
+    "unlisted-dependencies": "off"
+  }
 }
