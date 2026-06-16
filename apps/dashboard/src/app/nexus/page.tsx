@@ -58,6 +58,8 @@ import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { AreaChartCustom } from "@/components/ui/ChartComponents";
 import PreviewScenesModal from "@/components/ui/PreviewScenesModal";
+import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
+import { NeuralCanvas } from "@/components/ui/NeuralCanvas";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 import { useTelemetry } from "@/context/TelemetryContext";
@@ -101,6 +103,11 @@ function NexusContent() {
     const [previewJobStatus, setPreviewJobStatus] = useState<string>("");
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+    // Blueprint Builder + Neural Canvas modals
+    const [isBlueprintBuilderOpen, setIsBlueprintBuilderOpen] = useState(false);
+    const [isNeuralCanvasOpen, setIsNeuralCanvasOpen] = useState(false);
+    const [editingBlueprint, setEditingBlueprint] = useState<Blueprint | null>(null);
 
     // Interactive Style Customizer States
     const [selectedStylePreset, setSelectedStylePreset] = useState<'NEON_CYBER' | 'AMBER_WARM' | 'MONOCHROME_DARK' | 'EMERALD_MATRIX'>('NEON_CYBER');
@@ -648,7 +655,29 @@ function NexusContent() {
                                     {/* Blueprint Selector (visible only in blueprint mode) */}
                                     {creationMode === 'blueprint' && (
                                         <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Blueprint</label>
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Blueprint</label>
+                                                <div className="flex gap-1.5">
+                                                    <button
+                                                        onClick={() => { setEditingBlueprint(null); setIsBlueprintBuilderOpen(true); }}
+                                                        className="px-2.5 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[8px] font-bold text-violet-400 uppercase tracking-wider hover:bg-violet-500/20 transition-colors"
+                                                        title="Create or edit blueprint settings"
+                                                    >
+                                                        <Plus className="h-3 w-3 inline mr-1" />
+                                                        New
+                                                    </button>
+                                                    {activeBlueprint && (
+                                                        <button
+                                                            onClick={() => { setEditingBlueprint(activeBlueprint); setIsNeuralCanvasOpen(true); }}
+                                                            className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-bold text-cyan-400 uppercase tracking-wider hover:bg-cyan-500/20 transition-colors"
+                                                            title="Open visual node editor"
+                                                        >
+                                                            <Settings2 className="h-3 w-3 inline mr-1" />
+                                                            Edit
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
                                             <div className="relative">
                                                 <select 
                                                     value={activeBlueprint?.id}
@@ -669,9 +698,9 @@ function NexusContent() {
                                     )}
 
                                     <div className="flex flex-col justify-end">
-                                        <Button 
-                                            onClick={handleLaunchPipeline}
-                                            disabled={isLaunching || !selectedNiche || (creationMode === 'blueprint' && !activeBlueprint)}
+                                    <Button 
+                                        onClick={handleLaunchPipeline}
+                                        disabled={isLaunching || !selectedNiche || (creationMode === 'blueprint' && !activeBlueprint)}
                                             className={cn(
                                                 "w-full h-16 text-black font-bold text-lg rounded-2xl transition-all uppercase tracking-widest",
                                                 creationMode === 'cinema'
@@ -1233,6 +1262,40 @@ scout.on("VIRAL_DETECT", async (data) => {
                 availableCategories={availableCategories}
                 activeCategory={activeCategory}
                 setActiveCategory={setActiveCategory}
+            />
+
+            {/* Blueprint Builder Modal */}
+            <BlueprintBuilder
+                isOpen={isBlueprintBuilderOpen}
+                onClose={() => setIsBlueprintBuilderOpen(false)}
+                onSuccess={(bp: Blueprint) => {
+                    setBlueprints(prev => {
+                        const idx = prev.findIndex(b => b.id === bp.id);
+                        if (idx >= 0) { const next = [...prev]; next[idx] = bp; return next; }
+                        return [bp, ...prev];
+                    });
+                    setActiveBlueprint(bp);
+                }}
+                initialBlueprint={editingBlueprint}
+            />
+
+            {/* Neural Canvas Visual Editor */}
+            <NeuralCanvas
+                isOpen={isNeuralCanvasOpen}
+                onClose={() => setIsNeuralCanvasOpen(false)}
+                onSave={(bp: Blueprint) => {
+                    setBlueprints(prev => {
+                        const idx = prev.findIndex(b => b.id === bp.id);
+                        if (idx >= 0) { const next = [...prev]; next[idx] = bp; return next; }
+                        return [bp, ...prev];
+                    });
+                    setActiveBlueprint(bp);
+                }}
+                initialBlueprint={editingBlueprint || undefined}
+                onDeleted={(id: string) => {
+                    setBlueprints(prev => prev.filter(b => b.id !== id));
+                    if (activeBlueprint?.id === id) setActiveBlueprint(null);
+                }}
             />
         </CommandCenterLayout>
     );

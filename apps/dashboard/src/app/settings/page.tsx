@@ -56,6 +56,7 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { ThemeSwitcher } from "@/components/theme-toggle";
+import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 
 const SettingsSchema = z.object({
@@ -188,21 +189,23 @@ export default function SettingsPage() {
               >
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 space-y-10">
                   {activeEngine === "identity" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-4">
-                         <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Administrator Alias</span>
-                         <h3 className="text-2xl font-bold text-white uppercase tracking-tight">User_Sovereign</h3>
-                       </div>
-                       <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-4">
-                         <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Clearance Level</span>
-                         <h3 className="text-2xl font-bold text-violet-400 uppercase tracking-tight">Level 5 (Admin)</h3>
-                       </div>
-                    </div>
+                    <Section variant="featured" withPattern>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-4">
+                           <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Administrator Alias</span>
+                           <h3 className="text-2xl font-bold text-white uppercase tracking-tight">User_Sovereign</h3>
+                         </div>
+                         <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-4">
+                           <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Clearance Level</span>
+                           <h3 className="text-2xl font-bold text-violet-400 uppercase tracking-tight">Level 5 (Admin)</h3>
+                         </div>
+                      </div>
+                    </Section>
                   )}
 
                   {activeEngine === "security" && (
-                    <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-12">
-                       <div className="space-y-8">
+                    <Section variant="default" withPattern>
+                      <div className="space-y-8">
                           {[
                               { label: "GROQ_API_KEY", id: "groq_api_key" },
                               { label: "YOUTUBE_API_KEY", id: "youtube_api_key" },
@@ -226,8 +229,8 @@ export default function SettingsPage() {
                                   </div>
                               </div>
                           ))}
-                       </div>
-                    </div>
+                      </div>
+                    </Section>
                   )}
                 </div>
 

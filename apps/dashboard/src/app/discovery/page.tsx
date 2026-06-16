@@ -37,6 +37,8 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
+import { CandidateList } from "@/components/discovery/CandidateList";
+import { NeuralConfig } from "@/components/discovery/NeuralConfig";
 
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
@@ -49,6 +51,12 @@ interface ContentCandidate {
     viral_score: number;
     view_count: number;
     creator_name: string;
+    description: string;
+    thumbnail_uri: string;
+    engagement_score: number;
+    published_at: string;
+    source_uri: string;
+    duration_seconds: number;
 }
 
 function DiscoveryContent() {
@@ -64,6 +72,8 @@ function DiscoveryContent() {
     // Track whether current query is a keyword search (from ?q= URL param) vs niche scan
     const [isKeywordSearch, setIsKeywordSearch] = useState(!!searchParams.get("q"));
     const [actionLogs, setActionLogs] = useState<string[]>([]);
+    const [minViralScore, setMinViralScore] = useState(50);
+    const [excludeShorts, setExcludeShorts] = useState(false);
     const [alerts, setAlerts] = useState<any[]>([]);
     const [intelData, setIntelData] = useState<any>(null);
     const [analysisTasks, setAnalysisTasks] = useState<Record<string, { task_id: string; status: string; result?: any; niche: string }>>({});
@@ -426,6 +436,12 @@ function DiscoveryContent() {
                             </div>
                         </div>
                     </div>
+                    <NeuralConfig
+                        minViralScore={minViralScore}
+                        excludeShorts={excludeShorts}
+                        onMinViralScoreChange={setMinViralScore}
+                        onExcludeShortsChange={setExcludeShorts}
+                    />
                 </>
             }
         >
@@ -555,6 +571,16 @@ function DiscoveryContent() {
                                         </button>
                                     ))}
                                 </div>
+
+                                {/* Candidate List View */}
+                                {candidates.length > 0 && (
+                                    <CandidateList
+                                        candidates={candidates}
+                                        isLoading={isScanning}
+                                        onSelectCandidate={handleAnalyze}
+                                        onRefresh={() => isKeywordSearch ? fetchSearch() : fetchTrends()}
+                                    />
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar p-1">
                                     {candidates.length === 0 && !isScanning && (

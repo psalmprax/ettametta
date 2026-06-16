@@ -18,6 +18,8 @@ export const metadata: Metadata = {
 };
 
 import RootClientContext from "@/components/providers/RootClientContext";
+import { I18nProvider } from "@/lib/i18n";
+import "@/lib/theme";
 
 export default function RootLayout({
   children,
@@ -79,9 +81,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans font-mono antialiased relative`}
       >
         <div className="ambient-mesh" />
-        <RootClientContext>
-          {children}
-        </RootClientContext>
+        <I18nProvider>
+          <RootClientContext>
+            {children}
+          </RootClientContext>
+        </I18nProvider>
       </body>
     </html>
   );
