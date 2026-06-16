@@ -205,21 +205,12 @@ class TestUpgradeChainWellFormed:
             2026_06_16_backfill_txid
               -> 2026_06_16_revenue_metadata
               -> merge_remaining_2026
-              -> (4-way merge of 66623ae9808f, 2026_05_29_revenue_txid,
-                  2026_05_29_add_impression_tracking,
+              -> (2-way merge: 2026_05_29_revenue_txid,
                   2026_05_29_analysis_persistence)
 
-        We verify the 3-level chain and the merge tuple shape. The 4
-        merge parents may NOT all exist as files in ``alembic/versions/``
-        — per ``merge_remaining_2026``'s docstring, ``66623ae9808f``
-        is the "current applied head on main branch" that was stamped
-        directly to ``alembic_version`` (no migration file). The two
-        ``2026_05_29_add_impression_tracking`` /
-        ``2026_05_29_analysis_persistence`` branches had their schema
-        changes applied directly to the DB and the migrations themselves
-        were never committed as files. We assert that any parent that
-        IS a file is parseable, and the two that ARE files match
-        expectations.
+        Two additional branches (66623ae9808f, impression_tracking) were
+        stamped directly to the DB without migration files and are NOT
+        referenced in merge_remaining_2026's down_revision.
         """
         modules = _all_migration_modules()
         assert "2026_06_16_backfill_txid" in modules
@@ -238,27 +229,19 @@ class TestUpgradeChainWellFormed:
         dr = _module_assign(modules["merge_remaining_2026"], "down_revision")
         assert isinstance(dr, tuple), (
             "merge_remaining_2026's down_revision should be a tuple "
-            "(it's a 4-way merge migration)"
+            "(it's a 2-way merge migration)"
         )
-        assert len(dr) == 4
+        assert len(dr) == 2
 
-        # All 4 parents are either present as files OR were stamped
-        # directly to the DB (acceptable per the merge's docstring).
-        # We verify the parents that ARE files are parseable and have
-        # the expected names — the rest is documented behavior.
+        # Both parents must be present as files.
         for d in dr:
-            if d in modules:
-                # The file must have a valid revision id and down_revision
-                # of its own (sanity check that it's a real migration).
-                assert _module_assign(modules[d], "revision") == d
+            assert d in modules, (
+                f"merge parent {d} must have a migration file"
+            )
+            assert _module_assign(modules[d], "revision") == d
 
-        # Specific assertions for the parents we expect to see as files.
         assert "2026_05_29_revenue_txid" in dr
-        assert "2026_05_29_add_impression_tracking" in dr
         assert "2026_05_29_analysis_persistence" in dr
-        # ``66623ae9808f`` is expected to be the "stamped-only" parent.
-        # If a file for it appears, that's fine (just a re-merge); if
-        # not, that's the documented normal state.
 
     def test_backfill_txid_chains_off_column_add(self):
         """``down_revision`` of the backfill is the column-add migration."""

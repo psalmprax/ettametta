@@ -1,18 +1,17 @@
-"""merge all 4 remaining alembic heads on remote production
+"""merge the 2 remaining alembic heads after stamping
 
 After the webhook idempotency migration ``2026_05_29_revenue_txid`` was
-applied to the production DB on 2026-06-15, four heads remain:
+applied to the production DB on 2026-06-15, two branches with migration
+files remained:
 
-  - 66623ae9808f                            (current applied head on main branch)
-  - 2026_05_29_revenue_txid                 (applied; new)
-  - 2026_05_29_add_impression_tracking      (work already in DB; not applied)
-  - 2026_05_29_analysis_persistence         (work already in DB; not applied)
+  - 2026_05_29_revenue_txid                 (applied)
+  - 2026_05_29_analysis_persistence         (columns already in DB, stamped)
 
-``alembic upgrade head`` cannot advance past a multi-head DAG, so the
-two unapplied branches were ``alembic stamp``-ed as applied (the
-columns they would have added already exist on ``affiliate_links`` and
-``content_candidates`` respectively) and this merge migration is
-applied to consolidate the DAG into a single linear head.
+Two additional branches (66623ae9808f, 2026_05_29_add_impression_tracking)
+have no migration files — their schema changes were applied directly to
+the DB and the revisions were ``alembic stamp``-ed. They are NOT listed
+in ``down_revision`` because alembic cannot resolve revisions without
+files.
 
 The merge is intentionally a no-op on the schema. ``upgrade()`` and
 ``downgrade()`` are both ``pass``. The migration's only purpose is to
@@ -51,9 +50,7 @@ import sqlalchemy as sa
 # revision identifiers, used by Alembic.
 revision = "merge_remaining_2026"
 down_revision = (
-    "66623ae9808f",
     "2026_05_29_revenue_txid",
-    "2026_05_29_add_impression_tracking",
     "2026_05_29_analysis_persistence",
 )
 branch_labels = None
