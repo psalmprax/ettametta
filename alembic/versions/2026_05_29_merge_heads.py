@@ -39,9 +39,7 @@ import sqlalchemy as sa
 # revision identifiers, used by Alembic.
 revision = "2026_05_29_merge_heads"
 down_revision = (
-    "66623ae9808f",
     "2026_05_29_analysis_persistence",
-    "2026_05_29_add_impression_tracking",
     "2026_05_29_revenue_txid",
 )
 branch_labels = None
