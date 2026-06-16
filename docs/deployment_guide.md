@@ -4,6 +4,75 @@ This guide provides step-by-step instructions for obtaining the necessary creden
 
 ---
 
+## 🖥️ 0. Remote Jumpbox Targets (named SSH endpoints)
+
+Production deploys and ops commands go through a small set of named remote targets so the full SSH command (host, key, user, port) lives in one place instead of being retyped at the shell. Add the following to your local **`~/.ssh/config`**:
+
+```ssh-config
+# ettametta production jumpbox
+# Hostname:  w5m8yij9.vm   (149.104.110.122)
+# User:      root
+# Key:       /home/psalmprax/Music/id_rsa   (must be mode 0600)
+# API port:  container :8001 is mapped to host :7201 (Traefik fronts :80/:443)
+Host ettametta-prod
+    HostName 149.104.110.122
+    User root
+    IdentityFile /home/psalmprax/Music/id_rsa
+    IdentitiesOnly yes
+    StrictHostKeyChecking accept-new
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+```
+
+**Prerequisite** — SSH refuses keys that are world-readable. Run once:
+
+```bash
+chmod 600 /home/psalmprax/Music/id_rsa
+chmod 600 ~/.ssh/config
+```
+
+After that, future ops runs reduce to:
+
+```bash
+ssh ettametta-prod 'docker compose ps'                  # list stack
+ssh ettametta-prod 'cd ~/ettametta && docker compose up -d'  # reconcile
+ssh ettametta-prod 'cd ~/ettametta && bash bin/remote_e2e_setup.sh'  # install E2E deps
+curl -sS http://149.104.110.122:7201/health             # API health (host port 7201)
+```
+
+**Port mapping cheatsheet** (verified 2026-06-15):
+
+| Service | Container port | Host port |
+|---|---|---|
+| Traefik dashboard | 8080 | 8080 |
+| Traefik HTTP | 80 | 80 |
+| Traefik HTTPS | 443 | 443 |
+| ettametta API (FastAPI) | 8000 | **7201** |
+| Postgres | 5432 | 5432 (internal) |
+| Redis | 6379 | 6379 (internal) |
+
+**Discover the actual port mapping dynamically** (don't trust this table
+forever — re-run after any `docker-compose.yml` change):
+
+```bash
+ssh ettametta-prod 'cd ~/ettametta && docker port $(docker compose ps -q api) 8000'
+# → 0.0.0.0:7201
+```
+
+**One-off (no SSH config) command**, for CI runners or first-time bootstrap:
+
+```bash
+ssh -i /home/psalmprax/Music/id_rsa \
+    -o StrictHostKeyChecking=no \
+    -o PasswordAuthentication=no \
+    -o BatchMode=yes \
+    root@149.104.110.122 'cd ~/ettametta && docker compose ps'
+```
+
+The `bin/remote_e2e_setup.sh` script at the project root is the canonical payload to run on the remote after SSH-ing in.
+
+---
+
 ## ☁️ 1. OCI Customer Secret Keys (S3 Compatibility)
 
 These keys are required for the **Storage Lifecycle Manager** to move video files from local storage to the OCI Cloud.

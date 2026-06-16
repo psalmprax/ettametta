@@ -26,7 +26,7 @@ redis-cli -p 7204 -a "$REDIS_PASSWORD" lrange sentinel:security_logs 0 20
 redis-cli -p 7204 -a "$REDIS_PASSWORD" keys "sentinel:security_health:*"
 
 # DB audit logs
-docker compose exec -T db psql -U your_postgres_user_here -d ettametta -c "SELECT id, action, resource_type, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 10;"
+docker compose exec -T db psql -U ettametta -d ettametta -c "SELECT id, action, resource_type, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 10;"
 ```
 
 ## Architecture
@@ -103,7 +103,7 @@ redis-cli -p 7204 -a "$REDIS_PASSWORD" get "sentinel:security_health:audit:$(dat
 ### SelfHealingAuditDB growing unbounded
 Catch-all exception handler persists to this table. Check size:
 ```bash
-docker compose exec -T db psql -U your_postgres_user_here -d ettametta -c "SELECT count(*) FROM self_healing_audit;"
+docker compose exec -T db psql -U ettametta -d ettametta -c "SELECT count(*) FROM self_healing_audit;"
 ```
 The `storage.manage_lifecycle` task does NOT clean this table. May need manual pruning.
 

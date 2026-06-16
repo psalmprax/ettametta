@@ -11,7 +11,7 @@ The Nexus Engine is ettametta's autonomous video production pipeline. It orchest
 
 ```bash
 # Check Nexus job status
-docker compose exec -T db psql -U your_postgres_user_here -d ettametta -c "SELECT id, status, progress, niche, error_log FROM nexus_jobs ORDER BY created_at DESC LIMIT 10;"
+docker compose exec -T db psql -U ettametta -d ettametta -c "SELECT id, status, progress, niche, error_log FROM nexus_jobs ORDER BY created_at DESC LIMIT 10;"
 
 # Check Nexus Celery task
 docker compose exec -T celery_worker celery -A src.api.utils.celery inspect active | grep -A5 nexus
@@ -151,7 +151,7 @@ print('Registered handlers:', list(registry._handlers.keys()))
 **Root Cause:** State machine transition fails silently
 **Debug:**
 ```bash
-docker compose exec -T db psql -U your_postgres_user_here -d ettametta -c "SELECT id, status, progress, error_log FROM nexus_jobs WHERE status NOT IN ('COMPLETED', 'FAILED') ORDER BY created_at DESC LIMIT 5;"
+docker compose exec -T db psql -U ettametta -d ettametta -c "SELECT id, status, progress, error_log FROM nexus_jobs WHERE status NOT IN ('COMPLETED', 'FAILED') ORDER BY created_at DESC LIMIT 5;"
 ```
 
 ## Job States

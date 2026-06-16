@@ -335,15 +335,39 @@ async def analyze_candidate(
 
     # Consume credits
     from src.services.payment.credit_service import credit_service
-    await credit_service.consume_credits(
+
+    # 1. Dispatch the task FIRST. If the broker is down, the user does NOT
+    #    pay for nothing — we surface a 503 and let them retry.
+    try:
+        task = analyze_viral_pattern_task.delay(candidate.dict())
+    except Exception as dispatch_err:
+        logger.exception(f"[Discovery] Task dispatch failure: {dispatch_err}")
+        raise HTTPException(
+            status_code=503, detail="Task queue unavailable; credits not charged."
+        )
+
+    # 2. Now consume credits. If the charge fails (e.g. balance race), revoke
+    #    the just-queued task so we don't end up with an unpaid-for analysis.
+    charged, charge_msg = await credit_service.consume_credits(
         user_id=current_user.id,
         amount=credits_cost,
         action=CreditAction.VIRAL_ANALYSIS,
         db=db,
         reference_id=candidate.id,  # Using candidate ID as reference
     )
+    if not charged:
+        from src.api.utils.celery import celery_app
+        try:
+            celery_app.control.revoke(task.id, terminate=True)
+        except Exception as revoke_err:
+            logger.exception(
+                f"[Discovery] Failed to revoke task after credit failure: {revoke_err}"
+            )
+        raise HTTPException(
+            status_code=402,
+            detail=f"Insufficient credits: {charge_msg or 'top up and retry'}",
+        )
 
-    task = analyze_viral_pattern_task.delay(candidate.dict())
     return success_response(
         data={
             "status": SystemJobStatus.QUEUED,

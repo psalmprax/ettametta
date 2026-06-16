@@ -161,7 +161,12 @@ async def _compose_core(
         blueprint = await get_blueprint_by_id(db, request.blueprint_id)
         if blueprint:
             nodes = blueprint.get("nodes", [])
-            len(nodes) if nodes else 4
+            # Step-count + per-step timeout sizing. Fallback blueprints without
+            # an explicit `nodes` list get 4 (ingress / cognition / synthesis /
+            # egress), and each step gets an equal slice of the global compose
+            # timeout (min 30s so a single slow node doesn't get starved).
+            total_nodes = len(nodes) if nodes else 4
+            per_step_timeout = max(30, settings.NEXUS_COMPOSE_TIMEOUT // max(total_nodes, 1))
 
             blueprint_inputs = {
                 "niche": request.niche,
@@ -181,6 +186,8 @@ async def _compose_core(
             execution_result = await execute_blueprint(
                 blueprint, blueprint_inputs, job_id,
                 automation_mode=request.automation_mode,
+                total_nodes=total_nodes,
+                per_step_timeout=per_step_timeout,
             )
 
             if execution_result["status"] == "success":
@@ -406,6 +413,17 @@ class BlueprintCreate(BaseModel):
     nodes: list[dict]
 
 
+class BlueprintUpdate(BaseModel):
+    """Payload for PUT /nexus/blueprints/{blueprint_id}. All fields are optional
+    so callers can perform partial updates via PATCH-style semantics. The path
+    parameter is the source of truth for the resource identity."""
+
+    name: str | None = None
+    description: str | None = None
+    composition_id: str | None = None
+    nodes: list[dict] | None = None
+
+
 @router.post("/blueprints")
 async def create_nexus_blueprint(
     blueprint: BlueprintCreate,
@@ -436,6 +454,64 @@ async def create_nexus_blueprint(
     await db.refresh(new_bp)
 
     return success_response(data=new_bp)
+
+
+@router.put("/blueprints/{blueprint_id}")
+async def update_nexus_blueprint(
+    blueprint_id: str,
+    payload: BlueprintUpdate,
+    current_user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Update an existing Nexus blueprint. The blueprint ID in the path is
+    authoritative; the body may contain any subset of editable fields.
+    Returns 404 if the blueprint does not exist.
+    """
+    stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint_id)
+    result = await db.execute(stmt)
+    bp = result.scalar_one_or_none()
+
+    if not bp:
+        raise HTTPException(status_code=404, detail="Blueprint not found")
+
+    # Apply only fields that were explicitly provided in the request body.
+    # Pydantic v2 distinguishes "not sent" from "null" via `model_fields_set`.
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(bp, field, value)
+
+    await db.commit()
+    await db.refresh(bp)
+
+    return success_response(data=bp)
+
+
+@router.delete("/blueprints/{blueprint_id}")
+async def delete_nexus_blueprint(
+    blueprint_id: str,
+    current_user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Delete a custom Nexus blueprint by ID. Returns 404 if the blueprint
+    does not exist. The built-in / fallback blueprints in
+    ``src/services/nexus_engine/blueprints.py`` are not stored in
+    ``nexus_blueprints`` and therefore cannot be deleted via this endpoint.
+    """
+    stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint_id)
+    result = await db.execute(stmt)
+    bp = result.scalar_one_or_none()
+
+    if not bp:
+        raise HTTPException(status_code=404, detail="Blueprint not found")
+
+    from sqlalchemy import delete
+    delete_stmt = delete(BlueprintDB).where(BlueprintDB.id == blueprint_id)
+    await db.execute(delete_stmt)
+    await db.commit()
+
+    return success_response(data={"status": "deleted", "id": blueprint_id})
 
 
 @router.get("/jobs")

@@ -25,6 +25,13 @@ class StockService:
         }
 
     def _get_search_keywords(self, keyword: str) -> list[str]:
+        # Defensive: LLM-generated visual_prompt can arrive as a list instead
+        # of a string. Normalize to a flat string before splitting.
+        if isinstance(keyword, list):
+            keyword = " ".join(str(k) for k in keyword if k)
+        keyword = str(keyword or "").strip()
+        if not keyword:
+            return ["abstract"]
         search_keywords = [keyword]
         if len(keyword.split()) > 2:
             parts = keyword.split()
@@ -163,13 +170,16 @@ class StockService:
     async def download_stock_video(self, url: str, output_dir: str = "temp") -> str | None:
         """
         Downloads a stock video file to a local path with retries.
+        Returns an absolute path so downstream consumers (orchestrator, Remotion)
+        can find the file regardless of their working directory.
         """
         os.makedirs(output_dir, exist_ok=True)
-        filename = f"stock_{os.path.basename(url.split('?')[0])}.mp4"
-        if not filename.endswith(".mp4"):
-            filename += ".mp4"
-            
-        filepath = os.path.join(output_dir, filename)
+        base = os.path.basename(url.split("?")[0])
+        # Strip existing extension to avoid double .mp4.mp4
+        if base.lower().endswith(".mp4"):
+            base = base[:-4]
+        filename = f"stock_{base}.mp4"
+        filepath = os.path.abspath(os.path.join(output_dir, filename))
         
         @retry(
             stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),

@@ -13,6 +13,20 @@ export interface RealFirstOptions<T> {
     fallback: T;
     onFallback?: (error: any) => void;
     onSuccess?: (data: T) => void;
+    /**
+     * Optional callback invoked when the response is 401 Unauthorized.
+     * The caller decides what to do — typically `AuthContext.fetchUser`
+     * passes `logout` here so that ONLY auth-verification calls trigger
+     * a session wipe, not every API call in the app.
+     *
+     * NOTE: `withRealFallback` no longer wipes auth state or hard-navigates
+     * to /login on 401 on its own. That behavior was destructive (it would
+     * log the user out on any transient 401 across the entire app) and
+     * broke long-running flows like the Nexus pipeline polling loop, which
+     * triggers /auth/me on every page reload and any transient 401 would
+     * bounce the user to /login mid-flow.
+     */
+    onUnauthorized?: () => void;
     retryCount?: number;
     silent?: boolean;
     errorMessage?: string;
@@ -53,15 +67,29 @@ export async function withRealFallback<T>(
             }
 
             if (result instanceof Response) {
-                // Handle authentication errors globally - force logout and redirect
+                // 401 Unauthorized: let the caller decide what to do.
+                //
+                // We deliberately do NOT clear auth storage or hard-navigate
+                // to /login from here. A single 401 from any one of the
+                // dozens of API endpoints wrapped by withRealFallback is not
+                // proof the whole session is invalid — it could be a transient
+                // backend blip, a token rotation, or a slow first request
+                // after a hard reload. Wiping state and bouncing the user to
+                // /login would destroy long-running flows (e.g., the Nexus
+                // pipeline polling loop, which reloads the page periodically
+                // and re-runs /auth/me through this util).
+                //
+                // Callers that DO want logout-on-401 (notably
+                // `AuthContext.fetchUser` for /auth/me) should pass
+                // `onUnauthorized: logout` in their options. That keeps the
+                // session-wipe logic to a single, deliberate call site.
                 if (result.status === 401) {
-                    if (typeof window !== 'undefined') {
-                        localStorage.removeItem("et_token");
-                        localStorage.removeItem("et_user");
-                        localStorage.removeItem("et_credits");
-                        sessionStorage.removeItem("et_token");
-                        const returnUrl = encodeURIComponent(window.location.pathname);
-                        window.location.href = `/login?redirect=${returnUrl}`;
+                    if (options.onUnauthorized) {
+                        try {
+                            options.onUnauthorized();
+                        } catch (err) {
+                            console.warn("[Real-First] onUnauthorized callback threw:", err);
+                        }
                     }
                     return options.fallback;
                 }

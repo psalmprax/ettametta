@@ -355,6 +355,49 @@ class RevenueLogDB(Base):
     date = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
 
+    # Webhook idempotency key (top-level column for a unique constraint).
+    # New rows MUST set this; legacy rows (added before this migration) may
+    # have NULL — Postgres treats NULLs as distinct in unique constraints, so
+    # legacy rows are not affected and the constraint only applies to new
+    # incoming postbacks. Once a real transaction_id is written the row is
+    # protected from concurrent duplicate inserts.
+    transaction_id = Column(String(128), nullable=True, index=True)
+
+    # Legacy payload mirror — the dispatcher in
+    # ``monetization._idempotent_insert_revenue_log`` writes
+    # ``metadata_json = {"transaction_id": ...}`` for every new postback
+    # for backward-compat with analytics/aggregation queries that look
+    # there. This column was missing from the model even though the
+    # webhook code wrote to it (latent bug fixed in 2026-06-16 by
+    # adding the schema migration ``2026_06_16_revenue_metadata``).
+    #
+    # Why JSON (not JSONB): matches SQLAlchemy's default for
+    # ``Column(JSON)`` on Postgres and avoids forcing a model + migration
+    # change. The backfill migration uses
+    # ``COALESCE(metadata_json->>'transaction_id', '') <> ''`` so it
+    # works on plain JSON without needing the JSONB-only ``?`` operator.
+    # If analytics ever need to query into this column, switching to
+    # ``from sqlalchemy.dialects.postgresql import JSONB`` and adding a
+    # GIN index would be a strict improvement — the dispatcher only
+    # stores a flat dict so the change would be safe.
+    #
+    # Note: ``default=dict`` is intentional. SQLAlchemy calls ``dict()``
+    # for each new row, producing a fresh empty dict. The footgun is
+    # ``default={}``, which would share one mutable instance across all
+    # rows and cause data corruption. Do not "simplify" to ``default={}``.
+    metadata_json = Column(JSON, nullable=True, default=dict)
+
+    # NOTE: ``UniqueConstraint("platform", "transaction_id")`` makes
+    # (platform, transaction_id) the canonical dedup key. Combined with
+    # ``INSERT ... ON CONFLICT DO NOTHING`` in
+    # ``monetization._idempotent_revenue_log``, concurrent webhook retries
+    # can no longer double-credit the same transaction.
+    __table_args__ = (
+        UniqueConstraint(
+            "platform", "transaction_id", name="uix_revenue_platform_txid"
+        ),
+    )
+
 
 class PersonaDB(Base):
     __tablename__ = "personas"
