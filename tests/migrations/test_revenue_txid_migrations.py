@@ -272,16 +272,14 @@ class TestUpgradeChainWellFormed:
         assert _module_assign(mod, "down_revision") == "merge_remaining_2026"
         assert _module_assign(mod, "revision") == "2026_06_16_revenue_metadata"
 
-    def test_both_migrations_carry_webhook_idempotency_branch_label(self):
-        """Both migrations are on the same branch as the parent fix."""
+    def test_child_migrations_use_null_branch_label(self):
+        """Both child migrations use branch_labels=None to avoid conflicting
+        with the parent revision (2026_05_29_revenue_txid) which already owns
+        the 'webhook-idempotency-fix' branch label."""
         col_add = _load_module(MIGRATION_COLUMN_ADD)
         backfill = _load_module(MIGRATION_BACKFILL)
-        assert _module_assign(col_add, "branch_labels") == [
-            "webhook-idempotency-fix"
-        ]
-        assert _module_assign(backfill, "branch_labels") == [
-            "webhook-idempotency-fix"
-        ]
+        assert _module_assign(col_add, "branch_labels") is None
+        assert _module_assign(backfill, "branch_labels") is None
 
 
 # ─────────────────────────────────────────────────────────────────────────────

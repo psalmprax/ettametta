@@ -84,7 +84,7 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision = "2026_06_16_backfill_txid"
 down_revision = "2026_06_16_revenue_metadata"  # the column-add migration
-branch_labels = ["webhook-idempotency-fix"]  # same line as 2026_05_29_revenue_txid
+branch_labels = None
 depends_on = None
 
 
