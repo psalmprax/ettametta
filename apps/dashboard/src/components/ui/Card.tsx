@@ -37,19 +37,19 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 
 Card.displayName = "Card";
 
-export const CardHeader = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const CardHeader = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("p-6 border-b border-white/5", className)} {...props}>
     {children}
   </div>
 );
 
-export const CardBody = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const CardBody = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("p-6", className)} {...props}>
     {children}
   </div>
 );
 
-export const CardFooter = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const CardFooter = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("p-6 border-t border-white/5", className)} {...props}>
     {children}
   </div>

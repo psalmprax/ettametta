@@ -11,5 +11,8 @@
   "workspaces": [
     "apps/*",
     "src/tests/e2e"
-  ]
+  ],
+  "devDependencies": {
+    "fallow": "^2.97.0"
+  }
 }

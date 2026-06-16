@@ -55,9 +55,34 @@ jobs:
           safety check --json > security_report.json || true
           bandit -r . -f json -o bandit_report.json || true
           
+  shell-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate script syntax (bash -n)
+        run: |
+          echo 'Checking setup-server.sh...'
+          bash -n scripts/setup-server.sh && echo 'PASS: setup-server.sh' || { echo 'FAIL: setup-server.sh'; exit 1; }
+          echo 'Checking generate-env.sh...'
+          bash -n scripts/generate-env.sh && echo 'PASS: generate-env.sh' || { echo 'FAIL: generate-env.sh'; exit 1; }
+
+      - name: Dry-run .env generator
+        run: |
+          echo 'Running generate-env.sh --dry-run...'
+          bash scripts/generate-env.sh --dry-run || { echo 'FAIL: generate-env.sh dry-run'; exit 1; }
+
+      - name: Install and run shellcheck
+        run: |
+          sudo apt-get install -y -qq shellcheck
+          echo 'Linting setup-server.sh...'
+          shellcheck -e SC1091 scripts/setup-server.sh
+          echo 'Linting generate-env.sh...'
+          shellcheck -e SC1091 scripts/generate-env.sh
+
   build:
     runs-on: ubuntu-latest
-    needs: [test, security]
+    needs: [test, security, shell-scripts]
     steps:
       - uses: actions/checkout@v4
       

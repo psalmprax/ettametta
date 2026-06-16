@@ -14,6 +14,7 @@ interface VideoPreviewModalProps {
     onProceedToTransformation?: () => void;
 }
 
+// fallow-ignore-next-line unused-export
 export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title, status, onProceedToTransformation }) => {
     const [showOriginal, setShowOriginal] = React.useState(false);
     const [isExporting, setIsExporting] = React.useState(false);

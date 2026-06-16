@@ -209,3 +209,4 @@ src/engines/remote_ai_setup/davido_b64.txt
 deploy_key
 deploy_key.pub
 key_raw.txt
+.fallow/

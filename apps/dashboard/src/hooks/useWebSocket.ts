@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+// fallow-ignore-next-line unused-export
 export function useWebSocket<T>(url: string) {
     const [data, setData] = useState<T | null>(null);
     const [status, setStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');

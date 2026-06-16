@@ -11,10 +11,14 @@
     "axios": "^1.6.0",
     "puppeteer": "^21.0.0",
     "pdf-parse": "^1.1.1",
-    "mammoth": "^1.4.21",
-    "node-fetch": "^3.3.2"
+    "mammoth": "^1.4.21"
   },
-  "keywords": ["agent", "skills", "ai", "automation"],
+  "keywords": [
+    "agent",
+    "skills",
+    "ai",
+    "automation"
+  ],
   "author": "Viral Forge",
   "license": "MIT"
 }

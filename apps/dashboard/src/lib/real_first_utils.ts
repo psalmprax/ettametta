@@ -147,7 +147,7 @@ export async function withRealFallback<T>(
 /**
  * Hook for managing "Real-First" state and operations.
  */
-export function useRealFirst<T>(initialData: T) {
+function useRealFirst<T>(initialData: T) {
     const [data, setData] = useState<T>(initialData);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<any>(null);
@@ -182,7 +182,7 @@ export function useRealFirst<T>(initialData: T) {
 /**
  * Standardizes the Signal Sync status across the dashboard.
  */
-export function getSignalStatus(isLive: boolean, hasError: boolean): "NOMINAL" | "SYNCING" | "SILENT" {
+function getSignalStatus(isLive: boolean, hasError: boolean): "NOMINAL" | "SYNCING" | "SILENT" {
     if (hasError) return "SILENT";
     return isLive ? "NOMINAL" : "SYNCING";
 }
@@ -191,7 +191,7 @@ export function getSignalStatus(isLive: boolean, hasError: boolean): "NOMINAL" |
  * Generates actual historical data points if the backend provides them, 
  * otherwise provides a deterministic growth curve (no random noise).
  */
-export function getVelocityPoints(history: any[] | null, fallbackTotal: number) {
+function getVelocityPoints(history: any[] | null, fallbackTotal: number) {
     // Hardened: No deterministic fallbacks or simulated curves.
     // Return empty array. The UI component must handle the empty state.
     return [];
