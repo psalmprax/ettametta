@@ -722,38 +722,12 @@ class TestBackfillFixturesOnPostgres:
         assert by_id["e-001"] is None  # empty-string txid
         assert by_id["f-001"] == "tx-already-set-007"  # untouched
 
-    @pytest.mark.xfail(
-        reason=(
-            "Known migration bug: re-run is NOT a no-op — the loser row "
-            "(a-002) gets backfilled on the second run, which violates "
-            "uix_revenue_platform_txid. See BACKLOG.md / 999.5 — fix the "
-            "candidates CTE to exclude groups that already have a "
-            "non-NULL transaction_id."
-        ),
-        strict=True,  # FAIL the test if the bug gets fixed (so we know to remove xfail)
-    )
     def test_backfill_is_idempotent_on_rerun(self, pg_db_url, pg_schema):
-        """Re-running the backfill should be a no-op.
+        """Re-running the backfill should be a true no-op — 0 rows updated.
 
-        CURRENTLY FAILS due to a known migration bug: the candidates
-        CTE doesn't exclude groups that already have a non-NULL
-        transaction_id, so the loser row (a-002) gets backfilled on
-        the second run. That row then has the same (platform,
-        transaction_id) as the winner (a-001), which violates
-        ``uix_revenue_platform_txid``.
-
-        Marked ``@pytest.mark.xfail(strict=True)`` so:
-          - CI is green (the failure is expected)
-          - When someone fixes the migration, the test will fail again
-            and force them to remove the xfail mark (and the reason
-            will tell them why).
-
-        The fix to the migration is one line in the candidates CTE:
-        add ``AND (platform, metadata_json->>'transaction_id') NOT IN
-        (SELECT platform, transaction_id FROM revenue_logs WHERE
-        transaction_id IS NOT NULL)`` so any group with an existing
-        winner is skipped entirely.
-        """
+        The candidates CTE excludes groups that already have a non-NULL
+        transaction_id (via a NOT IN subquery), so the loser row (a-002)
+        is skipped on the second run."""
         _setup_revenue_logs(pg_db_url, pg_schema)
         _run_migration_sql(pg_db_url, pg_schema, MIGRATION_COLUMN_ADD, "upgrade")
         _insert_fixtures(pg_db_url, pg_schema)

@@ -68,12 +68,12 @@ key is missing, null, or an empty string.
 
 Idempotency
 -----------
-The candidates CTE filters to ``transaction_id IS NULL``, so after
-the first run the winners are excluded from a second run (they
-already have a value). The losers stay NULL and WOULD be re-included
-in a second run, but the CTE ranking still picks exactly one
-winner (the same one — oldest ``date`` wins, deterministic), so the
-re-run is a true no-op for them too. Safe to re-run.
+The candidates CTE filters to ``transaction_id IS NULL`` AND excludes
+groups that already have a winner (via the ``NOT IN`` subquery on
+``(platform, transaction_id)``). After the first run, winners are
+excluded from a second run (they already have a non-NULL value), AND
+the losers are also excluded because their group already has a
+non-NULL row. Re-run is a true no-op (0 rows updated). Safe to re-run.
 """
 from __future__ import annotations
 
@@ -109,6 +109,11 @@ _BACKFILL_SQL = sa.text(
         WHERE transaction_id IS NULL
           AND metadata_json IS NOT NULL
           AND COALESCE(metadata_json->>'transaction_id', '') <> ''
+          AND (platform, metadata_json->>'transaction_id') NOT IN (
+              SELECT platform, transaction_id
+              FROM revenue_logs
+              WHERE transaction_id IS NOT NULL
+          )
     ),
     ranked AS (
         SELECT id,
