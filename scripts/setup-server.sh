@@ -147,20 +147,20 @@ gen_secret() {
 gen_traefik_htpasswd() {
     local username="${1:-admin}"
     local password="${2:-$(gen_secret 16)}"
-    python3 -c "
+    # All Python code in single quotes — no bash variable expansion.
+    # Username and password passed as argv[1] and argv[2].
+    python3 -c '
 import crypt, base64, os, sys
-password = sys.argv[1] if len(sys.argv) > 1 else '$password'
-# $6$ = SHA-512 (universally supported); $2b$ = bcrypt (glibc-dependent)
-# We try bcrypt first, fall back to SHA-512 if crypt returns failure marker
-salt_bcrypt = base64.b64encode(os.urandom(16)).decode('ascii')[:22]
-salt_bcrypt = ''.join(c for c in salt_bcrypt if c in './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789')[:22]
-h = crypt.crypt(password, '\$2b\$10\$' + (salt_bcrypt or 'x' * 22))
-if not h or h.startswith('*') or h == password:
-    # bcrypt failed — fall back to SHA-512 (works everywhere)
-    salt_sha = base64.b64encode(os.urandom(6)).decode('ascii')[:8]
-    h = crypt.crypt(password, '\$6\$' + salt_sha)
-print(f'{username}:{h}')
-" "$password" 2>/dev/null
+username = sys.argv[1]
+password = sys.argv[2]
+salt_bcrypt = base64.b64encode(os.urandom(16)).decode("ascii")[:22]
+salt_bcrypt = "".join(c for c in salt_bcrypt if c in "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")[:22]
+h = crypt.crypt(password, "$2b$10$" + (salt_bcrypt or "x" * 22))
+if not h or h.startswith("*") or h == password:
+    salt_sha = base64.b64encode(os.urandom(6)).decode("ascii")[:8]
+    h = crypt.crypt(password, "$6$" + salt_sha)
+print(f"{username}:{h}")
+' "$username" "$password" 2>/dev/null
 }
 
 # ── Helper: prompt or use env var ─────────────────────────────────────────────
