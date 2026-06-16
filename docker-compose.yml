@@ -35,7 +35,7 @@ services:
     - traefik.http.routers.traefik.service=api@internal
     - traefik.http.routers.traefik.entrypoints=web
     - traefik.http.routers.traefik.middlewares=traefik-auth
-    - traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_USERS:?TRAEFIK_DASHBOARD_USERS is required. Generate via: htpasswd -nb admin <password>. Refusing to start with a default/placeholder password.}
+    - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_USERS:?TRAEFIK_DASHBOARD_USERS is required. Generate via: htpasswd -nb admin <password>. Refusing to start with a default/placeholder password.}"
   db:
     image: postgres:15-alpine
     restart: always
