@@ -13,7 +13,7 @@ from src.api.utils.limiter import limiter
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from src.api.utils.redis import get_async_redis
-from prometheus_fastapi_instrumentator import Instrumentator
+# prometheus_fastapi_instrumentator removed — see inline comment below
 
 from src.api.middleware.tracing import (
     TracingMiddleware,
@@ -65,7 +65,10 @@ All errors follow this format:
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
-Instrumentator().instrument(app).expose(app)
+# prometheus_fastapi_instrumentator disabled — causes AttributeError on
+# APIRouter prefix patterns ('_IncludedRouter' object has no attribute 'path')
+# in prometheus_fastapi_instrumentator/routing.py:55.
+# OTEL FastAPIInstrumentor below still provides tracing.
 FastAPIInstrumentor.instrument_app(app)
 
 # Middleware stack (order matters: outermost first)
