@@ -65,12 +65,31 @@ jobs:
         run: |
           docker compose build api
           docker build -f apps/dashboard/Dockerfile ./apps/dashboard
-          
-      - name: Verify containers start
+
+      - name: Start services
         run: |
           docker compose up -d
-          # Give services more time to settle
-          sleep 20
+          docker compose ps
+
+      - name: Run alembic migrations
+        run: |
+          sleep 5
+          docker compose exec -T api alembic upgrade head || \
+            docker compose run --rm -T api alembic upgrade head
+
+      - name: Wait for API health
+        run: |
+          echo 'Waiting for API to become healthy...'
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:7201/health; then
+              echo ''
+              echo 'API is healthy'
+              break
+            fi
+            [ "$i" -eq 60 ] && echo 'WARNING: API health check timed out' || true
+            sleep 1
+          done
+          curl -s -o /dev/null -w 'API docs: %{http_code}\n' http://localhost:7201/docs || true
           docker compose ps
           
       - name: Set up Node.js for E2E

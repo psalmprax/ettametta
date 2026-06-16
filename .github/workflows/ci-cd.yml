@@ -47,13 +47,12 @@ jobs:
         pip install pytest pytest-asyncio pytest-mock pytest-cov
 
     - name: Run database migrations
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        PYTHONPATH: .
       run: |
-        python -c "
-        from src.api.utils.database import engine
-        from src.api.utils.models import Base
-        Base.metadata.create_all(bind=engine)
-        print('Database migrations completed')
-        "
+        alembic upgrade head
+        echo 'Database migrations completed'
 
     - name: Run tests with coverage
       env:
@@ -173,9 +172,34 @@ jobs:
         chmod 600 private_key.pem
 
         ssh -o StrictHostKeyChecking=no -i private_key.pem $SSH_USER@$SSH_HOST << 'EOF'
+          set -e
           cd /root/ettametta
           git pull origin master
           docker compose down
-          docker compose up -d --build
-          docker compose logs -f --tail=50
+          docker compose build --parallel
+          docker compose up -d
+
+          # ── Run alembic migrations ──
+          echo 'Running alembic upgrade head...'
+          docker compose exec -T api alembic upgrade head || \
+            docker compose run --rm -T api alembic upgrade head
+
+          # ── Post-deploy health checks ──
+          echo 'Waiting for API to become healthy...'
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:7201/health; then
+              echo ''
+              echo 'API is healthy'
+              break
+            fi
+            [ "$i" -eq 60 ] && echo 'WARNING: API health check timed out' || true
+            sleep 1
+          done
+
+          # Verify docs and openapi endpoints
+          curl -s -o /dev/null -w 'API docs: %{http_code}\n' http://localhost:7201/docs || true
+          curl -s -o /dev/null -w 'OpenAPI:  %{http_code}\n' http://localhost:7201/openapi.json || true
+
+          # Show container status
+          docker compose ps
         EOF
