@@ -59,18 +59,19 @@ gen_secret() {
 # Generate Traefik htpasswd using Python crypt (SHA-512 fallback, universally supported)
 gen_traefik_htpasswd() {
     local pw="${1:-$(gen_secret 16)}"
-    # Try Python crypt first (bcrypt, fallback to SHA-512)
+    # All Python code in single quotes — no bash variable expansion at all.
+    # Password passed as argv[1].
     local result
-    result="$(python3 -c "
-import crypt, base64, os
-pw = '$pw'
-sb = ''.join(c for c in base64.b64encode(os.urandom(16)).decode()[:22] if c in './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789')[:22]
-h = crypt.crypt(pw, '\$2b\$10\$' + (sb or 'x'*22))
-if not h or h.startswith('*') or h == pw:
+    result="$(python3 -c '
+import crypt, base64, os, sys
+pw = sys.argv[1]
+sb = "".join(c for c in base64.b64encode(os.urandom(16)).decode()[:22] if c in "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")[:22]
+h = crypt.crypt(pw, "$2b$10$" + (sb or "x"*22))
+if not h or h.startswith("*") or h == pw:
     ss = base64.b64encode(os.urandom(6)).decode()[:8]
-    h = crypt.crypt(pw, '\$6\$' + ss)
-print(f'admin:{h}')
-" 2>/dev/null)" || true
+    h = crypt.crypt(pw, "$6$" + ss)
+print(f"admin:{h}")
+' "$pw" 2>/dev/null)" || true
     if [ -n "$result" ]; then
         echo "$result"
         return 0

@@ -169,6 +169,11 @@ prompt_required() {
     local prompt_text="$2"
     local current_value="${!var_name:-}"
 
+    if [ "$DRY_RUN" = true ]; then
+        export "${var_name}=${current_value:-[DRY-RUN]}"
+        return 0
+    fi
+
     if [ -n "$current_value" ]; then
         ok "${var_name} already set (using environment value)"
         return 0
@@ -192,6 +197,11 @@ prompt_optional() {
     local prompt_text="$2"
     local default_value="${3:-}"
     local current_value="${!var_name:-}"
+
+    if [ "$DRY_RUN" = true ]; then
+        export "${var_name}=${current_value:-${default_value:-[DRY-RUN]}}"
+        return 0
+    fi
 
     if [ -n "$current_value" ]; then
         info "${var_name} already set (using environment value)"
