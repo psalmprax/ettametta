@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
 
 from src.services.video_engine.ai_generator import AIVideoGeneratorService
 

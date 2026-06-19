@@ -1,19 +1,26 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { cn, safeRandomUUID } from "@/lib/utils";
-import { 
-    Plus, 
-    Save, 
-    Database, 
-    Cpu, 
-    Sparkles, 
+import {
+    X,
+    Plus,
+    Save,
+    Database,
+    Cpu,
+    Sparkles,
     Share2,
+    RefreshCw,
+    ChevronRight,
     Settings2,
     Trash2
 } from "lucide-react";
+import { toast } from "sonner";
 import { BlueprintNode, Blueprint } from "@/lib/types";
+import { withRealFallback } from "@/lib/real_first_utils";
+import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 
 interface NodePosition {
     id: string;
@@ -22,29 +29,48 @@ interface NodePosition {
 }
 
 interface NeuralCanvasProps {
-    readonly isOpen: boolean;
-    readonly onClose: () => void;
-    readonly onSave: (blueprint: Blueprint) => void;
-    readonly initialBlueprint?: Blueprint;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (blueprint: Blueprint) => void;
+    /** When provided, the canvas opens in edit mode and PUTs to the
+     *  existing blueprint ID instead of POSTing a new one. */
+    initialBlueprint?: Blueprint;
+    /** Called after a blueprint is successfully deleted from edit mode. */
+    onDeleted?: (id: string) => void;
 }
 
-export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: NeuralCanvasProps) {
+export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint, onDeleted }: NeuralCanvasProps) {
+    const isEditMode = !!initialBlueprint;
     const [name, setName] = useState(initialBlueprint?.name || "");
-    const [description, _setDescription] = useState(initialBlueprint?.description || "");
+    const [description, setDescription] = useState(initialBlueprint?.description || "");
+    const [compositionId] = useState(initialBlueprint?.composition_id || "ViralClip");
     const [nodes, setNodes] = useState<BlueprintNode[]>(initialBlueprint?.nodes || [
         { id: safeRandomUUID(), type: "ingress", label: "Scout Cluster", desc: "Trend source entry" }
     ]);
     const [positions, setPositions] = useState<NodePosition[]>(
-        initialBlueprint?.nodes.map((n, i) => ({ id: n.id, x: 100 + i * 250, y: 300 })) || 
+        initialBlueprint?.nodes.map((n, i) => ({ id: n.id, x: 100 + i * 250, y: 300 })) ||
         [{ id: nodes[0].id, x: 150, y: 350 }]
     );
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-    const [_isSaving, _setIsSaving] = useState(false);
-    
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const canvasRef = useRef<HTMLDivElement>(null);
 
+    // Re-sync state when the canvas is opened with a different blueprint.
+    useEffect(() => {
+        if (isOpen && initialBlueprint) {
+            setName(initialBlueprint.name);
+            setDescription(initialBlueprint.description);
+            setNodes(initialBlueprint.nodes || []);
+            setPositions(
+                (initialBlueprint.nodes || []).map((n, i) => ({ id: n.id, x: 100 + i * 250, y: 300 }))
+            );
+        }
+    }, [isOpen, initialBlueprint]);
+
     const handleDrag = (id: string, info: any) => {
-        setPositions(prev => prev.map(p => 
+        setPositions(prev => prev.map(p =>
             p.id === id ? { ...p, x: p.x + info.delta.x, y: p.y + info.delta.y } : p
         ));
     };
@@ -74,6 +100,115 @@ export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: Neur
 
     const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
+    const handleCommit = async () => {
+        if (!name || nodes.length === 0) {
+            toast.error("Invalid Configuration", {
+                description: "Name and at least one node are required.",
+            });
+            return;
+        }
+
+        const token = await getAuthToken();
+        if (!token) return;
+
+        setIsSaving(true);
+        try {
+            if (isEditMode && initialBlueprint) {
+                // PUT /nexus/blueprints/{id} — preserve the original ID
+                await withRealFallback(
+                    (signal) => fetch(
+                        `${API_BASE}/nexus/blueprints/${encodeURIComponent(initialBlueprint.id)}`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                                name,
+                                description,
+                                composition_id: compositionId,
+                                nodes,
+                            }),
+                            signal,
+                        }
+                    ),
+                    {
+                        fallback: {} as any,
+                        onSuccess: (data: any) => {
+                            toast.success("Architecture Updated", {
+                                description: `Changes to "${name}" have been committed.`,
+                            });
+                            const updated: Blueprint = {
+                                id: data?.id || initialBlueprint.id,
+                                name: data?.name || name,
+                                description: data?.description || description,
+                                composition_id: data?.composition_id || compositionId,
+                                nodes: data?.nodes || nodes,
+                            };
+                            onSave(updated);
+                            onClose();
+                        },
+                        onFallback: (err) => {
+                            toast.error("Update Failed", {
+                                description: err.message || "Could not commit the architecture.",
+                            });
+                        },
+                    }
+                );
+            } else {
+                // Local-only: just hand the new blueprint up to the parent.
+                onSave({
+                    id: safeRandomUUID(),
+                    name,
+                    description,
+                    nodes,
+                    composition_id: compositionId,
+                });
+                onClose();
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!isEditMode || !initialBlueprint) return;
+        const token = await getAuthToken();
+        if (!token) return;
+
+        setIsDeleting(true);
+        try {
+            await withRealFallback(
+                (signal) => fetch(
+                    `${API_BASE}/nexus/blueprints/${encodeURIComponent(initialBlueprint.id)}`,
+                    {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${token}` },
+                        signal,
+                    }
+                ),
+                {
+                    fallback: null,
+                    onSuccess: () => {
+                        toast.success("Blueprint Deleted", {
+                            description: `"${initialBlueprint.name}" has been removed.`,
+                        });
+                        onDeleted?.(initialBlueprint.id);
+                        onClose();
+                    },
+                    onFallback: (err) => {
+                        toast.error("Delete Failed", {
+                            description: err.message || "Could not delete the blueprint.",
+                        });
+                    },
+                }
+            );
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -102,13 +237,25 @@ export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: Neur
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {isEditMode && (
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting || isSaving}
+                            className="px-6 py-3 rounded-xl border border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Delete blueprint"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            {isDeleting ? "Deleting..." : "Delete"}
+                        </button>
+                    )}
                     <button onClick={onClose} className="px-6 py-3 rounded-xl border border-white/5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:bg-white/5">Discard</button>
-                    <button 
-                        onClick={() => onSave({ id: safeRandomUUID(), name, description, nodes, composition_id: "ViralClip" })}
-                        className="px-8 py-3 rounded-xl bg-primary text-black text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-glow-primary/40"
+                    <button
+                        onClick={handleCommit}
+                        disabled={isSaving || isDeleting}
+                        className="px-8 py-3 rounded-xl bg-primary text-black text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-glow-primary/40 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Save className="h-4 w-4" />
-                        Commit Architecture
+                        {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {isEditMode ? "Update Architecture" : "Commit Architecture"}
                     </button>
                 </div>
             </div>
@@ -132,7 +279,7 @@ export function NeuralCanvas({ isOpen, onClose, onSave, initialBlueprint }: Neur
                             if (i === positions.length - 1) return null;
                             const next = positions[i + 1];
                             const dx = next.x - (pos.x + 220);
-                            const _dy = (next.y + 60) - (pos.y + 60);
+                            const dy = (next.y + 60) - (pos.y + 60);
                             
                             const pathData = `M ${pos.x + 220} ${pos.y + 60} C ${pos.x + 220 + dx/2} ${pos.y + 60}, ${pos.x + 220 + dx/2} ${next.y + 60}, ${next.x} ${next.y + 60}`;
                             

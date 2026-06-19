@@ -4,13 +4,25 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } fr
 import dynamic from "next/dynamic";
 import {
     Search, 
+    Activity, 
+    Zap, 
     TrendingUp, 
     Globe, 
     ShieldAlert, 
     Cpu,
+    ArrowUpRight,
+    Play,
+    BarChart3,
+    RefreshCw,
+    Network,
+    Target,
     Radar,
     Loader2,
     Terminal,
+    Brain,
+    Film,
+    CheckCircle2,
+    Clock,
     XCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,12 +33,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { useTelemetry } from "@/context/TelemetryContext";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
-import { AnalysisResultsCard, AnalysisReportData } from "@/components/discovery/AnalysisResultsCard";
+import { CandidateList } from "@/components/discovery/CandidateList";
+import { NeuralConfig } from "@/components/discovery/NeuralConfig";
 
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
@@ -39,6 +51,12 @@ interface ContentCandidate {
     viral_score: number;
     view_count: number;
     creator_name: string;
+    description: string;
+    thumbnail_uri: string;
+    engagement_score: number;
+    published_at: string;
+    source_uri: string;
+    duration_seconds: number;
 }
 
 function DiscoveryContent() {
@@ -54,40 +72,13 @@ function DiscoveryContent() {
     // Track whether current query is a keyword search (from ?q= URL param) vs niche scan
     const [isKeywordSearch, setIsKeywordSearch] = useState(!!searchParams.get("q"));
     const [actionLogs, setActionLogs] = useState<string[]>([]);
+    const [minViralScore, setMinViralScore] = useState(50);
+    const [excludeShorts, setExcludeShorts] = useState(false);
     const [alerts, setAlerts] = useState<any[]>([]);
     const [intelData, setIntelData] = useState<any>(null);
-    const [analysisTasks, setAnalysisTasks] = useState<Record<string, { task_id: string; status: string; result?: any; niche: string; candidate_id?: string }>>({});
-    const [analysisReports, setAnalysisReports] = useState<Record<string, AnalysisReportData>>({});
+    const [analysisTasks, setAnalysisTasks] = useState<Record<string, { task_id: string; status: string; result?: any; niche: string }>>({});
     const pollingRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
-    // ── 10-05: WebSocket for analysis_complete events (replaces 3s polling) ──
-    const { data: wsMessage, status: wsStatus, reconnectAttempts: wsReconnectAttempts } = useWebSocket<any>(`${WS_BASE}/jobs`);
-    // ── 10-05: Fetch full AnalysisReport from DB read endpoint ────────────────
-    const fetchAnalysisReport = useCallback(async (candidateId: string) => {
-        const token = await getAuthToken();
-        if (!token) return;
-        try {
-            const response = await fetch(
-                `${API_BASE}/discovery/analysis/${candidateId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (response.ok) {
-                const result = await response.json();
-                const report = result?.data?.analysis;
-                if (report) {
-                    setAnalysisReports(prev => ({ ...prev, [candidateId]: report }));
-                    setActionLogs((prev: string[]) => [
-                        `[ANALYSIS] ✅ Full report loaded (viral=${report.viral_score}, style=${report.style?.recommended_style})`,
-                        ...prev
-                    ]);
-                    toast.success("AI Analysis complete!");
-                }
-            }
-        } catch (error) {
-            console.error("Failed to fetch analysis report:", error);
-            toast.error("Failed to load analysis report");
-        }
-    }, []);
     const handleAnalyze = async (candidate: ContentCandidate) => {
         // Switch to niche scan mode for analysis (don't stay in keyword search mode)
         setIsKeywordSearch(false);
@@ -110,11 +101,11 @@ function DiscoveryContent() {
                 onSuccess: (data) => {
                     const taskId = data?.task_id;
                     if (taskId) {
-                        setAnalysisTasks(prev => ({ ...prev, [candidate.id]: { task_id: taskId, status: "QUEUED", niche: activeNiche, candidate_id: candidate.id } }));
-                        setActionLogs((prev: string[]) => [`[ANALYSIS] Task ${taskId} queued. Waiting for AI analysis...`, ...prev]);
+                        setAnalysisTasks(prev => ({ ...prev, [candidate.id]: { task_id: taskId, status: "QUEUED", niche: activeNiche } }));
+                        setActionLogs((prev: string[]) => [`[ANALYSIS] Task ${taskId} queued. Polling for results...`, ...prev]);
                         toast.success(`Analysis queued for ${candidate.title.slice(0, 20)}...`);
                         
-                        // Start polling (fallback if WebSocket is unavailable)
+                        // Start polling
                         pollAnalysisTask(candidate.id, taskId);
                     }
                 },
@@ -143,8 +134,7 @@ function DiscoveryContent() {
                     if (status === "COMPLETED") {
                         setAnalysisTasks(prev => ({ ...prev, [candidateId]: { ...prev[candidateId], status: "COMPLETED", result: data?.data?.result || data?.result } }));
                         setActionLogs((prev: string[]) => [`[ANALYSIS] ✅ Analysis complete for task ${taskId}`, ...prev]);
-                        // ── 10-05: Also try fetching the DB-persisted report ──
-                        fetchAnalysisReport(candidateId);
+                        toast.success("AI Deconstruction complete!");
                         if (pollingRefs.current[candidateId]) {
                             clearInterval(pollingRefs.current[candidateId]);
                             delete pollingRefs.current[candidateId];
@@ -164,7 +154,6 @@ function DiscoveryContent() {
                 }
             } catch (error) {
                 console.error("Polling error:", error);
-                toast.error("Analysis polling error — check console for details");
             }
         };
         
@@ -187,8 +176,6 @@ function DiscoveryContent() {
                     task_id: taskId,
                     niche: niche,
                     platform: "YouTube Shorts",
-                    // ── 10-05: Pass content_id so backend can thread AnalysisReport ──
-                    content_id: candidateId,
                 })
             }),
             {
@@ -207,42 +194,6 @@ function DiscoveryContent() {
             }
         );
     };
-
-    // ── 10-05: WebSocket listener for analysis_complete events ────────────────
-    // When the Celery task persists the AnalysisReport, it publishes to Redis
-    // job_updates. We catch it here and fetch the full report from the DB endpoint.
-    useEffect(() => {
-        if (!wsMessage) return;
-        // Check for analysis_complete wrapped in job_update envelope
-        if (
-            wsMessage.type === "job_update" &&
-            wsMessage.data?.type === "analysis_complete"
-        ) {
-            const { candidate_id } = wsMessage.data;
-            if (candidate_id) {
-                setActionLogs((prev: string[]) => [
-                    `[WS] Analysis complete for ${candidate_id.slice(0, 12)}... (WebSocket)`, 
-                    ...prev
-                ]);
-                // Update task status and fetch the full report
-                setAnalysisTasks(prev => {
-                    const updated = { ...prev };
-                    for (const key of Object.keys(updated)) {
-                        if (updated[key].candidate_id === candidate_id) {
-                            updated[key] = { ...updated[key], status: "COMPLETED" };
-                            // Clear any active polling for this candidate
-                            if (pollingRefs.current[key]) {
-                                clearInterval(pollingRefs.current[key]);
-                                delete pollingRefs.current[key];
-                            }
-                        }
-                    }
-                    return updated;
-                });
-                fetchAnalysisReport(candidate_id);
-            }
-        }
-    }, [wsMessage]);
 
     // Cleanup polling on unmount
     useEffect(() => {
@@ -441,7 +392,6 @@ function DiscoveryContent() {
         <CommandCenterLayout
             title="VIRAL INTELLIGENCE"
             subtitle="GLOBAL_DISCOVERY_V3.0"
-            additionalWsConnections={[{ name: "Discovery", status: wsStatus, reconnectAttempts: wsReconnectAttempts }]}
             leftPanel={
                 <div className="space-y-1">
                     {[
@@ -486,6 +436,12 @@ function DiscoveryContent() {
                             </div>
                         </div>
                     </div>
+                    <NeuralConfig
+                        minViralScore={minViralScore}
+                        excludeShorts={excludeShorts}
+                        onMinViralScoreChange={setMinViralScore}
+                        onExcludeShortsChange={setExcludeShorts}
+                    />
                 </>
             }
         >
@@ -547,63 +503,36 @@ function DiscoveryContent() {
                                     </Button>
                                 </div>
 
-                                {/* 10-05: Analysis status bar with AnalysisResultsCard */}
+                                {/* Analysis status bar */}
                                 {Object.keys(analysisTasks).length > 0 && (
                                     <div className="shrink-0 rounded-2xl bg-[#0F0F11]/60 border border-white/5 p-4 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">
-                                                Active Analysis Tasks
-                                            </span>
-                                            <span className={cn(
-                                                "text-[8px] font-mono uppercase",
-                                                wsStatus === "open" ? "text-emerald-500" : "text-amber-500"
-                                            )}>
-                                                {wsStatus === "open" ? "WS LIVE" : "WS RECONNECTING"}
-                                            </span>
-                                        </div>
-                                        {Object.entries(analysisTasks).map(([id, task]) => {
-                                            const report = analysisReports[id];
-                                            if (report && task.status === "COMPLETED") {
-                                                // Show the full AnalysisResultsCard
-                                                return (
-                                                    <div key={id} className="space-y-2">
-                                                        <AnalysisResultsCard
-                                                            report={report}
-                                                            onCreateVideo={(contentId) =>
-                                                                handleCreateFromAnalysis(task.task_id, contentId, task.niche)
-                                                            }
-                                                        />
-                                                    </div>
-                                                );
-                                            }
-                                            // Show compact status row (pending/failed)
-                                            return (
-                                                <div key={id} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 text-[10px]">
-                                                    <span className="text-zinc-300 font-mono truncate flex-1">{id}</span>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={cn("px-2 py-0.5 rounded text-[8px] font-bold uppercase",
-                                                            task.status === "COMPLETED" ? "bg-emerald-500/20 text-emerald-400" :
-                                                            task.status === "FAILED" ? "bg-rose-500/20 text-rose-400" :
+                                        <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Active Analysis Tasks</span>
+                                        {Object.entries(analysisTasks).map(([id, task]) => (
+                                            <div key={id} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 text-[10px]">
+                                                <span className="text-zinc-300 font-mono truncate flex-1">{id}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={cn("px-2 py-0.5 rounded text-[8px] font-bold uppercase",
+                                                        task.status === "COMPLETED" ? "bg-emerald-500/20 text-emerald-400" :
+                                                        task.status === "FAILED" ? "bg-rose-500/20 text-rose-400" :
                                                         "bg-amber-500/20 text-amber-400"
                                                     )}>{task.status}</span>
-                                                        {task.status === "COMPLETED" && !report && (
-                                                            <button
-                                                                onClick={() => handleCreateFromAnalysis(task.task_id, id, task.niche)}
-                                                                className="px-3 py-1.5 bg-violet-500 hover:bg-violet-400 text-black font-bold text-[8px] uppercase rounded-lg tracking-widest"
-                                                            >
-                                                                Create Video
-                                                            </button>
-                                                        )}
-                                                        {task.status === "FAILED" && (
-                                                            <XCircle className="h-3.5 w-3.5 text-rose-500" />
-                                                        )}
-                                                        {(task.status === "PENDING" || task.status === "QUEUED") && (
-                                                            <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
-                                                        )}
-                                                    </div>
+                                                    {task.status === "COMPLETED" && (
+                                                        <button
+                                                            onClick={() => handleCreateFromAnalysis(task.task_id, id, task.niche)}
+                                                            className="px-3 py-1.5 bg-violet-500 hover:bg-violet-400 text-black font-bold text-[8px] uppercase rounded-lg tracking-widest"
+                                                        >
+                                                            Create Video
+                                                        </button>
+                                                    )}
+                                                    {task.status === "FAILED" && (
+                                                        <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                                                    )}
+                                                    {(task.status === "PENDING" || task.status === "QUEUED") && (
+                                                        <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                                                    )}
                                                 </div>
-                                            );
-                                        })}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
@@ -642,6 +571,16 @@ function DiscoveryContent() {
                                         </button>
                                     ))}
                                 </div>
+
+                                {/* Candidate List View */}
+                                {candidates.length > 0 && (
+                                    <CandidateList
+                                        candidates={candidates}
+                                        isLoading={isScanning}
+                                        onSelectCandidate={handleAnalyze}
+                                        onRefresh={() => isKeywordSearch ? fetchSearch() : fetchTrends()}
+                                    />
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar p-1">
                                     {candidates.length === 0 && !isScanning && (

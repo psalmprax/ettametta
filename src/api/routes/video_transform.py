@@ -10,7 +10,7 @@ from src.api.utils.user_models import UserDB
 from src.api.utils.subscription import check_daily_limit, credits_required
 from src.services.video_engine.tasks import download_and_process_task
 from src.services.payment.credit_service import credit_service
-from src.services.video_engine.job_service import VideoJobService
+from src.services.video_engine.job_service import VideoJobService, get_video_job_service
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response

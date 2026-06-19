@@ -41,6 +41,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
@@ -322,17 +323,147 @@ class Cache:
 
     Cache entries are JSON-serialized. For large media outputs, paths
     are stored (not the media itself), so cache invalidation is cheap.
+
+    Lifecycle
+    ---------
+    The cache previously had no automated eviction — entries lived
+    forever, and the filesystem directory grew unbounded (disk
+    exhaustion risk on long-running deployments). Two guards now limit
+    growth:
+
+    * **max_age_seconds** — entries older than this are treated as
+      misses (stale-read prevention) and lazily deleted.
+    * **max_entries** — when exceeded, the oldest ``max_entries // 4``
+      entries are evicted (write-triggered LRU sweep). This avoids a
+      full-scan on every write while keeping the cache bounded.
+
+    Both thresholds have sensible defaults and can be tuned via the
+    constructor or env vars ``DAG_CACHE_MAX_AGE_SECONDS`` /
+    ``DAG_CACHE_MAX_ENTRIES``.
     """
 
-    def __init__(self, cache_dir: str = ".dag_cache"):
+    # Sensible defaults: 24-hour TTL, 10 000 entry cap.
+    _DEFAULT_MAX_AGE_SECONDS: int = 86_400
+    _DEFAULT_MAX_ENTRIES: int = 10_000
+
+    def __init__(
+        self,
+        cache_dir: str = ".dag_cache",
+        *,
+        max_age_seconds: int | None = None,
+        max_entries: int | None = None,
+    ):
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
 
+        if max_age_seconds is None:
+            raw = os.getenv("DAG_CACHE_MAX_AGE_SECONDS", "")
+            try:
+                max_age_seconds = int(raw) if raw.strip() else self._DEFAULT_MAX_AGE_SECONDS
+            except ValueError:
+                max_age_seconds = self._DEFAULT_MAX_AGE_SECONDS
+        if max_entries is None:
+            raw = os.getenv("DAG_CACHE_MAX_ENTRIES", "")
+            try:
+                max_entries = int(raw) if raw.strip() else self._DEFAULT_MAX_ENTRIES
+            except ValueError:
+                max_entries = self._DEFAULT_MAX_ENTRIES
+
+        self._max_age_seconds: int = max(max_age_seconds, 0)
+        self._max_entries: int = max(max_entries, 0)
+        # Track the last time we ran eviction so we don't scan the
+        # directory on every single write.
+        self._last_eviction_ts: float = 0.0
+        self._eviction_interval_seconds: float = 300.0  # 5 minutes
+
+    # ── TTL helpers ──────────────────────────────────────────────────
+
+    def _entry_age_seconds(self, path: str) -> float:
+        """Return age of a cache file in seconds, or 0 if unavailable."""
+        try:
+            return time.time() - os.path.getmtime(path)
+        except OSError:
+            return 0.0
+
+    def _is_stale(self, path: str) -> bool:
+        """True when the entry is older than ``_max_age_seconds``."""
+        if self._max_age_seconds <= 0:
+            return False  # 0 or negative means "never expire"
+        return self._entry_age_seconds(path) >= self._max_age_seconds
+
+    # ── LRU eviction ─────────────────────────────────────────────────
+
+    def _evict_lru_burst(self) -> int:
+        """
+        Evict the oldest ``_max_entries // 4`` entries when the cache
+        exceeds ``_max_entries``. Returns the number of files removed.
+        """
+        if self._max_entries <= 0 or not os.path.isdir(self.cache_dir):
+            return 0
+
+        entries: list[tuple[str, float]] = []
+        try:
+            for fname in os.listdir(self.cache_dir):
+                fpath = os.path.join(self.cache_dir, fname)
+                if os.path.isfile(fpath):
+                    entries.append((fpath, os.path.getmtime(fpath)))
+        except OSError:
+            return 0
+
+        total = len(entries)
+        if total <= self._max_entries:
+            self._last_eviction_ts = time.time()
+            return 0
+
+        # Evict the oldest N entries.
+        n_to_evict = max(self._max_entries // 4, 1)
+        # Sort by mtime ascending (oldest first).
+        entries.sort(key=lambda e: e[1])
+
+        removed = 0
+        for fpath, _mtime in entries[:n_to_evict]:
+            try:
+                os.remove(fpath)
+                removed += 1
+            except OSError:
+                pass
+
+        self._last_eviction_ts = time.time()
+        if removed:
+            logger.info(
+                "[DAG Cache] LRU eviction removed %d entries (total was %d, cap %d)",
+                removed, total, self._max_entries,
+            )
+        return removed
+
+    def _maybe_evict(self) -> None:
+        """Periodic eviction gate — only runs every
+        ``_eviction_interval_seconds`` to avoid per-write directory
+        scans."""
+        if self._max_entries <= 0:
+            return
+        if time.time() - self._last_eviction_ts < self._eviction_interval_seconds:
+            return
+        self._evict_lru_burst()
+
+    # ── Core API (TTL-aware) ─────────────────────────────────────────
+
     async def get(self, key: str) -> Any | None:
-        """Retrieve a cached value by key. Returns None on miss."""
+        """Retrieve a cached value by key. Returns None on miss or
+        when the entry has exceeded ``_max_age_seconds``."""
         path = os.path.join(self.cache_dir, key)
         if not os.path.exists(path):
             return None
+
+        # TTL check: if the entry is stale, delete it lazily and
+        # return a miss so the scheduler recomputes.
+        if self._is_stale(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            return None
+
         try:
             with open(path, "r") as f:
                 return json.load(f)
@@ -341,13 +472,18 @@ class Cache:
             return None
 
     async def set(self, key: str, value: Any) -> None:
-        """Store a value in the cache."""
+        """Store a value in the cache. Triggers LRU eviction if the
+        entry cap is exceeded."""
         path = os.path.join(self.cache_dir, key)
         try:
             with open(path, "w") as f:
                 json.dump(value, f, default=str)
         except OSError as e:
             logger.warning("[DAG Cache] Failed to write %s: %s", key, e)
+            return
+        # Only scan for eviction after a successful write so we don't
+        # pay the penalty on read-heavy workloads.
+        self._maybe_evict()
 
     async def invalidate(self, prefix: str | None = None) -> int:
         """Invalidate cache entries matching an optional prefix.
@@ -365,6 +501,25 @@ class Cache:
                 except OSError:
                     pass
         return count
+
+    async def stats(self) -> dict[str, Any]:
+        """Return cache size / age diagnostics for monitoring."""
+        if not os.path.isdir(self.cache_dir):
+            return {"entries": 0, "stale": 0, "max_age_seconds": self._max_age_seconds, "max_entries": self._max_entries}
+        entries = 0
+        stale = 0
+        for fname in os.listdir(self.cache_dir):
+            fpath = os.path.join(self.cache_dir, fname)
+            if os.path.isfile(fpath):
+                entries += 1
+                if self._is_stale(fpath):
+                    stale += 1
+        return {
+            "entries": entries,
+            "stale": stale,
+            "max_age_seconds": self._max_age_seconds,
+            "max_entries": self._max_entries,
+        }
 
 
 # Singleton instances (reusable across the codebase)

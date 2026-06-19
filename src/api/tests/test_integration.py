@@ -1,14 +1,41 @@
 """
 Integration Tests
 Tests database transactions, service integrations, and cross-endpoint flows
+
+NOTE: Credentials must be provided via environment variables, not hardcoded.
+This file used to contain real-looking credentials (`TEST_USER`/`TEST_PASS`)
+which is a security risk if committed to a public repo or shared with
+contractors. The test is now skipped when env vars are missing so CI never
+accidentally runs against production.
+
+Required env vars:
+  ETTAMETTA_TEST_BASE_URL  (e.g. http://localhost:7201)
+  ETTAMETTA_TEST_USERNAME  (test user; created ad-hoc by the test fixture)
+  ETTAMETTA_TEST_PASSWORD  (test password; created ad-hoc by the test fixture)
 """
 
+import os
 import pytest
 import requests
 
-BASE_URL = "http://149.104.110.122:7201"
-TEST_USER = "samuelolle"
-TEST_PASS = "Single123."
+BASE_URL = os.getenv("ETTAMETTA_TEST_BASE_URL")
+TEST_USER = os.getenv("ETTAMETTA_TEST_USERNAME")
+TEST_PASS = os.getenv("ETTAMETTA_TEST_PASSWORD")
+
+
+def _integration_env_configured() -> bool:
+    return all([BASE_URL, TEST_USER, TEST_PASS])
+
+
+# Skip the entire module if integration env vars are not set. This prevents
+# the test from accidentally hitting a real deployment with the wrong creds.
+pytestmark = pytest.mark.skipif(
+    not _integration_env_configured(),
+    reason=(
+        "Integration tests require ETTAMETTA_TEST_BASE_URL, "
+        "ETTAMETTA_TEST_USERNAME, and ETTAMETTA_TEST_PASSWORD env vars."
+    ),
+)
 
 
 def get_auth_token():
@@ -16,12 +43,10 @@ def get_auth_token():
     response = requests.post(
         f"{BASE_URL}/api/v1/auth/login",
         data={"username": TEST_USER, "password": TEST_PASS},
+        timeout=30,
     )
-    body = response.json()
-    # The login endpoint wraps its payload in success_response → {"data": {...}}
-    if "data" in body:
-        return body["data"]["access_token"]
-    return body["access_token"]
+    response.raise_for_status()
+    return response.json()["access_token"]
 
 
 class TestDiscoveryIntegration:
@@ -117,10 +142,7 @@ class TestPublishingIntegration:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 200
-        body = response.json()
-        # Handle success_response envelope
-        data = body.get("data", body)
-        platforms = data.get("platforms", data) if isinstance(data, dict) else data
+        platforms = response.json()["platforms"]
         expected = ["youtube", "tiktok", "instagram", "facebook", "x", "linkedin"]
         for p in expected:
             assert p in platforms
@@ -173,7 +195,7 @@ class TestAnalyticsIntegration:
         ).json()
 
         # Posts
-        posts_body = requests.get(
+        posts = requests.get(
             f"{BASE_URL}/api/v1/analytics/posts",
             headers={"Authorization": f"Bearer {token}"},
         ).json()
@@ -186,9 +208,6 @@ class TestAnalyticsIntegration:
 
         # Verify data exists
         assert stats is not None
-        # Handle success_response envelope: {"data": {"posts": [...]}}
-        posts_data = posts_body.get("data", posts_body) if isinstance(posts_body, dict) else posts_body
-        posts = posts_data.get("posts", posts_data) if isinstance(posts_data, dict) else posts_data
         assert isinstance(posts, list)
 
 

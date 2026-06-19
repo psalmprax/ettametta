@@ -173,14 +173,24 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
             },
             {
                 fallback: null as any,
-            onSuccess: (userData: User) => {
-                if (userData && (userData.username || userData.email)) {
-                    setUser(userData);
-                    TokenManager.setUser(userData);
-                } else {
+                // /auth/me is the single source of truth for "is this session
+                // still valid?" — a 401 here means the token is genuinely
+                // bad, so trigger the full AuthContext logout flow (which
+                // clears storage and uses router.push to navigate, NOT a
+                // hard window.location). This is the ONE call site in the
+                // app that should wipe the session on 401.
+                onUnauthorized: () => {
+                    console.warn("[AuthContext] /auth/me returned 401 — logging out");
                     logout();
-                }
-            },
+                },
+                onSuccess: (userData: User) => {
+                    if (userData && (userData.username || userData.email)) {
+                        setUser(userData);
+                        TokenManager.setUser(userData);
+                    } else {
+                        logout();
+                    }
+                },
                 onFallback: (err) => {
                     console.warn("[AuthContext] Failed to refresh user profile, preserving local session:", err);
                 }

@@ -1,3 +1,4 @@
+// fallow-ignore-file unused-export
 /**
  * Design System Tokens for Ettametta
  * Centralized source of truth for visual styling.

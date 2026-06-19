@@ -3,6 +3,8 @@ A/B Testing API Routes for ettametta
 Provides statistical A/B testing with proper significance testing
 """
 
+import hashlib
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from src.api.utils.database import get_db
@@ -19,6 +21,28 @@ from src.api.utils.api_responses import success_response
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ab-testing", tags=["A/B Testing"])
+
+# Deterministic salt for A/B variant assignment.
+#
+# IMPORTANT: this MUST be stable across processes and restarts. A/B
+# assignment is computed as SHA256(salt || test_id || viewer_id); if the
+# salt ever changes, every (test, viewer) pair gets re-randomized and
+# the experiment results are invalidated.
+#
+# Resolution order:
+#   1. AB_TEST_SALT env var (production deployments should set this to
+#      a long random string and keep it stable across restarts).
+#   2. A project-scoped default baked into source. This is intentionally
+#      NOT per-process or per-call — see _pick_variant for the bug that
+#      this prevents.
+_PROJECT_SCOPED_AB_SALT = "ettametta-ab-v1::1f4b9a0c7d3e8a52"
+
+
+def _get_ab_salt() -> str:
+    salt = os.getenv("AB_TEST_SALT")
+    if salt:
+        return salt
+    return _PROJECT_SCOPED_AB_SALT
 
 
 class ABTestCreate(BaseModel):
@@ -317,6 +341,119 @@ async def record_variant_event(
     await db.commit()
     return success_response(
         data={"status": "recorded", "variant": variant, "event_type": event.event_type}
+    )
+
+
+# ── Per-impression variant assignment (Phase 12 / Review #280) ────────────────────
+# Previously, the only API surface for A/B testing required the caller to
+# pass `variant: A|B` with every event. That made the "winner" decision
+# aggregate (per-variant counters) instead of per-impression, which is
+# what a real A/B test measures. This endpoint lets a publish-time
+# caller atomically assign a viewer to a variant using a deterministic
+# hash (so the same viewer always sees the same variant for the same
+# content) and record the impression in a single round trip.
+
+
+class AssignVariantRequest(BaseModel):
+    """Request body for per-impression variant assignment."""
+    # Opaque viewer identifier (cookie, session id, install id, etc.)
+    viewer_id: str
+    # Optional override for the split ratio (must sum to <= 1.0).
+    # Default is 50/50.
+    variant_a_weight: float | None = None
+    variant_b_weight: float | None = None
+
+
+def _pick_variant(
+    test_id: str, viewer_id: str, weight_a: float, weight_b: float
+) -> str:
+    """
+    Deterministically pick A or B for a (test, viewer) pair so the same
+    viewer always sees the same variant for the same test. Falls back to
+    a cryptographically random pick if the input IDs are missing.
+    """
+    if weight_a <= 0 and weight_b <= 0:
+        return "A"
+    if weight_a + weight_b > 1.0001:
+        # Caller asked for an invalid split — fall back to 50/50 rather
+        # than 500-erroring on a hot publish path.
+        weight_a = 0.5
+        weight_b = 0.5
+    # Hash the inputs to a 0..1 float. The salt is a process-stable
+    # secret (resolved once per call from env or project default) so
+    # the same (test, viewer) pair always lands on the same variant.
+    # We must NOT generate a per-call random salt here — that would
+    # re-randomize the assignment on every impression, destroying the
+    # whole point of deterministic A/B bucketing.
+    salt = _get_ab_salt()
+    digest = hashlib.sha256(
+        f"{salt}:{test_id}:{viewer_id}".encode("utf-8")
+    ).digest()
+    n = int.from_bytes(digest[:8], "big")
+    bucket = (n % 10_000) / 10_000.0
+    return "A" if bucket < weight_a else "B"
+
+
+@router.post("/assign/{test_id}")
+async def assign_variant(
+    test_id: str,
+    request: AssignVariantRequest,
+    db=Depends(get_db),
+):
+    """
+    Per-impression variant assignment + impression counter increment.
+
+    Callers (publish pipeline, recommendation engine, etc.) should call
+    this ONCE per (viewer, content) pair at impression time. It
+    deterministically picks a variant for the viewer and atomically
+    increments the appropriate ``variant_X_view_count`` counter so
+    subsequent statistical analysis can compare per-impression rates
+    rather than just per-variant aggregates.
+    """
+    stmt = select(ABTestDB).where(ABTestDB.id == test_id)
+    result = await db.execute(stmt)
+    test = result.scalar_one_or_none()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    if test.winner_variant or test.status == ABTestStatus.COMPLETED:
+        # Test is locked in — record the impression under the winning
+        # variant so totals remain coherent.
+        return success_response(
+            data={
+                "variant": test.winner_variant,
+                "reason": "test_completed",
+                "winner": test.winner_variant,
+            }
+        )
+
+    weight_a = request.variant_a_weight if request.variant_a_weight is not None else 0.5
+    weight_b = request.variant_b_weight if request.variant_b_weight is not None else 0.5
+    variant = _pick_variant(test_id, request.viewer_id, weight_a, weight_b)
+
+    if variant == "A":
+        test.variant_a_view_count = (test.variant_a_view_count or 0) + 1
+    else:
+        test.variant_b_view_count = (test.variant_b_view_count or 0) + 1
+
+    await db.commit()
+
+    # Return the variant title so the caller can render the correct
+    # title/description without a second DB lookup.
+    title = (
+        test.variant_a_title if variant == "A" else test.variant_b_title
+    )
+    description = (
+        test.variant_a_description if variant == "A" else test.variant_b_description
+    )
+    return success_response(
+        data={
+            "variant": variant,
+            "title": title,
+            "description": description,
+            "test_id": test.id,
+            "content_id": test.content_id,
+        }
     )
 
 

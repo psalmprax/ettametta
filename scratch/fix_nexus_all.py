@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 
 path = '/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/nexus/page.tsx'
 with open(path, 'r') as f:

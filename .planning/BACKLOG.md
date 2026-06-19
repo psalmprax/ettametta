@@ -20,6 +20,39 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ## P0 — Critical (Blocks Production / User-Visible Broken)
 
+### 999.5 — Fix revenue_txid Backfill Re-Run Idempotency
+**Source:** `tests/migrations/test_revenue_txid_migrations.py::TestBackfillFixturesOnPostgres::test_backfill_is_idempotent_on_rerun` (xfail)
+**Impact:** Backfill migration `2026_06_16_backfill_txid` is currently applied to prod (2026-06-15). Any re-run of the backfill (e.g. after a rollback, after a new code path uses the same txid, or after fixing the metadata_json shape) will produce a `UniqueViolation` on `uix_revenue_platform_txid` because the loser row (a-002 in the test fixture) gets backfilled to the same `transaction_id` as the winner (a-001), violating the `(platform, transaction_id)` unique constraint.
+**Root cause:** The candidates CTE in `_BACKFILL_SQL` doesn't exclude groups that already have a non-NULL `transaction_id` row. The current filter is:
+```sql
+WHERE transaction_id IS NULL
+  AND metadata_json IS NOT NULL
+  AND COALESCE(metadata_json->>'transaction_id', '') <> ''
+```
+This picks the loser row on re-run, then the UPDATE writes the same txid as the existing winner → UniqueViolation.
+**Fix:** Add a NOT IN subquery to exclude groups that already have a winner:
+```sql
+AND (platform, metadata_json->>'transaction_id') NOT IN (
+    SELECT platform, transaction_id
+    FROM revenue_logs
+    WHERE transaction_id IS NOT NULL
+)
+```
+This makes re-run a true no-op (0 rows updated on second run).
+**Files:**
+- `alembic/versions/2026_06_16_backfill_txid.py` (fix the candidates CTE)
+- `tests/migrations/test_revenue_txid_migrations.py` (remove `@pytest.mark.xfail` once fixed)
+
+**Tasks:**
+- [ ] Update `_BACKFILL_SQL` candidates CTE with the NOT IN subquery
+- [ ] Run the DB-backed test class on a real Postgres to verify `second == 0` and `a-002 is None`
+- [ ] Remove the `@pytest.mark.xfail(strict=True)` mark (the `strict=True` will fail CI until removed)
+- [ ] Add an integration test that explicitly runs the backfill twice and asserts no UniqueViolation
+
+**Acceptance:** `test_backfill_is_idempotent_on_rerun` passes (no xfail mark), and running the backfill SQL twice against the prod DB (or a clone) produces 0 UniqueViolation errors and 0 rows updated on the second run.
+
+---
+
 ### ~~999.1 — Fix Discovery → Analysis → Video Pipeline~~ ⮕ **PROMOTED → Phase 10 (2026-05-29)**
 **Source:** `docs/comprehensive_gap_analysis.md` §1.1, code investigation
 **Impact:** Core user journey is broken end-to-end
@@ -135,28 +168,27 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ## P1 — High Value (Core User Journeys)
 
-### ~~999.5 — Auto-Insert Affiliate Links into Videos~~ ✅ **COMPLETE — Phase 14 shipped (2026-06-13)**
+### 999.6 — Auto-Insert Affiliate Links into Videos
 **Source:** `docs/comprehensive_gap_analysis.md` §1.2, current `transformation/page.tsx` shows button but it doesn't work
 **Impact:** Monetization is broken end-to-end
 **Files:**
-- `src/api/routes/video_transform.py` (`POST /auto-insert-links` endpoint exists)
-- `src/services/monetization/service.py` (`plan_monetization_strategy`, `_plan_link_insertion`, `process_video_with_links`)
-- `src/services/video_engine/ffmpeg_utils.py` (`draw_text_overlay`)
-- `apps/dashboard/src/app/transformation/page.tsx` (`handleAutoLinks` wired to correct endpoint)
+- `src/api/routes/monetization.py` (no `auto-insert-links` endpoint exists)
+- `src/services/video_engine/post_processors/` (new — link injection pipeline)
+- `src/api/routes/transformation.py` (or similar) for the button
+- `apps/dashboard/src/app/transformation/page.tsx` (handleAutoLinks)
 
 **Tasks:**
-- [x] Implement `POST /video/auto-insert-links` that takes a `job_id` + calls `MonetizationEngine.plan_monetization_strategy()`
-- [x] Use FFmpeg drawtext overlay to burn links into video (start/mid/end card overlay)
-- [x] Track per-link impression count on `AffiliateLinkDB.impression_count`
-- [x] Wire up `transformation/page.tsx` `handleAutoLinks` to the real endpoint
-- [x] Tests for overlay positioning + persistence (14 tests)
+- [ ] Implement `POST /monetization/auto-insert-links` that takes a video job_id + user affiliate links
+- [ ] Use FFmpeg overlay to burn links into video (start/mid/end card + corner watermark)
+- [ ] Track per-link impression count
+- [ ] Wire up `transformation/page.tsx` `handleAutoLinks` to the real endpoint (currently no-op)
+- [ ] Tests for overlay positioning + persistence
 
 **Acceptance:** User clicks "Auto-Inject Affiliate Nodes" in transformation page → links appear on rendered video → impression count increments per view.
-**Status:** ✅ **Complete.** Implemented in `.planning/phases/14-affiliate-auto-insert/14-01-PLAN.md`. All acceptance criteria met.
 
 ---
 
-### 999.6 — Auto-Merch (Shopify Integration)
+### 999.7 — Auto-Merch (Shopify Integration)
 **Source:** `docs/comprehensive_gap_analysis.md` §1.2, `docs/expansion_blueprint.md` §8
 **Impact:** `commerce_service` is a placeholder, "Auto-Merch" button on Empire page does nothing real
 **Files:**
@@ -176,7 +208,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.7 — AB-TESTING-01 (A/B Testing for Content Variants)
+### 999.8 — AB-TESTING-01 (A/B Testing for Content Variants)
 **Source:** `.planning/PROJECT.md` (Active requirements)
 **Impact:** Currently no way to A/B test video variants
 **Files:**
@@ -196,7 +228,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.8 — WEBHOOKS-01 (Affiliate Network Webhooks for Revenue)
+### 999.9 — WEBHOOKS-01 (Affiliate Network Webhooks for Revenue)
 **Source:** `.planning/PROJECT.md` (Active requirements)
 **Impact:** Revenue is not actually tracked from real affiliate networks
 **Files:**
@@ -215,7 +247,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.9 — Complete Phase 1 — UserDB Unification (01-06-PLAN.md)
+### 999.10 — Complete Phase 1 — UserDB Unification (01-06-PLAN.md)
 **Source:** `.planning/ROADMAP.md` (Phase 1, 5/6 complete)
 **Files:**
 - `src/api/utils/user_models.py`
@@ -230,7 +262,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.10 — Complete Phase 4 — Multi-Scene Storytelling Verification (04-01-PLAN.md)
+### 999.11 — Complete Phase 4 — Multi-Scene Storytelling Verification (04-01-PLAN.md)
 **Source:** `.planning/ROADMAP.md` (Phase 4, 0/1 complete)
 **Files:**
 - `src/services/nexus_engine/auto_creator.py`
@@ -245,7 +277,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.11 — Complete Phase 5 — Multi-Platform Publishing Verification (05-02-PLAN.md)
+### 999.12 — Complete Phase 5 — Multi-Platform Publishing Verification (05-02-PLAN.md)
 **Source:** `.planning/ROADMAP.md` (Phase 5, 1/2 complete)
 **Files:**
 - `src/services/publishing/` (all platforms)
@@ -259,7 +291,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.12 — Complete Phase 7 — Monetization & Credit System Verification (07-02-PLAN.md)
+### 999.13 — Complete Phase 7 — Monetization & Credit System Verification (07-02-PLAN.md)
 **Source:** `.planning/ROADMAP.md` (Phase 7, 1/2 complete)
 **Files:**
 - `src/services/payment/credit_service.py`
@@ -273,7 +305,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.13 — Complete Phase 8 — Analytics Verification (08-02-PLAN.md)
+### 999.14 — Complete Phase 8 — Analytics Verification (08-02-PLAN.md)
 **Source:** `.planning/ROADMAP.md` (Phase 8, 1/2 complete)
 **Files:**
 - `src/services/analytics/`
@@ -286,7 +318,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ---
 
-### 999.14 — Complete Phase 9 Plan 02 — Verify Enterprise Infrastructure (09-02-PLAN.md)
+### 999.15 — Complete Phase 9 Plan 02 — Verify Enterprise Infrastructure (09-02-PLAN.md)
 **Source:** `.planning/ROADMAP.md` (Phase 9, 1/2 complete), `HARDENING_ROADMAP.md`
 **Files:**
 - All Phase 9 hardening work
@@ -302,7 +334,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ## P2 — Nice to Have (Quality of Life)
 
-### 999.15 — Background Removal in Video Transform
+### 999.16 — Background Removal in Video Transform
 **Source:** `docs/comprehensive_gap_analysis.md` §B.3
 **Files:** `src/services/video_engine/processor.py`, new `background_remover.py`
 
@@ -311,7 +343,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] UI toggle in `transformation/page.tsx`
 - [ ] Tests
 
-### 999.16 — Sound Design + Music Addition
+### 999.17 — Sound Design + Music Addition
 **Source:** `docs/comprehensive_gap_analysis.md` §B.3
 **Files:** `src/services/audio/sound_design.py`, `src/services/audio/music_library.py`
 
@@ -320,7 +352,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Implement music library integration (royalty-free)
 - [ ] UI toggles in `transformation/page.tsx`
 
-### 999.17 — Subtitle Generation
+### 999.18 — Subtitle Generation
 **Source:** `docs/comprehensive_gap_analysis.md` §B.3
 **Files:** `src/services/video_engine/captioner.py`
 
@@ -329,7 +361,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Burn subtitles into video with FFmpeg
 - [ ] UI: subtitle style picker
 
-### 999.18 — Quality Upscaling (4K)
+### 999.19 — Quality Upscaling (4K)
 **Source:** `docs/comprehensive_gap_analysis.md` §B.3
 **Files:** `src/services/video_engine/upscaler.py`
 
@@ -338,7 +370,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Extract into a standalone service
 - [ ] UI button (already exists in `transformation/page.tsx` "Neural Upscale" — currently disabled)
 
-### 999.19 — Dynamic Watermarking (Branding Burn-in)
+### 999.20 — Dynamic Watermarking (Branding Burn-in)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §6
 **Files:** `src/services/video_engine/watermarker.py`
 
@@ -347,7 +379,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Position picker (corners, center, lower-third)
 - [ ] Apply during transformation pipeline
 
-### 999.20 — Cancel Subscription UI Flow
+### 999.21 — Cancel Subscription UI Flow
 **Source:** `docs/comprehensive_gap_analysis.md` §B.8
 **Files:** `src/api/routes/billing.py`, `apps/dashboard/src/app/settings/page.tsx`
 
@@ -356,7 +388,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Add UI flow with confirmation modal
 - [ ] Test refund/credit logic
 
-### 999.21 — Audit Logs UI for Admins
+### 999.22 — Audit Logs UI for Admins
 **Source:** `docs/comprehensive_gap_analysis.md` §B.10
 **Files:** `src/api/routes/admin.py`, `apps/dashboard/src/app/admin/`
 
@@ -365,7 +397,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Wire up logging across sensitive routes
 - [ ] Add admin viewer page
 
-### 999.22 — Content Moderation (Admin)
+### 999.23 — Content Moderation (Admin)
 **Source:** `docs/comprehensive_gap_analysis.md` §B.10
 **Files:** `src/services/moderation/`, admin UI
 
@@ -374,7 +406,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Admin queue to approve/reject
 - [ ] Auto-flag for high-risk niches
 
-### 999.23 — Global Error Boundary (Frontend)
+### 999.24 — Global Error Boundary (Frontend)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §1
 **Files:** `apps/dashboard/src/app/error.tsx`, `apps/dashboard/src/app/global-error.tsx`
 
@@ -383,7 +415,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Sentry integration (`@sentry/nextjs`)
 - [ ] Fall back to existing `POST /api/v1/errors`
 
-### 999.24 — PWA / Offline Manifest
+### 999.25 — PWA / Offline Manifest
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §1
 **Files:** `apps/dashboard/public/manifest.json`, `apps/dashboard/next.config.js`
 
@@ -391,7 +423,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Add manifest, service worker, icons
 - [ ] Cache static assets + read-only API responses
 
-### 999.25 — Continuous Niche Monitoring Backend
+### 999.26 — Continuous Niche Monitoring Backend
 **Source:** `docs/comprehensive_gap_analysis.md` §B.1
 **Files:** `src/services/discovery/tasks.py` (sentinel_watcher exists but is manual)
 
@@ -400,7 +432,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Trigger alerts when viral velocity crosses threshold
 - [ ] Persist monitoring state
 
-### 999.26 — Multi-Gateway Payments (PayPal, Razorpay)
+### 999.27 — Multi-Gateway Payments (PayPal, Razorpay)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §4
 **Files:** `src/services/payment/`
 
@@ -409,7 +441,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Implement PayPal + Razorpay adapters
 - [ ] UI: gateway selector at checkout
 
-### 999.27 — Credits / Usage-Based Billing
+### 999.28 — Credits / Usage-Based Billing
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §4
 **Files:** `src/services/payment/credit_service.py`
 
@@ -418,7 +450,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Pricing tier per engine
 - [ ] UI: credits page already exists at `/credits`
 
-### 999.28 — GPU Task Batching / Accumulator
+### 999.29 — GPU Task Batching / Accumulator
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §6
 **Files:** `src/services/video_engine/synthesis_service.py` (GpuQueueManager exists at :148)
 
@@ -430,7 +462,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 
 ## P3 — Future / Infrastructure
 
-### 999.29 — Distributed Tracing (Jaeger)
+### 999.30 — Distributed Tracing (Jaeger)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §2
 **Files:** `src/api/utils/tracing.py`
 
@@ -438,7 +470,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Add Jaeger exporter to OpenTelemetry
 - [ ] Trace all HTTP + Celery spans
 
-### 999.30 — Circuit Breaker Pattern for External APIs
+### 999.31 — Circuit Breaker Pattern for External APIs
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §2
 **Files:** `src/api/utils/resilience.py` (CircuitBreaker already exists)
 
@@ -447,7 +479,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Apply `CircuitBreaker` to YouTube, Stripe, all video providers
 - [ ] Tests for open/half-open/closed states
 
-### 999.31 — PostgreSQL Master-Slave (HA)
+### 999.32 — PostgreSQL Master-Slave (HA)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §3
 **Files:** `docker-compose.yml`, `src/api/utils/database.py`
 
@@ -456,21 +488,21 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Configure read-replica routing
 - [ ] Document failover procedure
 
-### 999.32 — WAF (Web Application Firewall)
+### 999.33 — WAF (Web Application Firewall)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §3
 
 **Tasks:**
 - [ ] Add Traefik plugins (CrowdSec, ModSecurity)
 - [ ] Rules for L7 attacks (SQLi, XSS)
 
-### 999.33 — Service Discovery (Consul)
+### 999.34 — Service Discovery (Consul)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §3
 
 **Tasks:**
 - [ ] Add Consul to docker-compose
 - [ ] Refactor static service URLs to use Consul DNS
 
-### 999.34 — Storybook / Component Testing
+### 999.35 — Storybook / Component Testing
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §1
 **Files:** `apps/dashboard/.storybook/`
 
@@ -478,14 +510,14 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Add Storybook 8
 - [ ] Story for each component in `components/ui/`
 
-### 999.35 — Visual Regression Testing
+### 999.36 — Visual Regression Testing
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §5
 
 **Tasks:**
 - [ ] Add Playwright visual diffs
 - [ ] Run in CI
 
-### 999.36 — Performance Budget (k6 Load Tests)
+### 999.37 — Performance Budget (k6 Load Tests)
 **Source:** `docs/gap_analysis_viral_forge_comprehensive.md` §5
 **Files:** `scripts/load_test.js` (exists)
 
@@ -494,7 +526,7 @@ Promote an item from this list into a new numbered phase in `ROADMAP.md` when it
 - [ ] Wire k6 into CI
 - [ ] Track regressions
 
-### 999.37 — Visual Regression for Skill Audit (2 stale + 7 new)
+### 999.38 — Visual Regression for Skill Audit (2 stale + 7 new)
 **Source:** `.planning/STATE.md` (Pending Todos)
 
 **Tasks:**

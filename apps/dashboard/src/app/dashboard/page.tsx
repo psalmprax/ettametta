@@ -2,23 +2,35 @@
 
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
+import Link from "next/link";
 import {
   Zap,
+  TrendingUp,
   Activity,
   Globe,
+  CheckCircle2,
   LayoutDashboard,
   Cpu,
   History,
-  Terminal
+  Workflow,
+  Terminal,
+  Database,
+  Radar,
+  Target,
+  ShieldCheck,
+  LineChart,
+  ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
+import { Button } from "@/components/ui/Button";
+import ProcessingFlow from "@/components/ui/ProcessingFlow";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { AreaChartCustom, MiniAreaChart } from "@/components/ui/ChartComponents";
@@ -30,7 +42,7 @@ function DashboardContent() {
   
   const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "overview");
   const [activityFeed, setActivityFeed] = useState<any[]>([]);
-  const [actionLogs, _setActionLogs] = useState<string[]>([]);
+  const [actionLogs, setActionLogs] = useState<string[]>([]);
 
   const fetchStats = useCallback(async () => {
     const token = await getAuthToken();
@@ -212,11 +224,29 @@ function DashboardContent() {
                     </div>
                 </div>
 
-                <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
-                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Logs</span>
-                    <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
+                  <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                      <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Pipeline Flow</span>
+                      <span className="text-[8px] font-mono text-cyan-500/50">4-STAGE_PIPELINE</span>
+                    </div>
+                    <div className="p-4">
+                      <ProcessingFlow 
+                        steps={[
+                          { id: 'ingest', label: 'INGEST', status: 'complete' },
+                          { id: 'analyze', label: 'ANALYZE', status: 'complete' },
+                          { id: 'remix', label: 'REMIX', status: 'active' },
+                          { id: 'render', label: 'RENDER', status: 'pending' },
+                        ]}
+                        telemetry={pulse}
+                      />
+                    </div>
                   </div>
+
+                  <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                      <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Logs</span>
+                      <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
+                    </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
                     {displayLogs.slice(0, 15).map((log, i) => (
                       <div key={i} className="flex gap-4">

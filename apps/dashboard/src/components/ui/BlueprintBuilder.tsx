@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Trash2, Save, Database, Cpu, Sparkles, Share2, RefreshCw } from "lucide-react";
-import { motion } from "framer-motion";
+import { X, Plus, Trash2, Save, Database, Cpu, Sparkles, Share2, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn, safeRandomUUID } from "@/lib/utils";
 import { toast } from "sonner";
 import { NodeType } from "./NexusNode";
@@ -13,21 +13,41 @@ import { BlueprintNode, Blueprint } from "@/lib/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface BlueprintBuilderProps {
-    readonly isOpen: boolean;
-    readonly onClose: () => void;
-    readonly onSuccess: (newBlueprint: Blueprint) => void;
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: (newBlueprint: Blueprint) => void;
+    /** When provided, the builder opens in edit mode and PUTs to the
+     *  existing blueprint ID instead of POSTing a new one. */
+    initialBlueprint?: Blueprint | null;
 }
 
-export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilderProps) {
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-    const [compositionId, setCompositionId] = useState("ViralClip");
-    const [nodes, setNodes] = useState<BlueprintNode[]>([
-        { id: safeRandomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }
-    ]);
+export function BlueprintBuilder({ isOpen, onClose, onSuccess, initialBlueprint }: BlueprintBuilderProps) {
+    const isEditMode = !!initialBlueprint;
+    const [name, setName] = useState(initialBlueprint?.name || "");
+    const [description, setDescription] = useState(initialBlueprint?.description || "");
+    const [compositionId, setCompositionId] = useState(initialBlueprint?.composition_id || "ViralClip");
+    const [nodes, setNodes] = useState<BlueprintNode[]>(
+        initialBlueprint?.nodes && initialBlueprint.nodes.length > 0
+            ? initialBlueprint.nodes
+            : [{ id: safeRandomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }]
+    );
     const [isSaving, setIsSaving] = useState(false);
     const [nodeToDelete, setNodeToDelete] = useState<BlueprintNode | null>(null);
     const previousActiveElement = useRef<HTMLElement | null>(null);
+
+    // Re-sync state when the modal is opened with a different blueprint.
+    useEffect(() => {
+        if (isOpen) {
+            setName(initialBlueprint?.name || "");
+            setDescription(initialBlueprint?.description || "");
+            setCompositionId(initialBlueprint?.composition_id || "ViralClip");
+            setNodes(
+                initialBlueprint?.nodes && initialBlueprint.nodes.length > 0
+                    ? initialBlueprint.nodes
+                    : [{ id: safeRandomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }]
+            );
+        }
+    }, [isOpen, initialBlueprint]);
 
     // Handle escape key and focus management
     useEffect(() => {
@@ -92,50 +112,92 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
         }
 
         setIsSaving(true);
-        const blueprintId = name.toLowerCase().replace(/[^a-z0-9]/gi, '-');
+        // In edit mode, use the existing ID; in create mode, derive one from name.
+        const blueprintId = isEditMode
+            ? initialBlueprint!.id
+            : name.toLowerCase().replace(/[^a-z0-9]/gi, '-');
         const token = getAuthToken();
         if (!token) {
             setIsSaving(false);
             return;
         }
 
-        await withRealFallback((signal) => fetch(`${API_BASE}/nexus/blueprints`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    id: blueprintId,
-                    name,
-                    description,
-                    composition_id: compositionId,
-                    nodes
+        if (isEditMode) {
+            // Edit flow: PUT to /nexus/blueprints/{id} with the changed fields.
+            await withRealFallback((signal) => fetch(`${API_BASE}/nexus/blueprints/${encodeURIComponent(blueprintId)}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        composition_id: compositionId,
+                        nodes
+                    }),
+                    signal
                 }),
-                signal
-            }),
-            {
-                fallback: {} as any,
-                onSuccess: (data) => {
-                    toast.success("Blueprint Saved", { description: `Recipe "${name}" is now available in the neural cluster.` });
-                    // Transform DB response to frontend Blueprint interface
-                    const blueprint: Blueprint = {
-                        id: data?.id || blueprintId,
-                        name: data?.name || name,
-                        description: data?.description || description,
-                        composition_id: data?.composition_id || compositionId,
-                        nodes: data?.nodes || nodes
-                    };
-                    onSuccess(blueprint);
-                    onClose();
-                },
-                onFallback: (err) => {
-                    toast.error("Save Failed", { description: err.message || "Could not register the blueprint." });
+                {
+                    fallback: {} as any,
+                    onSuccess: (data) => {
+                        toast.success("Blueprint Updated", { description: `Recipe "${name}" changes have been committed.` });
+                        const blueprint: Blueprint = {
+                            id: data?.id || blueprintId,
+                            name: data?.name || name,
+                            description: data?.description || description,
+                            composition_id: data?.composition_id || compositionId,
+                            nodes: data?.nodes || nodes
+                        };
+                        onSuccess(blueprint);
+                        onClose();
+                    },
+                    onFallback: (err) => {
+                        toast.error("Update Failed", { description: err.message || "Could not update the blueprint." });
+                    }
                 }
-            }
-        );
+            );
+        } else {
+            // Create flow: POST to /nexus/blueprints.
+            await withRealFallback((signal) => fetch(`${API_BASE}/nexus/blueprints`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        id: blueprintId,
+                        name,
+                        description,
+                        composition_id: compositionId,
+                        nodes
+                    }),
+                    signal
+                }),
+                {
+                    fallback: {} as any,
+                    onSuccess: (data) => {
+                        toast.success("Blueprint Saved", { description: `Recipe "${name}" is now available in the neural cluster.` });
+                        const blueprint: Blueprint = {
+                            id: data?.id || blueprintId,
+                            name: data?.name || name,
+                            description: data?.description || description,
+                            composition_id: data?.composition_id || compositionId,
+                            nodes: data?.nodes || nodes
+                        };
+                        onSuccess(blueprint);
+                        onClose();
+                    },
+                    onFallback: (err) => {
+                        toast.error("Save Failed", { description: err.message || "Could not register the blueprint." });
+                    }
+                }
+            );
+        }
         setIsSaving(false);
     };
+
+    if (!isOpen) return null;
 
     // Handle escape key
     useEffect(() => {
@@ -156,8 +218,6 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
-
-    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">

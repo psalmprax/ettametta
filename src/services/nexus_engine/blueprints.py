@@ -600,6 +600,8 @@ async def execute_blueprint(
     blueprint: dict, inputs: dict, job_id: str,
     use_dag: bool = False,
     automation_mode: str = "manual",
+    total_nodes: int | None = None,
+    per_step_timeout: int | None = None,
 ) -> dict:
     """
     Execute a blueprint with automation mode awareness.
@@ -613,6 +615,15 @@ async def execute_blueprint(
             - manual: Respects ``use_dag`` flag (legacy behavior)
             - partial: Forces DAG + approval gate before execution
             - full: Forces DAG + auto-execute
+        total_nodes: Pre-computed step count for the blueprint. When
+            provided, used as the denominator for per-node progress so
+            the UI sees a stable count even for fallback blueprints
+            that lack an explicit ``nodes`` list. Falls back to
+            ``len(blueprint["nodes"])`` when ``None``.
+        per_step_timeout: Per-node wall-clock budget in seconds. When
+            provided, each node handler is wrapped in
+            ``asyncio.wait_for`` so a single hung step can't blow the
+            global compose timeout. Falls back to no per-step cap.
     """
     from src.services.video_engine.automation import AutomationMode, is_at_least
 
@@ -635,22 +646,45 @@ async def execute_blueprint(
     results = {}
     nodes = blueprint.get("nodes", [])
     blueprint_id = blueprint.get("id", "unknown")
+    # Use the caller-supplied step count if provided; otherwise fall back
+    # to the actual node list length.
+    effective_total_nodes = total_nodes if total_nodes is not None else len(nodes)
 
     try:
         for i, node in enumerate(nodes):
             node_type = node.get("type", "unknown")
             node.get("label", node_type)
-            progress = int(((i + 1) / len(nodes)) * 100)
+            progress = int(((i + 1) / max(effective_total_nodes, 1)) * 100)
 
             notify_nexus_job_update_sync({
                 "id": str(job_id),
                 "status": f"EXECUTING_{node_type.upper()}",
                 "current_node": node_type.lower(),
                 "progress": progress,
+                "metadata": {
+                    "step": i + 1,
+                    "total_steps": effective_total_nodes,
+                },
             })
 
             handler = registry.get_handler(node_type, blueprint_id)
-            node_result = await handler.execute(inputs, results, job_id)
+            # Per-step timeout: protect the global compose budget from a
+            # single hung handler. On TimeoutError, mark the step failed
+            # and continue rather than aborting the whole blueprint.
+            try:
+                if per_step_timeout:
+                    node_result = await asyncio.wait_for(
+                        handler.execute(inputs, results, job_id),
+                        timeout=per_step_timeout,
+                    )
+                else:
+                    node_result = await handler.execute(inputs, results, job_id)
+            except asyncio.TimeoutError:
+                logger.warning(
+                    f"[Blueprint] node '{node_type}' ({i + 1}/{effective_total_nodes}) "
+                    f"timed out after {per_step_timeout}s; continuing with empty result"
+                )
+                node_result = {"_timed_out": True, "node_type": node_type, "step": i + 1}
             results[node_type] = node_result
             
             # Special case: map 'scenes' from cognition to result top level if needed by synthesis

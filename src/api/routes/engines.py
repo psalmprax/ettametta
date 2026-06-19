@@ -25,7 +25,7 @@ which redacts secrets to "********").
 from __future__ import annotations
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.api.config import settings
 from src.services.video_engine.engine_config import ENGINE_ACTION_MAP

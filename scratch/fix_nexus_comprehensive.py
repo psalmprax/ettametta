@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Comprehensive fix for nexus/page.tsx - all template literals in JSX style={} blocks"""
 
+import re
 
 path = '/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/nexus/page.tsx'
 with open(path, 'r') as f:
@@ -180,7 +181,7 @@ else:
 if content != original:
     with open(path, 'w') as f:
         f.write(content)
-    print("\n=== WROTE CHANGES ===")
+    print(f"\n=== WROTE CHANGES ===")
     print(f"Total fixes: {len(changes)}")
     for c in changes:
         print(f"  - {c}")

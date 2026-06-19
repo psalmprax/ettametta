@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "./sidebar";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface CommandCenterLayoutProps {
     readonly children: React.ReactNode;
@@ -51,7 +53,7 @@ export default function CommandCenterLayout({
 
             {/* Main Side Nav (The global one) */}
             <div className="hidden lg:block">
-                <Suspense fallback={null}>
+                <Suspense fallback={<div className="w-[70px] h-screen bg-black/40 border-r border-white/5 p-3 space-y-3"><Skeleton className="h-10 w-10 rounded-xl" variant="circle" /><Skeleton className="h-8 w-full rounded-lg" /><Skeleton className="h-8 w-full rounded-lg" /><Skeleton className="h-8 w-full rounded-lg" /></div>}>
                     <Sidebar />
                 </Suspense>
             </div>
@@ -116,6 +118,8 @@ export default function CommandCenterLayout({
                             <span className="text-[10px] font-bold text-zinc-500 uppercase">System Uptime</span>
                             <span className="text-xs font-mono text-emerald-500">{pulse?.uptime || "00:00:00"}</span>
                         </div>
+                        <div className="h-10 w-px bg-white/5" />
+                        <NotificationCenter />
                         <div className="h-10 w-px bg-white/5" />
                         <div className="flex items-center gap-4">
                             <div 

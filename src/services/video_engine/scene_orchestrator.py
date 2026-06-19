@@ -17,7 +17,7 @@ import os
 import json
 import cv2
 
-
+from src.services.discovery.video_lead_scanner import video_lead_scanner
 from src.services.video_engine.processor import VideoProcessor
 from src.services.monetization.service import MonetizationEngine
 
@@ -30,10 +30,7 @@ class SceneBasedVideoOrchestrator:
     """Orchestrates scene-based video production with audio overlay"""
 
     def __init__(self):
-        from src.services.discovery.video_lead_scanner import video_lead_scanner
-        from src.services.video_engine.remotion_service import base_remotion_service
         self.video_scanner = video_lead_scanner
-        self.remotion_service = base_remotion_service
         self.video_processor = VideoProcessor()
         self.monetization_engine = MonetizationEngine()
         self.output_dir = Path(settings.STORAGE_OUTPUT_DIR) / "scene_based_videos"
@@ -117,7 +114,6 @@ class SceneBasedVideoOrchestrator:
                 "success": False,
                 "error": "Video fusion failed",
                 "fusion_error": fusion_result.get("error"),
-                "reason": fusion_result.get("reason"),
                 "production_plan": production_plan,
             }
 
@@ -160,11 +156,11 @@ class SceneBasedVideoOrchestrator:
                 for videos in production_plan.get("scene_videos", {}).values()
             ),
             "platforms_used": list(
-                {
+                set(
                     video.platform
                     for videos in production_plan.get("scene_videos", {}).values()
                     for video in videos[:1]  # Only count selected videos
-                }
+                )
             ),
             "upload_specs": production_plan.get("upload_specs"),
             "monetization_plan": monetization_plan,
@@ -190,360 +186,441 @@ class SceneBasedVideoOrchestrator:
         )
         return final_output
 
-    async def _download_single_asset_with_fallback(self, idx: int, segment: dict, niche_keyword: str):
-        """Try yt-dlp download first, then Pexels stock as fallback."""
-        from .downloader import base_downloader_service
-        from .stock_service import base_stock_service
-        import tempfile
-
-        source_path = segment.get("video_path") or segment.get("source_video")
-        video_uri = segment.get("url") or segment.get("source_uri")
-        
-        # 1. Local file already exists
-        if source_path and Path(source_path).exists():
-            logger.info(f"[Scene {idx+1}] Using local asset: {source_path}")
-            return (source_path, segment)
-        
-        # 2. Try yt-dlp download (YouTube, TikTok, etc.)
-        if video_uri:
-            try:
-                logger.info(f"[Scene {idx+1}] Downloading via yt-dlp: {video_uri}")
-                downloaded_path = await base_downloader_service.download_video(video_uri)
-                if downloaded_path and Path(downloaded_path).exists():
-                    logger.info(f"[Scene {idx+1}] yt-dlp download success: {downloaded_path}")
-                    return (downloaded_path, segment)
-            except Exception as e:
-                logger.warning(f"[Scene {idx+1}] yt-dlp download failed: {e}")
-        
-        # 3. Pexels Stock Fallback — search using scene keywords
-        visual_prompt = segment.get("visual_prompt") or segment.get("scene", "")
-        search_query = f"{visual_prompt} {niche_keyword}".strip()[:80]
-        
-        logger.info(f"[Scene {idx+1}] Falling back to Pexels stock: '{search_query}'")
-        try:
-            stock_urls = await base_stock_service.fetch_b_roll(search_query, count=1)
-            if stock_urls:
-                secure_dir = tempfile.mkdtemp(prefix=f"ettametta_stock_scene_{idx}_")
-                stock_path = await base_stock_service.download_stock_video(
-                    stock_urls[0], output_dir=secure_dir
-                )
-                if stock_path and Path(stock_path).exists():
-                    logger.info(f"[Scene {idx+1}] Pexels stock acquired: {stock_path}")
-                    return (stock_path, segment)
-        except Exception as e:
-            logger.warning(f"[Scene {idx+1}] Pexels stock fallback failed: {e}")
-        
-        # 4. Absolute last resort — try with just the niche keyword
-        try:
-            logger.info(f"[Scene {idx+1}] Last resort stock search: '{niche_keyword} video'")
-            fallback_urls = await base_stock_service.fetch_b_roll(f"{niche_keyword} video", count=1)
-            if fallback_urls:
-                secure_dir = tempfile.mkdtemp(prefix=f"ettametta_stock_fallback_{idx}_")
-                fallback_path = await base_stock_service.download_stock_video(
-                    fallback_urls[0], output_dir=secure_dir
-                )
-                if fallback_path and Path(fallback_path).exists():
-                    logger.info(f"[Scene {idx+1}] Last resort stock acquired: {fallback_path}")
-                    return (fallback_path, segment)
-        except Exception as e:
-            logger.exception(f"[Scene {idx+1}] All asset sources exhausted: {e}")
-        
-        logger.error(f"[Scene {idx+1}] CRITICAL: No video asset could be acquired")
-        return None
-
-    async def _acquire_video_assets(self, segments: list, niche_keyword: str) -> list:
-        logger.info(f"Acquiring assets for {len(segments)} segments (with Pexels stock fallback)...")
-        download_tasks = [self._download_single_asset_with_fallback(i, seg, niche_keyword) for i, seg in enumerate(segments)]
-        video_files_raw = await asyncio.gather(*download_tasks)
-        video_files = [v for v in video_files_raw if v is not None]
-        logger.info(f"Successfully acquired {len(video_files)} / {len(segments)} video assets.")
-        return video_files
-
-    async def _normalize_and_overlay_clips(self, video_files: list, production_plan: dict) -> list[str]:
-        from moviepy import VideoFileClip, CompositeVideoClip
-        import time
-        from PIL import Image, ImageDraw, ImageFont
-        import numpy as np
-        from moviepy import ImageClip
-
-        normalized_clips = []
-        target_w, target_h = (1920, 1080) if production_plan.get("aspect_ratio") == "16:9" else (1080, 1920)
-        logger.info(f"Normalizing {len(video_files)} clips to {target_w}x{target_h} for seamless fusion...")
-
-        for video_path, segment in video_files:
-            try:
-                logger.info(f"Processing segment: {video_path}")
-                norm_path = f"{video_path}_norm.mp4"
-                success = self.video_processor.base_ffmpeg_service.apply_fast_transform(
-                    video_path, norm_path, width=target_w, height=target_h
-                )
-                final_path = norm_path if success else video_path
-                
-                clip = VideoFileClip(final_path)
-                duration = segment.get("duration", 5)
-                
-                if clip.duration > duration:
-                    start_t = min(clip.duration * 0.1, clip.duration - duration)
-                    clip = clip.subclipped(start_t, start_t + duration)
-                
-                if segment.get("visual_prompt") and self.video_processor.font_path:
-                    txt_text = segment["visual_prompt"][:50]
-                    try:
-                        font = ImageFont.truetype(self.video_processor.font_path, 32)
-                    except Exception:
-                        font = ImageFont.load_default()
-                    
-                    dummy_img = Image.new('RGBA', (target_w, 100))
-                    draw = ImageDraw.Draw(dummy_img)
-                    bbox = draw.textbbox((0, 0), txt_text, font=font)
-                    tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
-                    
-                    overlay_img = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
-                    draw = ImageDraw.Draw(overlay_img)
-                    padding = 10
-                    draw.rectangle(
-                        [(target_w - tw)//2 - padding, target_h - th - 60 - padding, 
-                         (target_w + tw)//2 + padding, target_h - 60 + padding],
-                        fill=(0, 0, 0, 160)
-                    )
-                    draw.text(((target_w - tw)//2, target_h - th - 60), txt_text, font=font, fill=(255, 255, 255, 255))
-                    
-                    txt_clip = ImageClip(np.array(overlay_img), is_mask=False, transparent=True).with_duration(clip.duration)
-                    clip = CompositeVideoClip([clip, txt_clip])
-                
-                normalized_clips.append(clip)
-            except Exception as clip_err:
-                logger.exception(f"Error processing clip {video_path}: {clip_err}")
-
-        norm_paths = [f"{v_path}_norm.mp4" for v_path, _ in video_files]
-        
-        # Add Intro and Outro
-        import time
-        title = production_plan.get("niche") or "Viral Content"
-        intro_path = str(self.output_dir / f"intro_{int(time.time())}.mp4")
-        intro_res = await self._add_intro_clip(target_w, target_h, title.upper(), intro_path)
-        if intro_res:
-            norm_paths.insert(0, intro_res)
-
-        outro_path = str(self.output_dir / f"outro_{int(time.time())}.mp4")
-        outro_res = await self._add_engagement_cta(target_w, target_h, outro_path)
-        if outro_res:
-            norm_paths.append(outro_res)
-
-        for clip in normalized_clips:
-            clip.close()
-
-        return norm_paths
-
-    async def _mix_and_render_final_video(self, norm_paths: list[str], output_path: Path, fusion_plan: dict) -> dict:
-        import os
-        temp_output = str(output_path.parent / f"temp_no_audio_{output_path.name}")
-        transformer = self.video_processor.base_ffmpeg_service
-        
-        if not transformer.concatenate_videos(norm_paths, temp_output):
-            return {"success": False, "reason": "FFmpeg concatenation failed", "video_path": None}
-            
-        logger.info("✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
-        audio_plan = fusion_plan.get("audio_plan", {})
-        music_path = audio_plan.get("music_path") or "data/storage/audio/background/cinematic.mp3"
-        voiceover_path = audio_plan.get("voiceover_path")
-        
-        if voiceover_path and os.path.exists(voiceover_path) and os.path.exists(music_path):
-            transformer.mix_production_audio_with_ducking(
-                temp_output, voiceover_path, music_path, str(output_path)
-            )
-        else:
-            os.rename(temp_output, str(output_path))
-        
-        from src.services.video_engine.quality_control import base_qc_service
-        qc_report = await base_qc_service.audit_video(str(output_path), "nexus_auto")
-        
-        return {
-            "success": True,
-            "video_path": str(output_path),
-            "qc_report": qc_report,
-            "method": "ffmpeg_elite_fusion_with_ducking",
-        }
-
     async def _execute_video_fusion(
         self, production_plan: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute the actual video fusion based on the production plan with narrative awareness"""
         from .processor import VideoProcessor
-        import time
-        import aiofiles
-
+        VideoProcessor(output_dir=str(self.output_dir))
         try:
-            VideoProcessor(output_dir=str(self.output_dir))
             if not self.can_process_video:
-                return {"success": False, "error": "Video processing not available - MoviePy not installed"}
+                return {
+                    "success": False,
+                    "error": "Video processing not available - MoviePy not installed",
+                }
 
             fusion_plan = production_plan.get("fusion_plan", {})
             segments = fusion_plan.get("segments", [])
+
             if not segments:
                 return {"success": False, "error": "No video segments in fusion plan"}
 
+            import time
+
             start_time = time.time()
+
             output_path = self.output_dir / f"scene_fusion_{int(time.time())}.mp4"
 
-            try:
-                niche_keyword = production_plan.get("niche") or "cinematic"
-                video_files = await self._acquire_video_assets(segments, niche_keyword)
-                if not video_files:
-                    return {
-                        "success": False, 
-                        "error": "No source videos could be acquired (all sources exhausted)",
-                        "reason": "No compatible video files found or processing failed"
-                    }
-
-                norm_paths = await self._normalize_and_overlay_clips(video_files, production_plan)
-                result = await self._mix_and_render_final_video(norm_paths, output_path, fusion_plan)
+            # 1. Acquire Source Videos with Stock Fallback
+            from .downloader import base_downloader_service
+            from .stock_service import base_stock_service
+            
+            logger.info(f"Acquiring assets for {len(segments)} segments (with Pexels stock fallback)...")
+            
+            async def download_asset_with_fallback(idx, segment):
+                """Try yt-dlp download first, then Pexels stock as fallback."""
+                source_path = segment.get("video_path") or segment.get("source_video")
+                video_uri = segment.get("url") or segment.get("source_uri")
                 
-                if result.get("success"):
-                    result.update({
-                        "segments_processed": len(video_files),
-                        "processing_time": time.time() - start_time,
-                    })
-                    return result
+                # 1. Local file already exists
+                if source_path and Path(source_path).exists():
+                    logger.info(f"[Scene {idx+1}] Using local asset: {source_path}")
+                    return (source_path, segment)
+                
+                # 2. Try yt-dlp download (YouTube, TikTok, etc.)
+                if video_uri:
+                    try:
+                        logger.info(f"[Scene {idx+1}] Downloading via yt-dlp: {video_uri}")
+                        downloaded_path = await base_downloader_service.download_video(video_uri)
+                        if downloaded_path and Path(downloaded_path).exists():
+                            logger.info(f"[Scene {idx+1}] yt-dlp download success: {downloaded_path}")
+                            return (downloaded_path, segment)
+                    except Exception as e:
+                        logger.warning(f"[Scene {idx+1}] yt-dlp download failed: {e}")
+                
+                # 3. Pexels Stock Fallback — search using scene keywords
+                visual_prompt = segment.get("visual_prompt") or segment.get("scene", "")
+                niche_keyword = production_plan.get("niche") or "cinematic"
+                search_query = f"{visual_prompt} {niche_keyword}".strip()[:80]
+                
+                logger.info(f"[Scene {idx+1}] Falling back to Pexels stock: '{search_query}'")
+                try:
+                    stock_urls = await base_stock_service.fetch_b_roll(search_query, count=1)
+                    if stock_urls:
+                        stock_path = await base_stock_service.download_stock_video(
+                            stock_urls[0], output_dir=f"/tmp/ettametta/stock_scene_{idx}"
+                        )
+                        if stock_path and Path(stock_path).exists():
+                            logger.info(f"[Scene {idx+1}] Pexels stock acquired: {stock_path}")
+                            return (stock_path, segment)
+                except Exception as e:
+                    logger.warning(f"[Scene {idx+1}] Pexels stock fallback failed: {e}")
+                
+                # 4. Absolute last resort — try with just the niche keyword
+                try:
+                    logger.info(f"[Scene {idx+1}] Last resort stock search: '{niche_keyword} video'")
+                    fallback_urls = await base_stock_service.fetch_b_roll(f"{niche_keyword} video", count=1)
+                    if fallback_urls:
+                        fallback_path = await base_stock_service.download_stock_video(
+                            fallback_urls[0], output_dir=f"/tmp/ettametta/stock_fallback_{idx}"
+                        )
+                        if fallback_path and Path(fallback_path).exists():
+                            logger.info(f"[Scene {idx+1}] Last resort stock acquired: {fallback_path}")
+                            return (fallback_path, segment)
+                except Exception as e:
+                    logger.exception(f"[Scene {idx+1}] All asset sources exhausted: {e}")
+                
+                logger.error(f"[Scene {idx+1}] CRITICAL: No video asset could be acquired")
+                return None
+
+            # Execute all downloads concurrently
+            download_tasks = [download_asset_with_fallback(i, seg) for i, seg in enumerate(segments)]
+            video_files_raw = await asyncio.gather(*download_tasks)
+            
+            # Filter out failed downloads
+            video_files = [v for v in video_files_raw if v is not None]
+
+            logger.info(f"Successfully acquired {len(video_files)} / {len(segments)} video assets.")
+            
+            if not video_files:
+                return {"success": False, "error": "No source videos could be acquired (all sources exhausted)"}
+
+            # 2. Production Assembly (MoviePy 2.x)
+            try:
+                from moviepy import VideoFileClip, CompositeVideoClip
+
+                normalized_clips = []
+                target_w, target_h = 1080, 1920 # Default vertical
+                
+                # Check production plan for orientation hints
+                if production_plan.get("aspect_ratio") == "16:9":
+                    target_w, target_h = 1920, 1080
+
+                logger.info(f"Normalizing {len(video_files)} clips to {target_w}x{target_h} for seamless fusion...")
+
+                for video_path, segment in video_files:
+                    try:
+                        logger.info(f"Processing segment: {video_path}")
+                        # 1. Normalize Resolution and Aspect Ratio (Smart Crop)
+                        norm_path = f"{video_path}_norm.mp4"
+                        success = self.video_processor.base_ffmpeg_service.apply_fast_transform(
+                            video_path, norm_path, width=target_w, height=target_h
+                        )
+                        
+                        final_path = norm_path if success else video_path
+                        logger.info(f"Normalization success: {success}, using: {final_path}")
+                        
+                        # 2. Load the normalized clip
+                        clip = VideoFileClip(final_path)
+                        duration = segment.get("duration", 5)
+                        logger.info(f"Loaded clip duration: {clip.duration}, target: {duration}")
+                        
+                        # Apply smart duration cropping (narrative aware)
+                        if clip.duration > duration:
+                            start_t = min(clip.duration * 0.1, clip.duration - duration)
+                            clip = clip.subclipped(start_t, start_t + duration)
+                            logger.info(f"Subclipped to: {clip.duration}")
+                        
+                        # Add simple text overlay if prompt exists (Pillow-based, no ImageMagick)
+                        if segment.get("visual_prompt") and self.video_processor.font_path:
+                            logger.info(f"Applying text overlay: {segment['visual_prompt']}")
+                            from PIL import Image, ImageDraw, ImageFont
+                            import numpy as np
+                            from moviepy import ImageClip
+                            
+                            # ... (rest of the pillow logic)
+                            
+                            # Create a small transparent overlay for text
+                            txt_text = segment["visual_prompt"][:50]
+                            font_size = 32
+                            try:
+                                font = ImageFont.truetype(self.video_processor.font_path, font_size)
+                            except Exception:
+                                font = ImageFont.load_default()
+                            
+                            # Measure text
+                            dummy_img = Image.new('RGBA', (target_w, 100))
+                            draw = ImageDraw.Draw(dummy_img)
+                            bbox = draw.textbbox((0, 0), txt_text, font=font)
+                            tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
+                            
+                            # Create actual overlay
+                            overlay_img = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
+                            draw = ImageDraw.Draw(overlay_img)
+                            
+                            # Draw semi-transparent background for text
+                            padding = 10
+                            draw.rectangle(
+                                [(target_w - tw)//2 - padding, target_h - th - 60 - padding, 
+                                 (target_w + tw)//2 + padding, target_h - 60 + padding],
+                                fill=(0, 0, 0, 160)
+                            )
+                            draw.text(((target_w - tw)//2, target_h - th - 60), txt_text, font=font, fill=(255, 255, 255, 255))
+                            
+                            # Convert to MoviePy clip
+                            overlay_array = np.array(overlay_img)
+                            txt_clip = ImageClip(overlay_array, is_mask=False, transparent=True).with_duration(clip.duration)
+                            clip = CompositeVideoClip([clip, txt_clip])
+                        
+                        normalized_clips.append(clip)
+                    except Exception as clip_err:
+                        logger.exception(f"Error processing clip {video_path}: {clip_err}")
+
+                if normalized_clips:
+                    # Collect paths for FFmpeg concatenation
+                    norm_paths = [f"{v_path}_norm.mp4" for v_path, _ in video_files]
+                    
+                    # Add Intro
+                    title = production_plan.get("niche") or "Viral Content"
+                    intro_path = str(self.output_dir / f"intro_{int(time.time())}.mp4")
+                    intro_res = await self._add_intro_clip(target_w, target_h, title.upper(), intro_path)
+                    if intro_res:
+                        norm_paths.insert(0, intro_res)
+
+                    # Add Engagement CTA (Like/Follow)
+                    outro_path = str(self.output_dir / f"outro_{int(time.time())}.mp4")
+                    outro_res = await self._add_engagement_cta(target_w, target_h, outro_path)
+                    if outro_res:
+                        norm_paths.append(outro_res)
+
+                    # 4. Final Render & Audio Ducking (Elite FFmpeg Path)
+                    temp_output = str(output_path.parent / f"temp_no_audio_{output_path.name}")
+                    
+                    # Close clips to free file handles for FFmpeg
+                    for clip in normalized_clips:
+                        clip.close()
+                    
+                    transformer = self.video_processor.base_ffmpeg_service
+                    concat_success = transformer.concatenate_videos(norm_paths, temp_output)
+                    
+                    if concat_success:
+                        logger.info("✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
+                        
+                        # Use audio_plan or defaults
+                        audio_plan = fusion_plan.get("audio_plan", {})
+                        music_path = audio_plan.get("music_path") or "data/storage/audio/background/cinematic.mp3"
+                        voiceover_path = audio_plan.get("voiceover_path") # Assumed to be passed or generated
+                        
+                        if voiceover_path and os.path.exists(voiceover_path) and os.path.exists(music_path):
+                            transformer.mix_production_audio_with_ducking(
+                                temp_output, voiceover_path, music_path, str(output_path)
+                            )
+                        else:
+                            # Fallback if audio missing
+                            os.rename(temp_output, str(output_path))
+                        
+                        # 5. Vision-Based Quality Control
+                        from src.services.video_engine.quality_control import base_qc_service
+                        qc_report = await base_qc_service.audit_video(str(output_path), "nexus_auto")
+                        
+                        return {
+                            "success": True,
+                            "video_path": str(output_path),
+                            "segments_processed": len(video_files),
+                            "qc_report": qc_report,
+                            "processing_time": time.time() - start_time,
+                            "method": "ffmpeg_elite_fusion_with_ducking",
+                        }
+
+                    return {
+                        "success": False,
+                        "reason": "FFmpeg concatenation failed",
+                        "video_path": None
+                    }
 
             except Exception as e:
                 logger.exception(f"Real video fusion failed: {e}")
+                raise e
 
             # Fallback: Create placeholder if no videos or processing failed
-            await asyncio.sleep(2)
-            async with aiofiles.open(output_path.with_suffix(".txt"), "w") as f:
-                await f.write("SCENE-BASED VIDEO FUSION PLAN\\n")
-                await f.write(f"Segments: {len(segments)}\\n")
-                await f.write(f"Total Duration: {fusion_plan.get('total_duration', 0)}s\\n")
-                await f.write(f"Video Files Used: {len(video_files) if 'video_files' in locals() else 0}\\n")
+            await asyncio.sleep(2)  # Simulate processing time
+
+            # Create a text file describing what would be created
+            with open(output_path.with_suffix(".txt"), "w") as f:
+                f.write("SCENE-BASED VIDEO FUSION PLAN\\n")
+                f.write(f"Segments: {len(segments)}\\n")
+                f.write(f"Total Duration: {fusion_plan.get('total_duration', 0)}s\\n")
+                f.write(f"Video Files Used: {len(video_files)}\\n")
                 for i, segment in enumerate(segments):
-                    await f.write(f"Segment {i + 1}: {segment.get('scene', f'Scene_{i + 1}')}\\n")
+                    f.write(
+                        f"Segment {i + 1}: {segment.get('scene', f'Scene_{i + 1}')}\\n"
+                    )
 
             return {
-                "success": False,
-                "video_path": str(output_path.with_suffix(".txt")),
+                "success": False,  # Return False since no actual video was created
+                "video_path": str(output_path.with_suffix(".txt")),  # Text file instead
                 "segments_processed": len(segments),
                 "total_duration": fusion_plan.get("total_duration", 0),
                 "processing_time": time.time() - start_time,
                 "method": "simulation_only",
                 "reason": "No compatible video files found or processing failed",
             }
+
         except Exception as e:
             logger.exception(f"Video fusion failed: {e}")
             return {"success": False, "error": str(e)}
-
-    async def _mix_voiceover(self, video_path: str, voiceover_path: str, audio_output_path: str) -> bool:
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path, "-i", voiceover_path,
-            "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
-            "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-            "-shortest", audio_output_path,
-        ]
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        _, stderr = await process.communicate()
-        if process.returncode == 0 and Path(audio_output_path).exists():
-            return True
-        logger.warning(f"FFmpeg voiceover mix failed: {stderr.decode()[:200]}")
-        return False
-
-    async def _mix_background_music(self, video_path: str, bg_music: str, audio_output_path: str) -> bool:
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path, "-i", bg_music,
-            "-filter_complex", "[0:a]volume=1.0[orig];[1:a]volume=0.25[music];[orig][music]amix=inputs=2:duration=first[a]",
-            "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-            "-shortest", audio_output_path,
-        ]
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        _, stderr = await process.communicate()
-        if process.returncode == 0 and Path(audio_output_path).exists():
-            return True
-        logger.warning(f"FFmpeg music mix failed: {stderr.decode()[:200]}")
-        return False
-
-    async def _concat_and_mix_audio_segments(self, video_path: str, valid_segments: list[str], audio_output_path: str) -> tuple[bool, int]:
-        import tempfile
-        import os
-        
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            for seg in valid_segments:
-                f.write(f"file '{Path(seg).absolute()}'\n")
-            concat_list = f.name
-
-        concat_audio = video_path.replace(".mp4", "_concat_audio.m4a")
-        try:
-            cmd_concat = [
-                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-                "-i", concat_list, "-c:a", "aac", "-b:a", "192k",
-                concat_audio,
-            ]
-            process = await asyncio.create_subprocess_exec(
-                *cmd_concat, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-            _, stderr = await process.communicate()
-            if process.returncode != 0:
-                logger.warning(f"Audio concat failed: {stderr.decode()[:200]}")
-                return False, 0
-
-            cmd_mix = [
-                "ffmpeg", "-y", "-i", video_path, "-i", concat_audio,
-                "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
-                "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-                "-shortest", audio_output_path,
-            ]
-            process_mix = await asyncio.create_subprocess_exec(
-                *cmd_mix, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-            _, mix_stderr = await process_mix.communicate()
-            if process_mix.returncode == 0 and Path(audio_output_path).exists():
-                return True, len(valid_segments)
-            logger.warning(f"Audio mix concatenated failed: {mix_stderr.decode()[:200]}")
-            return False, 0
-        finally:
-            Path(concat_list).unlink(missing_ok=True)
-            Path(concat_audio).unlink(missing_ok=True)
 
     async def _add_audio_overlay(
         self, video_path: str, audio_plan: dict[str, Any]
     ) -> dict[str, Any]:
         """Add audio overlay to the video using FFmpeg"""
         import time
+        import subprocess
+        import tempfile
+
         try:
-            if not audio_plan.get("voice_over", False) or not self.can_add_audio:
-                if not self.can_add_audio:
-                    logger.warning("Audio processing not available - skipping audio overlay")
-                return {"success": True, "video_path": video_path, "audio_added": False, "processing_time": 0}
+            if not audio_plan.get("voice_over", False):
+                return {
+                    "success": True,
+                    "video_path": video_path,
+                    "audio_added": False,
+                    "processing_time": 0,
+                }
+
+            if not self.can_add_audio:
+                logger.warning(
+                    "Audio processing not available - skipping audio overlay"
+                )
+                return {
+                    "success": True,
+                    "video_path": video_path,
+                    "audio_added": False,
+                    "processing_time": 0,
+                }
 
             start_time = time.time()
             audio_segments = audio_plan.get("audio_segments", [])
             audio_output_path = video_path.replace(".mp4", "_with_audio.mp4")
 
             if not audio_segments:
+                # No audio segments — try to use background_music or voiceover_path
                 bg_music = audio_plan.get("background_music")
                 voiceover_path = audio_plan.get("voiceover_path")
 
                 if voiceover_path and Path(voiceover_path).exists():
-                    if await self._mix_voiceover(video_path, voiceover_path, audio_output_path):
-                        return {"success": True, "video_path": audio_output_path, "audio_added": True, "audio_segments": 0, "processing_time": time.time() - start_time}
-                elif bg_music and Path(bg_music).exists():
-                    if await self._mix_background_music(video_path, bg_music, audio_output_path):
-                        return {"success": True, "video_path": audio_output_path, "audio_added": True, "audio_segments": 0, "processing_time": time.time() - start_time}
-                
-                return {"success": True, "video_path": video_path, "audio_added": False, "processing_time": time.time() - start_time}
+                    # Mix voiceover with video using FFmpeg
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-i", video_path,
+                        "-i", voiceover_path,
+                        "-filter_complex",
+                        "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+                        "-map", "0:v", "-map", "[a]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        audio_output_path,
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                    if result.returncode == 0 and Path(audio_output_path).exists():
+                        return {
+                            "success": True,
+                            "video_path": audio_output_path,
+                            "audio_added": True,
+                            "audio_segments": 0,
+                            "processing_time": time.time() - start_time,
+                        }
+                    logger.warning(f"FFmpeg voiceover mix failed: {result.stderr[:200]}")
 
+                elif bg_music and Path(bg_music).exists():
+                    # Mix background music at lower volume
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-i", video_path,
+                        "-i", bg_music,
+                        "-filter_complex",
+                        "[0:a]volume=1.0[orig];[1:a]volume=0.25[music];[orig][music]amix=inputs=2:duration=first[a]",
+                        "-map", "0:v", "-map", "[a]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                        "-shortest",
+                        audio_output_path,
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                    if result.returncode == 0 and Path(audio_output_path).exists():
+                        return {
+                            "success": True,
+                            "video_path": audio_output_path,
+                            "audio_added": True,
+                            "audio_segments": 0,
+                            "processing_time": time.time() - start_time,
+                        }
+                    logger.warning(f"FFmpeg music mix failed: {result.stderr[:200]}")
+
+                # No audio to add
+                return {
+                    "success": True,
+                    "video_path": video_path,
+                    "audio_added": False,
+                    "processing_time": time.time() - start_time,
+                }
+
+            # Multiple audio segments — concatenate them, then mix with video
             valid_segments = [s for s in audio_segments if isinstance(s, str) and Path(s).exists()]
             if not valid_segments:
                 logger.warning("No valid audio segment files found")
-                return {"success": True, "video_path": video_path, "audio_added": False, "processing_time": time.time() - start_time}
+                return {
+                    "success": True,
+                    "video_path": video_path,
+                    "audio_added": False,
+                    "processing_time": time.time() - start_time,
+                }
 
-            success, segment_count = await self._concat_and_mix_audio_segments(video_path, valid_segments, audio_output_path)
-            if success:
-                return {"success": True, "video_path": audio_output_path, "audio_added": True, "audio_segments": segment_count, "processing_time": time.time() - start_time}
-            
-            return {"success": True, "video_path": video_path, "audio_added": False, "processing_time": time.time() - start_time}
+            # Concatenate audio segments into one track
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+                for seg in valid_segments:
+                    f.write(f"file '{Path(seg).absolute()}'\n")
+                concat_list = f.name
+
+            concat_audio = video_path.replace(".mp4", "_concat_audio.m4a")
+            try:
+                cmd_concat = [
+                    "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                    "-i", concat_list, "-c:a", "aac", "-b:a", "192k",
+                    concat_audio,
+                ]
+                result = subprocess.run(cmd_concat, capture_output=True, text=True, timeout=60)
+                if result.returncode != 0:
+                    logger.warning(f"Audio concat failed: {result.stderr[:200]}")
+                    return {
+                        "success": True,
+                        "video_path": video_path,
+                        "audio_added": False,
+                        "processing_time": time.time() - start_time,
+                    }
+            finally:
+                Path(concat_list).unlink(missing_ok=True)
+
+            # Mix concatenated audio with video
+            cmd_mix = [
+                "ffmpeg", "-y",
+                "-i", video_path,
+                "-i", concat_audio,
+                "-filter_complex",
+                "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+                "-map", "0:v", "-map", "[a]",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                "-shortest",
+                audio_output_path,
+            ]
+            result = subprocess.run(cmd_mix, capture_output=True, text=True, timeout=120)
+            Path(concat_audio).unlink(missing_ok=True)
+
+            if result.returncode == 0 and Path(audio_output_path).exists():
+                return {
+                    "success": True,
+                    "video_path": audio_output_path,
+                    "audio_added": True,
+                    "audio_segments": len(valid_segments),
+                    "processing_time": time.time() - start_time,
+                }
+
+            logger.warning(f"FFmpeg audio mix failed: {result.stderr[:200]}")
+            return {
+                "success": True,
+                "video_path": video_path,
+                "audio_added": False,
+                "processing_time": time.time() - start_time,
+            }
+
         except Exception as e:
             logger.exception(f"Audio overlay failed: {e}")
             return {"success": False, "error": str(e), "video_path": video_path}
@@ -587,10 +664,9 @@ class SceneBasedVideoOrchestrator:
             }
 
             # Save metadata alongside video
-            import aiofiles
             metadata_path = final_path.with_suffix(".json")
-            async with aiofiles.open(metadata_path, "w") as f:
-                await f.write(json.dumps(metadata, indent=2))
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f, indent=2)
 
             return {
                 "success": True,
@@ -645,60 +721,88 @@ class SceneBasedVideoOrchestrator:
 
 
     async def _add_intro_clip(self, w: int, h: int, title: str, output_path: str) -> str | None:
-        """Generates a cinematic branded intro segment using Remotion Studio."""
-        import random
+        """Appends a branded intro segment using Pillow, renders to file and returns path."""
         try:
-            logger.info("Injecting Branded Intro segment (Remotion-based)...")
+            from moviepy import ColorClip, CompositeVideoClip, ImageClip
+            from PIL import Image, ImageDraw, ImageFont
+            import numpy as np
             
-            premium_intros = [
-                "CinematicLiquid", "CinematicPrism", "CinematicLidar",
-                "CinematicKinetic", "CinematicPortal", "CinematicCyberpunk",
-            ]
-            selected_intro = random.choice(premium_intros)
+            logger.info("Injecting Branded Intro segment (Pillow-based)...")
+            duration = 3.0
             
-            props = {
-                "title": "ETTAMETTA PRESENTS",
-                "subtitle": title,
-                "duration_in_frames": 120,  # 4 seconds at 30 fps
-                "show_cta_overlay": False
-            }
+            bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
             
-            output_name = os.path.basename(output_path)
-            rendered_path = await self.remotion_service.render_video(selected_intro, props, output_name)
+            img = Image.new('RGB', (w, h), color=(15, 15, 15))
+            draw = ImageDraw.Draw(img)
             
-            if rendered_path and os.path.exists(rendered_path) and rendered_path != output_path:
-                import shutil
-                shutil.move(rendered_path, output_path)
-                return output_path
-            return rendered_path
+            try:
+                font_size = h // 20
+                font = ImageFont.truetype(self.video_processor.font_path, font_size)
+            except Exception:
+                font = ImageFont.load_default()
+
+            cta_lines = ["ETTAMETTA PRESENTS", "", title]
+            total_h = len(cta_lines) * (font_size * 1.5)
+            current_y = (h - total_h) // 2
+            
+            for i, line in enumerate(cta_lines):
+                bbox = draw.textbbox((0, 0), line, font=font)
+                line_w = bbox[2] - bbox[0]
+                color = (255, 255, 255) if i != 0 else (100, 200, 255)
+                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=color)
+                current_y += font_size * 1.5
+            
+            img_array = np.array(img)
+            txt_clip = ImageClip(img_array).with_duration(duration)
+            
+            intro_segment = CompositeVideoClip([bg, txt_clip])
+            intro_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
+            intro_segment.close()
+            return output_path
         except Exception as e:
-            logger.exception(f"Failed to inject Intro via Remotion: {e}")
+            logger.exception(f"Failed to inject Intro: {e}")
             return None
 
     async def _add_engagement_cta(self, w: int, h: int, output_path: str) -> str | None:
-        """Generates a high-energy CTA segment using Remotion Studio."""
+        """Appends a high-energy CTA segment using Pillow, renders to file and returns path."""
         try:
-            logger.info("Injecting Engagement CTA segment (Remotion-based)...")
+            from moviepy import ColorClip, CompositeVideoClip, ImageClip
+            from PIL import Image, ImageDraw, ImageFont
+            import numpy as np
             
-            props = {
-                "title": "",
-                "subtitle": "",
-                "duration_in_frames": 120,  # 4 seconds at 30 fps
-                "show_cta_overlay": True,
-                "cta_type": "engagement",
-                "cta_text": "LIKE • SHARE • FOLLOW • Hit the 🔔 for more!"
-            }
+            logger.info("Injecting Engagement CTA segment (Pillow-based)...")
+            duration = 4.0
             
-            output_name = os.path.basename(output_path)
-            rendered_path = await self.remotion_service.render_video("CinematicMinimal", props, output_name)
+            bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
             
-            if rendered_path and os.path.exists(rendered_path) and rendered_path != output_path:
-                import shutil
-                shutil.move(rendered_path, output_path)
-                return output_path
-            return rendered_path
+            img = Image.new('RGB', (w, h), color=(15, 15, 15))
+            draw = ImageDraw.Draw(img)
+            
+            try:
+                font_size = h // 25
+                font = ImageFont.truetype(self.video_processor.font_path, font_size)
+            except Exception:
+                font = ImageFont.load_default()
+
+            cta_lines = ["LIKE • SHARE • FOLLOW", "", "Hit the 🔔 for more!"]
+            total_h = len(cta_lines) * (font_size * 1.5)
+            current_y = (h - total_h) // 2
+            
+            for line in cta_lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                line_w = bbox[2] - bbox[0]
+                draw.text(((w - line_w) // 2, current_y), line, font=font, fill=(255, 215, 0))
+                current_y += font_size * 1.5
+            
+            img_array = np.array(img)
+            txt_clip = ImageClip(img_array).with_duration(duration)
+            
+            cta_segment = CompositeVideoClip([bg, txt_clip])
+            cta_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
+            cta_segment.close()
+            return output_path
         except Exception as e:
-            logger.exception(f"Failed to inject CTA via Remotion: {e}")
+            logger.exception(f"Failed to inject CTA: {e}")
             return None
 
     async def _generate_video_thumbnail(self, video_path: str) -> str:

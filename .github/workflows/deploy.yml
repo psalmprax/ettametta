@@ -15,6 +15,31 @@ jobs:
         username: ubuntu
         key: ${{ secrets.OCI_PRIVATE_KEY }}
         script: |
+          set -e
           cd ~/ettametta
           git pull origin master
-          docker-compose up -d --build
+
+          # Build and start all services
+          docker compose build --parallel
+          docker compose up -d
+
+          # ── Run alembic migrations ──
+          echo 'Running alembic upgrade head...'
+          docker compose exec -T api alembic upgrade head || \
+            docker compose run --rm -T api alembic upgrade head
+
+          # ── Post-deploy health checks ──
+          echo 'Waiting for API to become healthy...'
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:7201/health; then
+              echo ''
+              echo 'API is healthy'
+              break
+            fi
+            [ "$i" -eq 60 ] && echo 'WARNING: API health check timed out' || true
+            sleep 1
+          done
+
+          curl -s -o /dev/null -w 'API docs: %{http_code}\n' http://localhost:7201/docs || true
+          curl -s -o /dev/null -w 'OpenAPI:  %{http_code}\n' http://localhost:7201/openapi.json || true
+          docker compose ps

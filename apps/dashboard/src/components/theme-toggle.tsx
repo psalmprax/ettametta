@@ -8,7 +8,7 @@ interface ThemeToggleProps {
     readonly showLabel?: boolean;
 }
 
-export function ThemeToggle({ className, showLabel = false }: ThemeToggleProps) {
+function ThemeToggle({ className, showLabel = false }: ThemeToggleProps) {
     const { theme, toggleTheme } = useUITheme();
 
     return (

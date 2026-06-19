@@ -3,15 +3,23 @@ E2E Flow Tests
 Tests complete user workflows: Login → Discovery → Create → Publish
 """
 
+import os
 import pytest
 import requests
 
 BASE_URL = "http://149.104.110.122:7201"
 DASHBOARD_URL = "http://149.104.110.122:7202"
 
-# Test credentials
-TEST_USER = "samuelolle"
-TEST_PASS = "Single123."
+# Test credentials — read from environment, never hardcoded.
+# Set E2E_TEST_USER and E2E_TEST_PASS in your environment or .env file.
+TEST_USER = os.getenv("E2E_TEST_USER", "")
+TEST_PASS = os.getenv("E2E_TEST_PASS", "")
+
+if not TEST_USER or not TEST_PASS:
+    raise RuntimeError(
+        "E2E_TEST_USER and E2E_TEST_PASS environment variables must be set. "
+        "These replace the previously hardcoded credentials for security."
+    )
 
 
 def get_auth_token():

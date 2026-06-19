@@ -1,5 +1,4 @@
-import os
-import asyncio
+import os, asyncio
 os.environ["PYTHONPATH"] = "/app"
 os.environ["ENV"] = "production"
 

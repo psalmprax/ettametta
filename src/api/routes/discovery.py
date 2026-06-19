@@ -30,7 +30,6 @@ from src.api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from src.services.video_engine.job_service import VideoJobService, get_video_job_service
-from src.services.discovery.schemas import AnalysisReport
 
 logger = logging.getLogger(__name__)
 
@@ -336,15 +335,39 @@ async def analyze_candidate(
 
     # Consume credits
     from src.services.payment.credit_service import credit_service
-    await credit_service.consume_credits(
+
+    # 1. Dispatch the task FIRST. If the broker is down, the user does NOT
+    #    pay for nothing — we surface a 503 and let them retry.
+    try:
+        task = analyze_viral_pattern_task.delay(candidate.dict())
+    except Exception as dispatch_err:
+        logger.exception(f"[Discovery] Task dispatch failure: {dispatch_err}")
+        raise HTTPException(
+            status_code=503, detail="Task queue unavailable; credits not charged."
+        )
+
+    # 2. Now consume credits. If the charge fails (e.g. balance race), revoke
+    #    the just-queued task so we don't end up with an unpaid-for analysis.
+    charged, charge_msg = await credit_service.consume_credits(
         user_id=current_user.id,
         amount=credits_cost,
         action=CreditAction.VIRAL_ANALYSIS,
         db=db,
         reference_id=candidate.id,  # Using candidate ID as reference
     )
+    if not charged:
+        from src.api.utils.celery import celery_app
+        try:
+            celery_app.control.revoke(task.id, terminate=True)
+        except Exception as revoke_err:
+            logger.exception(
+                f"[Discovery] Failed to revoke task after credit failure: {revoke_err}"
+            )
+        raise HTTPException(
+            status_code=402,
+            detail=f"Insufficient credits: {charge_msg or 'top up and retry'}",
+        )
 
-    task = analyze_viral_pattern_task.delay(candidate.dict())
     return success_response(
         data={
             "status": SystemJobStatus.QUEUED,
@@ -467,43 +490,6 @@ async def get_analysis_status(
         return handle_exception(e)
 
 
-def _pack_analysis_data(report: "AnalysisReport") -> dict:
-    """Build the ``analysis_data`` dict passed to
-    ``download_and_process_task`` from a persisted ``AnalysisReport``.
-
-    Contains two sub-dicts:
-    * ``pattern`` — legacy-compatible shape with ``hook_score``,
-      ``retention_estimate``, ``pacing_bpm``, ``style_keywords``,
-      ``emotional_triggers`` (keeps ``strategy_service`` working).
-    * ``analysis_report`` — the richer Pydantic-model-dump with full
-      hook/pacing/structure/style/sentiment insights (Phase 10-04).
-    """
-    return {
-        "pattern": {
-            "hook_score": report.hook.scroll_stopper and 0.8 or 0.5,
-            "retention_estimate": (
-                report.structure.retention_curve[2]
-                if len(report.structure.retention_curve) > 2
-                else 0.5
-            ),
-            "pacing_bpm": report.pacing.bpm,
-            "style_keywords": report.style.motion_graphics,
-            "emotional_triggers": report.sentiment.emotional_triggers,
-        },
-        "analysis_report": {
-            "candidate_id": report.candidate_id,
-            "hook": report.hook.model_dump(mode="json"),
-            "pacing": report.pacing.model_dump(mode="json"),
-            "structure": report.structure.model_dump(mode="json"),
-            "style": report.style.model_dump(mode="json"),
-            "sentiment": report.sentiment.model_dump(mode="json"),
-            "summary": report.summary,
-            "viral_score": report.viral_score,
-            "confidence": report.confidence,
-        },
-    }
-
-
 class CreateVideoFromAnalysisRequest(BaseModel):
     task_id: str
     niche: str = "Motivation"
@@ -511,7 +497,7 @@ class CreateVideoFromAnalysisRequest(BaseModel):
     style: str | None = "Default"
     quality_tier: str | None = "standard"
     generate_thumbnail: bool | None = False
-    content_id: str | None = None  # 10-05: candidate_id for DB-backed AnalysisReport threading
+
 
 
 @router.post("/analyze/{task_id}/create-video")
@@ -541,7 +527,7 @@ async def create_video_from_analysis(
                 status_code=400, detail=f"Analysis failed: {result.info}"
             )
 
-        # Get analysis result (Celery — backward-compatible path)
+        # Get analysis result
         analysis = result.result
         candidate_url = analysis.get("source_uri") or analysis.get("candidate_id", "")
 
@@ -550,41 +536,7 @@ async def create_video_from_analysis(
                 status_code=400, detail="No source URL found in analysis"
             )
 
-        # ── 10-04: Read persisted AnalysisReport from DB when available ──
-        analysis_data: dict | None = None
-        analysis_snapshot: dict | None = None
-        candidate_id = analysis.get("candidate_id", "")
-        if candidate_id:
-            from src.services.discovery.schemas import AnalysisReport
-            from pydantic import ValidationError
-
-            stmt = select(ContentCandidateDB).filter(
-                ContentCandidateDB.id == candidate_id
-            )
-            db_result = await db.execute(stmt)
-            content = db_result.scalar_one_or_none()
-            if content and getattr(content, "analysis_payload", None):
-                try:
-                    report = AnalysisReport.from_db_payload(
-                        content.analysis_payload
-                    )
-                    analysis_data = _pack_analysis_data(report)
-                    analysis_snapshot = report.model_dump(mode="json")
-                    logger.info(
-                        f"[Discovery] Threading AnalysisReport "
-                        f"(candidate={candidate_id}, "
-                        f"viral={report.viral_score:.0f}, "
-                        f"style={report.recommended_style()}) "
-                        f"into video job from analysis task {task_id}"
-                    )
-                except ValidationError as report_err:
-                    logger.warning(
-                        f"[Discovery] Failed to parse AnalysisReport "
-                        f"for candidate={candidate_id}: {report_err}. "
-                        f"Falling back to Celery-only path."
-                    )
-
-        # Dispatch Task — thread analysis_data when available
+        # Dispatch Task
         try:
             task = download_and_process_task.delay(
                 source_uri=candidate_url,
@@ -594,7 +546,6 @@ async def create_video_from_analysis(
                 quality_tier=request.quality_tier,
                 generate_thumbnail=request.generate_thumbnail or False,
                 user_id=current_user.id,
-                analysis_data=analysis_data,
             )
         except Exception as task_err:
             logger.exception(f"Task dispatch failure: {task_err}")
@@ -634,21 +585,8 @@ async def create_video_from_analysis(
                 "quality_tier": request.quality_tier,
                 "generate_thumbnail": request.generate_thumbnail,
                 "analysis_task_id": task_id,
-                "analysis_snapshot": analysis_snapshot,
             },
         )
-
-        # ── 10-06: Observability — track analysis→video pipeline completions ──
-        try:
-            from src.services.infrastructure.resilience_metrics import (
-                analysis_to_video_pipeline,
-            )
-            label = "snapshot_attached" if analysis_snapshot else "celery_fallback"
-            analysis_to_video_pipeline.labels(status=label).inc()
-        except Exception as metric_err:  # pragma: no cover - non-fatal
-            logger.warning(
-                f"[Discovery] Failed to increment pipeline metric: {metric_err}"
-            )
 
         # Agentic Intelligence Injection (Official Skill Integration)
         try:
@@ -1052,94 +990,6 @@ async def get_content_analysis(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.exception(f"Analysis failed: {e}")
-        return handle_exception(e)
-
-
-# ─── Read-Side AnalysisReport Endpoint (Phase 10-03) ─────────────────────────
-# Public read contract for the persisted AnalysisReport written by the Celery
-# task in 10-02. Returns 404 if no report has been persisted yet, which lets
-# the Transform → Video button poll until the analyze task is done. This is
-# the contract the video job dispatcher (10-04) will also consume.
-
-
-@router.get("/analysis/{content_id}")
-async def get_persisted_analysis(
-    content_id: str,
-    current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Read-only endpoint that returns the persisted AnalysisReport for a
-    content candidate. Returns 404 in two distinct cases so the UI can
-    show different messages:
-
-    1. Content row does not exist  → ``Content not found: <id>``
-    2. Content row exists, but no report has been persisted yet
-       (Celery task still running, or analysis was never kicked off)
-       → ``No analysis persisted for content_id``
-    """
-    from pydantic import ValidationError
-
-    from src.services.discovery.schemas import AnalysisReport
-
-    try:
-        # 1. Look up the content row.
-        stmt = select(ContentCandidateDB).filter(
-            ContentCandidateDB.id == content_id
-        )
-        result = await db.execute(stmt)
-        content = result.scalar_one_or_none()
-
-        if not content:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Content not found: {content_id}",
-            )
-
-        # 2. Pull the persisted payload (10-01 added this JSONB column).
-        payload = getattr(content, "analysis_payload", None)
-        if not payload:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No analysis persisted for content_id={content_id}",
-            )
-
-        # 3. Rehydrate the Pydantic-validated report. A corrupt payload
-        #    (e.g. partial write from an interrupted Celery task) should
-        #    surface as 404 to the UI, not 500 — log and bail.
-        try:
-            report = AnalysisReport.from_db_payload(payload)
-        except ValidationError as ve:
-            logger.warning(
-                f"[Discovery] analysis/{content_id} payload failed validation: {ve}"
-            )
-            raise HTTPException(
-                status_code=404,
-                detail=f"Persisted analysis is malformed for content_id={content_id}",
-            )
-
-        # 4. Build persisted_at: prefer the dedicated column written by 10-02,
-        #    fall back to the older analyzed_at for legacy rows.
-        persisted_at = (
-            getattr(content, "analysis_persisted_at", None) or content.analyzed_at
-        )
-
-        return success_response(
-            data={
-                "analysis": report.model_dump(mode="json"),
-                "persisted_at": persisted_at.isoformat()
-                if persisted_at is not None
-                else None,
-                "status": getattr(report, "status", None),
-            }
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(
-            f"[Discovery] GET /analysis/{content_id} failed: {e}"
-        )
         return handle_exception(e)
 
 

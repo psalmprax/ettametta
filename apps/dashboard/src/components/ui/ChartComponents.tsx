@@ -13,7 +13,7 @@ import {
 
 // --- Custom Tooltip ---
 
-export const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }: any) => {
+const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }: any) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-[#0F0F11]/95 backdrop-blur-xl border border-white/10 p-3 rounded-xl shadow-2xl min-w-[120px]">
@@ -39,7 +39,7 @@ export const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" 
 
 // --- Standardized Axes ---
 
-export const ChartXAxis = (props: any) => (
+const ChartXAxis = (props: any) => (
     <RechartsXAxis
         axisLine={false}
         tickLine={false}
@@ -49,7 +49,7 @@ export const ChartXAxis = (props: any) => (
     />
 );
 
-export const ChartYAxis = (props: any) => (
+const ChartYAxis = (props: any) => (
     <RechartsYAxis
         axisLine={false}
         tickLine={false}
@@ -59,7 +59,7 @@ export const ChartYAxis = (props: any) => (
     />
 );
 
-export const ChartGrid = (props: any) => (
+const ChartGrid = (props: any) => (
     <RechartsCartesianGrid
         strokeDasharray="3 3"
         stroke="rgba(255,255,255,0.03)"

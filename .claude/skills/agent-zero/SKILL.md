@@ -14,7 +14,7 @@ Agent Zero is ettametta's autonomous viral content loop: scout trends, screen fo
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/zero/status
 
 # State in DB
-docker compose exec -T db psql -U your_postgres_user_here -d ettametta -c "SELECT id, is_running, current_step, last_run_at, next_run_at FROM agent_zero_states ORDER BY id DESC LIMIT 5;"
+docker compose exec -T db psql -U ettametta -d ettametta -c "SELECT id, is_running, current_step, last_run_at, next_run_at FROM agent_zero_states ORDER BY id DESC LIMIT 5;"
 
 # Latest insights
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/zero/insights
@@ -91,7 +91,7 @@ If persistent, check which step failed via `GET /zero/status`.
 ### State not recovering after restart
 `load_and_resume()` only fires if `is_running=true` in DB. Check:
 ```bash
-docker compose exec -T db psql -U your_postgres_user_here -d ettametta -c "SELECT is_running, current_step FROM agent_zero_states ORDER BY id DESC LIMIT 1;"
+docker compose exec -T db psql -U ettametta -d ettametta -c "SELECT is_running, current_step FROM agent_zero_states ORDER BY id DESC LIMIT 1;"
 ```
 
 ### Remotion render fails in Agent Zero
