@@ -2,7 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+/** Module-internal — do not consume from outside. */
 type TranslationKey = string;
+/** Module-internal — do not consume from outside. */
+
 type Translations = Record<TranslationKey, string>;
 
 const translations: Record<string, Translations> = {
@@ -126,6 +129,7 @@ const translations: Record<string, Translations> = {
   }
 };
 
+/** Module-internal — do not consume from outside. */
 interface I18nContextType {
   locale: string;
   setLocale: (locale: string) => void;
@@ -133,6 +137,7 @@ interface I18nContextType {
   availableLocales: string[];
 }
 
+/** Module-internal — do not consume from outside. */
 const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { readonly children: ReactNode }) {

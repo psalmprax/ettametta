@@ -363,7 +363,7 @@ class AutoCreator:
     )
     async def publish_job(self, job_id: str, platforms: list[str] = ["youtube"]) -> dict:
         """Publishes a completed job with resilience."""
-        from src.services.publishing.service import base_publishing_service
+        from src.services.distribution.publishing import base_publishing_service
         from src.api.utils.database import async_session_factory
         from src.api.utils.models import NexusJobDB
         from sqlalchemy import select
@@ -1368,7 +1368,7 @@ class AutoCreator:
             return {"passed": False, "score": 0, "reason": "audit_error"}
 
     async def _generate_voiceovers(self, segments, job_id):
-        from src.services.voiceover.service import base_voiceover_service
+        from src.services.audio.voiceover import base_voiceover_service
         voice_paths = []
         for i, seg in enumerate(segments):
             text = seg.get("text", "")

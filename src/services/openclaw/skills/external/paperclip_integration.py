@@ -53,7 +53,7 @@ class PaperclipOrganicSkill(OpenClawBaseSkill):
             status = "🔥 VIRAL DETECTED"
             # TRIGGER HERMES REFLECTION
             try:
-                from src.services.hermes.service import base_hermes_service
+                from src.services.llm.hermes import base_hermes_service
                 # In a real system, we'd fetch the job_data from DB here
                 # Mocking minimal job_data for reflection
                 mock_job_data = {

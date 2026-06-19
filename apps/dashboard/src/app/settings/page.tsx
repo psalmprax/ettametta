@@ -60,6 +60,7 @@ import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { LanguageSwitcher } from "@/lib/i18n";
 
+/** Module-internal — do not consume from outside. */
 const SettingsSchema = z.object({
     groq_api_key: z.string().optional(),
     youtube_api_key: z.string().optional(),
@@ -67,6 +68,7 @@ const SettingsSchema = z.object({
     active_monetization_strategy: z.string().optional(),
 });
 
+/** Module-internal — do not consume from outside. */
 type SettingsValues = z.infer<typeof SettingsSchema>;
 
 export default function SettingsPage() {

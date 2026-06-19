@@ -5,6 +5,7 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 
+/** Module-internal — do not consume from outside. */
 interface EmpireBlueprint {
     id?: string;
     niche?: string;
@@ -14,6 +15,7 @@ interface EmpireBlueprint {
     total_views?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface RevenuePlatformStat {
     platform: string;
     revenue: number;
@@ -21,11 +23,13 @@ interface RevenuePlatformStat {
     clicks?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface RevenueReport {
     total_revenue?: number;
     platforms?: RevenuePlatformStat[];
 }
 
+/** Module-internal — do not consume from outside. */
 interface AffiliateLink {
     id?: string;
     product_name?: string;
@@ -34,12 +38,14 @@ interface AffiliateLink {
     conversion_rate?: string | number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface CommerceStatus {
     status?: string;
     source?: string;
     sample_count?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 const DEFAULT_NICHES: string[] = [
     "Motivation", "AI Technology", "Finance", "Fitness",
     "Business & Entrepreneurship", "Marketing & Sales",

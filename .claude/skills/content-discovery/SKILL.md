@@ -11,7 +11,7 @@ Dual-language: Python orchestrator + Go high-performance scanner.
 
 **Python** (`src/services/discovery/service.py`): DiscoveryService — scanning, caching, filtering, persistence, AI ranking, recursive expansion.
 
-**Go** (`src/services/discovery-go/`): Gin HTTP service (port 8080) with YouTube API + DuckDuckGo fallback, worker pool (10 goroutines), results flow to Python via AIBridge.
+**Go** (legacy, removed): High-performance scanner was previously in `src/services/discovery-go/` — consolidated into Python orchestrator.
 
 ## Quick Diagnostics
 
@@ -116,8 +116,6 @@ All platforms normalize to `ContentCandidate` (models.py):
 | src/services/discovery/deconstructor.py | Pattern deconstruction |
 | src/services/discovery/eligibility.py | Quality auditing |
 | src/services/discovery/video_content_pipeline.py | End-to-end pipeline |
-| src/services/discovery-go/scanner.go | Go YouTube scanner + DDG fallback |
-| src/services/discovery-go/bridge.go | AIBridge to Python API |
 
 ## Common Issues
 

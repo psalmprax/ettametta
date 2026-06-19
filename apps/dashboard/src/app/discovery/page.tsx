@@ -40,9 +40,13 @@ import { Button } from "@/components/ui/Button";
 import { CandidateList } from "@/components/discovery/CandidateList";
 import { NeuralConfig } from "@/components/discovery/NeuralConfig";
 
+/** Module-internal — do not consume from outside. */
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
+/** Module-internal — do not consume from outside. */
+
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 
+/** Module-internal — do not consume from outside. */
 interface ContentCandidate {
     id: string;
     platform: string;

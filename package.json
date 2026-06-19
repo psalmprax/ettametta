@@ -12,6 +12,11 @@
     "apps/*",
     "src/tests/e2e"
   ],
+  "overrides": {
+    "next": {
+      "postcss": "8.5.15"
+    }
+  },
   "devDependencies": {
     "fallow": "^2.97.0"
   }

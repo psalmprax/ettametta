@@ -21,12 +21,14 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface CreditBalance {
     balance: number;
     tier: string;
     tier_discount_percent: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface Transaction {
     id: string;
     created_at: string;
@@ -35,6 +37,7 @@ interface Transaction {
     balance_after: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface UsageBreakdown {
     total_spent: number;
     by_action: Record<string, number>;

@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.api.utils.resilience import CircuitBreaker
+from src.services.video_engine.video_utils import extract_frame
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,36 @@ class PlatformComposer:
             name="PlatformComposer-Stock", failure_threshold=5, recovery_timeout=60
         )
 
+    async def _circuit_breaker_call(
+        self, breaker: CircuitBreaker, fn, *args, **kwargs
+    ) -> Any:
+        """Execute a function with circuit breaker protection."""
+        if breaker.is_open():
+            logger.debug("[PlatformComposer] %s breaker OPEN, skipping", breaker.name)
+            return [] if "search" in (fn.__name__ if hasattr(fn, '__name__') else '') else None
+        try:
+            result = await fn(*args, **kwargs)
+            breaker.record_success()
+            return result
+        except Exception as e:
+            breaker.record_failure()
+            logger.warning("[PlatformComposer] %s failed: %s", fn.__name__, e)
+            return [] if "search" in fn.__name__ else None
+
+    @staticmethod
+    async def _gather_with_exceptions(*coros) -> list[Any]:
+        """Run coroutines concurrently, filter out exceptions and None results."""
+        results = await asyncio.gather(*coros, return_exceptions=True)
+        valid = []
+        for r in results:
+            if isinstance(r, Exception):
+                logger.debug("[PlatformComposer] Source failed: %s", r)
+            elif isinstance(r, list):
+                valid.extend(r)
+            elif r is not None:
+                valid.append(r)
+        return valid
+
     async def compose(
         self,
         query: str,
@@ -92,16 +123,9 @@ class PlatformComposer:
         )
         discovery_task = asyncio.create_task(self._search_discovery(niche, count * 2))
 
-        results = await asyncio.gather(
-            stock_task, platform_task, discovery_task, return_exceptions=True
+        all_assets = await self._gather_with_exceptions(
+            stock_task, platform_task, discovery_task
         )
-
-        all_assets: list[ComposedAsset] = []
-        for r in results:
-            if isinstance(r, list):
-                all_assets.extend(r)
-            elif isinstance(r, Exception):
-                logger.warning("[PlatformComposer] Source failed: %s", r)
 
         if not all_assets:
             logger.warning("[PlatformComposer] No assets from any source for '%s'", query)
@@ -141,15 +165,18 @@ class PlatformComposer:
             self._search_platform_urls(query, niche, platforms, count)
         )
 
-        results = await asyncio.gather(stock_task, platform_task, return_exceptions=True)
+        results = await self._gather_with_exceptions(stock_task, platform_task)
 
         stock_urls: list[str] = []
         platform_urls: list[str] = []
 
-        if isinstance(results[0], list):
-            stock_urls = [a.url for a in results[0]]
-        if isinstance(results[1], list):
-            platform_urls = results[1]
+        # Results are already flattened by _gather_with_exceptions
+        for r in results:
+            if isinstance(r, list):
+                if all(isinstance(x, ComposedAsset) for x in r):
+                    stock_urls = [a.url for a in r]
+                elif all(isinstance(x, str) for x in r):
+                    platform_urls = r
 
         logger.info(
             "[PlatformComposer] DAG compose for '%s': %d platform + %d stock URLs",
@@ -161,22 +188,17 @@ class PlatformComposer:
 
     async def _search_stock(self, query: str, count: int) -> list[ComposedAsset]:
         """Search Pexels/Coverr stock video APIs."""
-        if self.stock_breaker.is_open():
-            logger.debug("[PlatformComposer] Stock breaker OPEN, skipping")
-            return []
+        from src.services.video_engine.stock_service import base_stock_service
 
-        try:
-            from src.services.video_engine.stock_service import base_stock_service
-            urls = await base_stock_service.fetch_b_roll(query, count=count)
-            self.stock_breaker.record_success()
-            return [
-                ComposedAsset(url=url, source="stock", platform="pexels", score=0.5)
-                for url in urls
-            ]
-        except Exception as e:
-            self.stock_breaker.record_failure()
-            logger.warning("[PlatformComposer] Stock search failed: %s", e)
+        urls = await self._circuit_breaker_call(
+            self.stock_breaker, base_stock_service.fetch_b_roll, query, count=count
+        )
+        if not urls:
             return []
+        return [
+            ComposedAsset(url=url, source="stock", platform="pexels", score=0.5)
+            for url in urls
+        ]
 
     # ── Source: CloakBrowser Platform Scraping ──────────────────
 
@@ -241,33 +263,27 @@ class PlatformComposer:
 
     async def _search_discovery(self, niche: str, count: int) -> list[ComposedAsset]:
         """Query Discovery service for trending content in the niche."""
-        if self.discovery_breaker.is_open():
-            logger.debug("[PlatformComposer] Discovery breaker OPEN, skipping")
+        from src.services.discovery.service import base_discovery_service
+
+        candidates = await self._circuit_breaker_call(
+            self.discovery_breaker, base_discovery_service.find_trending_content,
+            niche=niche, min_viral_score=30
+        )
+        if not candidates:
             return []
 
-        try:
-            from src.services.discovery.service import base_discovery_service
-            candidates = await base_discovery_service.find_trending_content(
-                niche=niche, min_viral_score=30
-            )
-            self.discovery_breaker.record_success()
-
-            assets: list[ComposedAsset] = []
-            for c in candidates[:count]:
-                if c.source_uri:
-                    assets.append(ComposedAsset(
-                        url=c.source_uri,
-                        source="discovery",
-                        platform=c.platform,
-                        score=0.0,
-                        title=c.title,
-                        viral_score=c.viral_score or 0,
-                    ))
-            return assets
-        except Exception as e:
-            self.discovery_breaker.record_failure()
-            logger.warning("[PlatformComposer] Discovery search failed: %s", e)
-            return []
+        assets: list[ComposedAsset] = []
+        for c in candidates[:count]:
+            if c.source_uri:
+                assets.append(ComposedAsset(
+                    url=c.source_uri,
+                    source="discovery",
+                    platform=c.platform,
+                    score=0.0,
+                    title=c.title,
+                    viral_score=c.viral_score or 0,
+                ))
+        return assets
 
     # ── Download Pending Assets ─────────────────────────────────
 
@@ -343,15 +359,9 @@ class PlatformComposer:
             ranked_items = []
             for asset in downloaded:
                 try:
-                    # Extract middle frame and CLIP-embed it
-                    import cv2
-                    cap = cv2.VideoCapture(asset.path)
-                    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, total // 2 if total > 0 else 0)
-                    ret, frame = cap.read()
-                    cap.release()
+                    frame = extract_frame(asset.path)
 
-                    if ret:
+                    if frame is not None:
                         # Use the vision analyzer for CLIP embedding
                         from src.services.video_engine.vision_analyzer import base_vision_analyzer
                         frame_embedding = await base_vision_analyzer.embed_frame(frame)

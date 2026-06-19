@@ -64,7 +64,7 @@ async def run_audit():
     print("-" * 50)
     
     try:
-        from src.services.interpreter.service import interpreter_service
+        from src.services.llm.interpreter import interpreter_service
         
         # Test 1: Direct getattr
         payload1 = "getattr(str, 'upper')"

@@ -152,7 +152,7 @@ def download_and_process_task(
 
         # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
         await update_job(status=SystemJobStatus.STRATEGIZING, progress=40)
-        from src.services.decision_engine.service import base_strategy_service
+        from src.services.llm.decision import base_strategy_service
 
         # Extract transcript from video if available
         from .transcription import base_video_transcription_service
@@ -633,9 +633,9 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
-    from src.services.decision_engine.service import base_strategy_service
+    from src.services.llm.decision import base_strategy_service
     from src.services.video_engine.synthesis_service import base_generative_service
-    from src.services.voiceover.service import base_voiceover_service
+    from src.services.audio.voiceover import base_voiceover_service
     import uuid
     import asyncio
 

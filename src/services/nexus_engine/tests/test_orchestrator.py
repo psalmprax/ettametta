@@ -143,7 +143,7 @@ class TestAssembleVideoIngress:
         # Patch ALL dynamically imported dependencies at their SOURCE modules
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -217,7 +217,7 @@ class TestAssembleVideoIngress:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -269,7 +269,7 @@ class TestAssembleVideoCognition:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -317,7 +317,7 @@ class TestAssembleVideoCognition:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service"), \
              patch("src.services.nexus_engine.orchestrator.os.path.exists") as mock_exists:
 
@@ -355,7 +355,7 @@ class TestAssembleVideoSynthesis:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -408,7 +408,7 @@ class TestAssembleVideoSynthesis:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -463,7 +463,7 @@ class TestAssembleVideoSynthesis:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -515,7 +515,7 @@ class TestAssembleVideoEgress:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -565,12 +565,12 @@ class TestAssembleVideoEgress:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
              patch("src.services.audio.transcription_service.base_transcription_service") as mock_ts, \
-             patch("src.services.publishing.service.base_publishing_service") as mock_pub, \
+             patch("src.services.distribution.publishing.base_publishing_service") as mock_pub, \
              patch("src.services.nexus_engine.orchestrator.os.path.exists") as mock_exists, \
              patch("shutil.rmtree"):
 
@@ -622,7 +622,7 @@ class TestAssembleVideoVisionAudit:
 
         with patch("src.api.utils.database.async_session_factory") as mock_sf, \
              patch("src.services.nexus_engine.blueprints.get_blueprint_by_id") as mock_bp, \
-             patch("src.services.langchain.service.langchain_service") as mock_lc, \
+             patch("src.services.llm.langchain.langchain_service") as mock_lc, \
              patch("src.services.llm.service.unified_llm_service") as mock_llm, \
              patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion, \
              patch("src.services.audio.sound_design.sound_design_service") as mock_sd, \
@@ -968,7 +968,7 @@ class TestGapCheckAndEvenStretching:
         ) as mock_sf, patch(
             "src.services.nexus_engine.blueprints.get_blueprint_by_id"
         ) as mock_bp, patch(
-            "src.services.langchain.service.langchain_service"
+            "src.services.llm.langchain.langchain_service"
         ) as mock_lc, patch(
             "src.services.llm.service.unified_llm_service"
         ) as mock_llm, patch(
@@ -1030,7 +1030,7 @@ class TestGapCheckAndEvenStretching:
         ) as mock_sf, patch(
             "src.services.nexus_engine.blueprints.get_blueprint_by_id"
         ) as mock_bp, patch(
-            "src.services.langchain.service.langchain_service"
+            "src.services.llm.langchain.langchain_service"
         ) as mock_lc, patch(
             "src.services.llm.service.unified_llm_service"
         ) as mock_llm, patch(
@@ -1092,7 +1092,7 @@ class TestGapCheckAndEvenStretching:
         ) as mock_sf, patch(
             "src.services.nexus_engine.blueprints.get_blueprint_by_id"
         ) as mock_bp, patch(
-            "src.services.langchain.service.langchain_service"
+            "src.services.llm.langchain.langchain_service"
         ) as mock_lc, patch(
             "src.services.llm.service.unified_llm_service"
         ) as mock_llm, patch(
@@ -1216,7 +1216,7 @@ class TestGapCheckAndEvenStretching:
         ) as mock_sf, patch(
             "src.services.nexus_engine.blueprints.get_blueprint_by_id"
         ) as mock_bp, patch(
-            "src.services.langchain.service.langchain_service"
+            "src.services.llm.langchain.langchain_service"
         ) as mock_lc, patch(
             "src.services.llm.service.unified_llm_service"
         ) as mock_llm, patch(

@@ -15,7 +15,7 @@ from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.api_responses import success_response
 from pydantic import BaseModel
-from src.services.email.service import base_email_service
+from src.services.monetization.email import base_email_service
 
 logger = logging.getLogger(__name__)
 

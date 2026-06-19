@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { useAuth } from "@/context/AuthContext";
 
+/** Module-internal — do not consume from outside. */
 interface ChatMessage {
     id: string;
     role: "user" | "assistant";
@@ -35,6 +36,7 @@ interface ChatMessage {
     timestamp: Date;
 }
 
+/** Module-internal — do not consume from outside. */
 interface AgentCapability {
     id: string;
     name: string;

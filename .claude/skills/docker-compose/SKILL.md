@@ -71,7 +71,6 @@ Both `docker-compose.yml` and `docker-compose.ollama.yml` define ollama. Use `-f
 | infra/docker/api.Dockerfile | Single | ffmpeg, chromium, deno, opencli-rs, yt-dlp |
 | infra/docker/video_processor.Dockerfile | 2 (builder/runtime) | torch, moviepy, opencv |
 | apps/dashboard/Dockerfile | 2 (builder/runner) | Next.js build |
-| src/services/discovery-go/Dockerfile | 2 (builder/final) | Go binary |
 | infra/docker/openclaw.Dockerfile | Single | playwright, crewai |
 | infra/docker/gatekeeper.Dockerfile | Single | minimal fastapi+uvicorn |
 | infra/docker/voiceover.Dockerfile | Single | Fish Speech TTS |

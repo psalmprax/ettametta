@@ -16,6 +16,7 @@ import SecurityScanView from "@/components/security/SecurityScanView";
 import SecurityLogsTab from "@/components/security/SecurityLogsTab";
 import SecurityRightPanel from "@/components/security/SecurityRightPanel";
 
+/** Module-internal — do not consume from outside. */
 const SECURITY_NAV: SidenavItem[] = [
     { id: "status", label: "Security Status", icon: ShieldCheck },
     { id: "events", label: "Event Log", icon: Activity },

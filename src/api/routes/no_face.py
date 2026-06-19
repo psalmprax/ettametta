@@ -5,13 +5,13 @@ from fastapi import APIRouter, HTTPException, Depends
 logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 from typing import Any
-from src.services.script_generator.service import base_script_service
-from src.services.decision_engine.hook_validator import base_validator_service
-from src.services.voiceover.service import base_voiceover_service
-from src.services.stock_media.service import base_stock_media_service
-from src.services.visual_generator.service import base_visual_generator_service
-from src.services.multiplatform.translator import base_multiplatform_service
-from src.services.sentinel.algorithm_tracker import base_algorithm_service
+from src.services.video_engine.script_generator import base_script_service
+from src.services.llm.hook_validator import base_validator_service
+from src.services.audio.voiceover import base_voiceover_service
+from src.services.video_engine.stock_media import base_stock_media_service
+from src.services.video_engine.visual_generator import base_visual_generator_service
+from src.services.distribution.translator import base_multiplatform_service
+from src.services.security.algorithm_tracker import base_algorithm_service
 from src.api.utils.auth import get_current_user
 from src.api.utils.api_responses import success_response
 

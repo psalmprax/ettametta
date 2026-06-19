@@ -104,7 +104,7 @@ class AutonomousVideoRemixer:
 
         # Auto-detect niche if not provided
         if not niche:
-            from src.services.script_generator.service import detect_niche_from_topic
+            from src.services.video_engine.script_generator import detect_niche_from_topic
             niche = detect_niche_from_topic(topic)
 
         # Discover videos from multiple platforms
@@ -215,7 +215,7 @@ class AutonomousVideoRemixer:
 
     async def _generate_script_for_clips(self, clips: list[dict], niche: str, style: str) -> dict:
         """Generate script that matches the extracted clips."""
-        from src.services.script_generator.service import base_script_service
+        from src.services.video_engine.script_generator import base_script_service
 
         # Create a generic topic based on number of clips
         topic = f"viral {niche} content compilation"
@@ -231,7 +231,7 @@ class AutonomousVideoRemixer:
 
     async def _generate_voiceover(self, script: dict, voice_id: str | None) -> str:
         """Generate AI voiceover for the script."""
-        from src.services.voiceover.service import base_voiceover_service
+        from src.services.audio.voiceover import base_voiceover_service
 
         # Combine all script segments into one text
         full_text = " ".join(seg.get("text", "") for seg in script.get("segments", []))

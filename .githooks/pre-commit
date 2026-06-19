@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # =========================================================================
-# Pre-commit hook: Validate test patch targets
+# Pre-commit hook: validate patch targets + dashboard drift gate
 # =========================================================================
-# Runs scripts/validate_patch_targets.py --staged to ensure all staged
-# test files use correct base_* singleton naming in their patch() calls.
+# Step 1 — scripts/validate_patch_targets.py --staged
+#           ensures staged test files use the correct base_* singleton
+#           naming in patch() calls.
+# Step 2 — apps/dashboard/scratch/_audit-export-drop.py
+#           delegates to the vitest production-scan test; non-zero exit
+#           blocks the commit when UNGUARDED-DROP-DRIFT > 0 (a module-
+#           private decl with internal usages but no JSDoc marker).
 #
-# If the validation finds mismatches in staged test files, the commit
-# is blocked with details on what needs to be fixed.
+# Either failure blocks the commit with details on what to fix.
+# Bypass with: git commit --no-verify
 # =========================================================================
 
 set -o errexit
@@ -14,19 +19,33 @@ set -o nounset
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$REPO_ROOT" ]; then
-    echo "⚠  Not a git repository. Skipping patch-target validation."
-    exit 0
-fi
-
-VALIDATE_SCRIPT="$REPO_ROOT/scripts/validate_patch_targets.py"
-
-if [ ! -f "$VALIDATE_SCRIPT" ]; then
-    echo "⚠  validate_patch_targets.py not found. Skipping check."
+    echo "⚠  Not a git repository. Skipping pre-commit checks."
     exit 0
 fi
 
 cd "$REPO_ROOT"
 
-# Run validation on staged files only
-python3 "$VALIDATE_SCRIPT" --staged
-exit $?
+# ---- Step 1: validate test patch targets ----
+VALIDATE_SCRIPT="$REPO_ROOT/scripts/validate_patch_targets.py"
+if [ -f "$VALIDATE_SCRIPT" ]; then
+    echo "→ validate patch targets"
+    python3 "$VALIDATE_SCRIPT" --staged
+else
+    echo "⚠  validate_patch_targets.py not found. Skipping."
+fi
+
+# ---- Step 2: drift gate (apps/dashboard production-scan) ----
+DRIFT_GATE="$REPO_ROOT/apps/dashboard/scratch/_audit-export-drop.py"
+if [ -f "$DRIFT_GATE" ]; then
+    # Guard: only run when at least one apps/dashboard/src/** change is staged.
+    # The gate walks the production tree, so it's wasteful on unrelated commits.
+    if git diff --cached --name-only -- 'apps/dashboard/src/**/*.ts' 'apps/dashboard/src/**/*.tsx' \
+            | grep -q .; then
+        echo "→ dashboard drift gate (staged apps/dashboard/src/** changed)"
+        python3 "$DRIFT_GATE"
+    else
+        echo "→ dashboard drift gate skipped (no apps/dashboard/src/** staged)"
+    fi
+else
+    echo "⚠  $DRIFT_GATE not found. Skipping drift gate."
+fi

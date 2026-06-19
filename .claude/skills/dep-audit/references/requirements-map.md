@@ -13,7 +13,6 @@
 ### Other Services
 - `requirements-agents.txt` — Agent framework: gpt-researcher, open-interpreter, browser-use, langchain
 - `src/services/openclaw/requirements.txt` — OpenClaw service
-- `src/services/voiceover/requirements.txt` — Voiceover service (includes torch CPU-only)
 - `src/engines/remote_ai_setup/requirements.txt` — Remote AI setup (heavy ML stack)
 
 ### Subproject
@@ -36,8 +35,6 @@
 
 - `infra/docker/api.Dockerfile` — Python 3.10-slim
 - `apps/dashboard/Dockerfile` — Node.js 18-alpine
-- `src/services/discovery-go/Dockerfile` — Go
-- `src/services/interpreter/Dockerfile` — Python-based
 
 ## Known Conflicts
 

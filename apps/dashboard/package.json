@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@sentry/react": "^7.0.0",
+    "@sentry/react": "^9.0.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.11",
     "@tanstack/react-query": "^5.90.21",
@@ -22,7 +22,7 @@
     "d3": "^7.9.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.564.0",
-    "next": "16.1.6",
+    "next": "^16.2.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
@@ -47,10 +47,10 @@
     "@types/topojson-client": "^3.1.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "happy-dom": "^15.11.7",
+    "happy-dom": "^20.10.6",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.9"
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
   "main": "index.js",

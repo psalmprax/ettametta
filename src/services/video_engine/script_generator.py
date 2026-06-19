@@ -107,7 +107,7 @@ class ScriptGenerator:
         # 1. Fetch crystallized winning patterns from Hermes
         hermes_context = ""
         try:
-            from src.services.hermes.service import base_hermes_service
+            from src.services.llm.hermes import base_hermes_service
             skills = base_hermes_service.get_winning_context(niche)
             if skills:
                 patterns = [f"- {s['skill_name']}: {s['abstracted_pattern']}" for s in skills]

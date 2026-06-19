@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 
+/** Module-internal — do not consume from outside. */
 interface GlobalErrorProps {
     readonly error: Error & { digest?: string };
     readonly reset: () => void;

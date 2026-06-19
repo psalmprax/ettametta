@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-from src.services.interpreter.service import interpreter_service
+from src.services.llm.interpreter import interpreter_service
 
 logger = logging.getLogger(__name__)
 

@@ -18,25 +18,30 @@ import {
 
 // ── Connection state fixtures ────────────────────────────────────────────
 
+/** Module-internal — do not consume from outside. */
 const ALL_OPEN: WsConnectionState[] = [
     { name: "Telemetry", status: "open" },
     { name: "Discovery", status: "open" },
 ];
 
+/** Module-internal — do not consume from outside. */
 const ALL_CONNECTING: WsConnectionState[] = [
     { name: "Telemetry", status: "connecting", reconnectAttempts: 3 },
     { name: "Discovery", status: "connecting", reconnectAttempts: 7 },
 ];
 
+/** Module-internal — do not consume from outside. */
 const ALL_CLOSED: WsConnectionState[] = [
     { name: "Telemetry", status: "closed" },
 ];
 
+/** Module-internal — do not consume from outside. */
 const MIXED: WsConnectionState[] = [
     { name: "Telemetry", status: "open" },
     { name: "Discovery", status: "connecting", reconnectAttempts: 2 },
 ];
 
+/** Module-internal — do not consume from outside. */
 const EMPTY: WsConnectionState[] = [];
 
 export default function WebSocketStatusTestPage() {

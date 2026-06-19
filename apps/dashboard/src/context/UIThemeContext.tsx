@@ -2,20 +2,24 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
+/** Module-internal — do not consume from outside. */
 type UITheme = "legacy" | "modern";
 
+/** Module-internal — do not consume from outside. */
 interface UIThemeContextType {
     theme: UITheme;
     setTheme: (theme: UITheme) => void;
     toggleTheme: () => void;
 }
 
+/** Module-internal — do not consume from outside. */
 const UIThemeContext = createContext<UIThemeContextType>({
     theme: "legacy",
     setTheme: () => {},
     toggleTheme: () => {},
 });
 
+/** Module-internal — do not consume from outside. */
 const THEME_KEY = "ettametta_ui_theme";
 
 export function UIThemeProvider({ children }: { readonly children: ReactNode }) {

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 const EDITOR_TABS = [
   { id: "concept", label: "Concept", icon: PenTool },
   { id: "logic", label: "Neural Logic", icon: Cpu },
@@ -28,6 +29,8 @@ const EDITOR_TABS = [
 ];
 
 const _STYLES = ["story", "motivation", "educational", "breaking_news", "cinematic_top10"];
+/** Module-internal — do not consume from outside. */
+
 const DURATIONS = [15, 30, 60, 90, 120];
 
 export default function VideoEditorPage() {

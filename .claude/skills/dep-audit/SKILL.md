@@ -54,7 +54,6 @@ trivy image ettametta-api:latest
 | `src/api/requirements-locked.txt` | pip-compile output with hashes | Generated |
 | `src/api/requirements-agents.txt` | Agent framework extras | Mixed |
 | `src/services/openclaw/requirements.txt` | OpenClaw service | Mixed |
-| `src/services/voiceover/requirements.txt` | Voiceover service (includes torch CPU) | Mixed |
 | `src/engines/remote_ai_setup/requirements.txt` | Remote AI setup (heavy ML stack) | Mixed |
 
 ### Node.js

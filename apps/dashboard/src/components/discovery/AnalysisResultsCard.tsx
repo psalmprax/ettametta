@@ -22,24 +22,28 @@ import { cn } from "@/lib/utils";
 
 // ── AnalysisReport types (mirrors backend schemas.py) ──────────────────────
 
+/** Module-internal — do not consume from outside. */
 interface HookInsights {
     first_3_seconds: string;
     emotional_angle: string;
     scroll_stopper: boolean;
 }
 
+/** Module-internal — do not consume from outside. */
 interface PacingInsights {
     bpm: number;
     cuts_per_minute: number;
     recommended_duration_s: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface StructureInsights {
     arc: string[];
     act_breaks: string[];
     retention_curve: number[];
 }
 
+/** Module-internal — do not consume from outside. */
 interface StyleInsights {
     recommended_style: string;
     motion_graphics: string[];
@@ -47,6 +51,7 @@ interface StyleInsights {
     typography?: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface SentimentInsights {
     overall: string;
     emotional_triggers: string[];
@@ -67,7 +72,7 @@ export interface AnalysisReportData {
 
 // ── Props ──────────────────────────────────────────────────────────────────
 
-export interface AnalysisResultsCardProps {
+interface AnalysisResultsCardProps {
     report: AnalysisReportData;
     isLoading?: boolean;
     onClose?: () => void;
@@ -76,6 +81,7 @@ export interface AnalysisResultsCardProps {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
+/** Module-internal — do not consume from outside. */
 const SectionHeader = memo(function SectionHeader({
     icon: Icon,
     label,
@@ -93,6 +99,7 @@ const SectionHeader = memo(function SectionHeader({
     );
 });
 
+/** Module-internal — do not consume from outside. */
 const ScoreRing = memo(function ScoreRing({
     score,
     label,

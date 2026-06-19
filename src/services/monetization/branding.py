@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import logging
 import httpx
@@ -5,7 +7,10 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from src.api.utils.models import BrandIdentityDB
+try:
+    from src.api.utils.models import BrandIdentityDB
+except ImportError:
+    BrandIdentityDB = None  # Model not yet created in migration
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)

@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Download, Share2, Zap } from "lucide-react";
 
+/** Module-internal — do not consume from outside. */
 interface VideoPreviewModalProps {
     readonly isOpen: boolean;
     readonly onClose: () => void;
@@ -14,7 +15,6 @@ interface VideoPreviewModalProps {
     readonly onProceedToTransformation?: () => void;
 }
 
-// fallow-ignore-next-line unused-export
 export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title, status, onProceedToTransformation }) => {
     const [showOriginal, setShowOriginal] = React.useState(false);
     const [isExporting, setIsExporting] = React.useState(false);

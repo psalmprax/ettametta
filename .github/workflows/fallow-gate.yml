@@ -1,0 +1,53 @@
+name: Fallow Code Quality Gate
+
+on:
+  pull_request:
+    branches: [master, main, develop]
+
+jobs:
+  fallow-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install fallow
+        run: npm install -g fallow
+
+      - name: Run fallow audit
+        run: |
+          npx fallow audit --base ${{ github.event.pull_request.base.sha }} \
+            --format json --quiet --ci --fail-on-issues > /tmp/fallow-report.json 2>/dev/null || true
+
+          # Parse and display results
+          python3 -c "
+          import json, sys
+          with open('/tmp/fallow-report.json') as f:
+              d = json.load(f)
+          
+          verdict = d.get('verdict', 'unknown')
+          summary = d.get('summary', {})
+          
+          print(f'## Fallow Audit Results')
+          print(f'')
+          print(f'**Verdict:** {verdict}')
+          print(f'')
+          print(f'| Category | Issues |')
+          print(f'|----------|--------|')
+          for key, val in summary.items():
+              if isinstance(val, int) and val > 0:
+                  print(f'| {key.replace(\"_\", \" \").title()} | {val} |')
+          print(f'')
+          
+          if verdict == 'fail':
+              print('❌ **Quality gate failed.** Please fix the issues above before merging.')
+              sys.exit(1)
+          elif verdict == 'warn':
+              print('⚠️ **Quality gate passed with warnings.** Review the issues above.')
+          else:
+              print('✅ **Quality gate passed.** No issues found.')
+          "

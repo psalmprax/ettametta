@@ -184,7 +184,7 @@ class TestPublishingService:
     @pytest.mark.asyncio
     async def test_publish_to_platform_youtube_success(self):
         """YouTube upload via publish_to_platform should succeed."""
-        from src.services.publishing.service import base_publishing_service
+        from src.services.distribution.publishing import base_publishing_service
 
         mock_response = {
             "platform": "youtube",
@@ -213,7 +213,7 @@ class TestPublishingService:
     @pytest.mark.asyncio
     async def test_publish_to_platform_unsupported_raises(self):
         """Unsupported platform should raise ValueError."""
-        from src.services.publishing.service import base_publishing_service
+        from src.services.distribution.publishing import base_publishing_service
 
         with pytest.raises(ValueError, match="Unsupported platform"):
             await base_publishing_service.publish_to_platform(
@@ -226,7 +226,7 @@ class TestPublishingService:
     @pytest.mark.asyncio
     async def test_publish_to_multiple_all_success(self):
         """All platforms succeed in batch publish."""
-        from src.services.publishing.service import base_publishing_service
+        from src.services.distribution.publishing import base_publishing_service
 
         with (
             patch.object(
@@ -257,7 +257,7 @@ class TestPublishingService:
     @pytest.mark.asyncio
     async def test_publish_to_multiple_partial_failure(self):
         """One platform fails, others succeed — error isolation."""
-        from src.services.publishing.service import base_publishing_service
+        from src.services.distribution.publishing import base_publishing_service
 
         async def mock_publish(user_id, platform, video_path, metadata):
             if platform == "youtube":
@@ -302,7 +302,7 @@ class TestPublishingService:
         publish_to_multiple uses asyncio.gather(return_exceptions=True) so
         ValueError from individual tasks is captured in the results dict.
         """
-        from src.services.publishing.service import base_publishing_service
+        from src.services.distribution.publishing import base_publishing_service
 
         with (
             patch.object(

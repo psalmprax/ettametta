@@ -136,7 +136,7 @@ The `SocialPublisher` base class detects 429s and respects `Retry-After` headers
 
 There are two separate `YouTubePublisher` classes:
 - `src/services/optimization/youtube_publisher.py` — uses `token_manager`
-- `src/services/publishing/service.py` — loads tokens from disk files
+- `src/services/distribution/publishing.py` — loads tokens from disk files
 
 Use the `optimization/` one (it's the standard pattern).
 

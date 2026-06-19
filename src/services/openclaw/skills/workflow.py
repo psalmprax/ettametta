@@ -164,7 +164,7 @@ class WorkflowSkill(OpenClawBaseSkill):
 
         elif action == "publish":
             # Trigger multi-platform distribution
-            from src.services.publishing.service import base_publishing_service
+            from src.services.distribution.publishing import base_publishing_service
             result = await base_publishing_service.publish_to_platform(
                 user_id=params.get("user_id", "system"),
                 platform=params.get("platform", "youtube"),

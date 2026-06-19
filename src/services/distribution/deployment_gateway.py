@@ -9,7 +9,7 @@ and manages the hand-off to social media platforms.
 import logging
 import asyncio
 from typing import Any
-from src.services.script_generator.service import base_script_service
+from src.services.video_engine.script_generator import base_script_service
 
 logger = logging.getLogger(__name__)
 

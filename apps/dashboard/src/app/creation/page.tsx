@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import dynamic from "next/dynamic";
 
+/** Module-internal — do not consume from outside. */
 const NeuralCore = dynamic(() => import("@/components/ui/NeuralCore"), { ssr: false });
 import { withRealFallback } from "@/lib/real_first_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
@@ -343,6 +344,7 @@ function JobItem({ job }: { readonly job: any }) {
     );
 }
 
+/** Module-internal — do not consume from outside. */
 const AI_ENGINES = [
     // Always works — no API key needed
     { id: "lite4k", name: "Cinematic Parallax", free: true, needsKey: false, credits: 5, description: "FLUX image + motion — works out of the box" },
@@ -365,6 +367,7 @@ const AI_ENGINES = [
     { id: "animatediff", name: "AnimateDiff", free: false, needsKey: false, credits: 15, description: "Requires GPU node (image-to-video animation, 12GB VRAM)" },
 ];
 
+/** Module-internal — do not consume from outside. */
 const NEXUS_STYLE_OPTIONS = [
     { id: "CINEMATIC_DOC", label: "Cinematic Doc" },
     { id: "FAST_HYPE", label: "Fast Hype" },

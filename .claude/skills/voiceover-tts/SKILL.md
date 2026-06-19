@@ -31,7 +31,7 @@ docker compose exec api python3 -c "from src.api.config import settings; print('
 
 ## Architecture
 
-### Three-Tier Fallback Chain (`src/services/voiceover/service.py`)
+### Three-Tier Fallback Chain (`src/services/audio/voiceover.py`)
 
 ```
 Fish Speech (local, CPU)
@@ -64,10 +64,10 @@ Each tier has:
 
 | File | Purpose |
 |------|---------|
-| `src/services/voiceover/service.py` | `VoiceoverService` — three-tier fallback, circuit breakers |
-| `src/services/voiceover/main.py` | FastAPI microservice — `/health`, `/generate` on port 8080 |
-| `src/services/voiceover/download_models.py` | HuggingFace model download at startup |
-| `src/services/voiceover/requirements.txt` | PyTorch (CPU), numpy, scipy, soundfile, librosa |
+| `src/services/audio/voiceover.py` | `VoiceoverService` — three-tier fallback, circuit breakers |
+| `src/services/audio/main.py` | FastAPI microservice — `/health`, `/generate` on port 8080 |
+| `src/services/audio/download_models.py` | HuggingFace model download at startup |
+| `src/services/audio/requirements.txt` | PyTorch (CPU), numpy, scipy, soundfile, librosa |
 | `src/services/nexus_engine/audio_mixer.py` | FFmpeg two-track mixing with ducking |
 | `src/services/nexus_engine/orchestrator.py` | `_stitch_voiceovers()` — clip concatenation |
 | `src/services/nexus_engine/auto_creator.py` | `_generate_voiceovers()` — per-segment TTS |

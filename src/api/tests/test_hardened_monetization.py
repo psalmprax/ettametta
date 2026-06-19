@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.services.monetization.auto_merch import AutoMerchService
-from src.services.affiliate.service import AffiliateService
+from src.services.monetization.affiliate import AffiliateService
 from src.services.monetization.strategies.crypto import CryptoStrategy
 from src.services.monetization.strategies.lead_gen import LeadGenStrategy
 from src.api.config import settings

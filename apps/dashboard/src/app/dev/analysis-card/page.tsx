@@ -13,6 +13,7 @@ import { AnalysisResultsCard, AnalysisReportData } from "@/components/discovery/
  * Route: /dev/analysis-card
  */
 
+/** Module-internal — do not consume from outside. */
 const SAMPLE_REPORT: AnalysisReportData = {
     candidate_id: "cand_test_e2e_001",
     hook: {
@@ -47,6 +48,7 @@ const SAMPLE_REPORT: AnalysisReportData = {
     confidence: 0.89,
 };
 
+/** Module-internal — do not consume from outside. */
 const LOW_SCORE_REPORT: AnalysisReportData = {
     candidate_id: "cand_low_score_002",
     hook: {

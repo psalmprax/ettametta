@@ -28,6 +28,7 @@ import os
 from typing import Any
 
 from src.services.video_engine.dag_executor import BaseNode
+from src.services.video_engine.video_utils import extract_frame
 
 # WebSocket notification helper for DAG progress reporting
 from src.api.routes.ws import notify_nexus_job_update_sync
@@ -215,15 +216,7 @@ class VideoDownloadNode(BaseNode):
         from src.services.video_engine.stock_service import base_stock_service
         from src.services.video_engine.downloader import base_downloader_service
 
-        # Resolve URL: explicit param > upstream node result > fallback
-        url = self.params.get("url")
-        if not url and self.inputs:
-            upstream_id = self.inputs[0]
-            upstream = ctx.get(upstream_id)
-            if isinstance(upstream, list) and upstream:
-                url = upstream[0]
-            elif isinstance(upstream, str):
-                url = upstream
+        url = self.resolve_input(ctx, "url")
 
         if not url:
             logger.warning("[DAG:VideoDownload] No URL provided for node '%s'", self.id)
@@ -234,12 +227,12 @@ class VideoDownloadNode(BaseNode):
             upstream_id = self.inputs[0]
             upstream_paths_key = f"{upstream_id}_paths"
             cached_paths = ctx.get(upstream_paths_key, [])
+            upstream_val = ctx.get(upstream_id)
             if isinstance(cached_paths, list) and len(cached_paths) > 0:
                 path_idx = 0
-                if isinstance(upstream, list) and upstream:
-                    # Match index of URL in upstream list
+                if isinstance(upstream_val, list) and upstream_val:
                     try:
-                        path_idx = upstream.index(url) if url in upstream else 0
+                        path_idx = upstream_val.index(url) if url in upstream_val else 0
                     except ValueError:
                         path_idx = 0
                 if path_idx < len(cached_paths):
@@ -389,15 +382,7 @@ class VisionAuditNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> dict:
         from src.services.llm.service import unified_llm_service
 
-        # Resolve video path from input
-        path_key = str(self.params.get("video_path_key", "video_path"))
-        video_path = self.params.get(path_key)
-        if not video_path and self.inputs:
-            upstream = ctx.get(self.inputs[0])
-            if isinstance(upstream, dict):
-                video_path = upstream.get("uri") or upstream.get(path_key)
-            elif isinstance(upstream, str):
-                video_path = upstream
+        video_path = self.resolve_input(ctx, "video_path")
 
         if not video_path or not os.path.exists(video_path):
             return {"passed": True, "reason": "no_video", "video_path": video_path}
@@ -405,21 +390,14 @@ class VisionAuditNode(BaseNode):
         prompt = str(self.params.get("prompt", ""))
         job_id = str(self.params.get("job_id", "unknown"))
 
-        # Extract middle frame
-        import cv2
-        cap = cv2.VideoCapture(video_path)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        frame_idx = total_frames // 2 if total_frames > 0 else 0
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-        ret, frame = cap.read()
-        cap.release()
-
-        if not ret:
+        frame = extract_frame(video_path)
+        if frame is None:
             return {"passed": True, "reason": "frame_extraction_failed", "video_path": video_path}
 
         frame_dir = "/tmp/ettametta/dag_audit"
         os.makedirs(frame_dir, exist_ok=True)
         frame_path = os.path.join(frame_dir, f"audit_{job_id}_{self.id}.jpg")
+        import cv2
         cv2.imwrite(frame_path, frame)
 
         audit_prompt = (
@@ -474,14 +452,7 @@ class ColorGradeNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> str:
         from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
 
-        # Resolve input
-        input_path = self.params.get("input_path")
-        if not input_path and self.inputs:
-            upstream = ctx.get(self.inputs[0])
-            if isinstance(upstream, dict):
-                input_path = upstream.get("uri") or upstream.get("video_path")
-            elif isinstance(upstream, str):
-                input_path = upstream
+        input_path = self.resolve_input(ctx, "input_path")
 
         if not input_path or not os.path.exists(input_path):
             logger.warning("[DAG:ColorGrade] No valid input for '%s'", self.id)
@@ -534,14 +505,7 @@ class AudioMixNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> str:
         from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
 
-        # Resolve paths from params or upstream context
-        video_path = self.params.get("video_path")
-        if not video_path and self.inputs:
-            upstream = ctx.get(self.inputs[0])
-            if isinstance(upstream, dict):
-                video_path = upstream.get("uri") or upstream.get("video_path")
-            elif isinstance(upstream, str):
-                video_path = upstream
+        video_path = self.resolve_input(ctx, "video_path")
 
         if not video_path or not os.path.exists(video_path):
             logger.warning("[DAG:AudioMix] No valid video input for '%s'", self.id)

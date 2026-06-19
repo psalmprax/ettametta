@@ -23,12 +23,14 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { useTelemetry } from "@/context/TelemetryContext";
 
+/** Module-internal — do not consume from outside. */
 interface SecurityStatus {
     health_score?: number;
     privacy_score?: number;
     bias_score?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface AuditReport {
     id: string;
     platform: string;
@@ -39,12 +41,14 @@ interface AuditReport {
     sprint_plan?: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface BiasReport {
     status?: string;
     bias_score?: number;
     scanned_entities?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface LogEntry {
     level?: string;
     message?: string;

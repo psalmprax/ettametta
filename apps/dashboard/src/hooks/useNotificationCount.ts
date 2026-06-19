@@ -5,6 +5,7 @@ import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 const POLL_INTERVAL_MS = 30_000;
 
 export function useNotificationCount() {

@@ -92,7 +92,7 @@ class TestScriptGeneratorService:
         """Test ScriptGenerator initialization"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
             try:
-                from src.services.script_generator.service import ScriptGenerator
+                from src.services.video_engine.script_generator import ScriptGenerator
 
                 generator = ScriptGenerator()
                 assert generator is not None
@@ -105,7 +105,7 @@ class TestScriptGeneratorService:
         """Test script generation returns proper structure"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
             try:
-                from src.services.script_generator.service import ScriptGenerator
+                from src.services.video_engine.script_generator import ScriptGenerator
 
                 generator = ScriptGenerator()
                 generator.client = AsyncMock()
@@ -129,7 +129,7 @@ class TestScriptGeneratorService:
         """Test fallback script generation"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
             try:
-                from src.services.script_generator.service import ScriptGenerator
+                from src.services.video_engine.script_generator import ScriptGenerator
 
                 generator = ScriptGenerator()
                 fallback = generator._get_fallback_script("AI", "Tech")
@@ -147,7 +147,7 @@ class TestDecisionEngineService:
     def test_decision_engine_pydantic_models(self):
         """Test Pydantic models exist"""
         try:
-            from src.services.decision_engine.service import (
+            from src.services.llm.decision import (
                 VideoStrategy,
                 StoryScene,
                 StoryScript,
@@ -175,7 +175,7 @@ class TestDecisionEngineService:
         """Test screenplay generation"""
         with patch.dict(os.environ, {}, clear=False):
             try:
-                from src.services.decision_engine.service import StrategyService
+                from src.services.llm.decision import StrategyService
 
                 service = StrategyService()
                 service.client = AsyncMock()
@@ -201,7 +201,7 @@ class TestDecisionEngineService:
         """Test visual strategy generation"""
         with patch.dict(os.environ, {}, clear=False):
             try:
-                from src.services.decision_engine.service import StrategyService
+                from src.services.llm.decision import StrategyService
 
                 service = StrategyService()
                 service.client = AsyncMock()
@@ -466,7 +466,7 @@ class TestAnalyticsService:
     @pytest.mark.asyncio
     async def test_affiliate_service_link_generation(self):
         """Test affiliate link generation"""
-        from src.services.affiliate.service import AffiliateService
+        from src.services.monetization.affiliate import AffiliateService
 
         service = AffiliateService()
         link = await service.generate_affiliate_link(
@@ -492,7 +492,7 @@ class TestAnalyticsService:
 
     def test_voiceover_service_initialization(self):
         """Test voiceover service engines"""
-        from src.services.voiceover.service import VoiceoverService
+        from src.services.audio.voiceover import VoiceoverService
 
         service = VoiceoverService()
         assert hasattr(service, "elevenlabs_key")
@@ -502,7 +502,7 @@ class TestAnalyticsService:
     @pytest.mark.asyncio
     async def test_stock_media_search(self):
         """Test stock media search"""
-        from src.services.stock_media.service import StockMediaService
+        from src.services.video_engine.stock_media import StockMediaService
 
         service = StockMediaService()
         # Test without API key (should return empty list)
@@ -511,7 +511,7 @@ class TestAnalyticsService:
 
     def test_visual_generator_prompt_handling(self):
         """Test visual generator prompt enhancement"""
-        from src.services.visual_generator.service import VisualGenerator
+        from src.services.video_engine.visual_generator import VisualGenerator
 
         VisualGenerator()
         # Test prompt enhancement logic
@@ -522,7 +522,7 @@ class TestAnalyticsService:
     @pytest.mark.asyncio
     async def test_interpreter_process_isolation(self):
         """Test interpreter process isolation"""
-        from src.services.interpreter.service import InterpreterService
+        from src.services.llm.interpreter import InterpreterService
         import os
 
         # Force enable for testing
@@ -574,7 +574,7 @@ class TestAnalyticsService:
 
     def test_script_generator_templates(self):
         """Test script generator fallback templates"""
-        from src.services.script_generator.service import ScriptGenerator
+        from src.services.video_engine.script_generator import ScriptGenerator
 
         generator = ScriptGenerator()
         template = generator._get_fallback_script("Tech", "Educational")
@@ -593,7 +593,7 @@ class TestAnalyticsService:
 
     def test_decision_engine_model_validation(self):
         """Test decision engine Pydantic models"""
-        from src.services.decision_engine.service import (
+        from src.services.llm.decision import (
             VideoStrategy,
             StoryScene,
             StoryScript,

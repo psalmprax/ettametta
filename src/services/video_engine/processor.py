@@ -22,6 +22,7 @@ except ImportError:
 import numpy as np
 from .stock_service import StockService
 from .ffmpeg_utils import FFmpegTransformer
+from .video_utils import probe_video, run_ffmpeg_cmd
 from src.api.config import settings
 
 # Import canonical singletons from their authoritative modules
@@ -231,13 +232,10 @@ class VideoProcessor:
             fps = clip.fps
             duration = clip.duration
         else:
-            cap = cv2.VideoCapture(input_path)
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            duration = total_frames / fps if fps > 0 else 0
-            cap.release()
+            info = probe_video(input_path)
+            if info is None:
+                raise RuntimeError(f"Cannot probe video: {input_path}")
+            width, height, fps, duration = info.width, info.height, info.fps, info.duration
 
         # Store OpenCV state for processing
         self._opencv_mode = True
@@ -322,22 +320,14 @@ class VideoProcessor:
             raise RuntimeError("Video loading failed and OpenCV fallback unavailable")
 
         logging.info(f"[VideoProcessor] Probing video with OpenCV: {input_path}")
-        import cv2
 
-        cap = cv2.VideoCapture(input_path)
+        info = probe_video(input_path)
+        if info is None:
+            raise RuntimeError(f"OpenCV cannot probe video: {input_path}")
 
-        if not cap.isOpened():
-            cap.release()
-            raise RuntimeError(f"OpenCV cannot open video: {input_path}")
-
-        # Get video properties
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = frame_count / fps if fps > 0 else 0
-
-        cap.release()
+        width, height, fps, frame_count, duration = (
+            info.width, info.height, info.fps, info.frame_count, info.duration
+        )
 
         logging.info(
             f"[VideoProcessor] OpenCV probe: {width}x{height}, {fps}fps, {duration:.2f}s, {frame_count} frames"
@@ -374,15 +364,17 @@ class VideoProcessor:
 
         logging.info(f"[VideoProcessor] Processing video with OpenCV: {input_path}")
 
+        info = probe_video(input_path)
+        if info is None:
+            raise RuntimeError(f"Cannot open video: {input_path}")
+
+        fps, width, height, total_frames = (
+            info.fps, info.width, info.height, info.frame_count
+        )
+
         cap = cv2.VideoCapture(input_path)
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {input_path}")
-
-        # Get video properties
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         # Define output
         output_path = os.path.join(self.output_dir, output_name)
@@ -694,7 +686,6 @@ class VideoProcessor:
 
         upscale_path = video_path.replace(".mp4", "_upscaled.mp4")
 
-        # FFmpeg upscale command (simple bilinear scaling)
         scale_filter = (
             "scale=3840:2160:force_original_aspect_ratio=decrease,pad=3840:2160:(ow-iw)/2:(oh-ih)/2"
             if target_resolution == "4K"
@@ -702,78 +693,36 @@ class VideoProcessor:
         )
 
         cmd = [
-            "ffmpeg",
-            "-i",
-            video_path,
-            "-vf",
-            scale_filter,
-            "-c:v",
-            "libx264",
-            "-preset",
-            "slow",
-            "-crf",
-            "18",
-            "-c:a",
-            "copy",
-            upscale_path,
-            "-y",
+            "ffmpeg", "-i", video_path, "-vf", scale_filter,
+            "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+            "-c:a", "copy", upscale_path, "-y",
         ]
 
-        try:
-            result = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-            await result.wait()
-
-            if result.returncode == 0:
-                logging.info(f"Video upscaled successfully: {upscale_path}")
-                return upscale_path
-            else:
-                logging.error(f"Upscaling failed: {await result.stderr.read()}")
-                return video_path  # Return original if upscale fails
-        except Exception as e:
-            logging.exception(f"Upscale error: {e}")
-            return video_path
+        success, error = await run_ffmpeg_cmd(cmd, label="upscale")
+        if success:
+            logging.info(f"Video upscaled successfully: {upscale_path}")
+            return upscale_path
+        logging.error(f"Upscaling failed: {error}")
+        return video_path
 
     async def interpolate_frames(self, video_path: str, target_fps: int = 60) -> str:
         """Apply frame interpolation for smoother motion using FFmpeg"""
 
         interp_path = video_path.replace(".mp4", "_interp.mp4")
 
-        # FFmpeg frame interpolation (basic motion interpolation)
         cmd = [
-            "ffmpeg",
-            "-i",
-            video_path,
-            "-vf",
+            "ffmpeg", "-i", video_path, "-vf",
             f"minterpolate=fps={target_fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "slow",
-            "-crf",
-            "18",
-            "-c:a",
-            "copy",
-            interp_path,
-            "-y",
+            "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+            "-c:a", "copy", interp_path, "-y",
         ]
 
-        try:
-            result = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-            await result.wait()
-
-            if result.returncode == 0:
-                logging.info(f"Frame interpolation applied: {interp_path}")
-                return interp_path
-            else:
-                logging.error(f"Interpolation failed: {await result.stderr.read()}")
-                return video_path
-        except Exception as e:
-            logging.exception(f"Interpolation error: {e}")
-            return video_path
+        success, error = await run_ffmpeg_cmd(cmd, label="interpolate")
+        if success:
+            logging.info(f"Frame interpolation applied: {interp_path}")
+            return interp_path
+        logging.error(f"Interpolation failed: {error}")
+        return video_path
 
     async def apply_pro_workflow(
         self,

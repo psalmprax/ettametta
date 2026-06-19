@@ -3,21 +3,23 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 
-export interface Node extends d3.SimulationNodeDatum {
+interface Node extends d3.SimulationNodeDatum {
     id: string;
     group: number;
     label: string;
 }
 
-export interface Link extends d3.SimulationLinkDatum<Node> {
+interface Link extends d3.SimulationLinkDatum<Node> {
     value: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface NetworkProps {
     readonly nodes: Node[];
     readonly links: Link[];
 }
 
+/** Module-internal — do not consume from outside. */
 interface SimNode extends d3.SimulationNodeDatum {
     id: string;
     group: number;
@@ -30,6 +32,7 @@ interface SimNode extends d3.SimulationNodeDatum {
     fy?: number | null;
 }
 
+/** Module-internal — do not consume from outside. */
 interface SimLink extends d3.SimulationLinkDatum<SimNode> {
     source: SimNode | string | number;
     target: SimNode | string | number;

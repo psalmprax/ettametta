@@ -185,7 +185,7 @@ class AgentZero(BaseEttamettaAgent):
         
         # Standard: RAG Retrieval Hook
         try:
-            from src.services.knowledge.service import base_knowledge_service
+            from src.services.llm.knowledge import base_knowledge_service
             relevant_docs = await base_knowledge_service.query(text=target_niche, limit=2)
             if relevant_docs:
                 "\n".join([doc["content"] for doc in relevant_docs])

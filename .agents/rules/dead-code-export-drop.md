@@ -60,6 +60,10 @@ npx --no-install tsc --noEmit  # should preserve 0 errors
 | ≥1 | 0 | **Drop `export`** — preserve internal use, narrow the module surface. |
 | ≥1 | ≥1 | **Keep the export** — it's a stable consumer-facing API. |
 
+## Compound-API pattern (private core + `Object.assign`-attached subcomponents)
+
+For a parent that owns subcomponents (e.g. `<Card.Header>` / `<Card.Body>` / `<Card.Footer>`), keep the `forwardRef` core module-private (`const CardRoot = React.forwardRef<…>(…)` with the standard marker), then expose via `export const Card = Object.assign(CardRoot, { Header: CardHeader, Body: CardBody, Footer: CardFooter })`. Subcomponents stay module-private too — apply the marker above each, since `Object.assign` is just the wiring layer and the marker is what preserves the contract. Otherwise the subcomponents look orphaned to `fallow dead-code` even though they are load-bearing via the compound surface.
+
 ## Real-session examples
 
 | File | Original | After |

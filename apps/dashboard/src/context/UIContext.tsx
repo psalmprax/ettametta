@@ -2,11 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+/** Module-internal — do not consume from outside. */
 interface UIContextType {
     isProMode: boolean;
     toggleProMode: () => void;
 }
 
+/** Module-internal — do not consume from outside. */
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { readonly children: React.ReactNode }) {

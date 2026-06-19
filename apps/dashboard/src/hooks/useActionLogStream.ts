@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTelemetry } from "@/context/TelemetryContext";
 
+/** Module-internal — do not consume from outside. */
 interface MergedLogEntry {
     type: string;
     level: string;

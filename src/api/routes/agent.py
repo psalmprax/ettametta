@@ -150,7 +150,7 @@ async def generate_trademark(
     """
     Autonomous Brand Factory: Generates a brand identity (Logo, Name, Color) for a niche.
     """
-    from src.services.branding.service import base_branding_service
+    from src.services.monetization.branding import base_branding_service
 
     try:
         result = await base_branding_service.generate_brand_identity(

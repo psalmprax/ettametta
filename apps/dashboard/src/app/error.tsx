@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { AlertTriangle, RefreshCw, Home, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface ErrorPageProps {
     readonly error: Error & { digest?: string };
     readonly reset: () => void;

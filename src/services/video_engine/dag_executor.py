@@ -85,6 +85,37 @@ class BaseNode:
             f"{self.__class__.__name__}.execute() must be overridden"
         )
 
+    def resolve_input(self, ctx: dict[str, Any], key: str | None = None) -> Any:
+        """Resolve an input value from params → inputs → context.
+
+        Priority:
+        1. self.params[key] if key provided
+        2. self.params["url"] or self.params["input_path"] (common param names)
+        3. First upstream node result from ctx
+        """
+        if key:
+            val = self.params.get(key)
+            if val is not None:
+                return val
+
+        # Common param names
+        for param_name in ("url", "input_path", "video_path"):
+            val = self.params.get(param_name)
+            if val is not None:
+                return val
+
+        # Upstream context
+        if self.inputs:
+            upstream = ctx.get(self.inputs[0])
+            if isinstance(upstream, dict):
+                return upstream.get("uri") or upstream.get("video_path") or upstream.get("url")
+            if isinstance(upstream, list) and upstream:
+                return upstream[0]
+            if isinstance(upstream, str):
+                return upstream
+
+        return None
+
     def cache_key_parts(self) -> dict[str, Any]:
         """Override to include additional fields in the cache key.
 

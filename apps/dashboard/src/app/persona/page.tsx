@@ -23,6 +23,7 @@ import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 
+/** Module-internal — do not consume from outside. */
 interface Persona {
     id: string;
     name: string;

@@ -2,6 +2,7 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from src.api.utils.models import SocialAccount, PublishedContentDB
+from src.api.config import settings
 from typing import Any
 
 
@@ -141,12 +142,12 @@ class EmpireService:
 
         # If no real data, return gateway cluster topology
         if len(nodes) <= 1:
-            # Add master gateway node
+            gateway_host = getattr(settings, "GATEWAY_HOST", "localhost")
             nodes.append(
                 {
                     "id": "gateway_1",
                     "group": 1,
-                    "label": "149.104.110.122",
+                    "label": gateway_host,
                     "status": "ONLINE",
                 }
             )
@@ -171,14 +172,17 @@ class EmpireService:
         """
         from src.api.utils.models import ABTestDB
 
-        # Query A/B tests with confirmed winners
-        winning_tests = (
-            db.query(ABTestDB)
-            .filter(ABTestDB.winner_variant is not None)
-            .order_by(ABTestDB.created_at.desc())
-            .limit(10)
-            .all()
-        )
+        try:
+            winning_tests = (
+                db.query(ABTestDB)
+                .filter(ABTestDB.winner_variant is not None)
+                .order_by(ABTestDB.created_at.desc())
+                .limit(10)
+                .all()
+            )
+        except Exception as e:
+            logging.warning(f"[Empire] A/B test query failed: {e}")
+            winning_tests = []
 
         blueprints = []
         for test in winning_tests:
@@ -371,84 +375,96 @@ class EmpireService:
         events = []
 
         # 1. Recent Publications
-        recent_posts = (
-            db.query(PublishedContentDB)
-            .filter(PublishedContentDB.user_id == user_id)
-            .order_by(PublishedContentDB.published_at.desc())
-            .limit(10)
-            .all()
-        )
-        for post in recent_posts:
-            events.append(
-                {
-                    "id": f"post_{post.id}",
-                    "timestamp": post.published_at.isoformat(),
-                    "time_label": post.published_at.strftime("%H:%M ZULU"),
-                    "type": "NODE_EXPANSION",
-                    "message": f"Successfully expanded network to {post.platform}: {post.title[:30]}...",
-                    "status": "SUCCESS",
-                }
+        try:
+            recent_posts = (
+                db.query(PublishedContentDB)
+                .filter(PublishedContentDB.user_id == user_id)
+                .order_by(PublishedContentDB.published_at.desc())
+                .limit(10)
+                .all()
             )
+            for post in recent_posts:
+                events.append(
+                    {
+                        "id": f"post_{post.id}",
+                        "timestamp": post.published_at.isoformat(),
+                        "time_label": post.published_at.strftime("%H:%M ZULU"),
+                        "type": "NODE_EXPANSION",
+                        "message": f"Successfully expanded network to {post.platform}: {post.title[:30]}...",
+                        "status": "SUCCESS",
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"[Empire] Publications query failed: {e}")
 
         # 2. Revenue Logs
-        recent_rev = (
-            db.query(RevenueLogDB)
-            .filter(RevenueLogDB.user_id == user_id)
-            .order_by(RevenueLogDB.date.desc())
-            .limit(5)
-            .all()
-        )
-        for rev in recent_rev:
-            events.append(
-                {
-                    "id": f"rev_{rev.id}",
-                    "timestamp": rev.date.isoformat(),
-                    "time_label": rev.date.strftime("%H:%M ZULU"),
-                    "type": "REVENUE_ACHIEVEMENT",
-                    "message": f"Revenue milestone reached on {rev.platform}: ${rev.amount:,.2f}",
-                    "status": "SUCCESS",
-                }
+        try:
+            recent_rev = (
+                db.query(RevenueLogDB)
+                .filter(RevenueLogDB.user_id == user_id)
+                .order_by(RevenueLogDB.date.desc())
+                .limit(5)
+                .all()
             )
+            for rev in recent_rev:
+                events.append(
+                    {
+                        "id": f"rev_{rev.id}",
+                        "timestamp": rev.date.isoformat(),
+                        "time_label": rev.date.strftime("%H:%M ZULU"),
+                        "type": "REVENUE_ACHIEVEMENT",
+                        "message": f"Revenue milestone reached on {rev.platform}: ${rev.amount:,.2f}",
+                        "status": "SUCCESS",
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"[Empire] Revenue query failed: {e}")
 
         # 3. New Affiliate Links
-        recent_links = (
-            db.query(AffiliateLinkDB)
-            .filter(AffiliateLinkDB.user_id == user_id)
-            .order_by(AffiliateLinkDB.created_at.desc())
-            .limit(5)
-            .all()
-        )
-        for link in recent_links:
-            events.append(
-                {
-                    "id": f"link_{link.id}",
-                    "timestamp": link.created_at.isoformat(),
-                    "time_label": link.created_at.strftime("%H:%M ZULU"),
-                    "type": "STRATEGY_DEPLOYMENT",
-                    "message": f"New monetization node active: {link.product_name} ({link.niche})",
-                    "status": "SUCCESS",
-                }
+        try:
+            recent_links = (
+                db.query(AffiliateLinkDB)
+                .filter(AffiliateLinkDB.user_id == user_id)
+                .order_by(AffiliateLinkDB.created_at.desc())
+                .limit(5)
+                .all()
             )
+            for link in recent_links:
+                events.append(
+                    {
+                        "id": f"link_{link.id}",
+                        "timestamp": link.created_at.isoformat(),
+                        "time_label": link.created_at.strftime("%H:%M ZULU"),
+                        "type": "STRATEGY_DEPLOYMENT",
+                        "message": f"New monetization node active: {link.product_name} ({link.niche})",
+                        "status": "SUCCESS",
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"[Empire] Affiliate links query failed: {e}")
 
         # 4. Global Sentinel Events (Module Broad)
-        sentinel_logs = (
-            db.query(SystemActivityDB)
-            .filter(SystemActivityDB.module == "SENTINEL")
-            .order_by(SystemActivityDB.created_at.desc())
-            .limit(5)
-            .all()
-        )
-        for log in sentinel_logs:
-            events.append(
-                {
-                    "id": f"sys_{log.id}",
-                    "timestamp": log.created_at.isoformat(),
-                    "time_label": log.created_at.strftime("%H:%M ZULU"),
-                    "type": "SENTINEL_SHIFT",
-                    "message": log.message,
-                    "status": log.level,
-                }
+        try:
+            sentinel_logs = (
+                db.query(SystemActivityDB)
+                .filter(SystemActivityDB.module == "SENTINEL")
+                .order_by(SystemActivityDB.created_at.desc())
+                .limit(5)
+                .all()
             )
+            for log in sentinel_logs:
+                events.append(
+                    {
+                        "id": f"sys_{log.id}",
+                        "timestamp": log.created_at.isoformat(),
+                        "time_label": log.created_at.strftime("%H:%M ZULU"),
+                        "type": "SENTINEL_SHIFT",
+                        "message": log.message,
+                        "status": log.level,
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"[Empire] Sentinel query failed: {e}")
 
         # Final Sorting & Limiting
         events.sort(key=lambda x: x["timestamp"], reverse=True)

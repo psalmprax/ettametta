@@ -23,6 +23,7 @@ import { WsConnectionState } from "@/components/WebSocketStatusIndicator";
 
 // ── Mock telemetry pulse ─────────────────────────────────────────────
 
+/** Module-internal — do not consume from outside. */
 const MOCK_PULSE: TelemetryPulse = {
     status: "HEALTHY",
     cluster_node: "X-TEST-01",
@@ -65,11 +66,15 @@ function MockTelemetryProvider({
 // ── Fixture states ───────────────────────────────────────────────────
 
 /** Discovery WS is also open (two green pills in the indicator). */
+/** Module-internal — do not consume from outside. */
+
 const DISCOVERY_OPEN: WsConnectionState[] = [
     { name: "Discovery", status: "open" },
 ];
 
 /** Discovery WS is reconnecting (amber pill with attempt count). */
+/** Module-internal — do not consume from outside. */
+
 const DISCOVERY_CONNECTING: WsConnectionState[] = [
     { name: "Discovery", status: "connecting", reconnectAttempts: 2 },
 ];

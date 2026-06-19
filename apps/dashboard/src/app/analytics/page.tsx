@@ -20,6 +20,7 @@ import PropagationView from "@/components/analytics/PropagationView";
 import AnalyticsLogsTab from "@/components/analytics/AnalyticsLogsTab";
 import AnalyticsRightPanel from "@/components/analytics/AnalyticsRightPanel";
 
+/** Module-internal — do not consume from outside. */
 const ANALYTICS_NAV: SidenavItem[] = [
     { id: "overview", label: "Intel Overview", icon: BarChart3 },
     { id: "retention", label: "Attention Decay", icon: Activity },

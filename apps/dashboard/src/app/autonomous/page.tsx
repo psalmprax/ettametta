@@ -19,6 +19,7 @@ import AutonomousConsoleTab from "@/components/autonomous/AutonomousConsoleTab";
 import AutonomousRightPanel from "@/components/autonomous/AutonomousRightPanel";
 import CompactConsole from "@/components/autonomous/CompactConsole";
 
+/** Module-internal — do not consume from outside. */
 const AUTONOMOUS_NAV: SidenavItem[] = [
     { id: "launch", label: "Launch Control", icon: Play },
     { id: "logic", label: "Logic Flow", icon: Layers },

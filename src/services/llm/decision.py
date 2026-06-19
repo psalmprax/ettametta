@@ -53,7 +53,7 @@ class StrategyService:
         self, prompt: str, style: str = "Cinematic"
     ) -> StoryScript:
         # Check if CrewAI is enabled for multi-agent strategy
-        from src.services.crewai.service import crewai_service
+        from src.services.llm.crewai import crewai_service
         if crewai_service.is_enabled():
             logging.info(f"[StrategyService] Delegating screenplay to CrewAI Team for: {prompt}")
             try:

@@ -5,6 +5,7 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 
+/** Module-internal — do not consume from outside. */
 interface ZeroStatus {
     is_running: boolean;
     current_step: string;
@@ -12,6 +13,7 @@ interface ZeroStatus {
     next_run: number | null;
 }
 
+/** Module-internal — do not consume from outside. */
 interface ZeroInsight {
     title?: string;
     hook?: string;

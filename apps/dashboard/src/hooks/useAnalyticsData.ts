@@ -5,6 +5,7 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 
+/** Module-internal — do not consume from outside. */
 interface AnalyticsMetrics {
     views: number;
     retention: number;
@@ -15,6 +16,7 @@ interface AnalyticsMetrics {
     retentionData: { time: number; value: number }[];
 }
 
+/** Module-internal — do not consume from outside. */
 const DEFAULT_METRICS: AnalyticsMetrics = {
     views: 0,
     retention: 0.82,

@@ -30,6 +30,12 @@ from src.services.nexus_engine.style_library import get_style
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
 from src.shared.enums import NodeStatus
+from src.services.video_engine.video_utils import probe_video, extract_frame, probe_duration_ffprobe
+from src.services.nexus_engine.vibe_analyzer import determine_video_vibe
+from src.services.nexus_engine.render_pipeline import (
+    modulate_video_style, source_music, extract_thumbnail, export_srt,
+)
+from contextlib import asynccontextmanager
 
 logger = get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -240,6 +246,18 @@ class NexusOrchestrator:
 
         notify_nexus_job_update_sync(payload)
 
+    @asynccontextmanager
+    async def _node_phase(self, job_id: str, niche: str, node_type: str, progress_range: tuple[int, int] = (0, 100)):
+        """Context manager for pipeline node phases — automatically sends ACTIVE/COMPLETED/FAILED."""
+        start_progress, end_progress = progress_range
+        await self._update_node_status(job_id, niche, node_type, NodeStatus.ACTIVE, start_progress)
+        try:
+            yield
+            await self._update_node_status(job_id, niche, node_type, NodeStatus.COMPLETED, end_progress)
+        except Exception as e:
+            await self._update_node_status(job_id, niche, node_type, NodeStatus.FAILED, start_progress, error=str(e))
+            raise
+
     async def _validate_inputs(
         self,
         visual_paths: list[str],
@@ -264,79 +282,6 @@ class NexusOrchestrator:
         return await asyncio.to_thread(check_existence)
 
 
-    async def _query_dify_vibe(
-        self,
-        job_id: str,
-        niche: str,
-        style: str,
-        blueprint_id: str,
-        num_clips: int,
-    ) -> dict[str, Any]:
-        """Query Dify provider for video vibe data."""
-        if not settings.DIFY_API_KEY:
-            return {}
-
-        from src.services.llm.dify_client import base_dify_client
-        self.logger.info(f"[Nexus] Performing Dify Cognitive Analysis for {niche}")
-        try:
-            dify_resp = await base_dify_client.chat_messages(
-                query=f"Analyze the video vibe for niche: {niche}. Context: {num_clips} clips, style: {style}",
-                user_id=f"nexus_{job_id}",
-                inputs={
-                    "niche": niche,
-                    "num_clips": num_clips,
-                    "blueprint": blueprint_id,
-                    "style": style,
-                },
-            )
-            if not dify_resp or "answer" not in dify_resp:
-                return {}
-
-            answer = dify_resp["answer"]
-            if "{" not in answer or "}" not in answer:
-                return {}
-
-            try:
-                import json as json_lib
-                start = answer.find("{")
-                end = answer.rfind("}") + 1
-                vibe_data = json_lib.loads(answer[start:end])
-                self.logger.info(f"[Nexus] Dify suggested vibe: {vibe_data.get('vibe')}")
-                return vibe_data
-            except Exception:
-                self.logger.warning("[Nexus] Dify returned non-JSON answer, using as 'explanation'")
-                return {"vibe": "Cinematic", "explanation": answer}
-        except Exception as e:
-            self.logger.warning(f"[Nexus] Dify analysis failed, falling back: {e}")
-            return {}
-
-    async def _query_langchain_vibe(
-        self,
-        job_id: str,
-        niche: str,
-        num_clips: int,
-        blueprint_id: str,
-    ) -> dict[str, Any]:
-        """Query LangChain provider for video vibe data."""
-        from src.services.langchain.service import langchain_service
-
-        if not langchain_service.is_enabled():
-            return {}
-
-        self.logger.info(f"[Nexus] Performing LangChain Vibe Check for {niche}")
-        vibe_data = await langchain_service.analyze_video_vibe(
-            niche,
-            {
-                "num_clips": num_clips,
-                "blueprint": blueprint_id,
-                "job_id": str(job_id),
-            },
-        )
-        if vibe_data:
-            self.logger.info(f"[Nexus] LangChain suggested vibe: {vibe_data.get('vibe')}")
-            return vibe_data
-        return {}
-
     async def _determine_video_vibe(
         self,
         job_id: str,
@@ -346,10 +291,7 @@ class NexusOrchestrator:
         num_clips: int,
     ) -> dict[str, Any]:
         """Primary vibe check using Dify, with LangChain fallback."""
-        vibe_data = await self._query_dify_vibe(job_id, niche, style, blueprint_id, num_clips)
-        if not vibe_data:
-            vibe_data = await self._query_langchain_vibe(job_id, niche, num_clips, blueprint_id)
-        return vibe_data
+        return await determine_video_vibe(job_id, niche, style, blueprint_id, num_clips)
 
     def _get_frame_count(self, path: str) -> int | None:
         """Get the number of frames in a video clip."""
@@ -357,17 +299,12 @@ class NexusOrchestrator:
             return 300  # Default for testing
         if not os.path.exists(path):
             return None
-        cap = None
         try:
-            cap = cv2.VideoCapture(path)
-            count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            return count if count > 0 else None
+            info = probe_video(path)
+            return info.frame_count if info else None
         except Exception as e:
             self.logger.warning(f"Failed to get frame count for {path}: {e}")
             return None
-        finally:
-            if cap is not None:
-                cap.release()
 
     async def _source_fill_clips(
         self, niche: str, count: int = 4
@@ -416,15 +353,9 @@ class NexusOrchestrator:
 
     def _extract_audit_frame(self, clip: dict, v_path: str) -> Any | None:
         """Extract a middle frame from the video clip for audit."""
-        cap = cv2.VideoCapture(v_path)
-        try:
-            clip_frames = clip.get("duration_in_frames", 0)
-            frame_idx = clip_frames // 2 if clip_frames else 0
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ret, frame_img = cap.read()
-            return frame_img if ret else None
-        finally:
-            cap.release()
+        clip_frames = clip.get("duration_in_frames", 0)
+        frame_idx = clip_frames // 2 if clip_frames else None
+        return extract_frame(v_path, frame_idx)
 
     async def _evaluate_frame_relevance(self, frame_path: str, prompt: str) -> str:
         """Use LLM to evaluate the relevance of the frame image."""
@@ -516,36 +447,11 @@ class NexusOrchestrator:
         job_metadata: dict[str, Any] | None,
     ) -> dict[str, Any]:
         """Apply stochastic style modulation."""
-        try:
-            from src.services.video_engine.stochastic_modulator import modulate_style
-
-            theme_preset = (job_metadata or {}).get("theme_preset")
-            style_config = modulate_style(
-                style_config, seed=str(job_id), theme_preset=theme_preset
-            )
-            self.logger.info(
-                f"[Nexus] Stochastic modulation applied successfully for style: {style}"
-            )
-        except Exception as e:
-            self.logger.warning(f"[Nexus] Stochastic modulation failed: {e}")
-        return style_config
+        return modulate_video_style(job_id, style, style_config, job_metadata)
 
     def _source_music(self, music_path: str | None, music_keywords: list[str]) -> str | None:
         """Auto-sources background music from library if not provided."""
-        if music_path:
-            return music_path
-        from src.services.audio.sound_design import sound_design_service
-
-        if sound_design_service.enabled:
-            mood = music_keywords[0] if music_keywords else "cinematic"
-            music_dir = Path(sound_design_service.library_path) / mood
-            if music_dir.exists():
-                tracks = list(music_dir.glob("*.mp3")) + list(music_dir.glob("*.wav"))
-                if tracks:
-                    chosen_track = str(random.choice(tracks))
-                    self.logger.info(f"[Nexus] Auto-sourced music: {chosen_track}")
-                    return chosen_track
-        return None
+        return source_music(music_path, music_keywords)
 
     async def _stitch_voiceovers(
         self,
@@ -632,87 +538,15 @@ class NexusOrchestrator:
                 self.logger.error(f"[Nexus] Transcription failed: {e}")
         return []
 
-    @staticmethod
-    def _format_srt_time(seconds: float) -> str:
-        """Format a float-seconds value as an SRT timestamp ``HH:MM:SS,mmm``."""
-        h = int(seconds // 3600)
-        m = int((seconds % 3600) // 60)
-        s = int(seconds % 60)
-        ms = int((seconds % 1) * 1000)
-        return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
-
     def _export_srt(
         self, words: list[dict[str, Any]], output_path: str
     ) -> str | None:
-        """Export word-level timestamps as an SRT subtitle sidecar file.
-
-        Groups words into blocks of ~4 for readable subtitle chunks and
-        writes a standard SubRip file alongside the rendered video.
-
-        Returns *output_path* on success, ``None`` if there are no words.
-        """
-        if not words:
-            return None
-
-        # Group words into blocks of 3-5 for readable subtitle chunks
-        blocks: list[list[dict[str, Any]]] = []
-        current: list[dict[str, Any]] = []
-        for w in words:
-            current.append(w)
-            if len(current) >= 4:
-                blocks.append(current)
-                current = []
-        if current:
-            blocks.append(current)
-
-        try:
-            with open(output_path, "w", encoding="utf-8") as f:
-                for i, block in enumerate(blocks, 1):
-                    start = block[0]["start"]
-                    end = block[-1]["end"]
-                    text = " ".join(w["word"] for w in block)
-                    f.write(f"{i}\n")
-                    f.write(
-                        f"{self._format_srt_time(start)} --> "
-                        f"{self._format_srt_time(end)}\n"
-                    )
-                    f.write(f"{text}\n\n")
-            self.logger.info(
-                "[Nexus] Exported SRT captions: %d blocks → %s",
-                len(blocks), output_path,
-            )
-            return output_path
-        except OSError as e:
-            self.logger.error("[Nexus] Failed to write SRT file: %s", e)
-            return None
+        """Export word-level timestamps as an SRT subtitle sidecar file."""
+        return export_srt(words, output_path)
 
     async def _extract_thumbnail(self, job_id: str, visual_paths: list[str]) -> str:
         """Extract a thumbnail from the first clip."""
-        thumb_dir = self._local_temp_dir / "thumbnails"
-        thumb_dir.mkdir(parents=True, exist_ok=True)
-        thumbnail_path = str(thumb_dir / f"{job_id}.jpg")
-        if visual_paths and os.path.exists(visual_paths[0]):
-            try:
-                self.logger.info("[Nexus] Extracting thumbnail from first clip...")
-                await asyncio.to_thread(
-                    _run_subprocess,
-                    [
-                        "ffmpeg",
-                        "-y",
-                        "-ss",
-                        "00:00:01.500",
-                        "-i",
-                        visual_paths[0],
-                        "-frames:v",
-                        "1",
-                        "-q:v",
-                        "2",
-                        thumbnail_path,
-                    ],
-                )
-            except Exception as e:
-                self.logger.error(f"[Nexus] Thumbnail extraction failed: {e}")
-        return thumbnail_path
+        return await extract_thumbnail(self._local_temp_dir, job_id, visual_paths)
 
     async def _publish_and_cleanup(
         self,
@@ -727,23 +561,21 @@ class NexusOrchestrator:
 
         # Extract final metadata for reporting
         try:
-            cap = cv2.VideoCapture(rendered_path)
-            try:
-                final_fps = cap.get(cv2.CAP_PROP_FPS)
-                final_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                final_duration = final_frames / final_fps if final_fps > 0 else 0
+            info = probe_video(rendered_path)
+            if info:
+                final_duration = info.duration
                 self.logger.info(
-                    f"[Nexus] Final video stats: {final_duration:.1f}s, {final_fps:.1f} fps"
+                    f"[Nexus] Final video stats: {final_duration:.1f}s, {info.fps:.1f} fps"
                 )
-            finally:
-                cap.release()
+            else:
+                final_duration = 0
         except Exception as e:
             self.logger.warning(f"Failed to extract final video metadata: {e}")
             final_duration = 0
 
         # One-Click Publishing
         if job_metadata and job_metadata.get("auto_publish", False):
-            from src.services.publishing.service import base_publishing_service
+            from src.services.distribution.publishing import base_publishing_service
 
             platforms = job_metadata.get("platforms", ["youtube"])
 
@@ -816,56 +648,33 @@ class NexusOrchestrator:
             )
 
             # 1. Ingress Node - Validate inputs
-            with tracer.start_as_current_span("Nexus.Node.Ingress"):
-                await self._update_node_status(job_id, niche, "ingress", NodeStatus.ACTIVE, 20)
-
+            async with self._node_phase(job_id, niche, "ingress", (20, 30)):
                 validation_errors = await self._validate_inputs(
                     visual_paths, voiceover_paths, music_path
                 )
-
                 if validation_errors:
-                    error_msg = "; ".join(validation_errors)
-                    await self._update_node_status(
-                        job_id, niche, "ingress", NodeStatus.FAILED, 20, error_msg
-                    )
-                    raise RuntimeError(f"Input validation failed: {error_msg}")
-
-                await self._update_node_status(job_id, niche, "ingress", NodeStatus.COMPLETED, 30)
+                    raise RuntimeError(f"Input validation failed: {'; '.join(validation_errors)}")
 
             # 2. Cognition Node - Extract metadata and prepare clips
-            with tracer.start_as_current_span("Nexus.Node.Cognition"):
-                await self._update_node_status(job_id, niche, "cognition", NodeStatus.ACTIVE, 40)
-
+            vibe_data = None
+            remotion_clips = []
+            async with self._node_phase(job_id, niche, "cognition", (40, 50)):
                 vibe_data = await self._determine_video_vibe(
                     job_id, niche, style, blueprint_id, len(visual_paths or [])
                 )
-
                 remotion_clips = await self._prepare_remotion_clips(visual_paths or [])
-
                 if not remotion_clips:
-                    await self._update_node_status(
-                        job_id, niche, "cognition", NodeStatus.FAILED, 40, "No valid video clips found"
-                    )
                     raise RuntimeError("No valid video clips available for assembly")
 
-                await self._update_node_status(job_id, niche, "cognition", NodeStatus.COMPLETED, 50)
-
             # 2.6 Vision Audit Node (Free Tier - Gemini Flash)
-            with tracer.start_as_current_span("Nexus.Node.VisionAudit"):
-                await self._update_node_status(job_id, niche, "vision_audit", NodeStatus.ACTIVE, 55)
+            async with self._node_phase(job_id, niche, "vision_audit", (55, 60)):
                 self.logger.info(f"[Nexus] Auditing {len(remotion_clips)} clips for relevance...")
-
                 audited_clips = await self._run_vision_audit(
                     job_id, niche, script_segments, remotion_clips
                 )
 
-                await self._update_node_status(
-                    job_id, niche, "vision_audit", NodeStatus.COMPLETED, 60
-                )
-
             # 3. Synthesis Node - Render with Remotion
-            with tracer.start_as_current_span("Nexus.Node.Synthesis"):
-                await self._update_node_status(job_id, niche, "synthesis", NodeStatus.ACTIVE, 70)
+            await self._update_node_status(job_id, niche, "synthesis", NodeStatus.ACTIVE, 70)
 
             # Fetch style config once for all downstream usage
             style_config = get_style(style)
@@ -1101,30 +910,13 @@ class NexusOrchestrator:
             await self._update_node_status(job_id, niche, "synthesis", NodeStatus.COMPLETED, 90)
 
             # 4. Egress Node - Automated Publishing & Final Stats
-            with tracer.start_as_current_span("Nexus.Node.Egress"):
-                await self._update_node_status(job_id, niche, "egress", NodeStatus.ACTIVE, 95)
-
+            async with self._node_phase(job_id, niche, "egress", (95, 100)):
                 final_duration, publish_results = await self._publish_and_cleanup(
                     niche,
                     rendered_path,
                     props,
                     job_metadata,
                     vibe_data,
-                )
-
-                await self._update_node_status(
-                    job_id,
-                    niche,
-                    "egress",
-                    NodeStatus.COMPLETED,
-                    100,
-                    extra={
-                        "thumbnail": thumbnail_path,
-                        "output": rendered_path,
-                        "duration": final_duration,
-                        "publish_results": publish_results,
-                        "srt_captions_path": srt_path,
-                    },
                 )
 
                 total_time = time.time() - start_time

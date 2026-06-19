@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.services.audio.sound_design import SoundDesignService
-from src.services.voiceover.service import VoiceoverService
+from src.services.audio.voiceover import VoiceoverService
 
 @pytest.fixture
 def mock_audio_paths(tmp_path):

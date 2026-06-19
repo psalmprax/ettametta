@@ -21,6 +21,7 @@ import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface ABTest {
     id: string;
     content_id: string;

@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   readonly variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
   readonly size?: "sm" | "md" | "lg" | "xl";
   readonly isLoading?: boolean;

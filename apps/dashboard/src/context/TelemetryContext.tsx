@@ -62,6 +62,7 @@ export interface LogEntry {
     timestamp: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface TelemetryContextType {
     pulse: TelemetryPulse | null;
     logs: LogEntry[];

@@ -27,6 +27,7 @@ import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 
+/** Module-internal — do not consume from outside. */
 interface KnowledgeStats {
     total_documents: number;
     total_embeddings: number;
@@ -35,6 +36,7 @@ interface KnowledgeStats {
     status: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface SearchResult {
     content: string;
     score: number;

@@ -10,7 +10,7 @@ import { useTelemetry } from "@/context/TelemetryContext";
 import { useAuth } from "@/context/AuthContext";
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
-export type NexusEngine =
+type NexusEngine =
     | "orchestrator"
     | "crews"
     | "identities"
@@ -22,20 +22,24 @@ export type NexusEngine =
     | "network"
     | "logs";
 
-export type CreationMode = "cinema" | "blueprint";
+type CreationMode = "cinema" | "blueprint";
+/** Module-internal — do not consume from outside. */
+
 type StylePreset =
     | "NEON_CYBER"
     | "AMBER_WARM"
     | "MONOCHROME_DARK"
     | "EMERALD_MATRIX";
-export type SandboxTab = "console" | "telemetry";
+type SandboxTab = "console" | "telemetry";
 
+/** Module-internal — do not consume from outside. */
 const DEFAULT_NICHES = [
     "AI Technology", "Motivation", "Finance", "Health & Fitness",
     "Business", "Marketing", "Lifestyle", "Gaming",
     "Education", "Real Estate", "E-commerce", "Spirituality",
 ];
 
+/** Module-internal — do not consume from outside. */
 interface SwappedAsset {
     thumbnail: string;
     title: string;

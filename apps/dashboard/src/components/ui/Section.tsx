@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
   readonly variant?: "default" | "hero" | "featured" | "compact";
   readonly withBackground?: boolean;
   readonly withPattern?: boolean;

@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { useSearchParams, useRouter } from "next/navigation";
 
+/** Module-internal — do not consume from outside. */
 interface VideoJob {
     id: string;
     title: string;

@@ -485,7 +485,7 @@ class TestPublishJob:
             mock_result.scalar_one_or_none.return_value = mock_job
             mock_session.execute.return_value = mock_result
 
-            with patch("src.services.publishing.service.base_publishing_service") as mock_pub:
+            with patch("src.services.distribution.publishing.base_publishing_service") as mock_pub:
                 mock_pub.publish_to_platform = AsyncMock(return_value={"status": "published", "url": "https://youtube.com/watch?v=123"})
 
                 results = await creator.publish_job("job-001", platforms=["youtube", "instagram"])
@@ -516,7 +516,7 @@ class TestPublishJob:
             mock_result.scalar_one_or_none.return_value = mock_job
             mock_session.execute.return_value = mock_result
 
-            with patch("src.services.publishing.service.base_publishing_service") as mock_pub:
+            with patch("src.services.distribution.publishing.base_publishing_service") as mock_pub:
                 mock_pub.publish_to_platform = AsyncMock(side_effect=[
                     {"status": "published"},
                     Exception("Instagram API down")
@@ -573,7 +573,7 @@ class TestPublishJob:
             mock_result.scalar_one_or_none.return_value = mock_job
             mock_session.execute.return_value = mock_result
 
-            with patch("src.services.publishing.service.base_publishing_service") as mock_pub:
+            with patch("src.services.distribution.publishing.base_publishing_service") as mock_pub:
                 mock_pub.publish_to_platform = AsyncMock(return_value={"status": "published"})
 
                 await creator.publish_job("job-004", platforms=["youtube"])
@@ -643,7 +643,7 @@ class TestHelperMethods:
             {"text": "Second line", "visual_prompt": "v", "mood": "m", "type": "body"},
         ]
 
-        with patch("src.services.voiceover.service.base_voiceover_service") as mock_voice:
+        with patch("src.services.audio.voiceover.base_voiceover_service") as mock_voice:
             mock_voice.generate_voiceover = AsyncMock(side_effect=[
                 "/tmp/voice_1.mp3",
                 "/tmp/voice_2.mp3",
@@ -667,7 +667,7 @@ class TestHelperMethods:
             {"text": "Real text", "visual_prompt": "v", "mood": "m", "type": "body"},
         ]
 
-        with patch("src.services.voiceover.service.base_voiceover_service") as mock_voice:
+        with patch("src.services.audio.voiceover.base_voiceover_service") as mock_voice:
             mock_voice.generate_voiceover = AsyncMock(return_value="/tmp/voice.mp3")
 
             paths = await creator._generate_voiceovers(segments, "job-001")

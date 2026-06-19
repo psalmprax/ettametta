@@ -11,7 +11,7 @@ from typing import Any
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.api_responses import success_response
-from src.services.publishing.service import base_publishing_service
+from src.services.distribution.publishing import base_publishing_service
 from src.services.optimization.auth import token_manager
 
 router = APIRouter(prefix="/publish", tags=["Publishing"])

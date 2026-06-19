@@ -19,6 +19,7 @@ import CommerceView from "@/components/empire/CommerceView";
 import EmpireLogsTab from "@/components/empire/EmpireLogsTab";
 import EmpireRightPanel from "@/components/empire/EmpireRightPanel";
 
+/** Module-internal — do not consume from outside. */
 const EMPIRE_NAV: SidenavItem[] = [
     { id: "registry", label: "Empire Registry", icon: Database },
     { id: "sentinel", label: "Algo Sentinel", icon: ShieldCheck },

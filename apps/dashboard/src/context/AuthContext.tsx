@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@/lib/types";
 
+/** Module-internal — do not consume from outside. */
 interface AuthContextType {
     user: User | null;
     token: string | null;
@@ -75,6 +76,7 @@ class TokenManager {
     }
 }
 
+/** Module-internal — do not consume from outside. */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 import { API_BASE } from "@/lib/config";

@@ -31,7 +31,7 @@ export interface ScriptOutput {
     hashtags: string[];
 }
 
-export interface HookAnalysis {
+interface HookAnalysis {
     status: 'VALID' | 'KILL' | string;
     score: number;
     analysis: string;
@@ -53,7 +53,7 @@ export interface Blueprint {
     nodes: BlueprintNode[];
 }
 
-export interface NexusComposeRequest {
+interface NexusComposeRequest {
     niche: string;
     topic?: string;
     style?: string;
@@ -85,12 +85,12 @@ export interface NexusJob {
     current_node?: string;
 }
 
-export interface CreditBalance {
+interface CreditBalance {
     balance: number;
     user_id: string;
 }
 
-export interface ProcessingStep {
+interface ProcessingStep {
     id: string;
     label: string;
     description: string;
@@ -98,7 +98,7 @@ export interface ProcessingStep {
     progress?: number;
 }
 
-export interface StockVideo {
+interface StockVideo {
     preview: string;
     url?: string;
     id?: string;

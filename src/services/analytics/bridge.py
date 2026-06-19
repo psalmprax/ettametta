@@ -9,7 +9,7 @@ the Hermes Reflection Engine.
 
 import logging
 from typing import Any
-from src.services.hermes.service import base_hermes_service
+from src.services.llm.hermes import base_hermes_service
 from src.services.analytics.training_pipeline import base_training_pipeline
 from src.services.optimization.oracle_predictor import base_oracle_service
 from src.services.analytics.ledger import base_ledger_service
