@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -33,7 +35,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^5.2.1",
     "@playwright/test": "^1.59.1",
+    "@storybook/icons": "^2.0.2",
+    "@storybook/nextjs": "^10.4.6",
+    "@storybook/nextjs-vite": "^10.4.6",
+    "@storybook/react": "^10.4.6",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -45,11 +52,17 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.170.0",
     "@types/topojson-client": "^3.1.4",
+    "@vitest/browser-playwright": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "eslint-plugin-storybook": "^10.4.6",
     "happy-dom": "^20.10.6",
+    "playwright": "^1.61.0",
+    "storybook": "^10.4.6",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vite": "^8.0.16",
     "vitest": "^4.1.9"
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",

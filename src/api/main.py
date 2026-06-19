@@ -23,9 +23,15 @@ from src.api.middleware.tracing import (
 from src.api.exception_handlers import register_exception_handlers
 from src.api.routes.chaos import router as chaos_router
 from src.shared.observability import setup_observability, get_logger
+from src.services.infrastructure.tracing import init_tracing
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 setup_observability("ettametta-api")
+init_tracing(
+    service_name="ettametta-api",
+    jaeger_endpoint=settings.JAEGER_ENDPOINT if hasattr(settings, "JAEGER_ENABLED") and settings.JAEGER_ENABLED else None,
+    enabled=settings.JAEGER_ENABLED if hasattr(settings, "JAEGER_ENABLED") else None,
+)
 logger = get_logger(__name__)
 
 app = FastAPI(

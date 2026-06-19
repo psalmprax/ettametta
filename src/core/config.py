@@ -101,6 +101,11 @@ class CoreSettings(BaseSettings):
     # Payment Processing
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
+    RAZORPAY_KEY_ID: str | None = None
+    RAZORPAY_KEY_SECRET: str | None = None
+
+    # Usage-Based Billing
+    BILLING_USAGE_ENABLED: bool = True
 
     # OAuth Credentials
     GOOGLE_CLIENT_ID: str | None = None
@@ -141,6 +146,10 @@ class CoreSettings(BaseSettings):
     COOKIES_DIR: str = "data/storage/cookies"
     YOUTUBE_COOKIES_PATH: str | None = "data/storage/cookies/youtube_cookies.txt"
     TIKTOK_COOKIES_PATH: str | None = "data/storage/cookies/tiktok_cookies.txt"
+
+    # Distributed Tracing (Jaeger)
+    JAEGER_ENABLED: bool = False
+    JAEGER_ENDPOINT: str = "http://jaeger:4317"  # OTLP gRPC endpoint (Jaeger >= 1.35)
 
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"

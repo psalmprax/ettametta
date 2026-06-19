@@ -1,0 +1,68 @@
+{
+  "service_name": "ettametta",
+  "checks": [
+    {
+      "id": "api-health",
+      "name": "API Health Check",
+      "http": "http://api:8000/health",
+      "interval": "10s",
+      "timeout": "3s",
+      "deregister_critical_service_after": "30s",
+      "notes": "FastAPI health endpoint"
+    },
+    {
+      "id": "celery-health",
+      "name": "Celery Worker Health",
+      "http": "http://celery:5555/api/health",
+      "interval": "20s",
+      "timeout": "5s",
+      "deregister_critical_service_after": "60s",
+      "notes": "Celery Flower monitoring endpoint"
+    },
+    {
+      "id": "redis-health",
+      "name": "Redis Health Check",
+      "http": "http://redis:6379",
+      "interval": "15s",
+      "timeout": "3s",
+      "deregister_critical_service_after": "30s",
+      "notes": "Redis connectivity check"
+    },
+    {
+      "id": "postgres-health",
+      "name": "PostgreSQL Health Check",
+      "script": "/usr/local/bin/pg_isready -U ettametta",
+      "interval": "15s",
+      "timeout": "5s",
+      "deregister_critical_service_after": "60s",
+      "notes": "PostgreSQL readiness check"
+    },
+    {
+      "id": "discovery-health",
+      "name": "Discovery Service Health",
+      "http": "http://discovery:8001/health",
+      "interval": "10s",
+      "timeout": "3s",
+      "deregister_critical_service_after": "30s",
+      "notes": "Content discovery service"
+    },
+    {
+      "id": "ai-gateway-health",
+      "name": "AI Gateway Health",
+      "http": "http://ai-gateway:8002/health",
+      "interval": "10s",
+      "timeout": "5s",
+      "deregister_critical_service_after": "30s",
+      "notes": "AI Gateway proxy health"
+    },
+    {
+      "id": "remotion-health",
+      "name": "Remotion Renderer Health",
+      "http": "http://remotion:3000/health",
+      "interval": "15s",
+      "timeout": "5s",
+      "deregister_critical_service_after": "60s",
+      "notes": "Remotion video renderer"
+    }
+  ]
+}

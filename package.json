@@ -6,7 +6,8 @@
     "dev": "npm run dev --workspace=apps/dashboard",
     "build": "npm run build --workspaces",
     "test:e2e": "cd src/tests/e2e && npx playwright test",
-    "test:e2e:ui": "cd src/tests/e2e && npx playwright test --ui"
+    "test:e2e:ui": "cd src/tests/e2e && npx playwright test --ui",
+    "loadtest": "./loadtests/run.sh"
   },
   "workspaces": [
     "apps/*",
