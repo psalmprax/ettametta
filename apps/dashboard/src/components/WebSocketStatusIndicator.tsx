@@ -16,6 +16,7 @@ export interface WsConnectionState {
     reconnectAttempts?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface WebSocketStatusIndicatorProps {
     /** List of WebSocket connections to monitor */
     readonly connections: WsConnectionState[];

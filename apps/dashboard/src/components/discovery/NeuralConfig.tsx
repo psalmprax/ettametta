@@ -5,6 +5,8 @@ import { Filter } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Neural Config Component - Extracted from discovery page
+/** Module-internal — do not consume from outside. */
+
 interface NeuralConfigProps {
     minViralScore: number;
     excludeShorts: boolean;

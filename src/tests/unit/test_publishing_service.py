@@ -3,8 +3,8 @@ import json
 import shutil
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.services.publishing.service import YouTubePublisher, PublishingService
-import src.services.publishing.service as publishing_module
+from src.services.distribution.publishing import YouTubePublisher, PublishingService
+import src.services.distribution.publishing as publishing_module
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ async def test_youtube_upload_validation(temp_token_dir):
     publisher.token_dir = temp_token_dir
 
     # Mock availability check and patch asyncio.sleep to prevent tenacity sleep delays
-    with patch("src.services.publishing.service.GOOGLE_API_AVAILABLE", True), \
+    with patch("src.services.distribution.publishing.GOOGLE_API_AVAILABLE", True), \
          patch("asyncio.sleep", new_callable=AsyncMock):
          
         # 1. Circuit breaker is open
@@ -98,9 +98,9 @@ async def test_youtube_upload_success(temp_token_dir, tmp_path):
     mock_youtube_client.videos().insert.return_value = mock_insert_request
 
     # Mock the API build and GOOGLE_API_AVAILABLE
-    with patch("src.services.publishing.service.GOOGLE_API_AVAILABLE", True), \
-         patch("src.services.publishing.service.build", return_value=mock_youtube_client), \
-         patch("src.services.publishing.service.MediaFileUpload"):
+    with patch("src.services.distribution.publishing.GOOGLE_API_AVAILABLE", True), \
+         patch("src.services.distribution.publishing.build", return_value=mock_youtube_client), \
+         patch("src.services.distribution.publishing.MediaFileUpload"):
 
         res = await publisher.upload_video(
             user_id="user123",
@@ -172,7 +172,7 @@ async def test_publishing_service_tiktok_automation():
     # Bind mock_publisher to the module directly
     publishing_module.base_playwright_publisher = mock_publisher
 
-    with patch("src.services.publishing.service.PLAYWRIGHT_AVAILABLE", True):
+    with patch("src.services.distribution.publishing.PLAYWRIGHT_AVAILABLE", True):
         # 1. Test successful automation
         res = await service.publish_to_platform(
             user_id="user1",

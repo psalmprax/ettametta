@@ -2,7 +2,7 @@ import asyncio
 import sys
 import os
 sys.path.append(os.getcwd())
-from src.services.knowledge.service import base_knowledge_service
+from src.services.llm.knowledge import base_knowledge_service
 
 async def main():
     try:

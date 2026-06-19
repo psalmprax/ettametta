@@ -18,12 +18,14 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 interface Node {
     url: string;
     status: string;
     last_seen: string | null;
 }
 
+/** Module-internal — do not consume from outside. */
 interface GatewayHealth {
     nodes?: Node[];
     telemetry?: Node[];

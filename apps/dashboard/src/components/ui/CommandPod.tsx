@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Activity, ShieldCheck, Zap, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 
+/** Module-internal — do not consume from outside. */
 interface CommandPodProps {
     readonly name: string;
     readonly status: "nominal" | "degraded" | "critical" | "offline";

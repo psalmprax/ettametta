@@ -6,91 +6,21 @@
 - [x] **Phase 2: Content Discovery** - Access to trending content across platforms
 - [x] **Phase 3: Basic Video Generation** - AI-powered video creation and transformation
 - [x] **Phase 4: Advanced Video Generation** - Multi-scene storytelling video creation
+    - [x] 04-01-PLAN.md — Verify multi-scene storytelling video generation
 - [x] **Phase 5: Multi-Platform Publishing** - Social media content distribution
-- [x] **Phase 6: Automated Scheduling Publishing** - Campaign automation for publishing
-- [x] **Phase 7: Monetization** - Revenue generation and credit management
-- [x] **Phase 8: Analytics** - Performance metrics and insights
-- [ ] **Phase 9: Enterprise Hardening** - Strategic scaling and technical resilience
-    - [x] 09-01-PLAN.md — Unified Observability and Request Tracing
-- [ ] **Phase 10: Discovery → Analysis → Video Pipeline Fix** - Repair the broken core user journey end-to-end
-    - Promoted from `.planning/BACKLOG.md` item 999.1 (P0)
-    - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
-- [ ] **Phase 11: Remove Veo3 Stub (Credit-Scam Fix)** - Stop the fake-Veo3 from charging 25 credits for a Pollinations.ai image
-    - Promoted from `.planning/BACKLOG.md` item 999.2 (P0)
-    - [x] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
-- [ ] **Phase 12: Wire Up Runway + Pika API Keys** - Activate the dormant Runway/Pika API integration by reading keys from settings and exposing /engines/availability
-    - Promoted from `.planning/BACKLOG.md` item 999.3 (P0)
-    - [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
-- [ ] **Phase 13: Rewrite Luma API to Luma Ray** - Replace the deprecated `dream-machine` endpoint with the current Luma Ray API (`https://api.lumalabs.ai/v1/generations`) and add `LUMA_API_KEY` to settings
-    - Promoted from `.planning/BACKLOG.md` item 999.4 (P0)
-    - [ ] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
-
-## Phase Details
-
-### Phase 1: User Authentication and Settings
-**Goal**: Users can securely access their accounts and manage personal settings
-**Depends on**: Nothing
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, SETTINGS-01
-**Success Criteria** (what must be TRUE):
-  1. User can create an account with email and password
-  2. User can log in with email/password or Google OAuth and remain logged in across sessions
-  3. User can log out from any page
-  4. User can configure Telegram and WhatsApp notifications via bots
-  5. User can manage system settings and API integrations
-**Plans**: 6 plans
-- [x] 01-01-PLAN.md — Implement core user authentication system
-- [x] 01-02-PLAN.md — Implement user settings and notifications
-- [x] 01-03-PLAN.md — Fix authentication gaps (logout and OAuth)
-- [x] 01-04-PLAN.md — Implement bot integration for notifications
-- [x] 01-05-PLAN.md — Unify UserDB model definitions
-- [ ] 01-06-PLAN.md — Fix UserDB unification and database schema
-
-### Phase 2: Content Discovery
-**Goal**: Users can discover and analyze trending content
-**Depends on**: Phase 1
-**Requirements**: DISC-01, DISC-02, DISC-03
-**Success Criteria** (what must be TRUE):
-  1. User can view trending content from YouTube, TikTok, and other platforms via automated scanners
-  2. User can search for content with filters and sort by viral score
-  3. User can analyze content for viral patterns and insights
-**Plans**: 3 plans
-- [x] 02-01-PLAN.md — Implement automated trending content collection from YouTube
-- [x] 02-02-PLAN.md — Implement content search API with filters and viral score sorting
-- [x] 02-03-PLAN.md — Implement AI-powered content analysis for viral patterns and insights
-
-### Phase 3: Basic Video Generation
-**Goal**: Users can generate and enhance videos using AI
-**Depends on**: Phase 2
-**Requirements**: VIDEO-01, VIDEO-02, VIDEO-04
-**Success Criteria** (what must be TRUE):
-  1. User can transform existing videos with AI enhancements like sound design and quality tiers
-  2. User can generate new videos from scratch using multiple AI engines (Veo3, LTX-Video, etc.)
-  3. User can preview generated videos and retry failed jobs
-**Plans**: 5 plans
-- [x] 03-01-PLAN.md — Install and verify video processing dependencies
-- [x] 03-02-PLAN.md — Test video generation with multiple engines
-- [x] 03-03-PLAN.md — Add error handling and retry logic
-- [x] 03-04-PLAN.md — Optimize Docker builds for video processing
-- [x] 03-05-PLAN.md — Implement video preview and storage upload
-
-### Phase 4: Advanced Video Generation
-**Goal**: Users can create complex storytelling videos
-**Depends on**: Phase 3
-**Requirements**: VIDEO-03
-**Success Criteria** (what must be TRUE):
-  1. User can generate videos with multi-scene narratives
-**Plans**: 1 plans
-- [ ] 04-01-PLAN.md — Verify multi-scene storytelling video generation
-
-### Phase 5: Multi-Platform Publishing
-**Goal**: Users can publish content to social media platforms
-**Depends on**: Phase 4
-**Requirements**: PUBLISH-01
-**Success Criteria** (what must be TRUE):
-  1. User can publish videos to YouTube, TikTok, Facebook, and Instagram
-**Plans**: 2 plans
-- [x] 05-01-PLAN.md — Implement multi-platform publishing drivers
-- [ ] 05-02-PLAN.md — Verify multi-platform publishing capabilities
+    - [x] 05-01-PLAN.md — Implement multi-platform publishing drivers
+    - [x] 05-02-PLAN.md — Verify multi-platform publishing capabilities
+- [x] **Phase 17: Revenue transaction_id Backfill Idempotency** - Verify and lock the canonical idempotent backfill of revenue_logs.transaction_id from metadata_json so re-running the migration never raises UniqueViolation
+    - Promoted from `.planning/BACKLOG.md` item 999.5 (P0)
+    - [x] 17-01-PLAN.md — Verify NOT IN subquery + add 3-pass integration test + structural regression test
+- [x] **Phase 18: Service Complexity Refactor** - Reduce complexity, eliminate duplication, improve maintainability across 5 service files
+    - [x] 18-01-PLAN.md — Extract video utils + refactor orchestrator + fix empire_service + enhance DAG nodes + extract platform_composer patterns
+- [x] **Phase 14: Affiliate Auto-Insert** - FFmpeg drawtext burn-in with impression tracking
+    - [x] 14-01-PLAN.md — Affiliate auto-insert implementation
+- [x] **Phase 15: Auto-Merch** - Shopify/Auto-Merch integration
+    - [x] 15-01-PLAN.md — Shopify/Auto-Merch pipeline
+- [x] **Phase 16: A/B Testing** - A/B testing infrastructure for content variants
+    - [x] 16-01-PLAN.md — A/B testing (already fully implemented by prior work)
 
 ### Phase 6: Automated Scheduling Publishing
 **Goal**: Users can automate publishing campaigns
@@ -113,7 +43,7 @@
   3. User can purchase and consume credits for AI services and features
 **Plans**: 2 plans
 - [x] 07-01-PLAN.md — Implement affiliate links and revenue tracking
-- [ ] 07-02-PLAN.md — Verify monetization and credit system
+- [x] 07-02-PLAN.md — Verify monetization and credit system
 
 ### Phase 8: Analytics
 **Goal**: Users can view content performance metrics
@@ -123,7 +53,7 @@
   1. User can view performance analytics and content metrics
 **Plans**: 2 plans
 - [x] 08-01-PLAN.md — Implement performance analytics and content metrics
-- [ ] 08-02-PLAN.md — Verify analytics and reporting capabilities
+- [x] 08-02-PLAN.md — Verify analytics and reporting capabilities
 
 ### Phase 9: Enterprise Hardening
 **Goal**: Transition to an enterprise-grade, high-availability platform
@@ -137,7 +67,7 @@
   5. EU AI Act compliant automated governance
 **Plans**: 2 plans
 - [x] 09-01-PLAN.md — Unified Observability and Request Tracing
-- [ ] 09-02-PLAN.md — Verify enterprise infrastructure capabilities
+- [x] 09-02-PLAN.md — Verify enterprise infrastructure capabilities
 
 ### Phase 10: Discovery → Analysis → Video Pipeline Fix
 **Goal**: Repair the broken core user journey end-to-end (Discovery → Analysis → Video)
@@ -149,8 +79,13 @@
   3. "Create Video" button uses the analysis insights (hook, pacing, structure, style) to inform the video job
   4. The video job record carries a snapshot of the originating analysis in `job_metadata.analysis_snapshot`
   5. Old behavior (in-memory Celery results) still works behind a feature flag (`ENABLE_PERSISTED_ANALYSIS`)
-**Plans**: 1 plans (this phase ships in a single plan; sub-plans split if scope grows)
+**Plans**: 6 plans
 - [x] 10-01-PLAN.md — Foundation: DB schema + AnalysisReport contract
+- [x] 10-02-PLAN.md — Celery task rewrite + LLM-output mapper (persist AnalysisReport)
+- [x] 10-03-PLAN.md — Read-Side Endpoint — GET /api/v1/discovery/analysis/{content_id}
+- [x] 10-04-PLAN.md — Thread AnalysisReport Insights into Video Job Dispatcher
+- [x] 10-05-PLAN.md — Frontend Wire + WebSocket Push for Analysis Pipeline
+- [x] 10-06-PLAN.md — E2E Smoke Test + Observability for Discovery→Video Pipeline
 
 ### Phase 12: Wire Up Runway + Pika API Keys
 **Goal**: Activate the dormant Runway/Pika API integration by reading keys from `settings` (not `os.getenv`) and expose a `/engines/availability` endpoint so the UI can hide non-working engines
@@ -163,7 +98,7 @@
   4. `RUNWAY_API_KEY` and `PIKA_API_KEY` are documented in `.env.example`
   5. Unit tests verify settings-based key resolution and the availability endpoint
 **Plans**: 1 plans (single commit)
-- [ ] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
+- [x] 12-01-PLAN.md — Settings-based key resolution + /engines/availability endpoint + tests
 
 ### Phase 13: Rewrite Luma API to Luma Ray
 **Goal**: Replace the deprecated Luma Dream Machine endpoint with the current Luma Ray API so the Luma engine actually works end-to-end (no more silent 404 → Playwright fallback)
@@ -178,7 +113,7 @@
   6. `LUMA_API_KEY` is documented in `.env.example`
   7. Unit tests cover: key-missing skip, Ray-format POST payload, immediate `video` field, async poll loop, failed-state handling
 **Plans**: 1 plans (single commit)
-- [ ] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
+- [x] 13-01-PLAN.md — Luma Ray endpoint + payload + poll + settings key + tests
 
 ### Phase 11: Remove Veo3 Stub (Credit-Scam Fix)
 **Goal**: Stop users from being charged 25 credits for a fake Veo3 (the synthesis path silently falls through to a Pollinations.ai image+parallax)
@@ -194,6 +129,19 @@
 **Plans**: 1 plans (single-commit removal)
 - [x] 11-01-PLAN.md — Engine removal + route signature defaults + test fixture updates
 
+### Phase 17: Revenue transaction_id Backfill Idempotency
+**Goal**: Verify and lock the canonical idempotent backfill of revenue_logs.transaction_id from metadata_json so re-running the migration never raises UniqueViolation
+**Depends on**: Phase 7 (Monetization)
+**Requirements**: MONET-01
+**Success Criteria** (what must be TRUE):
+  1. `alembic/versions/2026_06_16_backfill_txid.py` `_BACKFILL_SQL` candidates CTE excludes groups that already have a non-NULL transaction_id (NOT IN subquery)
+  2. `tests/migrations/test_revenue_txid_migrations.py` has no `@pytest.mark.xfail` decorators
+  3. Running backfill SQL once writes canonical 2 winners; a-002 (loser) stays NULL
+  4. Running backfill SQL second and third time updates exactly 0 rows with zero UniqueViolation errors
+  5. `grep -rn 'xfail' tests/migrations/ alembic/versions/` returns no markers
+**Plans**: 1 plans
+- [x] 17-01-PLAN.md — Verify NOT IN subquery + add 3-pass integration test + structural regression test
+
 **Recent Hardening Work (2026-04-17 to 2026-05-29):**
 - 14+ operational/debugging skills created (ai-provider-debug, celery-monitor, cloakbrowser, content-discovery, db-performance, dep-audit, docker-compose, fastapi-debug, nexus-engine, redis-debug, remotion-debug, security-sentinel, social-api, storage-lifecycle, video-pipeline, voiceover-tts)
 - OpenClaw hardened: asyncio offload, PEP 8 compliance, type safety, GC management
@@ -206,19 +154,24 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. User Authentication and Settings | 5/6 | In Progress | - |
+| 1. User Authentication and Settings | 6/6 | Complete | 2026-06-19 |
 | 2. Content Discovery | 3/3 | Complete    | 2026-04-17 |
 | 3. Basic Video Generation | 5/5 | Complete | 2026-04-15 |
-| 4. Advanced Video Generation | 0/1 | In Progress | - |
-| 5. Multi-Platform Publishing | 1/2 | In Progress | - |
+| 4. Advanced Video Generation | 1/1 | Complete | 2026-06-19 |
+| 5. Multi-Platform Publishing | 2/2 | Complete | 2026-06-14 |
 | 6. Automated Scheduling Publishing | 3/3 | Complete | 2026-04-17 |
-| 7. Monetization | 1/2 | In Progress | - |
-| 8. Analytics | 1/2 | In Progress | - |
-| 9. Enterprise Hardening | 1/2 | In Progress | 2026-05-29 (skills + hardening) |
-| 10. Discovery → Analysis → Video Pipeline Fix | 1/1 | In Progress | 2026-05-29 (10-01 Foundation complete) |
-| 11. Remove Veo3 Stub | 1/1 | Complete | 2026-05-29 (6a790f10) |
-| 12. Wire Up Runway + Pika | 0/1 | Not Started | - |
-| 13. Rewrite Luma API to Luma Ray | 0/1 | Not Started | - |
+| 7. Monetization | 2/2 | Complete | 2026-06-14 |
+| 8. Analytics | 2/2 | Complete | 2026-06-14 |
+| 9. Enterprise Hardening | 2/2 | Complete | 2026-06-14 |
+| 10. Discovery → Analysis → Video Pipeline Fix | 6/6 | Complete | 2026-06-12 |
+| 11. Remove Veo3 Stub | 1/1 | Complete | 2026-05-29 |
+| 12. Wire Up Runway + Pika | 1/1 | Complete | 2026-05-29 |
+| 13. Rewrite Luma API to Luma Ray | 1/1 | Complete | 2026-05-29 |
+| 17. Revenue txid Backfill Idempotency | 1/1 | Complete | 2026-06-19 |
+| 18. Service Complexity Refactor | 1/1 | Complete | 2026-06-19 |
+| 14. Affiliate Auto-Insert | 1/1 | Complete | 2026-06-13 |
+| 15. Auto-Merch | 1/1 | Complete | 2026-06-13 |
+| 16. A/B Testing | 1/1 | Complete | 2026-06-14 |
 
 ---
 ## Related Documents
@@ -246,4 +199,4 @@
 
 ---
 
-*Roadmap created: 2026-04-08 — Last updated: 2026-05-29 (Phase 10/11/12/13 promoted from BACKLOG.md 999.1/999.2/999.3/999.4; Related Documents section added)*
+*Roadmap created: 2026-04-08 — Last updated: 2026-06-19 (Phases 14-18 complete; all 18 phases done)*

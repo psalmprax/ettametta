@@ -921,7 +921,7 @@ async def publish_variant_ab_test(
         )
 
     # 3. Publish each variant
-    from src.api.routes.publish.common import (
+    from src.api.routes.publishing.platforms import (
         SUPPORTED_PLATFORMS,
         PLATFORM_NAME_TO_KEY,
     )

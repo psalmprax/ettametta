@@ -10,6 +10,7 @@ interface GeoData {
     features: GeoJSON.Feature[];
 }
 
+/** Module-internal — do not consume from outside. */
 interface Point {
     lat: number;
     lng: number;
@@ -17,6 +18,7 @@ interface Point {
     label: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface GeomapProps {
     readonly points?: Point[];
 }

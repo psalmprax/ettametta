@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { VideoPreviewModal } from "@/components/ui/VideoPreviewModal";
 
 // Types
+/** Module-internal — do not consume from outside. */
+
 interface ContentCandidate {
     id: string;
     platform: string;
@@ -23,6 +25,7 @@ interface ContentCandidate {
     title: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface CandidateListProps {
     candidates: ContentCandidate[];
     isLoading: boolean;

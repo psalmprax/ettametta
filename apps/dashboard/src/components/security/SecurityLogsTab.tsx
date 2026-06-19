@@ -3,6 +3,7 @@
 import React from "react";
 import { ConsoleLogPanel } from "@/components/ui/ConsoleLogPanel";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     logs: { timestamp: number; message: string }[];
     isScanning: boolean;

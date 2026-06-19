@@ -4,6 +4,7 @@ import React from "react";
 import { Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     logs: any[];
     status: string;

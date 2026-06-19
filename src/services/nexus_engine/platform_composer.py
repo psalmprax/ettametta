@@ -67,12 +67,11 @@ class PlatformComposer:
         )
 
     async def _circuit_breaker_call(
-        self, breaker: CircuitBreaker, fn, *args, **kwargs
+        self, breaker: CircuitBreaker, fn, *args, default=None, **kwargs
     ) -> Any:
-        """Execute a function with circuit breaker protection."""
         if breaker.is_open():
             logger.debug("[PlatformComposer] %s breaker OPEN, skipping", breaker.name)
-            return [] if "search" in (fn.__name__ if hasattr(fn, '__name__') else '') else None
+            return default
         try:
             result = await fn(*args, **kwargs)
             breaker.record_success()
@@ -80,20 +79,25 @@ class PlatformComposer:
         except Exception as e:
             breaker.record_failure()
             logger.warning("[PlatformComposer] %s failed: %s", fn.__name__, e)
-            return [] if "search" in fn.__name__ else None
+            return default
 
     @staticmethod
-    async def _gather_with_exceptions(*coros) -> list[Any]:
-        """Run coroutines concurrently, filter out exceptions and None results."""
+    async def _gather_with_exceptions(*coros, extract=None) -> list[Any]:
         results = await asyncio.gather(*coros, return_exceptions=True)
         valid = []
         for r in results:
             if isinstance(r, Exception):
                 logger.debug("[PlatformComposer] Source failed: %s", r)
             elif isinstance(r, list):
-                valid.extend(r)
+                if extract:
+                    mapped = [x for item in r if (x := extract(item)) is not None]
+                    valid.extend(mapped)
+                else:
+                    valid.extend(r)
             elif r is not None:
-                valid.append(r)
+                mapped = extract(r) if extract else r
+                if mapped is not None:
+                    valid.append(mapped)
         return valid
 
     async def compose(
@@ -191,7 +195,7 @@ class PlatformComposer:
         from src.services.video_engine.stock_service import base_stock_service
 
         urls = await self._circuit_breaker_call(
-            self.stock_breaker, base_stock_service.fetch_b_roll, query, count=count
+            self.stock_breaker, base_stock_service.fetch_b_roll, query, count=count, default=[]
         )
         if not urls:
             return []
@@ -209,16 +213,10 @@ class PlatformComposer:
         platforms: list[str],
         count: int,
     ) -> list[ComposedAsset]:
-        """Search CloakBrowser for platform content, return ComposedAssets with URLs."""
-        if self.cloak_breaker.is_open():
-            logger.debug("[PlatformComposer] Cloak breaker OPEN, skipping")
-            return []
-
-        try:
+        async def _do_search() -> list[ComposedAsset]:
             from src.services.discovery.cloak_scanner import CloakBrowserScanner
             scanner = CloakBrowserScanner()
 
-            # Search all platforms concurrently
             tasks = [
                 scanner.scan_platform(p, niche if not query else query)
                 for p in platforms
@@ -234,19 +232,18 @@ class PlatformComposer:
                                 url=candidate.source_uri,
                                 source="platform",
                                 platform=platforms[i] if i < len(platforms) else "unknown",
-                                score=0.0,  # Will be ranked by CLIP later
+                                score=0.0,
                                 title=candidate.title,
                                 viral_score=candidate.viral_score or 0,
                             ))
                 elif isinstance(r, Exception):
                     logger.debug("[PlatformComposer] Platform %s failed: %s", platforms[i], r)
 
-            self.cloak_breaker.record_success()
             return assets[:count]
-        except Exception as e:
-            self.cloak_breaker.record_failure()
-            logger.warning("[PlatformComposer] Platform search failed: %s", e)
-            return []
+
+        return await self._circuit_breaker_call(
+            self.cloak_breaker, _do_search, default=[]
+        )
 
     async def _search_platform_urls(
         self,
@@ -267,7 +264,7 @@ class PlatformComposer:
 
         candidates = await self._circuit_breaker_call(
             self.discovery_breaker, base_discovery_service.find_trending_content,
-            niche=niche, min_viral_score=30
+            niche=niche, min_viral_score=30, default=[]
         )
         if not candidates:
             return []
@@ -316,16 +313,9 @@ class PlatformComposer:
                 return await _download_one(a)
 
         tasks = [_guarded_download(a) for a in assets]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        downloaded: list[ComposedAsset] = []
-        for r in results:
-            if isinstance(r, ComposedAsset):
-                downloaded.append(r)
-            elif isinstance(r, Exception):
-                logger.debug("[PlatformComposer] Download error: %s", r)
-
-        return downloaded
+        return await self._gather_with_exceptions(
+            *tasks, extract=lambda r: r if isinstance(r, ComposedAsset) else None
+        )
 
     # ── CLIP Semantic Ranking ───────────────────────────────────
 

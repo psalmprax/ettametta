@@ -5,6 +5,7 @@ import { ShoppingBag, Package, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     commerceStatus: any;
     onSync: () => void;

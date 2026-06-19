@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 /**
  * Static content for the Patterns tab. Will move server-side once a real
  * ML-driven pattern-correlator ships.
+  * Module-internal — do not consume from outside.
  */
 const PATTERNS_DATA = [
     { label: "Narrative Hook Resonance", score: 92, status: "DOMINANT" },

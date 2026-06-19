@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface SkeletonProps {
     readonly className?: string;
     readonly variant?: "default" | "card" | "text" | "circle";

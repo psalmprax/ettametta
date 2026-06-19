@@ -4,6 +4,7 @@ import React from "react";
 import { Shield, ScanLine, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     scanResults: string[];
     isScanning: boolean;

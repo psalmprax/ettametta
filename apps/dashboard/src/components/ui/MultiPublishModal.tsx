@@ -9,12 +9,14 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 interface MultiPublishModalProps {
     readonly isOpen: boolean;
     readonly onClose: () => void;
     readonly onSuccess?: () => void;
 }
 
+/** Module-internal — do not consume from outside. */
 const ALL_PLATFORMS = [
     { id: "youtube", label: "YouTube", color: "text-red-500" },
     { id: "tiktok", label: "TikTok", color: "text-rose-400" },

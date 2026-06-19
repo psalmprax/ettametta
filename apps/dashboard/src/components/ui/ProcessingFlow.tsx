@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
 import { Info, Cpu, Sparkles, Database } from "lucide-react";
 
+/** Module-internal — do not consume from outside. */
 interface FlowStep {
     id: string;
     label: string;
     status: 'pending' | 'active' | 'complete' | 'error';
 }
 
+/** Module-internal — do not consume from outside. */
 const STAGE_DETAILS: Record<string, { desc: string; icon: any; default_metric: string }> = {
     ingest: { desc: "Byte-stream verification and multi-threaded source retrieval.", icon: Database, default_metric: "Verifying Integrity" },
     analyze: { desc: "Deep semantic deconstruction and hook identification.", icon: Cpu, default_metric: "Semantic Extraction" },

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface TooltipProps {
     readonly content: string;
     readonly children: React.ReactNode;

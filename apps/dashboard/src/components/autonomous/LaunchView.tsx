@@ -4,6 +4,7 @@ import React from "react";
 import { Layers, Share2, Cpu, Search, Radar, Sparkles, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     isRunning: boolean;
     currentStep: string;

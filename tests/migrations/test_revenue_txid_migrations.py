@@ -359,6 +359,30 @@ class TestBackfillStructure:
         assert "transaction_id IS NULL" in sql
         assert "metadata_json IS NOT NULL" in sql
 
+    def test_candidates_not_in_subquery_prevents_unique_violation(self):
+        """The NOT IN subquery on (platform, transaction_id) ensures that
+        groups which already have a winner are excluded from the candidates
+        CTE. Without this, a re-run would attempt to INSERT duplicate
+        transaction_id values and raise UniqueViolation.
+
+        This is a regression catcher: a future 'cleanup' that drops the
+        NOT IN will fail this test loudly."""
+        mod = _load_module(MIGRATION_BACKFILL)
+        sql = _module_const(mod, "_BACKFILL_SQL")
+        sql_n = " ".join(sql.split())
+        assert "(platform, metadata_json->>'transaction_id') NOT IN" in sql_n, (
+            "NOT IN subquery on (platform, transaction_id) is missing — "
+            "re-runs would raise UniqueViolation"
+        )
+        assert (
+            "SELECT platform, transaction_id" in sql_n
+            and "FROM revenue_logs" in sql_n
+            and "WHERE transaction_id IS NOT NULL" in sql_n
+        ), (
+            "Inner subquery must SELECT platform, transaction_id FROM "
+            "revenue_logs WHERE transaction_id IS NOT NULL"
+        )
+
     def test_ranking_uses_oldest_date_with_id_tiebreak(self):
         """The deterministic winner is the row with the oldest ``date``;
         ``id`` is the tiebreak (UUIDs are random, so ``ORDER BY id``
@@ -735,6 +759,31 @@ class TestBackfillFixturesOnPostgres:
         assert by_id["a-001"] == "tx-abc-001"
         assert by_id["a-002"] is None  # LOSER: must stay NULL on re-run
         assert by_id["b-001"] == "tx-xyz-002"
+
+    def test_backfill_is_idempotent_over_three_passes(self, pg_db_url, pg_schema):
+        """Run the backfill three consecutive times. Pass-1 writes the
+        canonical 2 winners (a-001 + b-001). Pass-2 and pass-3 must update
+        exactly 0 rows (true no-op), and no UniqueViolation must be raised
+        at any point (psycopg2.IntegrityError would abort the test).
+        """
+        _setup_revenue_logs(pg_db_url, pg_schema)
+        _run_migration_sql(pg_db_url, pg_schema, MIGRATION_COLUMN_ADD, "upgrade")
+        _insert_fixtures(pg_db_url, pg_schema)
+
+        first = _run_backfill(pg_db_url, pg_schema)
+        second = _run_backfill(pg_db_url, pg_schema)
+        third = _run_backfill(pg_db_url, pg_schema)
+
+        assert first == 2, f"pass-1 should write 2 winners, got {first}"
+        assert second == 0, f"pass-2 should be a no-op (0 rows), got {second}"
+        assert third == 0, f"pass-3 should be a no-op (0 rows), got {third}"
+
+        # Loser row stays NULL (not retroactively overwritten).
+        rows = _query(
+            pg_db_url, pg_schema,
+            "SELECT id, transaction_id FROM revenue_logs WHERE id = 'a-002'",
+        )
+        assert rows == [("a-002", None)], rows
 
     def test_json_portable_existence_check_skips_null_and_empty(
         self, pg_db_url, pg_schema

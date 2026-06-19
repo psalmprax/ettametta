@@ -4,6 +4,7 @@ import React from "react";
 import { Activity } from "lucide-react";
 import { AreaChartCustom } from "@/components/ui/ChartComponents";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     retentionData: { time: number; value: number }[];
 }

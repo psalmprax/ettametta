@@ -22,12 +22,14 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 
+/** Module-internal — do not consume from outside. */
 interface NodePosition {
     id: string;
     x: number;
     y: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface NeuralCanvasProps {
     isOpen: boolean;
     onClose: () => void;

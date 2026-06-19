@@ -4,6 +4,7 @@ import React from "react";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     agents: any[];
     /** Already-derived health score (defaults to 0). */

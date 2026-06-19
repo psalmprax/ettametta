@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
     Cpu,
     Users,
@@ -8,25 +10,22 @@ import {
     Terminal,
     Layers,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { NexusEngine } from "@/hooks/useNexusData";
 
-const NAV_ITEMS: { id: NexusEngine; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const NAV_ITEMS = [
     { id: "orchestrator", label: "Orchestrator", icon: Cpu },
     { id: "crews", label: "Workforce", icon: Users },
     { id: "identities", label: "Neural IDs", icon: Fingerprint },
     { id: "sandbox", label: "Code Sandbox", icon: Terminal },
     { id: "command", label: "Command Pod", icon: Terminal },
     { id: "history", label: "Pipeline History", icon: Layers },
-];
+] as const;
 
-interface Props {
-    activeEngine: NexusEngine;
-    onSelect: (engine: NexusEngine) => void;
+interface NexusHeaderProps {
+    activeEngine: string;
+    onEngineChange: (id: string) => void;
 }
 
-export default function NexusSideNav({ activeEngine, onSelect }: Props) {
+export default function NexusHeader({ activeEngine, onEngineChange }: NexusHeaderProps) {
     const router = useRouter();
 
     return (
@@ -35,7 +34,7 @@ export default function NexusSideNav({ activeEngine, onSelect }: Props) {
                 <button
                     key={item.id}
                     onClick={() => {
-                        onSelect(item.id);
+                        onEngineChange(item.id);
                         router.replace(`/nexus?engine=${item.id}`);
                     }}
                     className={cn(
@@ -46,9 +45,7 @@ export default function NexusSideNav({ activeEngine, onSelect }: Props) {
                     )}
                 >
                     <item.icon className="h-4 w-4" />
-                    <span className="text-xs font-bold uppercase tracking-tight">
-                        {item.label}
-                    </span>
+                    <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
                     {activeEngine === item.id && (
                         <div className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
                     )}

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface ConfirmModalProps {
     readonly isOpen: boolean;
     readonly onClose: () => void;

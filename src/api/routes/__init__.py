@@ -1,6 +1,6 @@
 from . import (
-    discovery,
-    publish,
+    discovery,  # noqa: F401 — now a package at routes/discovery/
+    publishing,
     analytics,
     auth,
     settings,

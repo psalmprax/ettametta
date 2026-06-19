@@ -121,7 +121,7 @@ from src.api.routes import (
     notifications,
     engines,
 )
-from src.api.routes.publish import router as publish_router
+from src.api.routes.publishing import router as publish_router
 
 from fastapi.staticfiles import StaticFiles
 

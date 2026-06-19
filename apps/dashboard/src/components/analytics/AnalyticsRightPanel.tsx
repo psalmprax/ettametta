@@ -3,6 +3,7 @@
 import React from "react";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     agents: any[];
     /** Total views (defaulted to 0 in page if missing). */

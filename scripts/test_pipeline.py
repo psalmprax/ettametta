@@ -39,7 +39,7 @@ async def test_full_pipeline():
     # 4. Check Monetization (Auto-Merch & Affiliate)
     print("\n[Step 4] Verifying Monetization (Hardened)...")
     from services.monetization.auto_merch import AutoMerchService
-    from services.affiliate.service import AffiliateService
+    from services.monetization.affiliate import AffiliateService
     
     merch = AutoMerchService()
     affiliate = AffiliateService()

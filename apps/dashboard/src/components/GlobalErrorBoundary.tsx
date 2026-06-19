@@ -4,10 +4,12 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, Home, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
   readonly children: ReactNode;
 }
 
+/** Module-internal — do not consume from outside. */
 interface State {
   hasError: boolean;
   error: Error | null;

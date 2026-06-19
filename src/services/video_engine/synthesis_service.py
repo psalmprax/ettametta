@@ -7,13 +7,12 @@ import uuid
 import shutil
 from pathlib import Path
 from src.api.config import settings
-from contextlib import asynccontextmanager
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import importlib.util
 
-def check_module_available(module_name: str) -> bool:
-    return importlib.util.find_spec(module_name) is not None
+from .model_manager import ModelManager, check_module_available
+from .gpu_queue import GpuQueueManager
 
 # Graceful imports for optional dependencies
 TORCH_AVAILABLE = check_module_available("torch")
@@ -50,171 +49,7 @@ else:
 WAN_MODEL_NAME = "Wan-2.2-V2V"
 
 
-class ModelManager:
-    """
-    Handles downloading and deleting large video models to save space on the VPS.
-    """
-
-    def __init__(self):
-        self.models_dir = Path(settings.COMFYUI_MODELS_DIR)
-        self.models_dir.mkdir(parents=True, exist_ok=True)
-        # Persistent models stay on disk
-        self.persistent_models = ["cogvideox-5b"]
-        # Track active tasks using each model
-        self.active_usage = {}  # {model_name: count}
-
-    async def acquire_model(self, model_name: str) -> str:
-        """
-        Increments usage counter and ensures model is present.
-        Downloads from HuggingFace if not available locally.
-        """
-        self.active_usage[model_name] = self.active_usage.get(model_name, 0) + 1
-        model_path = self.models_dir / f"{model_name}.safetensors"
-
-        if model_path.exists():
-            logging.info(
-                f"[ModelManager] Acquired {model_name} (Active users: {self.active_usage[model_name]})"
-            )
-            return str(model_path)
-
-        logging.info(f"[ModelManager] Downloading model: {model_name}...")
-
-        try:
-            # Download from HuggingFace
-            await self._download_model_from_hf(model_name, model_path)
-            logging.info(f"[ModelManager] Download complete: {model_name}")
-        except Exception as e:
-            logging.exception(f"[ModelManager] Download failed for {model_name}: {e}")
-            # Fallback to touch (for testing)
-            model_path.touch()
-            logging.warning(f"[ModelManager] Using mock model for {model_name}")
-
-        return str(model_path)
-
-    async def _download_model_from_hf(self, model_name: str, target_path: Path):
-        """
-        Download model from HuggingFace Hub.
-        """
-        if not check_module_available("huggingface_hub"):
-            logging.warning(
-                "[ModelManager] huggingface_hub not installed, skipping real download"
-            )
-            raise RuntimeError("huggingface_hub not available")
-
-        from huggingface_hub import hf_hub_download
-
-        # Map model names to HuggingFace repo/file paths
-        model_mapping = {
-            "cogvideox-5b": ("THUDM/CogVideoX-5B", "CogVideoX-5B-I2V-5B.safetensors"),
-            "hunyuan": ("Tencent/HunyuanVideo", "HunyuanVideo.safetensors"),
-            "wan": ("Wan-AI/Wan2.2-T2V-14B", "Wan2.2-T2V-14B.safetensors"),
-        }
-
-        if model_name not in model_mapping:
-            raise ValueError(f"Unknown model: {model_name}")
-
-        repo_id, filename = model_mapping[model_name]
-
-        # Download in background thread to avoid blocking
-        import concurrent.futures
-
-        def download_sync():
-            return hf_hub_download(
-                repo_id=repo_id,
-                filename=filename,
-                local_dir=str(self.models_dir),
-                local_dir_use_symlinks=False,
-            )
-
-        loop = asyncio.get_running_loop()
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            downloaded_path = await loop.run_in_executor(executor, download_sync)
-
-        # Move to expected location
-        if downloaded_path != str(target_path):
-            await asyncio.to_thread(shutil.move, downloaded_path, str(target_path))
-
-    async def release_model(self, model_name: str):
-        """
-        Decrements usage counter and only cleans up if no other tasks need it.
-        """
-        if model_name not in self.active_usage:
-            return
-
-        self.active_usage[model_name] -= 1
-        count = self.active_usage[model_name]
-
-        logging.info(
-            f"[ModelManager] Released {model_name} (Active users remaining: {count})"
-        )
-
-        if count <= 0:
-            if (
-                model_name in self.persistent_models
-                or not settings.CLEANUP_TRANSIENT_MODELS
-            ):
-                logging.info(f"[ModelManager] Skipping cleanup for {model_name}")
-            else:
-                model_path = self.models_dir / f"{model_name}.safetensors"
-                if model_path.exists():
-                    logging.info(
-                        f"[ModelManager] No more users. Cleaning up transient model: {model_name}"
-                    )
-                    await asyncio.to_thread(model_path.unlink)
-
-            if model_name in self.active_usage:
-                del self.active_usage[model_name]
-
-
 from src.api.utils.resilience import CircuitBreaker
-
-
-class GpuQueueManager:
-    def __init__(self):
-        from src.api.utils.redis import get_sync_redis
-        self.redis = get_sync_redis()
-        self.semaphore_key = "ettametta:gpu:slots"
-        self.total_slots = settings.GPU_QUEUE_SLOTS or 1
-        self.timeout = settings.GPU_QUEUE_TIMEOUT or 300
-
-    def _initialize_queue(self):
-        """Initializes the GPU slot queue with tokens if empty."""
-        try:
-            if not self.redis.exists(self.semaphore_key):
-                logging.info(
-                    f"[GpuQueue] Initializing {self.total_slots} slots in Redis list..."
-                )
-                tokens = [str(i) for i in range(self.total_slots)]
-                self.redis.rpush(self.semaphore_key, *tokens)
-                self.redis.expire(self.semaphore_key, 604800)  # 7 days persistence
-        except Exception as e:
-            logging.exception(f"[GpuQueue] Initialization failed: {e}")
-
-    @asynccontextmanager
-    async def acquire_slot(self):
-        """
-        Async context manager to acquire a GPU slot using blocking BLPOP.
-        """
-        logging.info("[GpuQueue] Requesting GPU slot (BRPOP)...")
-        self._initialize_queue()
-
-        token = None
-        try:
-            # blpop returns (key, value) or None on timeout
-            result = self.redis.blpop(self.semaphore_key, timeout=int(self.timeout))
-            if result:
-                _, token = result
-                logging.info(f"[GpuQueue] Slot acquired (Token: {token})")
-                yield True
-            else:
-                logging.error("[GpuQueue] Timeout waiting for GPU slot.")
-                raise TimeoutError(
-                    "System busy: All GPU generation slots are currently occupied."
-                )
-        finally:
-            if token:
-                self.redis.rpush(self.semaphore_key, token)
-                logging.info(f"[GpuQueue] Slot released (Token: {token}).")
 
 
 class GenerativeService:
@@ -322,7 +157,7 @@ class GenerativeService:
             "hunyuan": {
                 "steps": 30,
                 "cfg": 6.0,
-                "vram_limit": "14GB",  # Optimized from 16-20GB → 10-14GB
+                "vram_limit": "14GB",
                 "height": 480,
                 "width": 832,
                 "optimization": {
@@ -336,7 +171,7 @@ class GenerativeService:
             "mochi": {
                 "steps": 50,
                 "cfg": 4.5,
-                "vram_limit": "12GB",  # Optimized from 14-18GB → 9-12GB
+                "vram_limit": "12GB",
                 "height": 480,
                 "width": 848,
                 "optimization": {
@@ -350,7 +185,7 @@ class GenerativeService:
             "cogvideo": {
                 "steps": 40,
                 "cfg": 7.0,
-                "vram_limit": "16GB",  # Optimized from 18-24GB → 12-16GB
+                "vram_limit": "16GB",
                 "height": 480,
                 "width": 720,
                 "optimization": {
@@ -364,7 +199,7 @@ class GenerativeService:
             "wan": {
                 "steps": 35,
                 "cfg": 5.0,
-                "vram_limit": "10GB",  # Optimized from 12-14GB → 8-10GB
+                "vram_limit": "10GB",
                 "height": 480,
                 "width": 832,
                 "optimization": {
@@ -378,7 +213,7 @@ class GenerativeService:
             "wan2.2": {
                 "steps": 35,
                 "cfg": 5.0,
-                "vram_limit": "10GB",  # Optimized from 12-14GB → 8-10GB
+                "vram_limit": "10GB",
                 "height": 480,
                 "width": 832,
                 "optimization": {
@@ -392,7 +227,7 @@ class GenerativeService:
             "ltx-video": {
                 "steps": 25,
                 "cfg": 3.0,
-                "vram_limit": "8GB",  # Optimized from 10-12GB → 6-8GB
+                "vram_limit": "8GB",
                 "height": 480,
                 "width": 832,
                 "optimization": {
@@ -406,7 +241,7 @@ class GenerativeService:
             "zeroscope": {
                 "steps": 20,
                 "cfg": 7.5,
-                "vram_limit": "8GB",  # Optimized from 10-12GB → 6-8GB
+                "vram_limit": "8GB",
                 "height": 480,
                 "width": 480,
                 "optimization": {
@@ -420,7 +255,7 @@ class GenerativeService:
             "lite4k": {
                 "steps": 30,
                 "cfg": 7.0,
-                "vram_limit": "7GB",  # Optimized from 8-10GB → 5-7GB
+                "vram_limit": "7GB",
                 "height": 480,
                 "width": 832,
                 "optimization": {
@@ -434,7 +269,7 @@ class GenerativeService:
             "animatediff": {
                 "steps": 25,
                 "cfg": 7.5,
-                "vram_limit": "8GB",  # Low VRAM requirement for animation
+                "vram_limit": "8GB",
                 "height": 512,
                 "width": 512,
                 "optimization": {
@@ -442,7 +277,7 @@ class GenerativeService:
                     "xformers": True,
                     "vae_tiling": True,
                     "vae_slicing": True,
-                    "resolution_reduction": "512p",  # Square format for animation
+                    "resolution_reduction": "512p",
                 },
             },
         }
@@ -475,7 +310,7 @@ class GenerativeService:
         aspect_ratio: str = "9:16",
         style: str = "Cinematic",
         custom_image_uri: str = None,
-        enhance_quality: bool = False,  # Enable Real-ESRGAN post-processing
+        enhance_quality: bool = False,
     ) -> str | None:
         """
         Synthesizes a new video from a text prompt.
@@ -501,14 +336,13 @@ class GenerativeService:
             logging.warning(
                 f"[GenerativeService] Failed to get engine params for {engine}: {e}, using defaults"
             )
-            params = self._get_engine_params("ltx-video")  # fallback
+            params = self._get_engine_params("ltx-video")
 
         logging.info(
             f"[GenerativeService] Synthesizing video with engine: {engine} (Steps: {params['steps']}, CFG: {params['cfg']}), prompt: {optimized_prompt[:50]}..."
         )
 
         try:
-            # Engines that run on the local production GPU (RTX 8000)
             local_gpu_engines = [
                 "hunyuan",
                 "mochi",
@@ -526,7 +360,6 @@ class GenerativeService:
                         optimized_prompt, engine, aspect_ratio, params, custom_image_uri
                     )
             else:
-                # Cloud engines don't need the local GPU queue
                 video_path = await self._dispatch_synthesis(
                     optimized_prompt, engine, aspect_ratio, params, custom_image_uri
                 )
@@ -594,7 +427,6 @@ class GenerativeService:
         custom_image_uri: str | None,
     ) -> str | None:
         """Executes the specific synthesis engine logic."""
-        # Handle local heavy ML inference engines with dynamic imports
         local_ml_configs = {
             "wan": ("wan_inference", "generate_wan_t2v"),
             "wan2.2": ("wan_inference", "generate_wan_t2v"),
@@ -632,13 +464,11 @@ class GenerativeService:
         params = self._resolve_params(engine, params)
 
         try:
-            # Check for remote GPU dispatch if local resources are constrained or explicitly configured
             remote_url = settings.RENDER_NODE_URL
             if remote_url and engine in ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"]:
                 logging.info(f"[GenerativeService] Dispatching {engine} synthesis to remote node: {remote_url}")
                 return await self._dispatch_remote_synthesis(remote_url, prompt, params)
 
-            # Local engine dispatch
             return await self._execute_synthesis(engine, prompt, aspect_ratio, params, custom_image_uri)
 
         except Exception:
@@ -678,7 +508,6 @@ class GenerativeService:
             if response.status_code == 200:
                 data = response.json()
                 job_id = data.get("job_id")
-                # The remote node returns a direct download URL or a local path that we can proxy
                 return f"{remote_url.rstrip('/')}/download/{job_id}"
             else:
                 logging.error(f"[GenerativeService] Remote node failed: {response.text}")
@@ -704,10 +533,8 @@ class GenerativeService:
         model_name = model_name_map.get(model_type, WAN_MODEL_NAME)
 
         try:
-            # 1. Acquire Model (Reference Counted)
             await self.model_manager.acquire_model(model_name)
 
-            # 2. Trigger ComfyUI Workflow
             logging.info(
                 f"[GenerativeService] Dispatching ComfyUI workflow for {model_name} to {settings.COMFYUI_URL}..."
             )
@@ -726,7 +553,6 @@ class GenerativeService:
             logging.exception("[GenerativeService] Synthesis orchestrator failed")
             raise
         finally:
-            # 3. Release Model (Cleans up only if count is 0)
             await self.model_manager.release_model(model_name)
 
     async def _run_comfy_workflow(self, model_type: str, prompt: str, output_path: str) -> bool:
@@ -755,7 +581,7 @@ class GenerativeService:
 
     async def _poll_comfy_job(self, client, prompt_id: str, output_path: str) -> bool:
         """Polls ComfyUI for job history/completion status."""
-        for _ in range(120):  # 120 * 5s = 10m
+        for _ in range(120):
             await asyncio.sleep(5)
             hist_resp = await client.get(
                 f"{settings.COMFYUI_URL.rstrip('/')}/history/{prompt_id}"
@@ -798,24 +624,18 @@ class GenerativeService:
             f"[GenerativeService] Triggering 4K Lite Synthesis: {prompt[:50]}..."
         )
 
-        # 1. Generate or use custom 4K Static Image
         if custom_image_uri:
-            # Use provided custom image
             image_uri = custom_image_uri
             logging.info(f"[GenerativeService] Using custom image: {image_uri}")
         else:
-            # Generate high-quality image (Pollinations.ai with FLUX model)
             encoded_prompt = urllib.parse.quote(prompt)
-            # We request a large resolution (which translates to high quality for upscale later)
             width, height = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
             image_uri = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
             logging.info(f"[GenerativeService] Generated FLUX image: {image_uri}")
 
-        # 2. Process into 4K Cinematic Video
         processor = VideoProcessor()
         output_name = f"lite4k_{uuid.uuid4()}.mp4"
 
-        # We'll call a new processor method specifically for image-to-parallax
         video_path = await processor.apply_cinematic_motion(
             image_uri, output_name, aspect_ratio=aspect_ratio
         )
@@ -833,7 +653,6 @@ class GenerativeService:
             f"[GenerativeService] Synthesizing optimized batch of {len(scenes)} scenes..."
         )
 
-        # 1. Group by model if using ComfyUI stack
         is_comfy = engine in ["hunyuan", "mochi", "cogvideo", "wan"]
 
         if is_comfy:
@@ -845,7 +664,6 @@ class GenerativeService:
             }
             model_name = model_name_map.get(engine, WAN_MODEL_NAME)
 
-            # Acquire model ONCE for the whole batch
             await self.model_manager.acquire_model(model_name)
             try:
                 tasks = [
@@ -856,10 +674,8 @@ class GenerativeService:
                 ]
                 results = await asyncio.gather(*tasks)
             finally:
-                # Release model ONCE after batch finishes
                 await self.model_manager.release_model(model_name)
         else:
-            # Standard parallel processing for cloud models
             tasks = [
                 self.synthesize_video(
                     s.get("visual_prompt", ""), engine=engine, style=style
@@ -887,7 +703,6 @@ class GenerativeService:
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{job_id}.mp4")
 
-        # Try SiliconFlow API if key is available
         if self.silicon_flow_key:
             try:
                 async with httpx.AsyncClient(timeout=600) as client:
@@ -910,7 +725,6 @@ class GenerativeService:
             except Exception as e:
                 logging.warning(f"[GenerativeService] SiliconFlow API failed: {e}")
 
-        # Try remote GPU node
         render_node_url = settings.RENDER_NODE_URL
         if render_node_url:
             try:
@@ -937,7 +751,6 @@ class GenerativeService:
                     f"[GenerativeService] Remote GPU node failed for Wan: {e}"
                 )
 
-        # Fallback to Lite4K
         logging.info("[GenerativeService] Wan falling back to Lite4K image+parallax")
         return await self._synthesize_lite_4k(prompt, aspect_ratio)
 
@@ -955,8 +768,6 @@ class GenerativeService:
                 f"[GenerativeService] Routing synthesis to Remote GPU Node: {render_node_url}"
             )
             try:
-                # We would typically use httpx here for an async call, and either await the result
-                # or rely on a webhook callback for long-running jobs.
                 payload = {
                     "prompt": prompt,
                     "resolution": "720p",
@@ -980,7 +791,6 @@ class GenerativeService:
                 logging.exception(
                     f"[GenerativeService] Failed to contact Remote GPU Node: {e}"
                 )
-                # Fallback to mock
         else:
             logging.error(
                 "[GenerativeService] RENDER_NODE_URL not configured. Cannot generate video."
@@ -997,7 +807,6 @@ class GenerativeService:
         """
         Refines a simple user prompt into a high-fidelity director's prompt tailored for the specific engine.
         """
-        # Engine-specific base grammars
         engine_modifiers = {
             "hunyuan": "High-fidelity natural language, volumetric lighting, photorealistic, 8k, detailed textures, cinematic composition.",
             "ltx-video": "A detailed video of, cinematic movement, highly realistic, professional cinematography.",
@@ -1005,7 +814,6 @@ class GenerativeService:
             "mochi": "Realistic physics, complex motion, fluid movement, high-energy action.",
             "cogvideo": "3D causal convolution, deep semantic consistency, cinematic realism.",
             "lite4k": "4k resolution, cinematic parallax, sharpest details, stunning clarity.",
-            # Free daily providers
             "zsky": "High-fidelity, WAN 2.2 model, RTX 5090 quality, smooth motion.",
             "kling": "Cinematic quality, realistic physics, high detail, professional grade.",
             "pixverse": "Vibrant colors, smooth animation, dynamic motion, high quality.",
@@ -1024,17 +832,12 @@ class GenerativeService:
             "ASMR/Calm": "Slow motion, macro shots, soft focus, ambient lighting, peaceful atmosphere.",
         }
 
-        # Merge modifiers
         engine_mod = engine_modifiers.get(engine, "")
         style_mod = style_modifiers.get(style, "")
 
         refined = (
             f"{user_prompt}. {style_mod} {engine_mod} Professional production grade."
         )
-
-        # FUTURE: Add LLM-based expansion here if LLM_API_KEY is present
-        # e.g., prompt_expert = LLMExpert(engine=engine)
-        # return prompt_expert.refine(refined)
 
         return refined
 
@@ -1050,7 +853,6 @@ class GenerativeService:
             f"[GenerativeService] Calling free provider: {provider} for: {prompt[:50]}..."
         )
 
-        # Map aspect ratio to provider format
         aspect_map = {"9:16": "9:16", "16:9": "16:9", "1:1": "1:1"}
         provider_aspect = aspect_map.get(aspect_ratio, "9:16")
 
@@ -1084,7 +886,6 @@ class GenerativeService:
         from pathlib import Path
 
         try:
-            # 1. Import enhancement libraries
             try:
                 if not CV2_AVAILABLE or not check_module_available("realesrgan") or not check_module_available("basicsr"):
                     logging.warning(
@@ -1103,7 +904,6 @@ class GenerativeService:
                 )
                 return video_path
 
-            # 2. Create enhanced output path
             video_dir = Path(video_path).parent
             video_name = Path(video_path).stem
             enhanced_path = video_dir / f"{video_name}_enhanced.mp4"
@@ -1112,7 +912,6 @@ class GenerativeService:
                 f"[GenerativeService] Enhancing video quality with Real-ESRGAN: {video_path}"
             )
 
-            # 3. Initialize Real-ESRGAN model
             model = rrdbnet_class(
                 num_in_ch=3,
                 num_out_ch=3,
@@ -1131,7 +930,6 @@ class GenerativeService:
                 half=True,
             )
 
-            # 4. Process frames
             import cv2
             cap = cv2.VideoCapture(video_path)
             fps = cap.get(cv2.CAP_PROP_FPS)
@@ -1157,7 +955,6 @@ class GenerativeService:
 
             cap.release()
 
-            # 5. Write output
             if enhanced_frames:
                 h, w = enhanced_frames[0].shape[:2]
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -1177,7 +974,7 @@ class GenerativeService:
 
         except Exception:
             logging.exception("[GenerativeService] Quality enhancement failed")
-            return video_path  # Return original if enhancement fails
+            return video_path
 
     async def _synthesize_animatediff(
         self, prompt: str, aspect_ratio: str, params: dict = None
@@ -1190,7 +987,6 @@ class GenerativeService:
         import os
 
         try:
-            # Use remote AI service for AnimateDiff (more robust)
             render_node_url = settings.RENDER_NODE_URL
             if render_node_url:
                 payload = {
@@ -1198,15 +994,13 @@ class GenerativeService:
                     "model": "animatediff_v15",
                     "negative_prompt": "low quality, blurry, distorted, static, motionless",
                     "num_inference_steps": params.get("steps", 25) if params else 25,
-                    "num_frames": 16,  # AnimateDiff typically uses 16 frames
+                    "num_frames": 16,
                     "height": params.get("height", 512) if params else 512,
                     "width": params.get("width", 512) if params else 512,
                     "guidance_scale": params.get("cfg", 7.5) if params else 7.5,
                 }
 
-                async with httpx.AsyncClient(
-                    timeout=600
-                ) as client:  # Longer timeout for animation
+                async with httpx.AsyncClient(timeout=600) as client:
                     response = await client.post(
                         f"{render_node_url}/generate_animatediff", json=payload
                     )
@@ -1215,8 +1009,7 @@ class GenerativeService:
                         data = response.json()
                         job_id = data.get("job_id")
                         if job_id:
-                            # Poll for completion
-                            for attempt in range(60):  # 10 minutes max
+                            for attempt in range(60):
                                 await asyncio.sleep(10)
                                 status_resp = await client.get(
                                     f"{render_node_url}/status/{job_id}"
@@ -1224,7 +1017,6 @@ class GenerativeService:
                                 if status_resp.status_code == 200:
                                     status_data = status_resp.json()
                                     if status_data.get("status") == "completed":
-                                        # Download the result
                                         dl_resp = await client.get(
                                             f"{render_node_url}/download/{job_id}"
                                         )
@@ -1270,7 +1062,6 @@ class GenerativeService:
         This provides the specific node configuration for different video models.
         """
         import random
-        # Generic fallback workflow (Text-to-Video)
         workflow = {
             "3": {
                 "class_type": "KSampler",
@@ -1313,8 +1104,6 @@ class GenerativeService:
             }
         }
         
-        # In a real production environment, we would load these from 
-        # predefined .json files in a 'workflows/' directory.
         return workflow
 
     async def pull_stock_for_niche(self, niche: str, count: int = 3) -> list[dict]:
@@ -1331,7 +1120,6 @@ class GenerativeService:
             downloaded_assets = []
             
             for url in urls:
-                # Use a reliable local path for stock
                 path = await base_stock_service.download_stock_video(url, output_dir="local_downloads/stock")
                 if path:
                     downloaded_assets.append({
@@ -1339,7 +1127,7 @@ class GenerativeService:
                         "platform": "Pexels",
                         "url": url,
                         "file_path": path,
-                        "motion_score": 0.8, # Stock is usually high quality
+                        "motion_score": 0.8,
                         "relevance": 0.9
                     })
             

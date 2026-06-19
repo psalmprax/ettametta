@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/auth_utils";
 
+/** Module-internal — do not consume from outside. */
 interface EnvKey {
     keys: string[];
     count: number;

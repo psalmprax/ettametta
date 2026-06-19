@@ -8,6 +8,7 @@ import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 interface Notification {
     id: string;
     type: string;

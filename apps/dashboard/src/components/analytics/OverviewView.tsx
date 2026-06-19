@@ -3,6 +3,7 @@
 import React from "react";
 import { DesignCard } from "@/components/ui/DesignCard";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     metrics: {
         views: number;

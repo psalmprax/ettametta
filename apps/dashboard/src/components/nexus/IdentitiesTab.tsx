@@ -5,6 +5,7 @@ import { PlusCircle, User, Mic2, Video, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Persona } from "@/lib/types";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     personas: Persona[];
 }

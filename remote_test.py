@@ -14,7 +14,7 @@ logging.basicConfig(
 
 from src.services.discovery.researcher_service import base_researcher_service
 from src.services.automation.interpreter_service import base_interpreter_service
-from src.services.knowledge.service import base_knowledge_service
+from src.services.llm.knowledge import base_knowledge_service
 from src.services.llm.intelligence_hub import base_intelligence_service
 
 async def test_knowledge_base():

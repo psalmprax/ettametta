@@ -3,6 +3,7 @@
 import React from "react";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     agents: any[];
     /** Total revenue in USD, already formatted-or-zeroed by the page. */

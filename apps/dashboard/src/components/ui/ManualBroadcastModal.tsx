@@ -9,6 +9,7 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 interface ManualBroadcastModalProps {
     readonly isOpen: boolean;
     readonly onClose: () => void;

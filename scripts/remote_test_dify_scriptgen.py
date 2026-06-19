@@ -38,7 +38,7 @@ async def main():
 
     # Step 2: Test ScriptGenerator with Dify (the newly wired provider)
     logger.info("\n📝 Step 2: Testing ScriptGenerator with Dify...")
-    from src.services.script_generator.service import base_script_service
+    from src.services.video_engine.script_generator import base_script_service
 
     try:
         script = await base_script_service.generate_script(

@@ -97,10 +97,10 @@ class StockSearchNode(BaseNode):
         _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 10, niche=niche)
         from src.services.video_engine.stock_service import base_stock_service
 
-        keyword = str(self.params.get("keyword", ""))
-        count = int(self.params.get("count", 3))
-        niche = str(self.params.get("niche", keyword))
-        semantic_rank = bool(self.params.get("semantic_rank", True))
+        keyword = self.resolve_input(ctx, "keyword", type_=str, default="")
+        count = self.resolve_input(ctx, "count", type_=int, default=3)
+        niche = self.resolve_input(ctx, "niche", type_=str, default=keyword)
+        semantic_rank = self.resolve_input(ctx, "semantic_rank", type_=bool, default=True)
 
         if semantic_rank:
             # Use semantic ranking: keyword search → download → CLIP rank
@@ -161,10 +161,10 @@ class SemanticSearchNode(BaseNode):
         _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 20, niche=niche)
         from src.services.video_engine.semantic_stock import base_semantic_stock_matcher
 
-        query = str(self.params.get("query", ""))
-        count = int(self.params.get("count", 3))
-        max_candidates = int(self.params.get("max_candidates", 6))
-        niche = str(self.params.get("niche", query))
+        query = self.resolve_input(ctx, "query", type_=str, default="")
+        count = self.resolve_input(ctx, "count", type_=int, default=3)
+        max_candidates = self.resolve_input(ctx, "max_candidates", type_=int, default=6)
+        niche = self.resolve_input(ctx, "niche", type_=str, default=query)
 
         # Temporarily increase candidate pool for better ranking
         original_max = base_semantic_stock_matcher.max_candidates
@@ -284,10 +284,10 @@ class ParallelAssetSourceNode(BaseNode):
         from src.services.video_engine.stock_service import base_stock_service
         from src.services.video_engine.downloader import base_downloader_service
 
-        keyword = str(self.params.get("keyword", ""))
-        niche = str(self.params.get("niche", keyword))
-        platform_urls: list[str] = list(self.params.get("platform_urls", []))
-        stock_urls: list[str] = list(self.params.get("stock_urls", []))
+        keyword = self.resolve_input(ctx, "keyword", type_=str, default="")
+        niche = self.resolve_input(ctx, "niche", type_=str, default=keyword)
+        platform_urls: list[str] = self.resolve_input(ctx, "platform_urls", type_=list, default=[])
+        stock_urls: list[str] = self.resolve_input(ctx, "stock_urls", type_=list, default=[])
 
         async def _try_stock() -> str | None:
             """Search Pexels + download, with up to 3 attempts."""
@@ -387,8 +387,8 @@ class VisionAuditNode(BaseNode):
         if not video_path or not os.path.exists(video_path):
             return {"passed": True, "reason": "no_video", "video_path": video_path}
 
-        prompt = str(self.params.get("prompt", ""))
-        job_id = str(self.params.get("job_id", "unknown"))
+        prompt = self.resolve_input(ctx, "prompt", type_=str, default="")
+        job_id = self.resolve_input(ctx, "job_id", type_=str, default="unknown")
 
         frame = extract_frame(video_path)
         if frame is None:
@@ -557,13 +557,13 @@ class SceneRenderNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> dict:
         from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
 
-        job_id = str(self.params.get("job_id", "unknown"))
-        niche = str(self.params.get("niche", ""))
-        str(self.params.get("style", "CINEMATIC_DOC"))
+        job_id = self.resolve_input(ctx, "job_id", type_=str, default="unknown")
+        niche = self.resolve_input(ctx, "niche", type_=str, default="")
+        self.resolve_input(ctx, "style", type_=str, default="CINEMATIC_DOC")
         _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 70, niche=niche)
-        dict(self.params.get("blueprint", {}))
-        dict(self.params.get("job_metadata", {}))
-        composition_id = str(self.params.get("composition_id", "ViralClip"))
+        self.resolve_input(ctx, "blueprint", type_=dict, default={})
+        self.resolve_input(ctx, "job_metadata", type_=dict, default={})
+        composition_id = self.resolve_input(ctx, "composition_id", type_=str, default="ViralClip")
 
         # Collect audited clips from upstream context
         audited_clips: list[dict] = self.params.get("audited_clips", [])

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { SeverityIcon, SeverityPill } from "./SeverityBadge";
 import type { SecurityEvent } from "@/hooks/useSecurityData";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     events: SecurityEvent[];
 }

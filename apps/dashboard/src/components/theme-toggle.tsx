@@ -3,6 +3,7 @@
 import { useUITheme } from "@/context/UIThemeContext";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface ThemeToggleProps {
     readonly className?: string;
     readonly showLabel?: boolean;

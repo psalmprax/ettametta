@@ -6,12 +6,14 @@ import { cn } from "@/lib/utils";
 import { Search, Filter, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface Tab {
   id: string;
   label: string;
   icon?: any;
 }
 
+/** Module-internal — do not consume from outside. */
 interface DashboardPageLayoutProps {
   readonly title: string;
   readonly subtitle?: string;

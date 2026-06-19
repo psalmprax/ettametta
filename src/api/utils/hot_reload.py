@@ -22,14 +22,14 @@ async def start_hot_reload_listener():
                 
                 # Reload LangChain
                 try:
-                    from src.services.langchain.service import langchain_service
+                    from src.services.llm.langchain import langchain_service
                     langchain_service.hot_reload()
                 except Exception as e:
                     logger.exception(f"Failed to reload LangChain: {e}")
                 
                 # Reload CrewAI
                 try:
-                    from src.services.crewai.service import crewai_service
+                    from src.services.llm.crewai import crewai_service
                     crewai_service.hot_reload()
                 except Exception as e:
                     logger.exception(f"Failed to reload CrewAI: {e}")

@@ -3,6 +3,7 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     insights: any;
 }

@@ -13,6 +13,7 @@ import {
 
 // --- Custom Tooltip ---
 
+/** Module-internal — do not consume from outside. */
 const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }: any) => {
     if (active && payload && payload.length) {
         return (
@@ -39,6 +40,7 @@ const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }: any)
 
 // --- Standardized Axes ---
 
+/** Module-internal — do not consume from outside. */
 const ChartXAxis = (props: any) => (
     <RechartsXAxis
         axisLine={false}
@@ -49,6 +51,7 @@ const ChartXAxis = (props: any) => (
     />
 );
 
+/** Module-internal — do not consume from outside. */
 const ChartYAxis = (props: any) => (
     <RechartsYAxis
         axisLine={false}
@@ -59,6 +62,7 @@ const ChartYAxis = (props: any) => (
     />
 );
 
+/** Module-internal — do not consume from outside. */
 const ChartGrid = (props: any) => (
     <RechartsCartesianGrid
         strokeDasharray="3 3"
@@ -70,6 +74,7 @@ const ChartGrid = (props: any) => (
 
 // --- High Density Area Chart Wrapper ---
 
+/** Module-internal — do not consume from outside. */
 interface AreaChartProps {
     readonly data: any[];
     readonly dataKey: string;

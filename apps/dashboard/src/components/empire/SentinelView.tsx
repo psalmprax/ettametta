@@ -5,6 +5,7 @@ import { ShieldCheck, Target } from "lucide-react";
 import { toast } from "sonner";
 import { DesignCard } from "@/components/ui/DesignCard";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     sentinelStatus: any;
     pulse: any;

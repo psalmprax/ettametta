@@ -12,6 +12,7 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { BlueprintNode, Blueprint } from "@/lib/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
+/** Module-internal — do not consume from outside. */
 interface BlueprintBuilderProps {
     isOpen: boolean;
     onClose: () => void;

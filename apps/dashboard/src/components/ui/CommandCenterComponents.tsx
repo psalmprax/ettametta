@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 
 // --- AgentMatrix Component ---
 
+/** Module-internal — do not consume from outside. */
 interface AgentStatus {
     id: string;
     name: string;
@@ -98,6 +99,7 @@ export function AgentMatrix({ agents }: { readonly agents: AgentStatus[] }) {
 
 // --- AssetQuickview Component ---
 
+/** Module-internal — do not consume from outside. */
 interface Asset {
     id: string;
     title: string;

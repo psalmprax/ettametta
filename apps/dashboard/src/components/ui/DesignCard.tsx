@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { MoreVertical, CreditCard, RotateCcw, Share2, Activity, Zap } from "lucide-react";
 
+/** Module-internal — do not consume from outside. */
 interface DesignCardProps {
   readonly title: string;
   readonly status?: "Current" | "Active" | "Inactive" | "Offline" | "Live Polling" | "Syncing" | "Completed" | "Scheduled" | "Nominal" | "Optimized" | "Archived" | "Story" | (string & {});

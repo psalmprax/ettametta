@@ -46,6 +46,8 @@ from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
+_UNSET = object()
+
 
 # ═══════════════════════════════════════════
 # Node Protocol & Base
@@ -85,36 +87,72 @@ class BaseNode:
             f"{self.__class__.__name__}.execute() must be overridden"
         )
 
-    def resolve_input(self, ctx: dict[str, Any], key: str | None = None) -> Any:
-        """Resolve an input value from params → inputs → context.
+    def resolve_input(
+        self,
+        ctx: dict[str, Any],
+        key: str | None = None,
+        *,
+        type_: type | None = None,
+        default: Any = _UNSET,
+    ) -> Any:
+        """Resolve an input value from params → inputs → context with optional type coercion.
 
         Priority:
         1. self.params[key] if key provided
-        2. self.params["url"] or self.params["input_path"] (common param names)
+        2. self.params["url"] or self.params["input_path"] or self.params["video_path"]
         3. First upstream node result from ctx
+
+        If *type_* is given the resolved value is coerced (str, int, bool, float,
+        list). If *default* is provided and the final value is ``None``, *default*
+        is returned instead.
         """
+        resolved = None
+
         if key:
             val = self.params.get(key)
             if val is not None:
-                return val
+                resolved = val
 
         # Common param names
-        for param_name in ("url", "input_path", "video_path"):
-            val = self.params.get(param_name)
-            if val is not None:
-                return val
+        if resolved is None:
+            for param_name in ("url", "input_path", "video_path"):
+                val = self.params.get(param_name)
+                if val is not None:
+                    resolved = val
+                    break
 
         # Upstream context
-        if self.inputs:
+        if resolved is None and self.inputs:
             upstream = ctx.get(self.inputs[0])
             if isinstance(upstream, dict):
-                return upstream.get("uri") or upstream.get("video_path") or upstream.get("url")
-            if isinstance(upstream, list) and upstream:
-                return upstream[0]
-            if isinstance(upstream, str):
-                return upstream
+                resolved = upstream.get("uri") or upstream.get("video_path") or upstream.get("url")
+            elif isinstance(upstream, list) and upstream:
+                resolved = upstream[0]
+            elif isinstance(upstream, str):
+                resolved = upstream
 
-        return None
+        # Apply default
+        if resolved is None and default is not _UNSET:
+            resolved = default
+
+        # Apply type coercion
+        if resolved is not None and type_ is not None:
+            try:
+                if type_ is bool:
+                    resolved = bool(resolved)
+                elif type_ is int:
+                    resolved = int(resolved)
+                elif type_ is float:
+                    resolved = float(resolved)
+                elif type_ is str:
+                    resolved = str(resolved)
+                elif type_ is list:
+                    if not isinstance(resolved, list):
+                        resolved = list(resolved)
+            except (ValueError, TypeError):
+                resolved = default if default is not _UNSET else None
+
+        return resolved
 
     def cache_key_parts(self) -> dict[str, Any]:
         """Override to include additional fields in the cache key.

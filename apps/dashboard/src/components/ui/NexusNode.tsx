@@ -15,6 +15,7 @@ import {
 
 export type NodeType = 'ingress' | 'cognition' | 'synthesis' | 'egress';
 
+/** Module-internal — do not consume from outside. */
 interface NexusNodeProps {
     readonly type: NodeType;
     readonly label: string;
@@ -26,6 +27,7 @@ interface NexusNodeProps {
     readonly onClick?: () => void;
 }
 
+/** Module-internal — do not consume from outside. */
 const NODE_CONFIG: Record<NodeType, { icon: any; color: string; bg: string }> = {
     ingress: { icon: Database, color: "text-neon-cyan", bg: "bg-neon-cyan/10" },
     cognition: { icon: Cpu, color: "text-violet-400", bg: "bg-violet-400/10" },

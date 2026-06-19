@@ -71,26 +71,26 @@ class TestCheckPatchTarget:
     def test_detects_mismatch(self):
         """Flag when patch(...) uses langchain_service but module has base_langchain_service."""
         module_map = {
-            "src.services.langchain.service": {"langchain_service": "base_langchain_service"},
+            "src.services.llm.langchain": {"langchain_service": "base_langchain_service"},
         }
-        singletons_short = {"langchain_service": "src.services.langchain.service.base_langchain_service"}
+        singletons_short = {"langchain_service": "src.services.llm.langchain.base_langchain_service"}
         issues = self._check(
-            "src.services.langchain.service.langchain_service",
+            "src.services.llm.langchain.langchain_service",
             module_map,
             singletons_short,
         )
         assert len(issues) == 1
-        assert issues[0]["patch_target"] == "src.services.langchain.service.langchain_service"
-        assert issues[0]["expected"] == "src.services.langchain.service.base_langchain_service"
+        assert issues[0]["patch_target"] == "src.services.llm.langchain.langchain_service"
+        assert issues[0]["expected"] == "src.services.llm.langchain.base_langchain_service"
 
     def test_skips_already_base(self):
         """Skip when the attribute already uses base_ prefix."""
         module_map = {
-            "src.services.langchain.service": {"langchain_service": "base_langchain_service"},
+            "src.services.llm.langchain": {"langchain_service": "base_langchain_service"},
         }
-        singletons_short = {"langchain_service": "src.services.langchain.service.base_langchain_service"}
+        singletons_short = {"langchain_service": "src.services.llm.langchain.base_langchain_service"}
         issues = self._check(
-            "src.services.langchain.service.base_langchain_service",
+            "src.services.llm.langchain.base_langchain_service",
             module_map,
             singletons_short,
         )

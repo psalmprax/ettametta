@@ -9,11 +9,13 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+/** Module-internal — do not consume from outside. */
 interface PlatformLinkModalProps {
     readonly isOpen: boolean;
     readonly onClose: () => void;
 }
 
+/** Module-internal — do not consume from outside. */
 const PLATFORMS = [
     { id: "youtube", name: "YouTube", icon: Youtube, color: "hover:bg-red-500/20 hover:border-red-500/40 text-red-500" },
     { id: "tiktok", name: "TikTok", icon: Video, color: "hover:bg-cyan-500/20 hover:border-cyan-500/40 text-cyan-500" },

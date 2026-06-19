@@ -8,8 +8,10 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { formatLabel } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     networkData: { nodes: any[]; links: any[] };
     blueprints: any[];

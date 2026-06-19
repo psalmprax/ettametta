@@ -5,6 +5,7 @@ import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     agents: any[];
     isRunning: boolean;

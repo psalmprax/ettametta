@@ -3,7 +3,7 @@
 Validate that test file patch() targets use the correct base_* singleton naming.
 
 Detects the pattern where a test patches an alias name like:
-    patch("src.services.langchain.service.langchain_service")
+    patch("src.services.llm.langchain.langchain_service")
 when the actual module-level export is:
     base_langchain_service = LangChainService()
 
@@ -64,7 +64,7 @@ def collect_singletons() -> Dict[str, Dict[str, str]]:
     
     Returns:
         module_map: canonical_module_path -> { short_name: full_base_name }
-        e.g. "src.services.langchain.service" -> {"langchain_service": "base_langchain_service"}
+        e.g. "src.services.llm.langchain" -> {"langchain_service": "base_langchain_service"}
     """
     module_map: Dict[str, Dict[str, str]] = {}
 
@@ -110,7 +110,7 @@ def find_mismatches(
     Args:
         module_map: full module_map from collect_singletons()
         singletons_short: flat map of short_name -> canonical_module.full_name
-                          e.g. "langchain_service" -> "src.services.langchain.service.base_langchain_service"
+                          e.g. "langchain_service" -> "src.services.llm.langchain.base_langchain_service"
     
     Returns:
         List of issue dicts with keys: test_file, line, patch_target, expected

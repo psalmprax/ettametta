@@ -3,8 +3,10 @@
 import React from "react";
 import nextDynamic from "next/dynamic";
 
+/** Module-internal — do not consume from outside. */
 const GlobalPulseGlobe = nextDynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     /** Already-derived velocity (defaults to 1.2 in page). */
     velocity: number;
@@ -18,6 +20,7 @@ interface Props {
     pulse: any;
 }
 
+/** Module-internal — do not consume from outside. */
 const REGIONAL_HUBS = [
     { name: "Americas", load: "74%", latency: "24ms", color: "border-cyan-500/20 text-cyan-400" },
     { name: "Europe", load: "89%", latency: "18ms", color: "border-violet-500/20 text-violet-400" },

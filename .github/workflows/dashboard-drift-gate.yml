@@ -1,0 +1,82 @@
+name: Dashboard drift gate
+
+on:
+  push:
+    branches: [master, main, develop]
+    paths:
+      - 'apps/dashboard/src/**'
+      - 'apps/dashboard/scratch/_audit-export-drop.py'
+      - 'apps/dashboard/scratch/_apply-markers.py'
+      - 'apps/dashboard/package.json'
+      - 'apps/dashboard/package-lock.json'
+      - '.github/workflows/dashboard-drift-gate.yml'
+      - '.githooks/pre-commit'
+  pull_request:
+    branches: [master, main, develop]
+    paths:
+      - 'apps/dashboard/src/**'
+      - 'apps/dashboard/scratch/_audit-export-drop.py'
+      - 'apps/dashboard/scratch/_apply-markers.py'
+      - 'apps/dashboard/package.json'
+      - 'apps/dashboard/package-lock.json'
+      - '.github/workflows/dashboard-drift-gate.yml'
+      - '.githooks/pre-commit'
+
+# Halt the chain when a merge is in flight — no point running on stale branch.
+concurrency:
+  group: dashboard-drift-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift-gate:
+    name: UNGUARDED-DROP-DRIFT == 0
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/dashboard/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dashboard dependencies
+        working-directory: apps/dashboard
+        run: |
+          npm ci
+          # Sanity: vitest is the test runner the gate delegates to. Fail loudly
+          # if it's missing.
+          npx --no-install vitest --version
+
+      - name: Run drift gate
+        working-directory: apps/dashboard
+        run: |
+          echo "Running dashboard drift gate…"
+          python3 scratch/_audit-export-drop.py
+        # Exit code 1 (vitest drift detected) or 2 (infrastructure error)
+        # both block the workflow. Exit 0 advances the build.
+
+      - name: Drift gate passed
+        if: success()
+        run: echo "✅ UNGUARDED-DROP-DRIFT == 0 — clean (drift gate green)"
+
+      - name: Drift gate failed
+        if: failure()
+        run: |
+          echo "❌ Drift gate FAILED."
+          echo "Inspect the failed vitest output above."
+          echo "The vitest test path is:"
+          echo "  apps/dashboard/src/test-utils/__tests__/export-drop-jsdoc.test.ts"
+          echo "Each offender has a file:line signature + usage count."
+          echo "Apply the canonical JSDoc marker above each affected decl:"
+          echo "  /** Module-internal — do not consume from outside. */"
+          echo "Or bulk-apply via:"
+          echo "  python3 apps/dashboard/scratch/_apply-markers.py"

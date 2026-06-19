@@ -127,6 +127,7 @@ const studioItems = [
     },
 ];
 
+/** Module-internal — do not consume from outside. */
 interface SidebarProps {
     collapsed?: boolean;
     onToggle?: () => void;

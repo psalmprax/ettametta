@@ -1,0 +1,559 @@
+import asyncio
+import base64
+import datetime
+import json
+import logging
+import os
+import secrets
+import uuid
+
+import urllib.parse
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from google_auth_oauthlib.flow import Flow
+from sqlalchemy import select
+
+from src.api.config import settings
+from src.api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.models import SocialAccount
+from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.vault import get_secret, get_secret_async
+from src.api.utils.api_responses import success_response
+from src.services.optimization.auth import token_manager
+
+router = APIRouter()
+
+logger = logging.getLogger(__name__)
+
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
+]
+
+
+@router.get("/accounts")
+async def list_accounts(
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
+):
+    try:
+        stmt = select(SocialAccount)
+        if current_user.role != UserRole.ADMIN:
+            stmt = stmt.where(SocialAccount.user_id == current_user.id)
+        result = await db.execute(stmt)
+        accounts = result.scalars().all()
+        return success_response(
+            data=[
+                {
+                    "id": a.id,
+                    "platform": a.platform,
+                    "username": a.username,
+                    "updated_at": a.updated_at,
+                }
+                for a in accounts
+            ]
+        )
+    finally:
+        pass
+
+
+@router.delete("/account/{account_id}")
+async def delete_account(
+    account_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    try:
+        stmt = select(SocialAccount).where(SocialAccount.id == account_id)
+        result = await db.execute(stmt)
+        account = result.scalar_one_or_none()
+
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
+        if account.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this account"
+            )
+
+        await db.delete(account)
+        await db.commit()
+        return success_response(
+            data={"status": "success", "message": "Account unlinked"}
+        )
+    finally:
+        pass
+
+
+@router.get("/auth/youtube")
+async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
+    """Starts the YouTube OAuth flow with user_id state isolation."""
+    client_id = await get_secret_async("google_client_id")
+    client_secret = await get_secret_async("google_client_secret")
+
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=400, detail="Google OAuth Credentials not configured in Vault."
+        )
+
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        },
+        scopes=YOUTUBE_SCOPES,
+    )
+    flow.redirect_uri = settings.GOOGLE_YOUTUBE_REDIRECT_URI
+
+    code_verifier = secrets.token_urlsafe(64)
+    flow.code_verifier = code_verifier
+
+    state_data = {
+        "user_id": current_user.id,
+        "csrf": uuid.uuid4().hex,
+        "code_verifier": code_verifier,
+    }
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    authorization_url, _ = flow.authorization_url(
+        access_type="offline", include_granted_scopes="true", state=state
+    )
+    return success_response(data={"url": authorization_url})
+
+
+@router.get("/auth/youtube/callback")
+async def auth_youtube_callback(
+    state: str, code: str | None = None, error: str | None = None
+):
+    """Handles the YouTube OAuth callback with user isolation and robust error logging."""
+    logger.info(
+        f"YouTube Callback received: state_len={len(state)}, code_present={bool(code)}, error={error}"
+    )
+
+    if error:
+        raise HTTPException(status_code=400, detail=f"OAuth Error from Google: {error}")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing OAuth code from Google")
+
+    try:
+        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        user_id = state_data.get("user_id")
+        code_verifier = state_data.get("code_verifier")
+        logger.info(
+            f"Decoded State: user_id={user_id}, has_verifier={bool(code_verifier)}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to decode OAuth state: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    if settings.PRODUCTION_DOMAIN.startswith("http://"):
+        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        logger.warning("OAUTHLIB_INSECURE_TRANSPORT enabled for HTTP session")
+
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": await get_secret_async("google_client_id"),
+                "client_secret": await get_secret_async("google_client_secret"),
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        },
+        scopes=YOUTUBE_SCOPES,
+    )
+    flow.redirect_uri = settings.GOOGLE_YOUTUBE_REDIRECT_URI
+    logger.info(f"Using Redirect URI for token exchange: {flow.redirect_uri}")
+
+    if code_verifier:
+        flow.code_verifier = code_verifier
+
+    try:
+        await asyncio.to_thread(flow.fetch_token, code=code)
+    except Exception as e:
+        logger.error(f"YouTube Token Exchange Failed: {str(e)}", exc_info=True)
+        error_detail = str(e)
+        if "redirect_uri_mismatch" in error_detail.lower():
+            error_detail = f"Redirect URI Mismatch. Check if {flow.redirect_uri} is registered in Google Cloud Console."
+
+        raise HTTPException(
+            status_code=400, detail=f"Token exchange failed: {error_detail}"
+        )
+
+    credentials = flow.credentials
+    await token_manager.store_token(
+        "youtube",
+        user_id,
+        {
+            "access_token": credentials.token,
+            "refresh_token": credentials.refresh_token,
+            "token_type": "Bearer",
+            "expires_in": credentials.expiry.replace(
+                tzinfo=datetime.timezone.utc
+            ).timestamp()
+            - datetime.datetime.now(datetime.timezone.utc).timestamp()
+            if credentials.expiry
+            else 3600,
+        },
+    )
+
+    logger.info(f"Successfully stored YouTube token for user_id={user_id}")
+
+    dashboard_url = (
+        settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/")
+        or "http://localhost:7202"
+    )
+    return RedirectResponse(
+        url=f"{dashboard_url}/publishing?success=true&platform=youtube"
+    )
+
+
+@router.get("/auth/tiktok")
+async def auth_tiktok(current_user: UserDB = Depends(get_current_user)):
+    """Starts the TikTok OAuth flow with user_id state isolation."""
+    client_key = await get_secret_async("tiktok_client_key")
+    redirect_uri = settings.TIKTOK_REDIRECT_URI
+
+    if not client_key:
+        raise HTTPException(
+            status_code=400, detail="TikTok Client Key not configured in Vault."
+        )
+
+    scope = "video.upload,user.info.basic"
+
+    state_data = {"user_id": current_user.id, "csrf": secrets.token_urlsafe(16)}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    params = {
+        "client_key": client_key,
+        "scope": scope,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://www.tiktok.com/v2/auth/authorize?{query_string}"
+    return success_response(data={"url": auth_url})
+
+
+@router.get("/auth/tiktok/callback")
+async def auth_tiktok_callback(code: str, state: str):
+    """Handles the TikTok OAuth callback and exchanges code for a real token."""
+    import httpx
+
+    try:
+        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        user_id = state_data.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    url = "https://open.tiktokapis.com/v2/oauth/token/"
+
+    data = {
+        "client_key": await get_secret_async("tiktok_client_key"),
+        "client_secret": await get_secret_async("tiktok_client_secret"),
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": settings.TIKTOK_REDIRECT_URI,
+    }
+
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cache-Control": "no-cache",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data, headers=headers)
+            token_data = response.json()
+
+            if response.status_code != 200 or "access_token" not in token_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"TikTok Auth Failed: {token_data.get('error_description', 'Unknown error')}",
+                )
+
+            await token_manager.store_token(
+                "tiktok",
+                user_id,
+                {
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data.get("refresh_token"),
+                    "open_id": token_data.get("open_id"),
+                    "expires_in": token_data.get("expires_in", 3600),
+                    "scope": token_data.get("scope"),
+                },
+            )
+
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "TikTok authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
+
+
+@router.get("/auth/instagram")
+async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
+    """Starts the Instagram/Facebook OAuth flow with user_id state isolation."""
+    app_id = await get_secret_async("meta_app_id")
+    redirect_uri = settings.META_REDIRECT_URI
+
+    if not app_id:
+        raise HTTPException(
+            status_code=400, detail="Meta App ID not configured in Vault."
+        )
+
+    state_data = {"user_id": current_user.id, "csrf": secrets.token_urlsafe(16)}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    scope = "instagram_basic,instagram_content_publish,pages_read_engagement,pages_manage_posts"
+
+    params = {
+        "client_id": app_id,
+        "scope": scope,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://api.instagram.com/oauth/authorize?{query_string}"
+    return success_response(data={"url": auth_url})
+
+
+@router.get("/auth/instagram/callback")
+async def auth_instagram_callback(code: str, state: str):
+    """Handles the Instagram OAuth callback"""
+    import httpx
+
+    try:
+        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        user_id = state_data.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    app_id = await get_secret_async("meta_app_id")
+    app_secret = await get_secret_async("meta_app_secret")
+    redirect_uri = settings.META_REDIRECT_URI
+
+    url = "https://api.instagram.com/oauth/access_token"
+    data = {
+        "client_id": app_id,
+        "client_secret": app_secret,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": redirect_uri,
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data)
+            token_data = response.json()
+
+            if response.status_code != 200 or "access_token" not in token_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Instagram Auth Failed: {token_data.get('error_message', 'Unknown error')}",
+                )
+
+            await token_manager.store_token(
+                "instagram",
+                user_id,
+                {
+                    "access_token": token_data["access_token"],
+                    "user_id": token_data.get("user_id"),
+                    "expires_in": token_data.get("expires_in", 3600),
+                },
+            )
+
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "Instagram authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
+
+
+@router.get("/auth/x")
+async def auth_x(current_user: UserDB = Depends(get_current_user)):
+    """Starts the X (Twitter) OAuth flow with user_id state isolation."""
+    client_id = await get_secret_async("twitter_client_id")
+    redirect_uri = settings.TWITTER_REDIRECT_URI
+
+    if not client_id:
+        raise HTTPException(
+            status_code=400, detail="Twitter Client ID not configured in Vault."
+        )
+
+    state_data = {"user_id": current_user.id, "csrf": secrets.token_urlsafe(16)}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    scope = "tweet.read tweet.write users.read offline.access"
+
+    params = {
+        "client_id": client_id,
+        "scope": scope,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://twitter.com/i/oauth2/authorize?{query_string}"
+    return success_response(data={"url": auth_url})
+
+
+@router.get("/auth/x/callback")
+async def auth_x_callback(code: str, state: str):
+    """Handles the X (Twitter) OAuth callback"""
+    import httpx
+
+    try:
+        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        user_id = state_data.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    client_id = await get_secret_async("twitter_client_id")
+    client_secret = await get_secret_async("twitter_client_secret")
+    redirect_uri = settings.TWITTER_REDIRECT_URI
+
+    url = "https://api.twitter.com/2/oauth2/token"
+    data = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": redirect_uri,
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data, headers=headers)
+            token_data = response.json()
+
+            if response.status_code != 200 or "access_token" not in token_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"X Auth Failed: {token_data.get('error_description', 'Unknown error')}",
+                )
+
+            await token_manager.store_token(
+                "x",
+                user_id,
+                {
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data.get("refresh_token"),
+                    "expires_in": token_data.get("expires_in", 3600),
+                },
+            )
+
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "X authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
+
+
+@router.get("/auth/linkedin")
+async def auth_linkedin(current_user: UserDB = Depends(get_current_user)):
+    """Starts the LinkedIn OAuth flow with user_id state isolation."""
+    client_id = await get_secret_async("linkedin_client_id")
+    redirect_uri = settings.LINKEDIN_REDIRECT_URI
+
+    if not client_id:
+        raise HTTPException(
+            status_code=400, detail="LinkedIn Client ID not configured in Vault."
+        )
+
+    state_data = {"user_id": current_user.id, "csrf": secrets.token_urlsafe(16)}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    scope = "r_liteprofile r_emailaddress w_member_social"
+
+    params = {
+        "client_id": client_id,
+        "scope": scope,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://www.linkedin.com/oauth/v2/authorization?{query_string}"
+    return success_response(data={"url": auth_url})
+
+
+@router.get("/auth/linkedin/callback")
+async def auth_linkedin_callback(code: str, state: str):
+    """Handles the LinkedIn OAuth callback"""
+    import httpx
+
+    try:
+        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        user_id = state_data.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    client_id = get_secret("linkedin_client_id")
+    client_secret = get_secret("linkedin_client_secret")
+    redirect_uri = settings.LINKEDIN_REDIRECT_URI
+
+    url = "https://www.linkedin.com/oauth/v2/accessToken"
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data, headers=headers)
+            token_data = response.json()
+
+            if response.status_code != 200 or "access_token" not in token_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"LinkedIn Auth Failed: {token_data.get('error_description', 'Unknown error')}",
+                )
+
+            await token_manager.store_token(
+                "linkedin",
+                user_id,
+                {
+                    "access_token": token_data["access_token"],
+                    "expires_in": token_data.get("expires_in", 3600),
+                },
+            )
+
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "LinkedIn authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")

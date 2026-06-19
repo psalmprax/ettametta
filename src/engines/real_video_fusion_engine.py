@@ -13,7 +13,7 @@ from uuid import uuid4
 
 # Ascension & Singularity Services
 from src.services.discovery.service import base_discovery_service
-from src.services.script_generator.service import base_script_service
+from src.services.video_engine.script_generator import base_script_service
 from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
 from src.services.audio.rhythm_engine import base_rhythm_service
 from src.services.video_engine.neural_vision_analyzer import base_vision_service
@@ -21,8 +21,8 @@ from src.services.optimization.oracle_predictor import base_oracle_service
 from src.services.distribution.deployment_gateway import base_gateway_service
 from src.services.discovery.trend_scanner import base_trend_service
 from src.services.optimization.strategy_generator import base_viral_strategist
-from src.services.hermes.narrative_planner import base_narrative_planner_service
-from src.services.hermes.attention_simulator import base_attention_simulator_service
+from src.services.llm.narrative_planner import base_narrative_planner_service
+from src.services.llm.attention_simulator import base_attention_simulator_service
 from src.services.video_engine.synthesis_service import base_generative_service
 
 try:

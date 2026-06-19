@@ -16,6 +16,7 @@ import { Sidebar } from "./sidebar";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { Skeleton } from "@/components/ui/Skeleton";
 
+/** Module-internal — do not consume from outside. */
 interface CommandCenterLayoutProps {
     readonly children: React.ReactNode;
     readonly title?: string;

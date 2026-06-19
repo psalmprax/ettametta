@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { SeverityIcon, SeverityPill } from "./SeverityBadge";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     agents: any[];
     /** Already-derived health score (page-level chain fallback applied). */

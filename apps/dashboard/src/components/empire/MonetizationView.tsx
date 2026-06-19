@@ -5,6 +5,7 @@ import { Zap, MessageSquareQuote, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatLabel } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface Props {
     affiliateLinks: any[];
 }

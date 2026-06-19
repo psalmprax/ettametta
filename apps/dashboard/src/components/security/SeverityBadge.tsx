@@ -12,6 +12,8 @@ import type { SecurityEvent } from "@/hooks/useSecurityData";
 
 // Reuse the typed severity union from the data hook — avoids drift if a new
 // tier is added to SecurityEvent.
+/** Module-internal — do not consume from outside. */
+
 type Severity = SecurityEvent["severity"];
 
 /**

@@ -2,12 +2,14 @@
 
 import React, { useRef, useEffect, useMemo, useState } from "react";
 
+/** Module-internal — do not consume from outside. */
 interface GeoHotspot {
     name: string;
     lat: number;
     lng: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface TelemetryData {
     metrics?: {
         global_velocity?: number;
@@ -18,12 +20,14 @@ interface TelemetryData {
     load_avg?: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface GlobalPulseGlobeProps {
     readonly pulseIntensity?: number;
     readonly telemetry?: TelemetryData | null;
     readonly reducedMotion?: boolean;
 }
 
+/** Module-internal — do not consume from outside. */
 const CITIES: GeoHotspot[] = [
     { name: "Lagos", lat: 6.5244, lng: 3.3792 },
     { name: "NYC", lat: 40.7128, lng: -74.006 },
@@ -31,6 +35,7 @@ const CITIES: GeoHotspot[] = [
     { name: "Singapore", lat: 1.3521, lng: 103.8198 },
 ];
 
+/** Module-internal — do not consume from outside. */
 const REGION_ARCS = [
     { name: "Americas", centerLng: -80, color: "0, 242, 255", baseBrightness: 0.7 },
     { name: "Europe", centerLng: 15, color: "139, 92, 246", baseBrightness: 0.9 },
@@ -48,6 +53,7 @@ function latLngToPoint(lat: number, lng: number) {
     };
 }
 
+/** Module-internal — do not consume from outside. */
 interface Particle {
     fromIdx: number;
     toIdx: number;
