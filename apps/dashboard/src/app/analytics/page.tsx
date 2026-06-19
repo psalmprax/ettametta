@@ -1,156 +1,76 @@
 "use client";
 
-// fallow-ignore-next-line invalid-client-exports — Next.js dynamic segment config
+// fallow-ignore-next-line invalid-client-export
 export const dynamic = "force-dynamic";
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
-import {
-    BarChart3,
-    TrendingUp,
-    Zap,
-    Activity,
-    Globe,
-    Cpu,
-    Target,
-    Layers,
-    RefreshCw,
-    Shield,
-    Database,
-    Share2,
-    PieChart,
-    ChevronRight,
-    ArrowUpRight,
-    Terminal,
-    Radar,
-    LineChart
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import nextDynamic from "next/dynamic";
-import { API_BASE, WS_BASE } from "@/lib/config";
-import { withRealFallback } from "@/lib/real_first_utils";
-import { getAuthToken } from "@/lib/auth_utils";
-import { toast } from "sonner";
+import React, { Suspense } from "react";
+import { BarChart3, Activity, Cpu, Globe, Terminal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter, useSearchParams } from "next/navigation";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
-import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
-import { DesignCard } from "@/components/ui/DesignCard";
-import { Button } from "@/components/ui/Button";
+import { CommandCenterSidenav, type SidenavItem } from "@/components/ui/CommandCenterSidenav";
 import { useTelemetry } from "@/context/TelemetryContext";
-import { AreaChartCustom } from "@/components/ui/ChartComponents";
+import { useActiveEngineTab } from "@/hooks/useActiveEngineTab";
+import { useActionLogStream } from "@/hooks/useActionLogStream";
+import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 
-const GlobalPulseGlobe = nextDynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
+import OverviewView from "@/components/analytics/OverviewView";
+import RetentionView from "@/components/analytics/RetentionView";
+import PatternsView from "@/components/analytics/PatternsView";
+import PropagationView from "@/components/analytics/PropagationView";
+import AnalyticsLogsTab from "@/components/analytics/AnalyticsLogsTab";
+import AnalyticsRightPanel from "@/components/analytics/AnalyticsRightPanel";
 
-interface AnalyticsMetrics {
-    views: number;
-    retention: number;
-    shares: number;
-    engagement: number;
-    velocity: string;
-    engineLoad: string;
-    retentionData: { time: number; value: number }[];
-}
+const ANALYTICS_NAV: SidenavItem[] = [
+    { id: "overview", label: "Intel Overview", icon: BarChart3 },
+    { id: "retention", label: "Attention Decay", icon: Activity },
+    { id: "patterns", label: "Neural Patterns", icon: Cpu },
+    { id: "propagation", label: "Global Pulse", icon: Globe },
+    { id: "logs", label: "Telemetry Logs", icon: Terminal },
+];
 
+/**
+ * Analytics orchestrator.
+ *
+ * Five tab views + right panel all live under
+ * `apps/dashboard/src/components/analytics/`. The dynamic import for
+ * `GlobalPulseGlobe` lives inside `PropagationView` (alongside its sole
+ * consumer). View-models are derived here.
+ */
 function AnalyticsContent() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
-    const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "overview");
-    const [pulseIntensityMultiplier, setPulseIntensityMultiplier] = useState(1.0);
-    const [metrics, setMetrics] = useState<AnalyticsMetrics>({
-        views: 0,
-        retention: 0.82,
-        shares: 0,
-        engagement: 0.05,
-        velocity: "Nominal",
-        engineLoad: "12%",
-        retentionData: Array.from({ length: 20 }, (_, i) => ({ time: i, value: Math.max(20, 100 - i * 4 + Math.random() * 10) }))
-    });
-    const [actionLogs, setActionLogs] = useState<string[]>(["ANALYTICS_INITIALIZED", "SYNCHRONIZING_HISTORICAL_DATA"]);
+    const { agents, status, pulse } = useTelemetry();
+    const [activeEngine, setActiveEngine] = useActiveEngineTab("overview", "/analytics");
+    const analytics = useAnalyticsData();
+    const { displayLogs } = useActionLogStream("ANALYTICS", ["ANALYTICS_INITIALIZED", "SYNCHRONIZING_HISTORICAL_DATA"]);
 
-    const fetchAnalytics = useCallback(async () => {
-        const token = await getAuthToken();
-        if (!token) return;
-        
-        await withRealFallback<any>(
-            (signal) => fetch(`${API_BASE}/analytics/stats/summary`, {
-                headers: { Authorization: `Bearer ${token}` },
-                signal,
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    const stats = data.data || data;
-                    setMetrics((prev: AnalyticsMetrics) => ({
-                        ...prev,
-                        views: stats.total_views || 0,
-                        engagement: stats.engagement_score || 0,
-                        velocity: stats.velocity || "Nominal",
-                        engineLoad: stats.engine_load || "5%"
-                    }));
-                    setActionLogs((prev: string[]) => [`[DATA] Metrics synchronized. Total Reach: ${stats.total_views}`, ...prev]);
-                }
-            }
-        );
-    }, []);
-
-    useEffect(() => {
-        fetchAnalytics();
-    }, [fetchAnalytics]);
-
-    useEffect(() => {
-        const engine = searchParams.get("engine");
-        if (engine) setActiveEngine(engine);
-    }, [searchParams]);
+    // View-models for the Propagation view + right panel — defaults applied here.
+    const velocity = (pulse as any)?.metrics?.global_velocity ?? 1.2;
+    const signal = (pulse as any)?.metrics?.signal_strength ?? 98.4;
+    const activeNodes = (pulse as any)?.metrics?.active_nodes ?? 142;
+    const views = analytics.metrics.views;
+    const growthPct = "14.2";
 
     return (
         <CommandCenterLayout
             title="INTEL CORE"
             subtitle="PERFORMANCE_MATRIX_V4.2"
             leftPanel={
-                <div className="space-y-1">
-                    {[
-                        { id: "overview", label: "Intel Overview", icon: BarChart3 },
-                        { id: "retention", label: "Attention Decay", icon: Activity },
-                        { id: "patterns", label: "Neural Patterns", icon: Cpu },
-                        { id: "propagation", label: "Global Pulse", icon: Globe },
-                        { id: "logs", label: "Telemetry Logs", icon: Terminal },
-                    ].map((item) => (
-                        <button
-                            key={item.id}
-                            onClick={() => {
-                                setActiveEngine(item.id);
-                                router.replace(`/analytics?engine=${item.id}`);
-                            }}
-                            className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
-                                activeEngine === item.id ? "bg-violet-500/10 text-violet-400 border border-violet-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
-                            )}
-                        >
-                            <item.icon className="h-4 w-4" />
-                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
-                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />}
-                        </button>
-                    ))}
-                </div>
+                <CommandCenterSidenav
+                    items={ANALYTICS_NAV}
+                    active={activeEngine}
+                    onSelect={setActiveEngine}
+                    activeClass="bg-violet-500/10 text-violet-400 border border-violet-500/20"
+                    dotClass="bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.5)]"
+                />
             }
             rightPanel={
-                <>
-                    <AgentMatrix agents={agents} />
-                    <div className="p-3 rounded-2xl border border-white/5 bg-white/5 space-y-3">
-                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Reach</h4>
-                        <div className="flex flex-col">
-                            <span className="text-xl font-bold text-white">{(metrics.views / 1000).toFixed(1)}K</span>
-                            <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">+14.2% Growth</span>
-                        </div>
-                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full w-[72%] bg-violet-500" />
-                        </div>
-                    </div>
-                </>
+                <AnalyticsRightPanel
+                    agents={agents}
+                    views={views}
+                    growthPct={growthPct}
+                />
             }
         >
-            <div className="p-3 sm:p-4 space-y-4 relative h-full flex flex-col">
+            <div className={`p-3 sm:p-4 space-y-4 relative h-full flex flex-col`}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeEngine}
@@ -159,320 +79,24 @@ function AnalyticsContent() {
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="flex-1 flex flex-col min-h-0"
                     >
-                        {activeEngine === "overview" && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
-                                <DesignCard
-                                    title="Net Reach"
-                                    status="Nominal"
-                                    metrics={[
-                                        { label: "Total Views", value: metrics.views >= 1000 ? `${(metrics.views/1000).toFixed(1)}K` : metrics.views, progress: 85, color: "text-cyan-400" },
-                                        { label: "Growth", value: "+14.2%", color: "text-emerald-400" }
-                                    ]}
-                                    footerInfo="BASELINE: STABLE"
-                                    toolsStatus="Online"
-                                />
-                                <DesignCard
-                                    title="Retention"
-                                    status="Optimized"
-                                    metrics={[
-                                        { label: "Attention Decay", value: `${(metrics.retention * 100).toFixed(0)}%`, progress: metrics.retention * 100, color: "text-emerald-400" },
-                                        { label: "Stability", value: "Locked", color: "text-cyan-400" }
-                                    ]}
-                                    footerInfo="HOOK_EFFICIENCY: HIGH"
-                                    toolsStatus="Online"
-                                />
-                                <DesignCard
-                                    title="Viral Velocity"
-                                    status="Current"
-                                    metrics={[
-                                        { label: "Propagation", value: metrics.velocity, progress: metrics.velocity === "High" ? 95 : 60, color: "text-violet-400" },
-                                        { label: "Load", value: metrics.engineLoad, color: "text-slate-500" }
-                                    ]}
-                                    footerInfo="SYSTEM_PULSE: ACTIVE"
-                                    toolsStatus="Online"
-                                />
-                                <DesignCard
-                                    title="Conversion"
-                                    status="Active"
-                                    metrics={[
-                                        { label: "Engagement", value: `${(metrics.engagement * 100).toFixed(1)}%`, progress: metrics.engagement * 10, color: "text-amber-400" },
-                                        { label: "Success Rate", value: "98.2%", color: "text-emerald-400" }
-                                    ]}
-                                    footerInfo="NEURAL_CONVERSION_READY"
-                                    toolsStatus="Online"
-                                />
-                            </div>
-                        )}
-
-                        {activeEngine === "retention" && (
-                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 p-8 flex flex-col relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32" />
-                                <div className="flex items-center justify-between mb-8 relative z-10">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                            <Activity className="h-5 w-5 text-emerald-400" />
-                                            Attention Decay Analysis
-                                        </h3>
-                                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-1">Neural Retention Mapping • Active Stream</p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[10px] font-bold text-emerald-500 uppercase">Avg Stability</span>
-                                            <span className="text-lg font-black text-white">82.4%</span>
-                                        </div>
-                                        <div className="h-10 w-px bg-white/5 mx-2" />
-                                        <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 min-h-[350px] relative z-10">
-                                    <AreaChartCustom 
-                                        data={metrics.retentionData} 
-                                        dataKey="value" 
-                                        color="#10b981" 
-                                        height="100%"
-                                        gradientId="retentionGradient"
-                                    />
-                                </div>
-                                <div className="mt-6 flex items-center justify-between relative z-10 pt-6 border-t border-white/5">
-                                    <div className="flex gap-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Control Group</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/30" />
-                                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Projected Drift</span>
-                                        </div>
-                                    </div>
-                                    <span className="text-[9px] font-mono text-zinc-600">SAMPLE_SIZE: 14.2K_NODES</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeEngine === "patterns" && (
-                            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-                                <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-6 flex flex-col min-h-0">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                            <Cpu className="h-5 w-5 text-violet-400" />
-                                            Success Correlation
-                                        </h3>
-                                        <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Active Patterns</span>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
-                                        {[
-                                            { label: "Narrative Hook Resonance", score: 92, status: "DOMINANT" },
-                                            { label: "High-Contrast Visual Flow", score: 84, status: "OPTIMIZED" },
-                                            { label: "Cognitive Ease Index", score: 78, status: "STABLE" },
-                                            { label: "Emotional Amplitude", score: 65, status: "GROWING" }
-                                        ].map((pattern, i) => (
-                                            <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-[24px] group hover:border-violet-500/30 transition-all space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="text-sm font-bold text-white">{pattern.label}</h4>
-                                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{pattern.status}</span>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between text-[10px]">
-                                                        <span className="text-zinc-500 font-bold uppercase">Probability Shift</span>
-                                                        <span className="text-white font-mono">+{pattern.score}%</span>
-                                                    </div>
-                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                                        <motion.div initial={{ width: 0 }} animate={{ width: `${pattern.score}%` }} className="h-full bg-violet-500" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-6 flex flex-col min-h-0">
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                        <LineChart className="h-5 w-5 text-cyan-400" />
-                                        Prediction Matrix
-                                    </h3>
-                                    <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-20">
-                                        <Radar className="h-16 w-16 text-zinc-500 animate-pulse" />
-                                        <div className="text-center space-y-2">
-                                            <p className="text-sm font-black uppercase tracking-[0.4em] text-white">Aggregating Global Drift</p>
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Simulation running at 14.2 GFLOPS</p>
-                                        </div>
-                                    </div>
-                                    <Button className="w-full h-14 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl uppercase tracking-widest text-xs transition-all">Launch Strategic Forecast</Button>
-                                </div>
-                            </div>
-                        )}
-
+                        {activeEngine === "overview" && <OverviewView metrics={analytics.metrics} />}
+                        {activeEngine === "retention" && <RetentionView retentionData={analytics.metrics.retentionData} />}
+                        {activeEngine === "patterns" && <PatternsView />}
                         {activeEngine === "propagation" && (
-                            <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-                                {/* The Globe Viewport */}
-                                <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative min-h-[450px] flex items-center justify-center">
-                                    <GlobalPulseGlobe 
-                                        pulseIntensity={pulseIntensityMultiplier * (pulse?.metrics?.global_velocity ?? 1)} 
-                                        telemetry={pulse} 
-                                    />
-                                    
-                                    {/* Top-Left Floating HUD */}
-                                    <div className="absolute top-6 left-6 p-4 bg-black/60 backdrop-blur-xl border border-white/5 rounded-2xl space-y-1 select-none pointer-events-none">
-                                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Network Orbit</span>
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-                                            <span className="text-xs font-bold text-white font-mono">SYNCED_TO_MAIN_ORBIT</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom-Left Overlay */}
-                                    <div className="absolute bottom-6 left-6 p-6 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-xs space-y-3">
-                                        <h4 className="text-white font-black uppercase tracking-widest text-xs">Propagation Vector</h4>
-                                        <p className="text-zinc-500 text-[10px] leading-relaxed italic">
-                                            Analyzing real-time content dispersion velocity across decentralized client clusters.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Right Control & Status HUD Panel */}
-                                <div className="w-full lg:w-80 flex flex-col gap-4">
-                                    {/* Performance Stats */}
-                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
-                                        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Orbit Metrics</h3>
-                                        <div className="space-y-4">
-                                            {/* Velocity */}
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between text-[10px]">
-                                                    <span className="text-zinc-500 font-bold uppercase">Dispersion Rate</span>
-                                                    <span className="text-cyan-400 font-mono">{(pulse?.metrics?.global_velocity || 1.2).toFixed(2)}x</span>
-                                                </div>
-                                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-cyan-500" style={{ width: `${Math.min(100, (pulse?.metrics?.global_velocity || 1.2) * 50)}%` }} />
-                                                </div>
-                                            </div>
-                                            {/* Latency */}
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between text-[10px]">
-                                                    <span className="text-zinc-500 font-bold uppercase">Signal Integrity</span>
-                                                    <span className="text-violet-400 font-mono">{(pulse?.metrics?.signal_strength || 98.4).toFixed(1)}%</span>
-                                                </div>
-                                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-violet-500" style={{ width: `${pulse?.metrics?.signal_strength || 98.4}%` }} />
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Intensity Modulator */}
-                                            <div className="space-y-2 pt-2">
-                                                <div className="flex justify-between text-[10px]">
-                                                    <span className="text-zinc-500 font-bold uppercase">Pulse Multiplier</span>
-                                                    <span className="text-amber-400 font-mono">{pulseIntensityMultiplier.toFixed(1)}x</span>
-                                                </div>
-                                                <input 
-                                                    type="range" 
-                                                    min="0.2" 
-                                                    max="3.0" 
-                                                    step="0.1"
-                                                    value={pulseIntensityMultiplier}
-                                                    onChange={(e) => setPulseIntensityMultiplier(parseFloat(e.target.value))}
-                                                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500 outline-none"
-                                                />
-                                            </div>
-                                            
-                                            {/* Node Count */}
-                                            <div className="flex justify-between text-xs pt-4 border-t border-white/5">
-                                                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[9px]">Active Transmitters</span>
-                                                <span className="text-white font-bold font-mono">{pulse?.metrics?.active_nodes || 142} Nodes</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Active Hotspots HUD */}
-                                    <div className="flex-1 p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 flex flex-col min-h-0 space-y-4">
-                                        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Regional Hubs</h3>
-                                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
-                                            {[
-                                                { name: "Americas", load: "74%", latency: "24ms", color: "border-cyan-500/20 text-cyan-400" },
-                                                { name: "Europe", load: "89%", latency: "18ms", color: "border-violet-500/20 text-violet-400" },
-                                                { name: "Asia-Pacific", load: "62%", latency: "42ms", color: "border-emerald-500/20 text-emerald-400" },
-                                                { name: "Africa", load: "45%", latency: "58ms", color: "border-amber-500/20 text-amber-500" }
-                                            ].map((hub, idx) => (
-                                                <div key={idx} className={cn("p-3 bg-white/2 border rounded-xl flex items-center justify-between transition-all hover:bg-white/5", hub.color)}>
-                                                    <div>
-                                                        <p className="text-xs font-bold text-white">{hub.name}</p>
-                                                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Latency: {hub.latency}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="text-xs font-bold font-mono">{hub.load}</span>
-                                                        <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">Load</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <PropagationView
+                                pulse={pulse}
+                                velocity={velocity}
+                                signal={signal}
+                                activeNodes={activeNodes}
+                                pulseIntensityMultiplier={analytics.pulseIntensityMultiplier}
+                                setPulseIntensityMultiplier={analytics.setPulseIntensityMultiplier}
+                            />
                         )}
-
                         {activeEngine === "logs" && (
-                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[24px] overflow-hidden">
-                                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
-                                    <div className="flex items-center gap-4">
-                                        <Terminal className="h-4 w-4 text-zinc-500" />
-                                        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Telemetry Stream</h3>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
-                                            <span className="text-[9px] font-bold text-violet-500 uppercase">Observer_Sync</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
-                                    {[
-                                        ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
-                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "ANALYTICS") : [])
-                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
-                                        <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
-                                            <span className="text-zinc-700 shrink-0 select-none">{new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
-                                            <span className="text-zinc-800 shrink-0 select-none">|</span>
-                                            <span className={cn(
-                                                "shrink-0 font-bold tracking-widest uppercase text-[9px] px-2 py-0.5 rounded",
-                                                log.message?.includes("[DATA]") || log.level === "DATA" ? "bg-cyan-500/10 text-cyan-500" :
-                                                log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-500"
-                                            )}>
-                                                {log.message?.includes("[DATA]") || log.level === "DATA" ? "DATA" : 
-                                                 log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "SUCCESS" : "INFO"}
-                                            </span>
-                                            <span className={cn(
-                                                "leading-relaxed",
-                                                log.message?.includes("[DATA]") || log.level === "DATA" ? "text-cyan-400" :
-                                                log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-400"
-                                            )}>
-                                                {log.message}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    <div className="h-4" />
-                                </div>
-                            </div>
-                        )}
-
-                        {activeEngine !== "logs" && activeEngine !== "patterns" && activeEngine !== "propagation" && activeEngine !== "retention" && activeEngine !== "overview" && (
-                            <div className="mt-6 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[24px] border border-white/5 overflow-hidden shrink-0">
-                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Telemetry Logs</span>
-                                    <span className="text-[8px] font-mono text-violet-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
-                                </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                    {[
-                                        ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
-                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "ANALYTICS") : [])
-                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
-                                        <div key={i} className="flex gap-4">
-                                            <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                                            <span className={cn(
-                                                log.message?.includes("[DATA]") || log.level === "DATA" ? "text-cyan-400" :
-                                                log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
-                                            )}>{log.message}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <AnalyticsLogsTab
+                                logs={displayLogs.map((l) => ({ timestamp: l.timestamp, message: l.message }))}
+                                status={status}
+                            />
                         )}
                     </motion.div>
                 </AnimatePresence>
