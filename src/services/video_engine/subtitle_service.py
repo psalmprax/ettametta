@@ -156,7 +156,7 @@ class SubtitleService:
             subtitle_path = f.name
 
         output_path = video_path.rsplit(".", 1)[0] + "_subtitled.mp4"
-        fonts_dir = Path(__file__).parent / "fonts"
+        Path(__file__).parent / "fonts"
         force_style = ""
         if style == "bold":
             force_style = ",Bold=1,Fontsize=52"

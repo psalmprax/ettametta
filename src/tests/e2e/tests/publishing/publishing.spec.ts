@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('Publishing - YouTube Upload', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display YouTube upload interface', async ({ page }) => {
@@ -56,11 +53,7 @@ test.describe('Publishing - YouTube Upload', () => {
 
 test.describe('Publishing - TikTok Upload', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display TikTok upload interface', async ({ page }) => {
@@ -101,11 +94,7 @@ test.describe('Publishing - TikTok Upload', () => {
 
 test.describe('Publishing - Schedule Posts', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display scheduler interface', async ({ page }) => {
@@ -147,11 +136,7 @@ test.describe('Publishing - Schedule Posts', () => {
 
 test.describe('Publishing - A/B Testing', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display A/B testing interface', async ({ page }) => {

@@ -21,6 +21,10 @@
     - [x] 15-01-PLAN.md — Shopify/Auto-Merch pipeline
 - [x] **Phase 16: A/B Testing** - A/B testing infrastructure for content variants
     - [x] 16-01-PLAN.md — A/B testing (already fully implemented by prior work)
+- [ ] **Phase 19: Video Enhancements** - Background removal, sound design, dynamic watermarking
+    - [ ] 19-01-PLAN.md — Background remover + sound designer + watermarker + API + frontend
+- [ ] **Phase 20: Frontend Hardening** - Subscription UI, audit logs, moderation, PWA, GPU batching
+    - [ ] 20-01-PLAN.md — Cancel subscription + audit logs + moderation + PWA + batch processor
 
 ### Phase 6: Automated Scheduling Publishing
 **Goal**: Users can automate publishing campaigns

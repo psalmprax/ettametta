@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
-from jose import jwt
+from joserfc import jwt
+from joserfc.jwk import OctKey
 import bcrypt
 import logging
 from src.api.config import settings
@@ -67,7 +68,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    key = OctKey.import_key(SECRET_KEY)
+    encoded_jwt = jwt.encode({"alg": ALGORITHM}, to_encode, key)
     return encoded_jwt
 
 

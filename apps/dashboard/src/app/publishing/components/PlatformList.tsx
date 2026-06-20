@@ -15,6 +15,7 @@ const getPlatformIcon = (platform: string) => {
     return "Share2";
 };
 
+/** Module-internal — do not consume from outside. */
 interface PlatformListProps {
     accounts: any[];
     onOpenLinkModal: () => void;

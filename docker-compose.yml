@@ -94,7 +94,6 @@ services:
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level debug
       --timeout-keep-alive 600
     restart: always
-    user: 0:0
     env_file: .env
     deploy:
       resources:
@@ -157,7 +156,6 @@ services:
       - BASE_IMAGE=python:3.11-slim
     command: celery -A src.api.utils.celery worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2}
     restart: always
-    user: 0:0
     env_file: .env
     volumes:
     - .:/app
@@ -218,7 +216,6 @@ services:
       - BASE_IMAGE=python:3.11-slim
     command: celery -A src.api.utils.celery beat --loglevel=info
     restart: always
-    user: 0:0
     env_file: .env
     volumes:
     - .:/app

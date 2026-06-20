@@ -11,7 +11,7 @@ import { KenBurns } from './KenBurns';
 import { ProgressTracker } from './ProgressTracker';
 import { ChapterOverlay } from './ChapterOverlay';
 import { SceneTransition, TransitionType } from './SceneTransition';
-import { viralClipSchema } from '../Composition';
+import { viralClipSchema } from '../schema';
 import { IntroScene } from './scenes/IntroScene';
 import { RedditScene } from './scenes/RedditScene';
 import { NewsScene } from './scenes/NewsScene';

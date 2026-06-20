@@ -1,10 +1,9 @@
 import pytest
-import asyncio
 import os
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import sys
 if "cv2" not in sys.modules:

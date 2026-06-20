@@ -1,4 +1,8 @@
 import asyncio
+import pytest
+
+pytest.skip("script-style cinematic verification; run directly, not via pytest", allow_module_level=True)
+
 from src.engines.real_video_fusion_engine import RealVideoFusionEngine
 from src.services.audio.rhythm_engine import base_rhythm_service
 

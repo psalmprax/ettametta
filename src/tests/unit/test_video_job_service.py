@@ -242,7 +242,7 @@ class TestAutoCommitBehavior:
 
         async with AsyncSessionLocal() as db:
             service = VideoJobService(db)
-            job = await service.create_job(
+            await service.create_job(
                 user_id=user_id,
                 title="AutoCommit True",
                 engine="video_transform",

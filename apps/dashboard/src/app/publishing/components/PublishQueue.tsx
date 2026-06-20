@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface PublishQueueProps {
     activeTab: "jobs" | "matrix" | "scheduled";
     jobs: any[];

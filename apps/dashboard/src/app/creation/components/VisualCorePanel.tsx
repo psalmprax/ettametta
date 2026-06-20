@@ -18,7 +18,7 @@ import {
 import { JobItem } from "./JobItem";
 
 /** Module-internal — do not consume from outside. */
-export const AI_ENGINES = [
+const AI_ENGINES = [
     // Always works — no API key needed
     { id: "lite4k", name: "Cinematic Parallax", free: true, needsKey: false, credits: 5, description: "FLUX image + motion — works out of the box" },
     // API key required — direct API implementations

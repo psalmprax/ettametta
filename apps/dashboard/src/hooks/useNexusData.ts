@@ -10,6 +10,7 @@ import { useTelemetry } from "@/context/TelemetryContext";
 import { useAuth } from "@/context/AuthContext";
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
+/** Module-internal — do not consume from outside. */
 type NexusEngine =
     | "orchestrator"
     | "crews"
@@ -22,6 +23,7 @@ type NexusEngine =
     | "network"
     | "logs";
 
+/** Module-internal — do not consume from outside. */
 type CreationMode = "cinema" | "blueprint";
 /** Module-internal — do not consume from outside. */
 
@@ -52,7 +54,9 @@ export function useNexusData() {
     const { credits, refreshCredits } = useAuth();
 
     const refreshRef = useRef(refreshCredits);
-    refreshRef.current = refreshCredits;
+    useEffect(() => {
+        refreshRef.current = refreshCredits;
+    }, [refreshCredits]);
     useEffect(() => {
         refreshRef.current();
         const interval = setInterval(() => refreshRef.current(), 120_000);

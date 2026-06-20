@@ -25,6 +25,7 @@ import { PlatformList } from "./PlatformList";
 import { PublishQueue } from "./PublishQueue";
 import { PublishModal } from "./PublishModal";
 
+/** Module-internal — do not consume from outside. */
 type EngineTab = "nodes" | "jobs" | "matrix" | "scheduled" | "broadcast" | "logs";
 
 const ENGINE_TABS = [
@@ -36,6 +37,7 @@ const ENGINE_TABS = [
     { id: "logs" as EngineTab, label: "Engine Logs", icon: Terminal },
 ];
 
+/** Module-internal — do not consume from outside. */
 interface PublishingContentProps {
     rightPanel?: React.ReactNode;
     leftPanel?: React.ReactNode;
@@ -156,6 +158,7 @@ export default function PublishingContent({ rightPanel, leftPanel }: PublishingC
         );
     };
 
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;

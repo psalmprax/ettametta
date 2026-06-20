@@ -1,20 +1,16 @@
 # Project Skills
 
-Skills for diagnosing and debugging ettametta subsystems. Each skill provides quick diagnostics, architecture reference, key file paths, common issues, and debugging checklists.
+Skills for diagnosing and debugging ag-extension-decision-support subsystems. Each skill provides quick diagnostics, architecture reference, key file paths, common issues, and debugging checklists.
 
 | Skill | When to Use |
 |-------|-------------|
-| `ai-provider-debug` | API failures, rate limits, fallback chain issues, model selection, cost anomalies |
-| `alembic-workflow` | Adding/modifying DB tables, migration conflicts, schema drift |
-| `celery-monitor` | Task failures, queue bottlenecks, worker health, beat schedule issues |
-| `cloakbrowser` | Scraping failures, platform detection, parse errors, discovery-scraper connectivity |
-| `content-discovery` | Scan failures, scoring anomalies, platform scanner issues, data normalization |
-| `db-performance` | Slow queries, connection pool issues, migration conflicts, N+1 patterns |
-| `dep-audit` | Security vulnerabilities, version conflicts, outdated packages |
-| `docker-compose` | Service orchestration, container networking, Traefik routing, healthchecks |
-| `fastapi-debug` | Middleware issues, auth failures, route errors, CORS, rate limiting |
-| `nexus-engine` | Compose failures, script generation, asset sourcing, Remotion render, DAG execution, styles |
-| `redis-debug` | Cache issues, pub/sub problems, broker connectivity, memory pressure |
-| `remotion-debug` | Render failures, prop validation, composition issues, asset staging |
-| `social-api` | OAuth flows, content publishing, trend scanning, platform API issues |
-| `video-pipeline` | Render failures, FFmpeg errors, MoviePy hangs, Remotion crashes, storage |
+| `engineering-lifecycle` | Enforce development lifecycle phases, strict gates, coding guidelines, and anti-rationalization checks |
+| `ai-provider-debug` | AI/LLM provider failures, fallback chain issues, model selection, embedding dimension mismatches |
+| `agent-orchestrator-debug` | Agent task dispatch failures, handoff issues, self-healing recovery, agent health |
+| `backend-api-debug` | Express middleware issues, auth failures, route errors, CORS, rate limiting, i18n |
+| `knowledge-base-debug` | Knowledge Base page — search, ask-AI, sidebar, stats, attachments, rendering |
+| `database-debug` | PostgreSQL connection issues, Prisma migration conflicts, slow queries, pgvector problems |
+| `docker-deploy-debug` | Docker Compose service orchestration, Traefik routing, container networking, healthchecks |
+| `rag-knowledge-debug` | Vector search failures, hybrid search (RRF), knowledge ingestion, embedding dimension issues |
+| `redis-debug` | Cache issues, connection failures, TTL problems, pub/sub, queue bottlenecks |
+| `scraper-debug` | Stealth scraper failures, CloakBrowser issues, Agent Zero connectivity, ingestion worker |

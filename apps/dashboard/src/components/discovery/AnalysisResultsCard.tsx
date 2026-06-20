@@ -72,6 +72,7 @@ export interface AnalysisReportData {
 
 // ── Props ──────────────────────────────────────────────────────────────────
 
+/** Module-internal — do not consume from outside. */
 interface AnalysisResultsCardProps {
     report: AnalysisReportData;
     isLoading?: boolean;

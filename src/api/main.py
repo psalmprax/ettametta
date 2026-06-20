@@ -127,6 +127,7 @@ from src.api.routes import (
     notifications,
     engines,
 )
+from src.api.routes import video_enhance
 from src.api.routes.publishing import router as publish_router
 
 from fastapi.staticfiles import StaticFiles
@@ -293,6 +294,7 @@ v1_router.include_router(publishing.router, tags=["Publishing"])
 v1_router.include_router(monetization_dashboard.router, tags=["Monetization Dashboard"])
 v1_router.include_router(notifications.router, tags=["Notifications"])
 v1_router.include_router(engines.router, tags=["Engines"])
+v1_router.include_router(video_enhance.router, tags=["Video Enhancement"])
 
 app.include_router(v1_router, prefix="/api")
 app.include_router(health.router)

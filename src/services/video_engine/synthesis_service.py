@@ -4,7 +4,6 @@ import httpx
 import os
 import asyncio
 import uuid
-import shutil
 from pathlib import Path
 from src.api.config import settings
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -883,7 +882,6 @@ class GenerativeService:
         Pro strategy: Generate low-VRAM + enhance after for better quality.
         """
         import uuid
-        from pathlib import Path
 
         try:
             try:

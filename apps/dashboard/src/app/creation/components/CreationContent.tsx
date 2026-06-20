@@ -18,6 +18,7 @@ import {
     Clapperboard,
     Mic2,
     Loader2,
+    Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ import { useTelemetry } from "@/context/TelemetryContext";
 import { VoiceForgePanel } from "./VoiceForgePanel";
 import { ScriptEnginePanel, NEXUS_STYLE_OPTIONS } from "./ScriptEnginePanel";
 import { VisualCorePanel } from "./VisualCorePanel";
+import { EnhancementPanel } from "./EnhancementPanel";
 
 export function CreationContent() {
     const router = useRouter();
@@ -179,6 +181,7 @@ export function CreationContent() {
                         { id: "voice", label: "Voice Forge", icon: Mic2 },
                         { id: "script", label: "Script Engine", icon: Edit3 },
                         { id: "visual", label: "Visual Core", icon: Clapperboard },
+                        { id: "enhance", label: "Enhance", icon: Sparkles },
                         { id: "logs", label: "System Logs", icon: Terminal },
                     ].map((item) => (
                         <button
@@ -367,6 +370,10 @@ export function CreationContent() {
 
                         {activeEngine === "visual" && (
                             <VisualCorePanel />
+                        )}
+
+                        {activeEngine === "enhance" && (
+                            <EnhancementPanel />
                         )}
 
                         {activeEngine === "logs" && (

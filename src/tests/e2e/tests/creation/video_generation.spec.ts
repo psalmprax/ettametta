@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('Video Generation - Transform Existing Video', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display transformation form', async ({ page }) => {
@@ -44,11 +41,7 @@ test.describe('Video Generation - Transform Existing Video', () => {
 
 test.describe('Video Generation - AI Generate from Text', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display AI generation interface', async ({ page }) => {
@@ -110,11 +103,7 @@ test.describe('Video Generation - AI Generate from Text', () => {
 
 test.describe('Video Generation - Story Generate Narrative', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display storyboard interface', async ({ page }) => {
@@ -157,11 +146,7 @@ test.describe('Video Generation - Story Generate Narrative', () => {
 
 test.describe('Video Generation - Test Drive Quick Preview', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display quick preview mode', async ({ page }) => {

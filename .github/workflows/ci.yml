@@ -30,13 +30,21 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-mock
           
-      - name: Run all tests
+      - name: Run all tests with coverage
         run: |
           cd src/api
-          pytest tests/ -v --tb=short
+          pytest tests/ -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=60
         env:
           GROQ_API_KEY: test_key
           ENV: development
+
+      - name: Upload coverage to Codecov
+        if: success()
+        uses: codecov/codecov-action@v4
+        with:
+          files: src/api/coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
           
       - name: Run linting
         run: |

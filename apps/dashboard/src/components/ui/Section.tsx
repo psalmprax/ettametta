@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
   readonly variant?: "default" | "hero" | "featured" | "compact";
   readonly withBackground?: boolean;

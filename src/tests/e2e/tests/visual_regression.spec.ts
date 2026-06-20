@@ -1,13 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../helpers/auth';
 
 test.describe('Visual Regression Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'testpassword');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
+
+      await loginAsTestUser(page);
+
   });
 
   test('Dashboard page visual regression', async ({ page }) => {

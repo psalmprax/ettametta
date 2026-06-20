@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('Video Enhancement - Voice Overdub (TTS)', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display TTS options', async ({ page }) => {
@@ -50,11 +47,7 @@ test.describe('Video Enhancement - Voice Overdub (TTS)', () => {
 
 test.describe('Video Enhancement - Face Animation (No-Face)', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display face animation interface', async ({ page }) => {
@@ -88,11 +81,7 @@ test.describe('Video Enhancement - Face Animation (No-Face)', () => {
 
 test.describe('Video Enhancement - Background Removal', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display background removal interface', async ({ page }) => {
@@ -118,11 +107,7 @@ test.describe('Video Enhancement - Background Removal', () => {
 
 test.describe('Video Enhancement - Sound Design', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display sound design interface', async ({ page }) => {
@@ -161,11 +146,7 @@ test.describe('Video Enhancement - Sound Design', () => {
 
 test.describe('Video Enhancement - Music Addition', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display music library', async ({ page }) => {
@@ -190,11 +171,7 @@ test.describe('Video Enhancement - Music Addition', () => {
 
 test.describe('Video Enhancement - Subtitle Generation', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display subtitle generation interface', async ({ page }) => {
@@ -230,11 +207,7 @@ test.describe('Video Enhancement - Subtitle Generation', () => {
 
 test.describe('Video Enhancement - Thumbnail Generation', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display thumbnail generation', async ({ page }) => {
@@ -261,11 +234,7 @@ test.describe('Video Enhancement - Thumbnail Generation', () => {
 
 test.describe('Video Enhancement - Quality Upscaling', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display upscaling options', async ({ page }) => {

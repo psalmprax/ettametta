@@ -11,6 +11,7 @@ import {
     Layers,
 } from "lucide-react";
 
+/** Module-internal — do not consume from outside. */
 const NAV_ITEMS = [
     { id: "orchestrator", label: "Orchestrator", icon: Cpu },
     { id: "crews", label: "Workforce", icon: Users },
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
     { id: "history", label: "Pipeline History", icon: Layers },
 ] as const;
 
+/** Module-internal — do not consume from outside. */
 interface NexusHeaderProps {
     activeEngine: string;
     onEngineChange: (id: string) => void;

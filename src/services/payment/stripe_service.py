@@ -6,7 +6,7 @@ import stripe
 import logging
 import asyncio
 from typing import Any
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from sqlalchemy import select
 from src.api.utils.database import async_session_factory
 

@@ -1,4 +1,6 @@
-from jose import JWTError, jwt
+from joserfc import jwt
+from joserfc.jwk import OctKey
+from joserfc.errors import BadSignatureError, DecodeError, ExpiredTokenError
 from src.api.config import settings
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 import hmac
@@ -29,9 +31,10 @@ async def decode_access_token(token: str):
         if await r.exists(f"token_blacklist:{token}"):
             return None
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            return payload
-        except JWTError as e:
+            key = OctKey.import_key(SECRET_KEY)
+            payload = jwt.decode(token, key)
+            return payload.claims
+        except (BadSignatureError, DecodeError, ExpiredTokenError) as e:
             logger.warning(f"JWT decode error for token {token[:10]}...: {str(e)}")
             return None
         except Exception as e:

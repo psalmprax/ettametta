@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('Billing - Subscribe Plan', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display subscription plans', async ({ page }) => {
@@ -34,11 +31,7 @@ test.describe('Billing - Subscribe Plan', () => {
 
 test.describe('Billing - View Subscription', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display subscription details', async ({ page }) => {
@@ -64,11 +57,7 @@ test.describe('Billing - View Subscription', () => {
 
 test.describe('Billing - Cancel Subscription', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display cancel option', async ({ page }) => {

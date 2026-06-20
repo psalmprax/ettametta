@@ -14,12 +14,15 @@ import {
     Terminal,
     BarChart3
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { Button } from "@/components/ui/Button";
+import { EngineSidebar } from "@/components/shared/EngineSidebar";
+import { LogsPanel } from "@/components/shared/LogsPanel";
+import { PageShell } from "@/components/shared/PageShell";
 
 /** Module-internal — do not consume from outside. */
 interface CreditBalance {
@@ -120,29 +123,19 @@ export default function CreditsPage() {
           title="CREDIT VAULT"
           subtitle="RESOURCE_ALLOCATION_V4.0"
           leftPanel={
-            <div className="space-y-1">
-              {[
+            <EngineSidebar
+              items={[
                 { id: "vault", label: "Credit Vault", icon: Vault },
                 { id: "spending", label: "Spending", icon: BarChart3 },
                 { id: "acquisition", label: "Acquisition", icon: Package },
                 { id: "history", label: "Ledger", icon: History },
                 { id: "network", label: "Neural Network", icon: Network },
                 { id: "logs", label: "Resource Logs", icon: Terminal },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveEngine(item.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
-                    activeEngine === item.id ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
-                  {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]" />}
-                </button>
-              ))}
-            </div>
+              ]}
+              activeId={activeEngine}
+              onSelect={setActiveEngine}
+              accentColor="cyan"
+            />
           }
           rightPanel={
             <>
@@ -157,15 +150,7 @@ export default function CreditsPage() {
             </>
           }
         >
-          <div className="p-10 space-y-10 relative h-full flex flex-col">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeEngine}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex-1 flex flex-col min-h-0"
-              >
+          <PageShell activeKey={activeEngine}>
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 space-y-10">
                   {activeEngine === "vault" && (
                     <div className="h-full flex flex-col justify-center items-center text-center space-y-8">
@@ -297,26 +282,8 @@ export default function CreditsPage() {
                   )}
                 </div>
 
-                <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
-                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Resource Logs</span>
-                    <span className="text-[8px] font-mono text-cyan-500/50">VAULT_LEDGER_ACTIVE</span>
-                  </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                    {logs.map((log, i) => (
-                      <div key={i} className="flex gap-4">
-                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
-                        <span className={cn(
-                          log.includes("[PROTOCOL]") ? "text-cyan-400" :
-                          log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
-                        )}>{log}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+                <LogsPanel logs={logs} label="Resource Logs" badge="VAULT_LEDGER_ACTIVE" accentColor="cyan" />
+          </PageShell>
         </CommandCenterLayout>
     );
 }

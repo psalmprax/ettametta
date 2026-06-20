@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import dynamic from "next/dynamic";
 
+/** Module-internal — do not consume from outside. */
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 
@@ -24,6 +25,7 @@ interface AnalysisTask {
     niche: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface IntelInsight {
     type: string;
     confidence: number;
@@ -34,6 +36,7 @@ interface IntelData {
     insights?: IntelInsight[];
 }
 
+/** Module-internal — do not consume from outside. */
 interface LogEntry {
     type: string;
     level: string;
@@ -42,6 +45,7 @@ interface LogEntry {
     timestamp: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface MapPoint {
     id: string;
     lat: number;
@@ -50,6 +54,7 @@ interface MapPoint {
     label: string;
 }
 
+/** Module-internal — do not consume from outside. */
 interface NetworkNode {
     id: string;
     group: number;
@@ -62,6 +67,7 @@ interface NetworkLink {
     value: number;
 }
 
+/** Module-internal — do not consume from outside. */
 interface NetworkData {
     nodes: NetworkNode[];
     links: NetworkLink[];
@@ -74,6 +80,7 @@ interface Alert {
     tags?: string[];
 }
 
+/** Module-internal — do not consume from outside. */
 interface AnalysisPanelProps {
     activeEngine: string;
     intelData: IntelData | null;

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DesignCard } from "@/components/ui/DesignCard";
 import type { ContentCandidate } from "./DiscoveryContent";
 
+/** Module-internal — do not consume from outside. */
 interface CandidateCardProps {
     candidate: ContentCandidate;
     credits: number;

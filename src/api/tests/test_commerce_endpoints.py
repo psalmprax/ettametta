@@ -2,7 +2,6 @@
 Tests for the Auto-Merch and Commerce API endpoints.
 """
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 from src.api.main import app
 

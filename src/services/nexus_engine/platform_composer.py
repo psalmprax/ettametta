@@ -342,7 +342,7 @@ class PlatformComposer:
         try:
 
             # Build path list for CLIP ranking
-            paths = [a.path for a in downloaded]
+            [a.path for a in downloaded]
 
             # Use the semantic stock matcher's internal CLIP ranking
             # We'll extract frames and rank manually since search() does its own stock lookup

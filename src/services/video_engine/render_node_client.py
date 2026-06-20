@@ -252,7 +252,6 @@ class RenderNodeClient:
         if not job_id:
             return None
 
-        terminal_states = {"completed", "failed", "complete", "error"}
         deadline = time.monotonic() + self.max_wait
         last_state: str = "queued"
 

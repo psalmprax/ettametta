@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./Tooltip";
 import { Button } from "./Button";
 
@@ -9,6 +9,7 @@ const meta: Meta<typeof Tooltip> = {
 };
 
 export default meta;
+/** Module-internal — do not consume from outside. */
 type Story = StoryObj<typeof Tooltip>;
 
 export const Default: Story = {

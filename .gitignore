@@ -210,3 +210,8 @@ deploy_key
 deploy_key.pub
 key_raw.txt
 .fallow/
+scratch/_recycle/
+*.db
+*.sqlite
+*.sqlite3
+bfg.jar

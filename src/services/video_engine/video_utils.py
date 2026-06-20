@@ -9,8 +9,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import subprocess
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def probe_video(path: str) -> VideoInfo | None:
         cap.release()
 
 
-def extract_frame(path: str, frame_index: int | None = None) -> "numpy.ndarray | None":  # type: ignore[name-defined]
+def extract_frame(path: str, frame_index: int | None = None) -> Any:
     """Extract a single frame from a video. Uses middle frame if index is None.
 
     Replaces 3 duplicated cv2.VideoCapture + set frame + read + release blocks.

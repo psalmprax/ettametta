@@ -7,6 +7,7 @@ import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { NexusJob } from "@/lib/types";
 
+/** Module-internal — do not consume from outside. */
 interface NexusJobListProps {
     nexusJobs: NexusJob[];
     credits: number | null;
@@ -81,6 +82,7 @@ export default function NexusJobList({
     );
 }
 
+/** Module-internal — do not consume from outside. */
 interface NexusJobHistoryProps {
     nexusJobs: NexusJob[];
     onPreviewScenes: (jobId: string) => void;

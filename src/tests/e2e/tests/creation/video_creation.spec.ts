@@ -5,15 +5,13 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('Video Transformation', () => {
     test.beforeEach(async ({ page }) => {
-        // Login first
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+
+        await loginAsTestUser(page);
+
     });
 
     test('should navigate to creation page', async ({ page }) => {
@@ -59,11 +57,7 @@ test.describe('Video Transformation', () => {
 
 test.describe('AI Video Generation', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display generation options', async ({ page }) => {
@@ -128,11 +122,7 @@ test.describe('AI Video Generation', () => {
 
 test.describe('Video Processing Jobs', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display job queue', async ({ page }) => {
@@ -164,11 +154,7 @@ test.describe('Video Processing Jobs', () => {
 
 test.describe('Remotion Templates', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display template options', async ({ page }) => {

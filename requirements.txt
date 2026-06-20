@@ -66,7 +66,6 @@ google-auth-httplib2==0.4.0
 google-auth-oauthlib==1.4.0
 
 # --- Auth & Security ---
-python-jose==3.5.0
 passlib==1.7.4
 bcrypt==5.0.0
 Authlib==1.7.2

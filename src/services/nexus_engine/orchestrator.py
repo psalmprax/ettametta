@@ -2,7 +2,6 @@ import os
 import logging
 import asyncio
 import time
-import random
 import shutil
 import subprocess
 from pathlib import Path
@@ -29,7 +28,7 @@ from src.services.nexus_engine.style_library import get_style
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
 from src.shared.enums import NodeStatus
-from src.services.video_engine.video_utils import probe_video, extract_frame, probe_duration_ffprobe
+from src.services.video_engine.video_utils import probe_video, extract_frame
 from src.services.nexus_engine.vibe_analyzer import determine_video_vibe
 from src.services.nexus_engine.render_pipeline import (
     modulate_video_style, source_music, extract_thumbnail, export_srt,
@@ -549,6 +548,7 @@ class NexusOrchestrator:
         job_metadata: dict[str, Any] | None,
         preview_mode: bool,
         blueprint: dict[str, Any],
+        visual_paths: list[str] | None = None,
     ) -> tuple[str, dict[str, Any], int]:
         async with self._node_phase(job_id, niche, "synthesis", (70, 90)):
             style_config = get_style(style)
@@ -640,7 +640,7 @@ class NexusOrchestrator:
                 )
                 self.render_pipeline.export_srt(word_timestamps, srt_path)
 
-            thumbnail_path = await self.render_pipeline.extract_thumbnail(
+            await self.render_pipeline.extract_thumbnail(
                 self._local_temp_dir, job_id, visual_paths or []
             )
 
@@ -844,6 +844,7 @@ class NexusOrchestrator:
             rendered_path, props, total_frames = await self._phase_synthesis(
                 job_id, niche, style, vibe_data, remotion_clips, script_segments,
                 voiceover_paths, music_path, job_metadata, preview_mode, blueprint,
+                visual_paths=visual_paths,
             )
 
             await self._phase_egress(

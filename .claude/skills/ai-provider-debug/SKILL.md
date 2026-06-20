@@ -1,6 +1,6 @@
 ---
 name: ai-provider-debug
-description: Debug and troubleshoot AI/LLM provider integrations in ettametta. Use when investigating API failures, rate limits, fallback chain issues, model selection problems, or cost anomalies across 17+ providers.
+description: Debug and troubleshoot AI/LLM provider integrations. Use when investigating API failures, fallback chain issues, model selection problems, embedding dimension mismatches, or cascading provider failures across 6 providers.
 ---
 
 # AI Provider Debugging
@@ -8,96 +8,98 @@ description: Debug and troubleshoot AI/LLM provider integrations in ettametta. U
 ## Quick Diagnostics
 
 ```bash
-curl http://localhost:8000/api/v1/llm/providers
-curl http://localhost:8000/api/v1/llm/models
-curl -X POST http://localhost:8000/api/v1/llm/reset-circuits
+# Check AI provider health via main health endpoint
+curl http://localhost:7500/health | jq '.services.ai_provider'
+
+# Check all provider statuses
+curl http://localhost:7500/api/v1/health/diagnostics | jq '.providers'
 ```
 
 ## Provider Registry
 
-| Provider | SDK | Primary Use |
+| Provider | File | Primary Use |
 |---|---|---|
-| Groq | groq SDK | Default LLM, fast inference |
-| OpenAI | openai SDK | High-reasoning (GPT-4o) |
-| Anthropic | anthropic SDK | Premium reasoning (Claude 3.5) |
-| Google Gemini | google.genai | Cost-effective medium tasks |
-| Ollama | OpenAI-compat | Zero-cost local inference |
-| xAI (Grok) | openai (custom URL) | Grok-2 reasoning |
-| DeepSeek | openai (custom URL) | DeepSeek-Chat/Coder |
-| Mistral | openai (custom URL) | Mistral-Large |
-| Cohere | cohere SDK | Command-R-Plus |
-| Cerebras | openai (custom URL) | Llama-3.3-70b (30 RPM free) |
-| Cloudflare | REST dict | Llama-3.1-70b |
-| Hugging Face | REST dict | Llama-3.3-70B |
-| OpenRouter | openai (custom URL) | Multi-model gateway |
-| NVIDIA NIM | openai (custom URL) | Llama-3.3-70b |
-| SiliconFlow | openai (custom URL) | Qwen2.5-72B |
-| Ollama Cloud | openai (custom URL) | Qwen2.5:72b |
-| Dify | Custom client | Orchestrator/workflow |
-| vLLM | REST (OpenAI-compat) | High-throughput inference |
+| OpenAI | providers/openAI.ts | Default LLM + embeddings (gpt-4o) |
+| Groq | providers/groq.ts | Fast inference fallback |
+| Anthropic | providers/anthropic.ts | Premium reasoning (Claude) |
+| Azure OpenAI | providers/azureOpenAI.ts | Enterprise OpenAI |
+| Google Vertex | providers/googleVertex.ts | Google AI models |
+| Ollama | providers/ollama.ts | Local inference (llama3.2:3b) |
 
-## Three Orchestration Layers
+## Architecture
 
-**1. IntelligenceHub** (`src/services/llm/intelligence_hub.py`)
-- Complexity routing: low -> ollama, medium -> gemini/groq, high -> openai
-- Circuit breaker per engine (5 failures -> open, 60s recovery)
-- Auto-heal: rate limits after 10 min, 3+ errors -> degraded
+### Three-Layer Routing
 
-**2. UnifiedLLMService** (`src/services/llm/service.py`)
-- 7 providers, tries requested then iterates all
-- tenacity retries: 3 attempts, exponential backoff 1-10s
+**1. AIProviderFactory** (`services/aiProvider/aiProvider.ts`)
+- Singleton factory, lazy-creates providers on first use
+- Primary + fallback provider from config
+- `getWithFallback()`: cascading fallback through all providers
 
-**3. BaseEttamettaAgent** (`src/services/base_agent.py`)
-- 17 providers, fixed fallback: primary -> ollama -> xai -> deepseek -> cerebras -> groq -> openai -> openrouter -> mistral -> siliconflow -> nvidia -> gemini -> anthropic
+**2. AIRouter** (`services/aiProvider/aiProvider.ts`)
+- Request-type routing: generate | embed | speech | classify | reason | weather | disease_alerts | vision | video
+- Delegates to `AIProviderFactory.getWithFallback()`
 
-## Fallback Chains
+**3. Fallback Chain**
+```
+primary (config.ai.primary.provider)
+  -> fallback (config.ai.fallback.provider)
+    -> openai
+      -> anthropic
+        -> groq
+          -> ollama
+```
 
-- **VLM (Vision):** Groq Vision -> Local Moondream2 -> Gemini 1.5 Flash -> heuristic
-- **CrewAI:** Groq (llama-3.3-70b-versatile) -> OpenAI (gpt-4o-mini) -> Ollama
-- **Ollama self-failover:** primary URL -> localhost:11434
+### Capabilities
+
+Each provider implements `AICapability` interface:
+- generateText() / streamText()
+- createEmbedding() / createBatchEmbeddings()
+- speechToText() / textToSpeech()
+- analyzeWithReasoning()
+- classify()
+- analyzeImage() / analyzeVideo()
+- healthCheck() / isConfigured()
 
 ## Key Files
 
 | File | Purpose |
 |---|---|
-| src/services/llm/service.py | UnifiedLLMService (7 providers) |
-| src/services/llm/intelligence_hub.py | IntelligenceHub (complexity routing) |
-| src/services/llm/dify_client.py | DifyClient with retries |
-| src/services/base_agent.py | BaseEttamettaAgent (17 providers) |
-| src/services/openclaw/agent.py | OpenClawAgent (17+ providers) |
-| src/services/video_engine/vlm_service.py | VLMService (vision chain) |
-| src/api/utils/vault.py | 3-tier secret resolution |
-| src/api/utils/llm_vault.py | LLM vault (17 providers) |
-| src/api/utils/resilience.py | CircuitBreaker |
-| src/api/routes/llm.py | LLM API endpoints |
+| src/backend/src/services/aiProvider/aiProvider.ts | Factory, Router, base classes |
+| src/backend/src/services/aiProvider/providers/*.ts | Individual provider implementations |
+| src/backend/src/config/index.ts | Provider config (primary, fallback, models) |
+
+## Embedding Dimensions
+
+**Critical**: All embeddings must use the same dimension. If providers use different models:
+- OpenAI: 1536 (text-embedding-3-small) or 3072 (text-embedding-3-large)
+- Azure OpenAI: depends on deployment
+- Ollama: depends on model
+
+**Symptom**: Vector search returns 0 results or throws dimension mismatch.
+**Check**: `VectorService.search()` logs dimension mismatch warnings.
 
 ## Common Issues
 
-### All providers failing — circuit breakers open
-```bash
-curl -X POST http://localhost:8000/api/v1/llm/reset-circuits
+### All providers failing
+If "unhealthy" — no provider has a valid API key. Check `.env` for OPENAI_API_KEY, GROQ_API_KEY, etc.
+
+### Embedding dimension mismatch
 ```
+Vector dimension mismatch! Stored: 1536, Query: 768
+```
+Cause: Switched embedding models without re-indexing. Fix: re-ingest all knowledge articles.
 
-### Rate limited — auto-heal not working
-IntelligenceHub auto-heals after 10 min. If stuck: reset circuits, check for 429 in logs.
-
-### Placeholder key rejected
-IntelligenceHub rejects keys containing "your_", "placeholder", "CHANGE_ME". Set real keys.
+### Fallback not kicking in
+`getWithFallback()` skips unconfigured providers silently. Check logs for:
+```
+AI provider {type} not configured, skipping...
+```
 
 ### Ollama not responding
 ```bash
-docker compose ps ollama
-curl http://localhost:11434/api/tags
-docker compose exec ollama ollama list
+docker compose ps ettametta-ollama
+curl http://localhost:11435/api/tags
 ```
 
 ### API key priority
-Three-tier in `vault.py`: UserSetting DB -> SystemSettings DB -> .env
-
-## Rate Limits
-
-| Tier | Limit |
-|---|---|
-| FREE | 100/hr |
-| PRO/PREMIUM/BASIC | 500/hr |
-| SOVEREIGN/STUDIO | 5000/hr |
+Config reads from environment variables. Check config/index.ts for exact env var names.

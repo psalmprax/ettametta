@@ -200,26 +200,6 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess, initialBlueprint 
 
     if (!isOpen) return null;
 
-    // Handle escape key
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [onClose]);
-
-    // Focus management: focus first input when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            const timer = setTimeout(() => {
-                const firstInput = document.querySelector('[data-modal-first-focus]');
-                if (firstInput) (firstInput as HTMLElement).focus();
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen]);
-
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
             <motion.div

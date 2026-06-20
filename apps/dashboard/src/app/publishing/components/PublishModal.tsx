@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { DesignCard } from "@/components/ui/DesignCard";
 
+/** Module-internal — do not consume from outside. */
 interface PublishModalProps {
     activeTab: "broadcast";
     onOpenDeployModal: () => void;

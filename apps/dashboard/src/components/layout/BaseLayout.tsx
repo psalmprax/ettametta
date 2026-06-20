@@ -2,6 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+/** Module-internal — do not consume from outside. */
 interface BaseLayoutProps {
   readonly children: React.ReactNode;
   readonly variant?: "landing" | "auth" | "dashboard";

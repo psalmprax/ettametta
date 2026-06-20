@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { CandidateCard } from "./CandidateCard";
 import type { ContentCandidate } from "./DiscoveryContent";
 
+/** Module-internal — do not consume from outside. */
 interface CandidateGridProps {
     candidates: ContentCandidate[];
     isScanning: boolean;

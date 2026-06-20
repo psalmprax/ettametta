@@ -1,13 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../helpers/auth';
 
 test.describe('Publishing Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'testpassword');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
-  });
+        await loginAsTestUser(page);
+    });
 
   test('should connect YouTube account', async ({ page }) => {
     await page.goto('/publishing');
@@ -89,12 +86,8 @@ test.describe('Publishing Flow', () => {
 
 test.describe('Multi-Platform Publishing', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'testpassword');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
-  });
+        await loginAsTestUser(page);
+    });
 
   test('should post to multiple platforms at once', async ({ page }) => {
     await page.goto('/publishing');

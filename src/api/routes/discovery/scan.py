@@ -110,7 +110,6 @@ async def search_discovery(
     region: str | None = "US",
     current_user: UserDB = Depends(get_current_user),
 ):
-    import datetime as _dt
     try:
         results = await base_discovery_service.search_content(
             query=query,

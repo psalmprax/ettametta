@@ -98,7 +98,7 @@ class TestNullRegionFallbackFetchDbFallback:
         returned — the NULL fallback only applies to US queries.
         """
         mock_row_de = make_mock_db_row("de_1", "DE Region Video", "Business Ideas", "DE")
-        mock_row_null = make_mock_db_row("null_2", "NULL Region Video", "Business Ideas", None)
+        make_mock_db_row("null_2", "NULL Region Video", "Business Ideas", None)
 
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [mock_row_de]

@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 from sqlalchemy.orm import Session
 
 
@@ -25,8 +25,8 @@ class TestGetEmpireMetrics:
 
     def test_calculates_total_growth(self, empire_service, mock_db):
         now = datetime.now(timezone.utc)
-        last_week = now - timedelta(days=7)
-        prev_week = now - timedelta(days=14)
+        now - timedelta(days=7)
+        now - timedelta(days=14)
         mock_db.scalar.side_effect = [
             3,                         # account_count
             1000,                      # current_week_views

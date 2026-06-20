@@ -27,6 +27,7 @@ function getParentIndices(idx: number, total: number): number[] {
     return [idx - 1];
 }
 
+/** Module-internal — do not consume from outside. */
 interface NexusJobDetailProps {
     activeBlueprint: Blueprint | null;
     activePipelineJob: NexusJob | null;

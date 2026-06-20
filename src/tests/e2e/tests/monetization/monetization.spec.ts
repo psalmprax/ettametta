@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('Monetization - Affiliate Links', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display affiliate links interface', async ({ page }) => {
@@ -39,11 +36,7 @@ test.describe('Monetization - Affiliate Links', () => {
 
 test.describe('Monetization - Revenue Tracking', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display revenue dashboard', async ({ page }) => {
@@ -70,11 +63,7 @@ test.describe('Monetization - Revenue Tracking', () => {
 
 test.describe('Monetization - Empire Building', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display empire dashboard', async ({ page }) => {
@@ -105,11 +94,7 @@ test.describe('Monetization - Empire Building', () => {
 
 test.describe('Monetization - Auto Merch', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display merch interface', async ({ page }) => {
@@ -143,11 +128,7 @@ test.describe('Monetization - Auto Merch', () => {
 
 test.describe('Monetization - Product Recommendations', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display recommendations', async ({ page }) => {
@@ -171,11 +152,7 @@ test.describe('Monetization - Product Recommendations', () => {
 
 test.describe('Monetization - Promo Script', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display promo script generator', async ({ page }) => {
@@ -211,11 +188,7 @@ test.describe('Monetization - Promo Script', () => {
 
 test.describe('Monetization - Commerce Sync', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display commerce sync interface', async ({ page }) => {
@@ -239,11 +212,7 @@ test.describe('Monetization - Commerce Sync', () => {
 
 test.describe('Monetization - Clone Strategy', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display strategy cloning interface', async ({ page }) => {

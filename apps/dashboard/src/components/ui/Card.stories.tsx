@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./Card";
 
 const meta: Meta<typeof Card> = {
@@ -8,6 +8,7 @@ const meta: Meta<typeof Card> = {
 };
 
 export default meta;
+/** Module-internal — do not consume from outside. */
 type Story = StoryObj<typeof Card>;
 
 export const Default: Story = {

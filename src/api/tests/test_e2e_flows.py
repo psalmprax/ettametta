@@ -15,11 +15,12 @@ DASHBOARD_URL = "http://149.104.110.122:7202"
 TEST_USER = os.getenv("E2E_TEST_USER", "")
 TEST_PASS = os.getenv("E2E_TEST_PASS", "")
 
-if not TEST_USER or not TEST_PASS:
-    raise RuntimeError(
-        "E2E_TEST_USER and E2E_TEST_PASS environment variables must be set. "
-        "These replace the previously hardcoded credentials for security."
-    )
+# Skip the entire module at collection time if E2E creds are not set.
+# This was previously a `raise RuntimeError(...)` which aborted pytest collection.
+pytestmark = pytest.mark.skipif(
+    not (TEST_USER and TEST_PASS),
+    reason="E2E_TEST_USER and E2E_TEST_PASS environment variables must be set",
+)
 
 
 def get_auth_token():

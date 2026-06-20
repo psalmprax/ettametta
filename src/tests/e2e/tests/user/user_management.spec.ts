@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from '../../helpers/auth';
 
 test.describe('User Management - Register', () => {
     test.beforeEach(async ({ page }) => {
@@ -114,11 +115,7 @@ test.describe('User Management - OAuth', () => {
 
 test.describe('User Management - Settings', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
-        await page.fill('input[name="password"]', 'testpassword');
-        await page.click('button[type="submit"]');
-        await page.waitForURL('/');
+        await loginAsTestUser(page);
     });
 
     test('should display settings page', async ({ page }) => {

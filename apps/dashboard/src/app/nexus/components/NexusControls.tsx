@@ -17,6 +17,7 @@ import {
 import { Blueprint } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface NexusControlsProps {
     niches: any[];
     selectedNiche: string;

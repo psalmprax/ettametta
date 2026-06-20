@@ -1,9 +1,0 @@
-import inspect
-from src.services.video_engine.tasks import download_and_process_task
-
-func = download_and_process_task.__wrapped__
-sig = inspect.signature(func)
-print(f"Signature: {sig}")
-print(f"Number of parameters: {len(sig.parameters)}")
-for name, param in sig.parameters.items():
-    print(f"  - {name}: {param.kind}")

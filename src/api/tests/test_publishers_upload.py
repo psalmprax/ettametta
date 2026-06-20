@@ -15,9 +15,8 @@ Instagram fixes:
 
 import os
 import sys
-import json
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
 
 # Add project root to path

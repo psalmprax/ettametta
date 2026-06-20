@@ -11,12 +11,11 @@ import functools
 import logging
 import threading
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Callable
 
 from src.services.infrastructure.resilience_metrics import (
     safe_counter,
     safe_gauge,
-    safe_histogram,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,22 +81,22 @@ class CircuitBreaker:
 
         # Prometheus metrics
         self._metric_failures = safe_counter(
-            f"ettametta_circuit_breaker_failures_total",
+            "ettametta_circuit_breaker_failures_total",
             "Total circuit breaker failures",
             ["name"],
         )
         self._metric_successes = safe_counter(
-            f"ettametta_circuit_breaker_successes_total",
+            "ettametta_circuit_breaker_successes_total",
             "Total circuit breaker successes",
             ["name"],
         )
         self._metric_state = safe_gauge(
-            f"ettametta_circuit_breaker_state",
+            "ettametta_circuit_breaker_state",
             "Circuit breaker state (0=Closed, 1=HalfOpen, 2=Open)",
             ["name"],
         )
         self._metric_rejects = safe_counter(
-            f"ettametta_circuit_breaker_rejects_total",
+            "ettametta_circuit_breaker_rejects_total",
             "Total calls rejected by circuit breaker",
             ["name"],
         )

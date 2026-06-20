@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 
+/** Module-internal — do not consume from outside. */
 interface Node extends d3.SimulationNodeDatum {
     id: string;
     group: number;

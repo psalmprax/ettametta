@@ -5,6 +5,7 @@ import { Search, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 
+/** Module-internal — do not consume from outside. */
 interface AnalysisTask {
     task_id: string;
     status: string;
@@ -25,6 +26,7 @@ interface DiscoveryHeaderProps {
     onCreateFromAnalysis: (taskId: string, candidateId: string, niche: string) => void;
 }
 
+/** Module-internal — do not consume from outside. */
 const REGIONS = [
     { id: "US", label: "USA", flag: "\u{1F1FA}\u{1F1F8}" },
     { id: "GB", label: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}" },
