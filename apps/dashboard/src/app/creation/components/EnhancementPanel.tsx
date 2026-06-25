@@ -198,7 +198,7 @@ export function EnhancementPanel() {
                 break;
         }
 
-        await withRealFallback<{ output_path: string }>(
+        await withRealFallback<{ output_path: string } | null>(
             (signal) =>
                 fetch(endpoint, {
                     method: "POST",
