@@ -282,7 +282,7 @@ export default function CreditsPage() {
                   )}
                 </div>
 
-                <LogsPanel logs={logs} label="Resource Logs" badge="VAULT_LEDGER_ACTIVE" accentColor="cyan" />
+                <LogsPanel logs={logs} label="Resource Logs" badge="VAULT_LEDGER_ACTIVE" />
           </PageShell>
         </CommandCenterLayout>
     );
