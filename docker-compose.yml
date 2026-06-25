@@ -146,7 +146,7 @@ services:
       context: ./apps/dashboard
       dockerfile: Dockerfile
     environment:
-    - NEXT_PUBLIC_API_URL=http://${API_HOST:-92.209.217.18}.sslip.io:7200/api/v1
+    - NEXT_PUBLIC_API_URL=http://${API_HOST:-161.97.126.84}.sslip.io:7200/api/v1
     restart: always
   celery_worker:
     build:
