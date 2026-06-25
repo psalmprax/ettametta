@@ -203,7 +203,7 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - wget -qO- http://localhost:11434/ > /dev/null 2>&1 || exit 1
+      - bash -c 'cat < /dev/null > /dev/tcp/localhost/11434' || exit 1
       interval: 30s
       timeout: 5s
       retries: 3
@@ -322,7 +322,7 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - wget -qO- http://localhost:8133/health > /dev/null 2>&1 || exit 1
+      - curl -sf http://localhost:8133/health > /dev/null 2>&1 || exit 1
       interval: 30s
       timeout: 5s
       retries: 3
