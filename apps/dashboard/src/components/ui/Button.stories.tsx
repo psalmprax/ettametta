@@ -37,7 +37,7 @@ export const Secondary: Story = {
 export const Destructive: Story = {
   args: {
     children: "Delete",
-    variant: "destructive",
+    variant: "danger",
   },
 };
 
