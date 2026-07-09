@@ -1,4 +1,5 @@
 from google import genai
+import asyncio
 import cv2
 import os
 import logging
@@ -155,5 +156,142 @@ class VLMService:
         except Exception as e:
             logging.exception(f"[VLMService] Gemini failed: {e}")
             return None
+
+    async def _classify_person_activity(self, frame_paths: list[str]) -> list[dict]:
+        """Classify person activity per sampled frame.
+
+        Ported from the deleted ``VideoContentAnalyzer`` (the only producer of a
+        frame-derived ``talking_head`` classification). Reuses the Groq/Gemini
+        clients already configured on this service instead of a separate raw
+        OpenAI call, so frame analysis flows through the single canonical vision path.
+
+        Returns a list of per-frame dicts with keys: ``person_visible``,
+        ``person_activity``, ``usable_as_broll``, ``visual_content``, ``mood``.
+        """
+        prompt = (
+            "Analyze this video frame. Answer in JSON: "
+            '{'
+            '"person_visible": true/false, '
+            '"person_activity": "speaking_to_camera/demonstrating/concept_explaining/screen_recording/none", '
+            '"usable_as_broll": true/false, '
+            '"visual_content": "landscape/office/product/screen/demo/concept/etc", '
+            '"mood": "energetic/calm/professional/other"'
+            "}"
+        )
+
+        async def _run(frame_path: str) -> dict | None:
+            try:
+                with open(frame_path, "rb") as image_file:
+                    b64 = base64.b64encode(image_file.read()).decode("utf-8")
+                if self.groq_client:
+                    completion = await self.groq_client.chat.completions.create(
+                        model="llama-3.2-11b-vision-preview",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{b64}"
+                                        },
+                                    },
+                                ],
+                            }
+                        ],
+                        response_format={"type": "json_object"},
+                    )
+                    return json.loads(completion.choices[0].message.content)
+                if self.gemini_model:
+                    from PIL import Image
+
+                    response = self.gemini_client.models.generate_content(
+                        model=self.model_name,
+                        contents=[prompt, Image.open(frame_path)],
+                    )
+                    text = response.text
+                    if "```json" in text:
+                        text = text.split("```json")[1].split("```")[0].strip()
+                    return json.loads(text)
+            except Exception as e:  # single frame failure shouldn't abort all
+                logging.warning(f"[VLMService] person-activity frame failed: {e}")
+            return None
+
+        results = await asyncio.gather(*[_run(p) for p in frame_paths])
+        analyses = [a for a in results if isinstance(a, dict)]
+        return analyses
+
+    async def analyze_content_type(self, video_path: str) -> dict:
+        """Frame-based talking-head / B-roll classification.
+
+        Aggregation logic ported from ``VideoContentAnalyzer``: a video is
+        ``talking_head`` (reject) when >= 3 of the sampled frames show someone
+        speaking to camera. Otherwise it is ``tutorial_demo`` (good showing
+        content), ``person_heavy`` (person present but not demonstrating),
+        ``poor_quality`` (little usable B-roll), or ``scene`` (clean B-roll).
+
+        Returns keys consumed by ``video_eligibility.check_eligibility``:
+        ``content_type``, ``has_visible_speaker``, ``speaker_duration_pct``,
+        ``usable``, ``visual_quality``.
+        """
+        frames = self._sample_keyframes(video_path, num_frames=5)
+        if not frames:
+            return {
+                "content_type": "unknown",
+                "has_visible_speaker": False,
+                "speaker_duration_pct": 0.0,
+                "usable": True,
+                "visual_quality": 5.0,
+            }
+
+        try:
+            analyses = await self._classify_person_activity(frames)
+            if not analyses:
+                return {
+                    "content_type": "unknown",
+                    "has_visible_speaker": False,
+                    "speaker_duration_pct": 0.0,
+                    "usable": True,
+                    "visual_quality": 5.0,
+                }
+
+            bad_activities = ["speaking_to_camera"]
+            bad_count = sum(
+                1 for a in analyses if a.get("person_activity") in bad_activities
+            )
+            good_count = sum(
+                1
+                for a in analyses
+                if a.get("person_activity")
+                in ["demonstrating", "concept_explaining", "screen_recording"]
+            )
+            person_count = sum(1 for a in analyses if a.get("person_visible", False))
+            person_pct = person_count / len(analyses)
+            usable_count = sum(1 for a in analyses if a.get("usable_as_broll", True))
+            usable_pct = usable_count / len(analyses)
+
+            if bad_count >= 3:
+                content_type = "talking_head"
+            elif good_count >= 2:
+                content_type = "tutorial_demo"
+            elif person_pct >= 0.6 and good_count == 0:
+                content_type = "person_heavy"
+            elif usable_pct < 0.4:
+                content_type = "poor_quality"
+            else:
+                content_type = "scene"
+
+            return {
+                "content_type": content_type,
+                "has_visible_speaker": bad_count >= 3,
+                "speaker_duration_pct": bad_count / len(analyses),
+                "usable": content_type not in ["talking_head", "poor_quality"],
+                "visual_quality": usable_pct * 10,
+            }
+        finally:
+            for p in frames:
+                if os.path.exists(p):
+                    os.remove(p)
 
 base_vlm_service = VLMService()

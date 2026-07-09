@@ -298,19 +298,17 @@ class VideoEligibilityChecker:
         if content_type == "talking_head":
             rejections.append(REJECTION_REASONS["TALKING_HEAD"])
             score -= 5
-        elif content_type == "person_present":
-            # Check if demonstrating or just talking
-            person_activity = video_analysis.get("person_activity", "")
-            if person_activity not in [
-                "demonstrating",
-                "concept_explaining",
-                "screen_recording",
-            ]:
-                rejections.append(REJECTION_REASONS["NO_DEMONSTRATION"])
-                score -= 3
-            else:
-                passed.append("content_type")
+        elif content_type == "person_heavy":
+            # Person present but not clearly demonstrating. The frame-based
+            # classifier (VLMService.analyze_content_type) marks this "usable"
+            # with reservations, so we warn instead of hard-rejecting.
+            warnings.append(REJECTION_REASONS["NO_DEMONSTRATION"])
+            score -= 2
+        elif content_type in ("tutorial_demo", "scene"):
+            passed.append("content_type")
         else:
+            # "poor_quality", "unknown", or any unrecognized value — let the
+            # downstream visual-quality check decide rather than silently passing.
             passed.append("content_type")
 
         # 2. VISUAL QUALITY CHECK

@@ -179,11 +179,33 @@ class AutonomousVideoRemixer:
         return downloaded
 
     async def _extract_best_clips(self, video_paths: list[str], target_duration: int) -> list[dict]:
-        """Extract best segments from downloaded videos."""
+        """Extract best segments from downloaded videos.
+
+        Talking-head videos (someone speaking to camera with no visual
+        demonstration) are rejected up-front via the canonical VLM path, since
+        ``video_eligibility`` already treats ``content_type == "talking_head"``
+        as a hard reject and the video dicts here never carried that field.
+        """
+        from src.services.video_engine.vlm_service import base_vlm_service
+
         clips = []
         clip_duration = target_duration // len(video_paths) if video_paths else 10
 
         for i, video_path in enumerate(video_paths):
+            # Skip talking-head source videos before spending ffmpeg/clip time.
+            try:
+                classification = await base_vlm_service.analyze_content_type(video_path)
+                if classification.get("content_type") == "talking_head":
+                    logger.info(
+                        f"[Remix] Skipping talking-head video {video_path} "
+                        f"(speaker in {classification.get('speaker_duration_pct', 0):.0%} of frames)"
+                    )
+                    continue
+            except Exception as e:
+                # Classification is a quality gate, not a hard dependency —
+                # if the VLM call fails, proceed and let eligibility decide later.
+                logger.warning(f"[Remix] content-type check failed: {e}")
+
             try:
                 # Extract first N seconds as clip (simplified - would use scene detection in production)
                 clip_path = self.temp_dir / f"clip_{i}.mp4"
