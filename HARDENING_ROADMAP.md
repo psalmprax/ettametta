@@ -1,5 +1,7 @@
 # Ettametta (AlphaHecta) Enterprise Hardening Roadmap
 
+> **Status (as of 2026-07):** Forward-looking plan. The current codebase is **Python (FastAPI) + TypeScript only** — there is no Go (`discovery-go`) service, no separate gateway, and no Go/Python message bus. Sections that reference "Go" describe a *proposed* future split, not existing architecture. Treat unchecked boxes as aspirational.
+
 This document outlines the strategic plan to transition Ettametta from a local-first development environment to an enterprise-grade, high-availability platform.
 
 ## 1. Architectural & High Availability (HA)

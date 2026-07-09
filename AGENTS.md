@@ -14,7 +14,8 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 ## Languages
 - Python 3.11 - Main application logic, API, services
 - TypeScript/JavaScript - Frontend apps (dashboard, remotion-studio), external skills
-- Go - Discovery service (discovery-go)
+
+> **Note:** This codebase is Python + TypeScript only. The `discovery-go` Go gateway described in older planning docs (`docs/architecture_design.md`) is **not implemented** — multi-platform discovery is handled by the Python `src/services/discovery/` scanners (40+ platform modules).
 ## Runtime
 - Python 3.11-slim - Containerized with Docker
 - Node.js 18-alpine - For frontend/dashboard apps

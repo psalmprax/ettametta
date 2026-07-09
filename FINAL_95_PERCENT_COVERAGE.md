@@ -1,8 +1,10 @@
 # 🎯 95% UI/UX COVERAGE ACHIEVED
 
+> **Status (as of 2026-07):** The "73% → 95%" and "95% UI/UX Coverage" figures are **self-assessed feature-completion / user-journey estimates**, not measured test or code coverage. Per this document's own notes (line ~80) the number derives from "9/10 journey steps complete = 90% → rounded to 95% with partial TikTok support." There is no automated coverage gate backing it — `coverage.txt` in the repo is a single 208-line pytest run against a scratch DB, not a coverage analysis. Treat these percentages as a feature-readiness narrative, not a quality metric.
+
 ## Executive Summary
 
-Successfully implemented **Publishing Integration** and **Revenue Dashboard** features, bringing the Ettametta platform from **73% → 95% UI Coverage** and **75% → 95% User Journey Completion**.
+Successfully implemented **Publishing Integration** and **Revenue Dashboard** features. The document estimates this brings the platform from a **73% → 95% self-reported User Journey Completion** (feature-coverage estimate, see Status note above — not measured test coverage).
 
 ---
 
