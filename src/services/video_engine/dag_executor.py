@@ -9,8 +9,10 @@ Instead of running steps linearly, you compile a graph of nodes into an
 execution plan, then execute it with:
 - Parallelism (independent nodes run concurrently via asyncio.gather)
 - Caching (hash-based content addressability for node outputs)
-- Partial recomputation (only re-run nodes whose inputs changed)
-- Graceful fallback (failed nodes can be replaced without rebuilding the graph)
+- Partial recomputation (a node's cache key incorporates its inputs' keys,
+  so changing a mid-DAG node invalidates only its downstream subgraph)
+- Graceful fallback (a node declaring a ``fallback`` is replaced at runtime
+  without rebuilding the graph)
 
 Architecture:
     Node         → A single processing step (stock search, download, grade, etc.)
@@ -66,8 +68,11 @@ class Node(Protocol):
     id: str
     params: dict[str, Any]
     inputs: list[str]
+    fallback: Any
 
     async def execute(self, ctx: dict[str, Any]) -> Any: ...
+
+    def cache_key(self, input_keys: dict[str, str] | None = None) -> str: ...
 
 
 class BaseNode:
@@ -81,12 +86,15 @@ class BaseNode:
         self.id = node_id
         self.params = params or {}
         self.inputs = inputs or []
+        # Optional fallback: a zero-arg callable returning a safe substitute
+        # result when this node fails, enabling graph-local graceful
+        # degradation without rebuilding the DAG. Set via ``self.fallback``.
+        self.fallback: Any = None
 
     async def execute(self, ctx: dict[str, Any]) -> Any:
         raise NotImplementedError(
             f"{self.__class__.__name__}.execute() must be overridden"
         )
-
     def resolve_input(
         self,
         ctx: dict[str, Any],
@@ -166,10 +174,22 @@ class BaseNode:
             "inputs": self.inputs,
         }
 
-    def cache_key(self) -> str:
-        """Deterministic hash used for content-addressable caching."""
+    def cache_key(self, input_keys: dict[str, str] | None = None) -> str:
+        """Deterministic hash used for content-addressable caching.
+
+        ``input_keys`` maps each upstream node id to that node's *own*
+        composite cache key. When supplied, a change in any upstream
+        node's output produces a new key here — so editing a mid-DAG
+        node invalidates only its downstream subgraph (true partial
+        recomputation) rather than the whole graph.
+        """
+        parts = self.cache_key_parts()
+        if input_keys:
+            # Deterministically fold upstream keys into this node's key.
+            upstream = {k: input_keys[k] for k in sorted(input_keys)}
+            parts = {**parts, "upstream_keys": upstream}
         raw = json.dumps(
-            self.cache_key_parts(),
+            parts,
             sort_keys=True,
             default=str,
         )
@@ -321,8 +341,18 @@ class Scheduler:
 
         Returns:
             A dictionary mapping each node ID to its execution result.
+
+        Caching: a node's cache key folds in its upstream nodes' keys, so a
+        change to a mid-DAG node invalidates exactly its downstream subgraph.
+
+        Graceful fallback: a node that sets ``self.fallback`` (a zero-arg
+        callable, or a static value) is replaced by that fallback result on
+        failure, allowing the rest of the graph to proceed without a rebuild.
+        A node without a fallback still propagates its error as before.
         """
         context: dict[str, Any] = dict(inputs or {})
+        # node id -> composite cache key, so downstream keys can fold it in.
+        key_by_node: dict[str, str] = {}
 
         for batch_num, batch in enumerate(plan.get_batches()):
             logger.info(
@@ -333,7 +363,8 @@ class Scheduler:
             )
 
             async def _run_node(n: Node) -> tuple[str, Any]:
-                ck = n.cache_key()
+                input_keys = {dep: key_by_node[dep] for dep in n.inputs if dep in key_by_node}
+                ck = n.cache_key(input_keys)
 
                 cached = await self.cache.get(ck)
                 if cached is not None:
@@ -351,15 +382,25 @@ class Scheduler:
                 )
                 try:
                     result = await n.execute(context)
-                    await self.cache.set(ck, result)
-                    return n.id, result
                 except Exception as e:
-                    logger.exception(
-                        "[DAG Scheduler] Node '%s' failed: %s",
-                        n.id,
-                        e,
-                    )
-                    raise
+                    if n.fallback is not None:
+                        logger.warning(
+                            "[DAG Scheduler] Node '%s' failed (%s); using fallback",
+                            n.id,
+                            e,
+                        )
+                        fallback = n.fallback() if callable(n.fallback) else n.fallback
+                        result = fallback
+                    else:
+                        logger.exception(
+                            "[DAG Scheduler] Node '%s' failed: %s",
+                            n.id,
+                            e,
+                        )
+                        raise
+
+                await self.cache.set(ck, result)
+                return n.id, result
 
             # Execute all nodes in this batch in parallel
             results = await asyncio.gather(
@@ -373,6 +414,12 @@ class Scheduler:
                     raise item
                 node_id, result = item
                 context[node_id] = result
+
+        # Rebuild key_by_node now that all nodes have run, so subsequent
+        # runs (same scheduler) benefit from correct upstream key folding.
+        for node in plan.nodes:
+            input_keys = {dep: key_by_node[dep] for dep in node.inputs if dep in key_by_node}
+            key_by_node[node.id] = node.cache_key(input_keys)
 
         return context
 
