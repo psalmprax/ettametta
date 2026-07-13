@@ -58,8 +58,8 @@ class TestOrchestratorInit:
         from src.services.nexus_engine.orchestrator import NexusOrchestrator
 
         orchestrator = NexusOrchestrator()
-        assert orchestrator.remotion_breaker is not None
-        assert orchestrator.remotion_breaker.state == "CLOSED"
+        assert orchestrator.render_pipeline.remotion_breaker is not None
+        assert orchestrator.render_pipeline.remotion_breaker.state == "CLOSED"
 
     def test_checks_dependency_availability(self):
         """Dependencies dict is populated with availability flags."""
@@ -70,7 +70,7 @@ class TestOrchestratorInit:
 
 
 class TestRetryRemotionRender:
-    """Tests for _retry_remotion_render — retry logic with circuit breaker."""
+    """Tests for RenderPipeline.retry_remotion_render — retry logic with circuit breaker."""
 
     @pytest.mark.asyncio
     async def test_returns_path_on_success(self):
@@ -81,7 +81,7 @@ class TestRetryRemotionRender:
 
         with patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion:
             mock_remotion.render_video = AsyncMock(return_value="/tmp/output.mp4")
-            result = await orchestrator._retry_remotion_render(
+            result = await orchestrator.render_pipeline.retry_remotion_render(
                 composition_id="ViralClip", props={"key": "val"}, output_name="test.mp4"
             )
             assert result == "/tmp/output.mp4"
@@ -92,10 +92,10 @@ class TestRetryRemotionRender:
         from src.services.nexus_engine.orchestrator import NexusOrchestrator
 
         orchestrator = NexusOrchestrator()
-        orchestrator.remotion_breaker.state = "OPEN"
+        orchestrator.render_pipeline.remotion_breaker.state = "OPEN"
 
         with pytest.raises(RuntimeError, match="circuit breaker is OPEN"):
-            await orchestrator._retry_remotion_render(
+            await orchestrator.render_pipeline.retry_remotion_render(
                 composition_id="ViralClip", props={}, output_name="test.mp4"
             )
 
@@ -105,14 +105,14 @@ class TestRetryRemotionRender:
         from src.services.nexus_engine.orchestrator import NexusOrchestrator
 
         orchestrator = NexusOrchestrator()
-        orchestrator.remotion_breaker.reset()
-        initial_failures = orchestrator.remotion_breaker.failure_count
+        orchestrator.render_pipeline.remotion_breaker.reset()
+        initial_failures = orchestrator.render_pipeline.remotion_breaker.failure_count
 
         with patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion:
             mock_remotion.render_video = AsyncMock(return_value="/tmp/output.mp4")
-            result = await orchestrator._retry_remotion_render("ViralClip", {"k": "v"}, "test.mp4")
+            result = await orchestrator.render_pipeline.retry_remotion_render("ViralClip", {"k": "v"}, "test.mp4")
 
-            assert orchestrator.remotion_breaker.failure_count == initial_failures
+            assert orchestrator.render_pipeline.remotion_breaker.failure_count == initial_failures
             assert result == "/tmp/output.mp4"
 
     @pytest.mark.asyncio
@@ -124,8 +124,8 @@ class TestRetryRemotionRender:
 
         with patch("src.services.video_engine.remotion_service.base_remotion_service") as mock_remotion:
             mock_remotion.render_video = AsyncMock(side_effect=TimeoutError("Render timeout"))
-            with patch.object(orchestrator.remotion_breaker, 'record_failure'):
-                result = await orchestrator._retry_remotion_render("ViralClip", {"k": "v"}, "test.mp4")
+            with patch.object(orchestrator.render_pipeline.remotion_breaker, 'record_failure'):
+                result = await orchestrator.render_pipeline.retry_remotion_render("ViralClip", {"k": "v"}, "test.mp4")
 
         assert result is None
 
@@ -328,13 +328,14 @@ class TestAssembleVideoCognition:
             mock_lc.is_enabled.return_value = False
             mock_exists.return_value = True
 
-            with patch("src.services.nexus_engine.orchestrator.cv2.VideoCapture") as mock_cap:
-                mock_instance = MagicMock()
-                mock_instance.get.return_value = 0  # No frames
-                mock_cap.return_value = mock_instance
-
-                with pytest.raises(RuntimeError, match="No valid video clips"):
-                    await orchestrator.assemble_video(
+            # determine_vibe now runs before clip prep in cognition; stub it so
+            # the test reaches the "No valid video clips" raise deterministically.
+            # Mock the real clip-prep boundary: when no frames are readable the
+            # preparer yields no usable clips (the old cv2==0 path's intent).
+            with patch.object(orchestrator.vibe_analyzer, "determine_vibe", new=AsyncMock(return_value={})), \
+                 patch.object(orchestrator.asset_manager, "prepare_remotion_clips", new=AsyncMock(return_value=[])):
+                    with pytest.raises(RuntimeError, match="No valid video clips"):
+                        await orchestrator.assemble_video(
                         job_id="job-005",
                         niche="tech",
                         script_segments=[{"text": "S1", "type": "hook"}],
@@ -768,7 +769,7 @@ class TestSourceFillClips:
                 "src.services.nexus_engine.orchestrator.os.path.getsize",
                 return_value=2048,
             ):
-                paths = await orch._source_fill_clips(
+                paths = await orch.asset_manager.source_fill_clips(
                     "Motivation", count=3
                 )
 
@@ -806,7 +807,7 @@ class TestSourceFillClips:
                 "src.services.nexus_engine.orchestrator.os.path.getsize",
                 return_value=2048,
             ):
-                paths = await orch._source_fill_clips(
+                paths = await orch.asset_manager.source_fill_clips(
                     "ObscureNiche", count=2
                 )
 
@@ -848,7 +849,7 @@ class TestSourceFillClips:
                 "src.services.nexus_engine.orchestrator.os.path.getsize",
                 side_effect=[2048, 0, 100],  # small.mp4 is 100 bytes
             ):
-                paths = await orch._source_fill_clips(
+                paths = await orch.asset_manager.source_fill_clips(
                     "Tech", count=3
                 )
 
@@ -871,7 +872,7 @@ class TestSourceFillClips:
             mock_stock.fetch_b_roll = AsyncMock(return_value=[])
             mock_stock.download_stock_video = AsyncMock()
 
-            paths = await orch._source_fill_clips(
+            paths = await orch.asset_manager.source_fill_clips(
                 "NonexistentNiche", count=4
             )
 
@@ -891,7 +892,7 @@ class TestSourceFillClips:
         ) as mock_stock:
             mock_stock.fetch_b_roll = AsyncMock(return_value=[])
 
-            await orch._source_fill_clips("Motivation")
+            await orch.asset_manager.source_fill_clips("Motivation")
 
             # Default count=4 should be used
             mock_stock.fetch_b_roll.assert_any_call(
@@ -916,7 +917,7 @@ class TestGapCheckAndEvenStretching:
     def _build_assemble_mocks(
         self, mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
         mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
-        clip_frame_counts,
+        clip_frame_counts=None,
     ):
         """Shared mock setup for assemble_video integration tests.
 
@@ -946,7 +947,7 @@ class TestGapCheckAndEvenStretching:
         mock_getsize.return_value = 2048
 
         mock_instance = MagicMock()
-        frames_iter = iter(clip_frame_counts)
+        frames_iter = iter(clip_frame_counts or [])
         mock_instance.get.side_effect = lambda prop: {
             7: next(frames_iter, 0),
             5: 30.0,
@@ -985,21 +986,28 @@ class TestGapCheckAndEvenStretching:
             "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
         ) as mock_cap:
 
-            # Clip has only 30 frames, but total_frames is 300 (10%)
             self._build_assemble_mocks(
                 mock_sf, mock_bp, mock_lc, mock_llm, mock_remotion,
                 mock_sd, mock_ts, mock_exists, mock_getsize, mock_cap,
-                clip_frame_counts=[30],
             )
 
+            # Clip reports only 30 frames, but total_frames is 300 (10%).
+            # Mock the real clip-prep boundary (the old cv2==30 path's intent):
+            # the prepared remotion clip carries the small frame count that
+            # drives the <70% gap check below.
             with patch.object(
                 orch, "_update_node_status",
                 AsyncMock(),
             ), patch.object(
-                orch, "_determine_total_frames",
+                orch.asset_manager, "prepare_remotion_clips",
+                new=AsyncMock(return_value=[
+                    {"url": "/tmp/clip.mp4", "duration_in_frames": 30}
+                ]),
+            ), patch.object(
+                orch.asset_manager, "determine_total_frames",
                 AsyncMock(return_value=300),
             ), patch.object(
-                orch, "_source_fill_clips",
+                orch.asset_manager, "source_fill_clips",
                 AsyncMock(return_value=[]),
             ) as mock_fill:
                 await orch.assemble_video(
@@ -1058,10 +1066,10 @@ class TestGapCheckAndEvenStretching:
                 orch, "_update_node_status",
                 AsyncMock(),
             ), patch.object(
-                orch, "_determine_total_frames",
+                orch.asset_manager, "determine_total_frames",
                 AsyncMock(return_value=300),
             ), patch.object(
-                orch, "_source_fill_clips",
+                orch.asset_manager, "source_fill_clips",
                 AsyncMock(return_value=[]),
             ) as mock_fill:
                 await orch.assemble_video(
@@ -1125,13 +1133,13 @@ class TestGapCheckAndEvenStretching:
                 orch, "_update_node_status",
                 AsyncMock(),
             ), patch.object(
-                orch, "_determine_total_frames",
+                orch.asset_manager, "determine_total_frames",
                 AsyncMock(return_value=400),
             ), patch.object(
-                orch, "_source_fill_clips",
+                orch.asset_manager, "source_fill_clips",
                 AsyncMock(return_value=[]),
             ), patch.object(
-                orch, "_retry_remotion_render",
+                orch.render_pipeline, "retry_remotion_render",
                 AsyncMock(side_effect=_capture_props),
             ):
                 await orch.assemble_video(
@@ -1184,13 +1192,10 @@ class TestGapCheckAndEvenStretching:
             ), patch(
                 "src.services.nexus_engine.orchestrator.os.path.exists",
                 return_value=True,
-            ), patch(
-                "src.services.nexus_engine.orchestrator.cv2.VideoCapture"
-            ) as mock_cap:
-                mock_instance = MagicMock()
-                mock_instance.get.return_value = 0  # no frames
-                mock_cap.return_value = mock_instance
-
+            ), patch.object(
+                orch.asset_manager, "prepare_remotion_clips",
+                new=AsyncMock(return_value=[]),
+            ):
                 with pytest.raises(
                     RuntimeError, match="No valid video clips"
                 ):
@@ -1248,10 +1253,10 @@ class TestGapCheckAndEvenStretching:
                 orch, "_update_node_status",
                 AsyncMock(),
             ), patch.object(
-                orch, "_determine_total_frames",
+                orch.asset_manager, "determine_total_frames",
                 AsyncMock(return_value=300),
             ), patch.object(
-                orch, "_retry_remotion_render",
+                orch.render_pipeline, "retry_remotion_render",
                 AsyncMock(side_effect=_capture_props),
             ):
                 await orch.assemble_video(
