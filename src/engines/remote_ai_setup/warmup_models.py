@@ -22,9 +22,9 @@ MODELS = {
 def warmup():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8 else torch.float16
-    
+
     print(f"🔥 [Warmup] Starting Model Pre-flight (Device: {device}, Dtype: {dtype})")
-    
+
     # 1. Video Models
     print("🎬 [Warmup] Pulling Video Synthesis Engines...")
     try:

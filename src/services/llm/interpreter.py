@@ -218,7 +218,7 @@ class InterpreterService:
     }};
     // Disable process access
     global.process = {{ exit: () => {{}}, env: {{}} }};
-    
+
     {code}
 }})();
 """
@@ -289,7 +289,7 @@ class InterpreterService:
         Returns list of security violations found.
         """
         issues = []
-        
+
         # 1. Normalize code for bypass detection (remove whitespace, common separators)
         normalized = "".join(code.split()).replace('"', "").replace("'", "").replace("+", "").lower()
 
@@ -343,7 +343,7 @@ class InterpreterService:
             # Check raw code
             if pattern in code:
                 issues.append(f"forbidden pattern '{pattern}'")
-            
+
             # Check normalized code for obfuscated concatenation (e.g. "o" + "s." + "s" + "ystem")
             # We strip separators for the check
             clean_pattern = pattern.replace(".", "").replace("(", "").replace("__", "").lower()

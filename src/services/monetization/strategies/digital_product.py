@@ -18,7 +18,7 @@ class DigitalProductStrategy(BaseMonetizationStrategy):
                 stmt = select(DigitalProductDB).where(DigitalProductDB.niche == niche)
                 result = await db.execute(stmt)
                 products = result.scalars().all()
-                
+
                 return [{
                     "id": str(product.id),
                     "name": product.name,

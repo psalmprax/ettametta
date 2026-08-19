@@ -37,7 +37,7 @@ class DriftDetector:
         Persists to Postgres for long-term lineage.
         """
         delta = abs(predicted_retention - actual_retention)
-        
+
         # 1. Update in-memory sliding window
         self.drift_history.append(delta)
         if len(self.drift_history) > 50:

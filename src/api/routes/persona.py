@@ -43,7 +43,7 @@ async def create_persona(
     """
     from src.api.utils.storage import storage_service
     import tempfile
-    
+
     persona = PersonaDB(name=name, user_id=current_user.id, reference_image_uri=reference_image_uri)
 
     # Handle image upload to S3 storage
@@ -97,8 +97,8 @@ async def generate_persona_video(
 
     try:
         url = await base_persona_service.animate_persona(
-            persona.reference_image_uri, 
-            request.topic, 
+            persona.reference_image_uri,
+            request.topic,
             request.script,
             voice_id=persona.voice_clone_id
         )
@@ -155,8 +155,8 @@ async def delete_persona(
     )
     result = await db.execute(stmt)
     await db.commit()
-    
+
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Persona not found or unauthorized")
-        
+
     return success_response(data={"status": "purged", "id": persona_id})

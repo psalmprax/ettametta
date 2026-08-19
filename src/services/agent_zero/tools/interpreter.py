@@ -19,10 +19,10 @@ class InterpreterTool:
         try:
             if not self.service.is_enabled():
                 return {"error": "Interpreter service is disabled. Set ENABLE_INTERPRETER=true."}
-            
+
             result = await self.service.execute_code(code, language)
             return result
-                
+
         except Exception as e:
             logger.exception(f"InterpreterTool Error: {e}")
             return {"error": str(e)}

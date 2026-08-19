@@ -25,12 +25,12 @@ class PublishTool:
             }
             # Note: Assuming POST /publish/video or similar based on publish.py
             response = requests.post(f"{self.api_url}/video", json=payload, timeout=60)
-            
+
             if response.status_code == 200:
                 return response.json()
             else:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
-                
+
         except Exception as e:
             logger.exception(f"PublishTool Error: {e}")
             return {"error": str(e)}

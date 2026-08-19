@@ -338,7 +338,7 @@ class CategoryDetector:
         category_list = list(self.categories.keys())
 
         prompt = f"""Detect the content category for this video.
-        
+
 Video: {text}
 
 Categories: {category_list}

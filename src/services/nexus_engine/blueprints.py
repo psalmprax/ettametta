@@ -32,7 +32,7 @@ class NodeHandlerRegistry:
         # Check for blueprint-specific override first
         if blueprint_id in self._blueprint_overrides and node_type in self._blueprint_overrides[blueprint_id]:
             return self._blueprint_overrides[blueprint_id][node_type]()
-        
+
         # Fallback to generic handler
         handler_class = self._handlers.get(node_type)
         if not handler_class:
@@ -291,7 +291,7 @@ class DefaultSynthesisHandler:
         service = GenerativeService()
         engine = inputs.get("engine", "ltx-video")
         prompt = inputs.get("content") or inputs.get("visual_prompt")
-        
+
         video_path = await service.synthesize_video(
             prompt=prompt or "Cinematic cityscape",
             engine=engine,
@@ -303,21 +303,21 @@ class TopicFusionSynthesisHandler:
     async def execute(self, inputs: dict, previous_results: dict, job_id: str) -> dict:
         from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
         from src.services.video_engine.synthesis_service import base_generative_service
-        
+
         topic = inputs.get("topic") or inputs.get("niche")
         cognition_res = previous_results.get("cognition", {})
         scenes = cognition_res.get("scenes", [])
-        
+
         # 1. Try Scene-Based Fusion (Discovery + Pexels)
         fusion_result = await base_scene_orchestrator_service.produce_scene_based_video(
             scenes=scenes,
             niche=inputs.get("niche", topic)
         )
-        
+
         # 2. AI Fallback: If fusion failed because no assets were found, generate using AI
         if not fusion_result.get("success"):
             logger.warning("🔄 [Blueprint] Discovery failed. Triggering AI Video Generation fallback...")
-            
+
             # Use the first scene's prompt for a short AI video
             fallback_prompt = scenes[0].get("visual_prompt", topic) if scenes else topic
             video_path = await base_generative_service.synthesize_video(
@@ -325,7 +325,7 @@ class TopicFusionSynthesisHandler:
                 engine="hunyuan", # Default reliable internal engine
                 aspect_ratio="9:16"
             )
-            
+
             if video_path:
                 return {
                     "output_generated": True,
@@ -686,21 +686,21 @@ async def execute_blueprint(
                 )
                 node_result = {"_timed_out": True, "node_type": node_type, "step": i + 1}
             results[node_type] = node_result
-            
+
             # Special case: map 'scenes' from cognition to result top level if needed by synthesis
             if node_type == "cognition" and "scenes" in node_result:
                 results["scenes"] = node_result["scenes"]
-                
+
                 # SAVE SCENES TO DATABASE FOR PREVIEW
                 from src.api.utils.database import async_session_factory
                 from src.api.utils.models import NexusJobDB
                 from sqlalchemy import select
-                
+
                 async with async_session_factory() as db:
                     stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
                     result = await db.execute(stmt)
                     job = result.scalar_one_or_none()
-                    
+
                     if job:
                         metadata = dict(job.job_metadata or {})
                         metadata["preview_scenes"] = node_result["scenes"]

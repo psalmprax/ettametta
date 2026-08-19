@@ -1,0 +1,27 @@
+{
+  "name": "50 AI Prompts for Business Owners",
+  "slug": "50-ai-prompts-business",
+  "price": 9.99,
+  "currency": "USD",
+  "description": "50 battle-tested AI prompts to automate your business marketing, sales, and operations. Save 10+ hours per week.",
+  "tags": [
+    "ai prompts",
+    "business",
+    "marketing",
+    "chatgpt",
+    "productivity"
+  ],
+  "category": "Digital Product",
+  "file": "50-ai-prompts-for-business.md",
+  "platforms": {
+    "gumroad": {
+      "status": "ready"
+    },
+    "lemonsqueezy": {
+      "status": "ready"
+    },
+    "payhip": {
+      "status": "ready"
+    }
+  }
+}

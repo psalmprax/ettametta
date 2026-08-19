@@ -64,7 +64,7 @@ class AuditSkill(OpenClawBaseSkill):
         """
         # Ensure we have a valid user_id (could be passed in kwargs as well)
         uid = kwargs.get("user_id", user_id)
-        
+
         if action == "compare" and competitor_url:
             return self.compare_with_competitor(uid, competitor_url, platform)
         return self.audit_account(uid, platform)

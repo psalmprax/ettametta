@@ -6,6 +6,7 @@ import { IridescentGlass } from '../IridescentGlass';
 import { AncientPortal } from '../AncientPortal';
 import { AncientAstrolabe } from '../AncientAstrolabe';
 import { LiquidMetalSphere } from '../LiquidMetalSphere';
+import { ParticleRevealIntro } from '../ParticleRevealIntro';
 
 interface IntroSceneProps {
     type: string;
@@ -124,6 +125,37 @@ export const IntroScene: React.FC<IntroSceneProps> = ({
                 >
                     <LiquidMetalSphere primaryColor={primaryColor || '#00D4FF'} />
                 </ThreeCanvasIntro>
+            );
+
+        case 'particle_reveal':
+            return (
+                <ParticleRevealIntro
+                    durationInFrames={120}
+                    animationType="center-out"
+                    radius={500}
+                    background="#000000"
+                    primaryColor={primaryColor}
+                >
+                    <div style={{
+                        position: 'absolute', bottom: '15%', width: '100%', textAlign: 'center', zIndex: 10,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center'
+                    }}>
+                        <h1 style={{
+                            color: 'white', fontSize: '60px', fontWeight: 300, letterSpacing: '15px',
+                            margin: 0, textTransform: 'uppercase',
+                            textShadow: `0 0 40px ${primaryColor || '#00F0FF'}88`
+                        }}>
+                            {displayTitle}
+                        </h1>
+                        <p style={{
+                            color: primaryColor || '#00F0FF', fontSize: '24px', fontWeight: 400,
+                            letterSpacing: '8px', margin: '15px 0 0 0', textTransform: 'uppercase',
+                            textShadow: primaryColor ? `0 0 20px ${primaryColor}44` : undefined
+                        }}>
+                            {displaySubtitle}
+                        </p>
+                    </div>
+                </ParticleRevealIntro>
             );
 
         case 'brand_reveal':

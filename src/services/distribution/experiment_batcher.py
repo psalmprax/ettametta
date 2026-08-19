@@ -50,13 +50,13 @@ class ExperimentBatcher:
             stmt = select(StrategyRegistryDB).where(StrategyRegistryDB.name == strategy_name)
             result = await db.execute(stmt)
             strat = result.scalar_one_or_none()
-            
+
             if strat and strat.status == "KILLED":
                 logger.error(f"❌ [Batcher] Cannot create cohort for KILLED strategy: {strategy_name}")
                 return {}
 
         batch_id = f"batch_{int(datetime.now().timestamp())}_{strategy_name[:5]}"
-        
+
         batch_data = {
             "batch_id": batch_id,
             "strategy": strategy_name,
@@ -78,14 +78,14 @@ class ExperimentBatcher:
                 )
                 db.add(new_cohort)
                 await db.commit()
-                
+
                 # 2. Update local cache
                 self.active_batches.append(batch_data)
-                
+
                 # 3. Global Hot State: Store latest batch ID in Redis for distribution
                 redis = await get_redis()
                 await redis.set(f"active_batch:{strategy_name}", batch_id, ex=86400)
-                
+
                 logger.info(f"🧪 [Batcher] Persistent Cohort Created: {batch_id}")
                 return batch_data
             except Exception as e:
@@ -108,18 +108,18 @@ class ExperimentBatcher:
         for batch in self.active_batches:
             if batch["status"] == "ROLLING_OUT" and len(batch["participants"]) < batch["size"]:
                 batch["participants"].append(video_id)
-                
+
                 # Update Database
                 async with AsyncSessionLocal() as db:
                     try:
                         stmt = update(ExperimentCohortDB).where(
                             ExperimentCohortDB.id == batch["batch_id"]
                         ).values(participants=batch["participants"])
-                        
+
                         if len(batch["participants"]) >= batch["size"]:
                             batch["status"] = "FULL_WAITING_DATA"
                             stmt = stmt.values(status="FULL_WAITING_DATA")
-                            
+
                         await db.execute(stmt)
                         await db.commit()
                         logger.info(f"🧪 [Batcher] Assigned {video_id} to cohort {batch['batch_id']}. Fill: {len(batch['participants'])}/{batch['size']}")

@@ -176,13 +176,13 @@ class SemanticSearchNode(BaseNode):
                 niche=niche if niche != query else None,
                 count=count,
             )
-            
+
             _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 50, niche=niche)
-            
+
             # Store scores in context for downstream introspection
             scores = {os.path.basename(r["path"]): r["score"] for r in results}
             ctx[f"{self.id}_scores"] = scores
-            
+
             return results
         finally:
             base_semantic_stock_matcher.max_candidates = original_max

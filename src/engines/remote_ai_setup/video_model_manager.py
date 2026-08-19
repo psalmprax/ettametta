@@ -42,7 +42,7 @@ VIDEO_MODELS = {
 
 class VideoModelManager:
     """Manages all AI resources with Smart VRAM Orchestration (TTL + Mutually Exclusive)"""
-    
+
     def __init__(self, hf_home: str = None):
         self.hf_home = hf_home or os.environ.get('HF_HOME', '/workspace/.hf_home')
         self.current_model_key = None
@@ -93,10 +93,10 @@ class VideoModelManager:
         """Internal loader for specific architectures"""
         info = VIDEO_MODELS.get(model_key)
         if not info: return None
-        
+
         repo_id = info["repo_id"]
         print(f"📥 Loading Pipeline: {info['name']} ({repo_id})...", flush=True)
-        
+
         try:
             if model_key == "ltx_2_19b":
                 from diffusers import LTXPipeline
@@ -118,12 +118,12 @@ class VideoModelManager:
                 # Fallback to a placeholder link if not yet in main diffusers
                 print("⚠️ Wan 2.1 support in diffusers is experimental. Attempting load...", flush=True)
                 self.pipe = DiffusionPipeline.from_pretrained(repo_id, torch_dtype=self.dtype).to(self.device_obj)
-            
+
             # Common optimizations
             if self.pipe and self.device == "cuda":
                 self.pipe.enable_model_cpu_offload() # Use sequential offloading for massive models
                 # self.pipe.enable_sequential_cpu_offload() # More aggressive if needed
-            
+
             self.current_model_key = model_key
             return self.pipe
         except Exception as e:
@@ -134,40 +134,40 @@ class VideoModelManager:
     def generate_video(self, model_key, prompt, image_base64=None, **kwargs):
         """Real inference entry point"""
         self.last_active_time = time.time()
-        
+
         with self.lock:
             self.is_busy = True
             try:
                 if self.current_model_key != model_key:
                     self.unload_all()
                     self.pipe = self._load_pipeline(model_key)
-                
+
                 if not self.pipe:
                     return {"success": False, "error": f"Failed to load model {model_key}"}
 
                 print(f"🎬 [Inference] Running {model_key}...", flush=True)
-                
+
                 # Standard parameters with overrides
                 gen_kwargs = {
                     "prompt": prompt,
                     "num_inference_steps": kwargs.get("num_inference_steps", 30),
                     "num_frames": kwargs.get("num_frames", 49),
                 }
-                
+
                 # Model-specific overrides
                 if model_key == "ltx_2_19b":
                     gen_kwargs["height"] = kwargs.get("height", 480)
                     gen_kwargs["width"] = kwargs.get("width", 704)
-                
+
                 output = self.pipe(**gen_kwargs).frames[0]
-                
+
                 job_id = f"gen_{int(time.time())}"
                 output_path = f"/workspace/ai_content/{job_id}.mp4"
-                
+
                 # Use hardware-accelerated export
                 from main import hardware_export_to_video
                 hardware_export_to_video(output, output_path, fps=24)
-                
+
                 return {"success": True, "output_path": output_path, "model_used": model_key}
             except Exception as e:
                 print(f"❌ Inference Error: {e}")

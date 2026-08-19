@@ -29,7 +29,7 @@ class HardwareDetector:
         """Determines the best available hardware device."""
         if not TORCH_AVAILABLE:
             return "cpu"
-            
+
         if torch.cuda.is_available():
             return "cuda"
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
@@ -54,7 +54,7 @@ class HardwareDetector:
         """Identifies the specific vendor backend."""
         if not TORCH_AVAILABLE:
             return "Generic/CPU"
-            
+
         if self.device == "cuda":
             if "ROCM" in torch.version.cuda if hasattr(torch.version, "cuda") else "":
                 return "AMD/ROCm"
@@ -71,7 +71,7 @@ class HardwareDetector:
         """Detects available GPU VRAM in GB."""
         if not TORCH_AVAILABLE:
             return None
-            
+
         if self.device == "cuda":
             try:
                 # Get total VRAM and convert to GB

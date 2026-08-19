@@ -34,15 +34,15 @@ class CircuitBreakerConfig:
 class CircuitBreaker:
     """
     Circuit breaker for external API calls.
-    
+
     Usage:
         breaker = CircuitBreaker("youtube", failure_threshold=5, timeout=60)
-        
+
         # Use as decorator
         @breaker
         async def call_youtube_api():
             ...
-        
+
         # Or use directly
         if breaker.can_execute():
             try:
@@ -53,17 +53,17 @@ class CircuitBreaker:
     """
     name: str
     config: CircuitBreakerConfig = field(default_factory=CircuitBreakerConfig)
-    
+
     _state: CircuitState = field(default=CircuitState.CLOSED, init=False)
     _failure_count: int = field(default=0, init=False)
     _success_count: int = field(default=0, init=False)
     _last_failure_time: float | None = field(default=None, init=False)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False)
-    
+
     @property
     def state(self) -> CircuitState:
         return self._state
-    
+
     @property
     def is_available(self) -> bool:
         """Check if requests can be made"""
@@ -76,11 +76,11 @@ class CircuitBreaker:
             return False
         else:  # HALF_OPEN
             return True
-    
+
     def can_execute(self) -> bool:
         """Check if execution is allowed"""
         return self.is_available
-    
+
     def record_success(self) -> None:
         """Record a successful call"""
         self._failure_count = 0
@@ -90,16 +90,16 @@ class CircuitBreaker:
                 self._state = CircuitState.CLOSED
                 self._success_count = 0
                 logger.info(f"[CircuitBreaker] {self.name}: Circuit CLOSED (recovered)")
-    
+
     def record_failure(self, exception: Exception) -> None:
         """Record a failed call"""
         # Check if exception should be excluded
         if isinstance(exception, self.config.excluded_exceptions):
             return
-            
+
         self._failure_count += 1
         self._last_failure_time = time.time()
-        
+
         if self._state == CircuitState.HALF_OPEN:
             self._state = CircuitState.OPEN
             self._success_count = 0
@@ -107,14 +107,14 @@ class CircuitBreaker:
         elif self._failure_count >= self.config.failure_threshold:
             self._state = CircuitState.OPEN
             logger.warning(f"[CircuitBreaker] {self.name}: Circuit OPEN (failure threshold: {self._failure_count})")
-    
+
     async def execute(self, func: Callable, *args, **kwargs) -> Any:
         """Execute a function with circuit breaker protection"""
         if not self.can_execute():
             raise CircuitBreakerOpenError(
                 f"Circuit breaker '{self.name}' is OPEN. Service unavailable."
             )
-        
+
         try:
             result = await func(*args, **kwargs) if asyncio.iscoroutinefunction(func) else func(*args, **kwargs)
             self.record_success()
@@ -122,7 +122,7 @@ class CircuitBreaker:
         except Exception as e:
             self.record_failure(e)
             raise
-    
+
     def reset(self) -> None:
         """Manually reset the circuit breaker"""
         self._state = CircuitState.CLOSED
@@ -151,7 +151,7 @@ def get_circuit_breaker(name: str, **config) -> CircuitBreaker:
 def circuit_breaker(name: str, **config):
     """Decorator to add circuit breaker to async functions"""
     breaker = get_circuit_breaker(name, **config)
-    
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):

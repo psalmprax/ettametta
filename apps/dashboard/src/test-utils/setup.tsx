@@ -37,7 +37,6 @@ vi.mock('sonner', () => ({
 // next/link: render as plain <a> in tests.
 vi.mock('next/link', () => ({
     default: ({ children, href, ...rest }: any) => (
-        // eslint-disable-next-line jsx-a11y/anchor-has-content
         <a href={typeof href === 'string' ? href : '#'} {...rest}>
             {children}
         </a>

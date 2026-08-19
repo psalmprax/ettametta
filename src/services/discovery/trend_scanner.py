@@ -2,7 +2,7 @@
 The Prophet: Proactive Trend Detection (10/10)
 ==============================================
 
-Scans for Social Velocity to detect emerging trends before 
+Scans for Social Velocity to detect emerging trends before
 they saturate the mainstream video platforms.
 """
 
@@ -36,14 +36,14 @@ class TrendScanner:
         """
         await asyncio.sleep(0.1)  # Simulate network/IO delay for scanning
         logger.info("🔮 [Prophet] Scanning for emergent velocity spikes...")
-        
+
         opportunities = []
-        
+
         # SIMULATION: Detecting a breakout niche
         breakout_niche = "Autonomous Neural Agencies"
         velocity = 0.85 # 85% growth in 4 hours
         saturation = 0.12 # Only index of 0.12 on TikTok/Reels
-        
+
         if velocity > 0.5 and saturation < 0.3:
             logger.info(f"🔥 [Prophet] BREAKOUT DETECTED: {breakout_niche} (Vel: {velocity:.2f}, Sat: {saturation:.2f})")
             opportunities.append({
@@ -53,7 +53,7 @@ class TrendScanner:
                 "parent_niche": "AI",
                 "reason": "High interest velocity on X with zero video saturation."
             })
-            
+
         return opportunities
 
 # Singleton Instance

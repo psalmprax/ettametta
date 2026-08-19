@@ -2,7 +2,7 @@
 Rhythm Analysis Engine for Elite Cinematic Fusion
 ==================================================
 
-Uses librosa to extract BPM and beat markers from background music 
+Uses librosa to extract BPM and beat markers from background music
 or narration to allow rhythmic synchronization of visual cuts.
 """
 
@@ -56,12 +56,12 @@ class RhythmEngine:
             # Find peaks in the onset envelope
             onset_frames = librosa.util.peak_pick(onset_env, pre_max=7, post_max=7, pre_avg=7, post_avg=7, delta=0.5, wait=7)
             onset_times = librosa.frames_to_time(onset_frames, sr=sr).tolist()
-            
+
             # Ensure BPM is a scalar
             bpm = float(tempo[0]) if isinstance(tempo, (list, np.ndarray)) else float(tempo)
 
             logger.info(f"[Rhythm] Analyzed {audio_path}: BPM={bpm:.2f}, Beats={len(beat_times)}")
-            
+
             return {
                 "bpm": bpm,
                 "beats": beat_times,
@@ -84,10 +84,10 @@ class RhythmEngine:
         markers = np.asarray(beat_markers, dtype=float)
         diffs = np.abs(markers - timestamp)
         min_idx = int(np.argmin(diffs))
-        
+
         if diffs[min_idx] <= tolerance:
             return float(beat_markers[min_idx])
-        
+
         return timestamp
 
 # Singleton instance

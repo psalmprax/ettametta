@@ -2,7 +2,7 @@
 FFmpeg Video Transformation Utilities
 ====================================
 
-Professional-grade video processing using FFmpeg directly for maximum 
+Professional-grade video processing using FFmpeg directly for maximum
 performance and flexibility. This replaces MoviePy for core transformations.
 """
 
@@ -22,7 +22,7 @@ class FFmpegTransformer:
         self.threads = threads or base_governor_service.get_ffmpeg_threads()
         self.preset = preset or ("ultrafast" if base_governor_service.get_degradation_mode() != "STANDARD" else "superfast")
         self._hw_accel = self._detect_hardware_acceleration()
-        
+
         logger_name = "FFmpegTransformer"
         logging.getLogger(logger_name).info(f"🎞️ [FFmpeg] Initialized: {self.threads} threads (Mode: {base_governor_service.get_degradation_mode()})")
 
@@ -31,7 +31,7 @@ class FFmpegTransformer:
         if os.getenv("FORCE_CPU") == "true":
             logging.info("🛠️ [HW-ACCEL] FORCE_CPU detected. Overriding to libx264.")
             return "cpu"
-            
+
         try:
             # Check for NVIDIA NVENC
             res = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True)
@@ -76,13 +76,13 @@ class FFmpegTransformer:
         filters = [
             f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase,crop={target_w}:{target_h}"
         ]
-        
+
         if mirror:
             filters.append("hflip")
-            
+
         if contrast != 1.0:
             filters.append(f"eq=contrast={contrast}")
-            
+
         if brightness != 0.0:
             filters.append(f"eq=brightness={brightness}")
 
@@ -91,10 +91,10 @@ class FFmpegTransformer:
             filters.append(f"lut3d='{lut_path}'")
         elif lut_path:
             filters.append("curves=preset=vintage")
-            
+
         # Check for audio presence to prevent mapping errors
         has_audio = self._has_audio(input_path)
-        
+
         if has_audio:
             audio_filter = "[0:a][1:a]amix=inputs=2:duration=first[a]"
         else:
@@ -123,14 +123,14 @@ class FFmpegTransformer:
             "-c:a", "aac", "-b:a", "192k", "-ac", "2",
             output_path
         ])
-        
+
         return self._run_cmd(cmd)
 
     def generate_thumbnails(self, input_path: str, output_dir: str, count: int = 5) -> list[str]:
         """Extracts high-quality thumbnails for visual analysis"""
         os.makedirs(output_dir, exist_ok=True)
         thumbnails = []
-        
+
         for i in range(count):
             thumb_path = f"{output_dir}/thumb_{i}.jpg"
             # Extract frame at safe intervals (seconds)
@@ -142,7 +142,7 @@ class FFmpegTransformer:
             ]
             if self._run_cmd(cmd):
                 thumbnails.append(thumb_path)
-        
+
         return thumbnails
 
     def concatenate_videos(self, video_paths: list[str], output_path: str) -> bool:
@@ -171,14 +171,14 @@ class FFmpegTransformer:
         # 10/10 Resilience: Handle cases where the video has no audio stream
         cmd = [
             "ffmpeg", "-y", "-i", video_path, "-i", music_path,
-            "-filter_complex", 
+            "-filter_complex",
             f"[0:a]volume=1.0[a1];[1:a]volume={music_volume}[a2];[a1][a2]amix=inputs=2:duration=first",
             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", output_path
         ]
-        
+
         # Check if video has audio stream using ffprobe
         has_audio = self._has_audio(video_path)
-        
+
         if not has_audio:
             # If no audio, just use the music as the only audio source
             cmd = [
@@ -187,7 +187,7 @@ class FFmpegTransformer:
                 "-map", "0:v", "-map", "[a]",
                 "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", output_path
             ]
-            
+
         return self._run_cmd(cmd)
 
     def _has_audio(self, path: str) -> bool:
@@ -309,7 +309,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         """Draws a professional text overlay using FFmpeg's drawtext filter."""
         # Escape text for FFmpeg
         safe_text = text.replace("'", "").replace(":", "\\:")
-        
+
         pos_filter = "x=(w-text_w)/2:y=(h-text_h)/2" # center
         if position == "bottom":
             pos_filter = "x=(w-text_w)/2:y=h-text_h-100"
@@ -322,7 +322,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         )
 
         encoder, preset, extra_params = self._get_encoder_params("ELITE")
-        
+
         cmd = [
             "ffmpeg", "-y", "-i", input_path,
             "-vf", drawtext,
@@ -349,12 +349,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def apply_fast_transform(self, input_path: str, output_path: str, width: int = 1080, height: int = 1920) -> bool:
         """
-        Rapid transform for fast-track production. 
+        Rapid transform for fast-track production.
         Ensures exact resolution and aspect ratio alignment for seamless fusion.
         """
         # Smart crop: Scale to fill, then crop center
         filter_str = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}"
-        
+
         cmd = [
             "ffmpeg", "-y", "-i", input_path,
             "-vf", filter_str,
@@ -385,7 +385,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def xfade_concatenate(self, video_paths: list[str], output_path: str, transition: str = "fade", trans_duration: float = 0.5) -> bool:
         """Concatenates videos using cinematic transitions (xfade) and audio crossfades."""
         if len(video_paths) < 2: return self.concatenate_videos(video_paths, output_path)
-        
+
         # Get durations
         durations = []
         for path in video_paths:
@@ -395,7 +395,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         filter_complex = ""
         current_offset = durations[0] - trans_duration
-        
+
         # Build video filtergraph
         import random
         v_inputs = "[0:v][1:v]"
@@ -417,7 +417,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         cmd = ["ffmpeg", "-y"]
         for path in video_paths:
             cmd += ["-i", path]
-            
+
         cmd += [
             "-filter_complex", filter_complex,
             "-map", f"[v{len(video_paths)-1}]",
@@ -426,24 +426,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-c:a", "aac", "-b:a", "192k",
             output_path
         ]
-        
+
         return self._run_cmd(cmd)
 
     async def apply_cinematic_filters(self, input_path: str, output_path: str, title: str = "", subtitle: str = ""):
         """Applies high-quality cinematic filters and titles via FFmpeg."""
-        # Use simple but effective filters: 
+        # Use simple but effective filters:
         # - vignette
         # - drawtext for top title
         # - drawtext for bottom subtitle
         # - hqdn3d (denoise for premium feel)
         # - unsharp (sharpening)
-        
+
         # Clean strings for ffmpeg
         title = title.replace("'", "").replace(":", "")
         subtitle = subtitle.replace("'", "").replace(":", "")
-        
+
         font_path = settings.FONT_PATH if os.path.exists(settings.FONT_PATH) else "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        
+
         # Check if drawtext is actually available in this FFmpeg build
         drawtext_available = False
         try:
@@ -464,7 +464,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         else:
             logging.warning("[FFmpegTransformer] drawtext filter missing. Skipping title overlays.")
             filter_complex = "vignette=angle=0.5, hqdn3d, unsharp"
-        
+
         cmd = [
             "ffmpeg", "-y", "-i", input_path,
             "-vf", filter_complex,
@@ -472,7 +472,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-c:a", "copy",
             output_path
         ]
-        
+
         logging.info(f"[FFmpegTransformer] Running: {' '.join(cmd)}")
         process = await asyncio.create_subprocess_exec(
             *cmd,

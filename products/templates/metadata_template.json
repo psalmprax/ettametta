@@ -1,0 +1,25 @@
+{
+  "name": "PRODUCT_NAME_HERE",
+  "slug": "product-slug-here",
+  "price": 9.99,
+  "currency": "USD",
+  "description": "Product description here",
+  "tags": [
+    "tag1",
+    "tag2",
+    "tag3"
+  ],
+  "category": "Digital Product",
+  "file": "product-file.md",
+  "platforms": {
+    "gumroad": {
+      "status": "ready"
+    },
+    "lemonsqueezy": {
+      "status": "ready"
+    },
+    "payhip": {
+      "status": "ready"
+    }
+  }
+}

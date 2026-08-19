@@ -344,7 +344,7 @@ class FreeVideoProviderService:
         status = "Healthy"
         if self.circuit_breaker.is_open():
             status = "Degraded"
-        
+
         return {
             "service": "Free Video Providers",
             "status": status,

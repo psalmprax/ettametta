@@ -197,7 +197,7 @@ class VideoProcessor:
         def iterate_frames():
             try:
                 # Try to get first few frames
-                for i, frame in enumerate(clip.iter_frames()):
+                for i, _frame in enumerate(clip.iter_frames()):
                     if i >= 5:  # Just check first 5 frames
                         break
                 result["success"] = True
@@ -499,13 +499,15 @@ class VideoProcessor:
         return output_path
 
     def apply_speed_ramping(
-        self, clip: "VideoFileClip", speed_range: list[float] = [0.95, 1.05]
+        self, clip: "VideoFileClip", speed_range: list[float] = None
     ) -> "VideoFileClip":
         """
         Randomly shifts speed based on AI strategy range to reset algorithm clocks.
         """
         import moviepy.video.fx as vfx
 
+        if speed_range is None:
+            speed_range = [0.95, 1.05]
         speed = random.uniform(speed_range[0], speed_range[1])
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
@@ -967,34 +969,34 @@ class VideoProcessor:
             logging.exception(
                 f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to high-quality FFmpeg transformation."
             )
-            
+
             # High-fidelity FFmpeg Fallback (Standard 4.1)
             try:
                 # 1. Generate Captions
                 caption = strategy.get("vibe", "Viral Moment") if strategy else "Viral Clip"
                 sub_caption = strategy.get("visual_mood", "Ettametta Studio") if strategy else "Cinematic"
-                
+
                 fallback_path = os.path.join(self.output_dir, f"fallback_{output_name}")
-                
+
                 # Apply cinematic overlays, vignettes, and dynamic captions via FFmpeg
-                # We use complex filter for: 
+                # We use complex filter for:
                 # - Vignette (cinematic feel)
                 # - Drawtext (Top/Bottom titles)
                 # - Color balance (vibrant)
                 from .ffmpeg_utils import base_ffmpeg_service
-                
+
                 await base_ffmpeg_service.apply_cinematic_filters(
                     input_path,
                     fallback_path,
                     title=caption,
                     subtitle=sub_caption
                 )
-                
+
                 if os.path.exists(fallback_path):
                     return fallback_path
             except Exception as fallback_err:
                 logging.exception(f"[VideoProcessor] FFmpeg fallback failed: {fallback_err}")
-                
+
             return input_path
 
 

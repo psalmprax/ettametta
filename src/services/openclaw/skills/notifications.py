@@ -25,7 +25,7 @@ class NotificationSkill(OpenClawBaseSkill):
             return self.get_notification_log()
         elif action == "setup":
             return self.setup_default_alerts()
-            
+
         return self.send_notification(channel, message, priority, kwargs.get("metadata"))
 
 

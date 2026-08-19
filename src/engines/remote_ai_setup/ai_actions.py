@@ -30,7 +30,7 @@ def action_generate_voice(text):
     tts = model_manager.load_utility("tts")
     job_id = f"aud_{uuid.uuid4().hex[:6]}"
     path = os.path.join(CONTENT_DIR, f"{job_id}.wav")
-    
+
     # Default stable embedding for SpeechT5
     speaker_emb = torch.randn(1, 512).to(hardware_manager.get_device_obj())
     with torch.no_grad():

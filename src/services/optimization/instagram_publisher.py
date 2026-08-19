@@ -34,7 +34,7 @@ class InstagramPublisher(SocialPublisher):
         client: httpx.AsyncClient,
     ) -> str | None:
         """Resolve the Instagram Business Account ID from the Facebook user's connected Pages.
-        
+
         The Instagram Graph API requires the IG User ID (Instagram Business Account ID)
         in the URL path for media container creation, not 'me'. This resolves it by:
         1. Getting the user's Facebook Pages: GET /me/accounts

@@ -1,0 +1,10 @@
+Use case: product-mockup
+Asset type: Gumroad product cover image
+Primary request: A professional digital product mockup showing a clean, modern ebook or guide cover titled "50 AI Prompts for Business Owners" with a sleek gradient background (deep blue to purple), floating chat bubbles or AI icons, and text showing "Save 10+ Hours/Week". Include subtle glowing effects and a premium feel.
+Style/medium: Clean digital product mockup, modern SaaS aesthetic
+Composition/framing: Centered product with floating elements around it
+Lighting/mood: Professional, tech-forward, premium feel
+Color palette: Deep blue (#1a1a2e) to purple (#16213e) gradient, white text, accent glow
+Text (verbatim): "50 AI Prompts for Business Owners" and "Save 10+ Hours/Week"
+Constraints: No watermarks, no logos, premium feel, professional
+Avoid: Cheap look, too many colors, cluttered design

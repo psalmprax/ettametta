@@ -8,11 +8,11 @@ async def test_interpreter_isolation():
     # Ensure service is enabled for testing
     os.environ["ENABLE_INTERPRETER"] = "true"
     interpreter_service.enabled = True
-    
+
     # Try to import os and run system command
     code = "import os; os.system('echo hacked')"
     result = await interpreter_service.execute_code(code)
-    
+
     # It should fail because 'os' is not in safe_globals of the sandbox_runner
     # or because our keyword safeguard blocks it
     assert result["success"] is False
@@ -23,7 +23,7 @@ async def test_native_effect_delegation():
     """Verify that generate_video_effect returns directions instead of code."""
     params = {"zoom_factor": 1.2}
     result = await interpreter_service.generate_video_effect("zoom", params)
-    
+
     assert result["success"] is True
     assert "instruction" in result
     assert result["instruction"]["method"] == "apply_originality_transformation"

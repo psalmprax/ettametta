@@ -61,10 +61,10 @@ async def update_internal_job(
     stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
-    
+
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-        
+
     if body.status:
         if isinstance(body.status, str):
             try:
@@ -90,17 +90,17 @@ async def update_internal_job(
         job.output_path = body.output_path
     if body.error_message:
         job.error_message = body.error_message
-        
+
     await db.commit()
-    
+
     # Trigger WebSocket notification if needed
     try:
         from src.api.routes.ws import notify_job_update_sync
-        
+
         ws_status = job.status
         if hasattr(job.status, "value"):
             ws_status = job.status.value
-            
+
         notify_job_update_sync({
             "id": job_id,
             "status": ws_status,
@@ -110,5 +110,5 @@ async def update_internal_job(
         })
     except Exception as e:
         logger.warning(f"WS notification failed: {e}")
-        
+
     return {"status": "ok"}

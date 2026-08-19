@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import datetime
+import math
 from .models import ContentCandidate
 
 
@@ -49,9 +50,7 @@ class DiscoveryScannerBase(ABC):
                 if pub_date.tzinfo is None:
                     pub_date = pub_date.replace(tzinfo=datetime.timezone.utc)
                 hours_since = (now - pub_date).total_seconds() / 3600
-                hours_since = max(
-                    hours_since, 0.5
-                )  # At least 30 min to avoid division by zero
+                hours_since = max(hours_since, 0.5)  # At least 30 min to avoid division by zero
                 return candidate.view_count / hours_since
             except (AttributeError, TypeError, ValueError):
                 pass
@@ -64,25 +63,50 @@ class DiscoveryScannerBase(ABC):
     def calculate_viral_score(self, candidate: ContentCandidate) -> int:
         """
         Calculate a composite viral score (0-100) based on multiple factors.
+        Uses adaptive logarithmic view scaling and engagement-weighted bonuses.
         Override this for platform-specific scoring.
         """
         velocity = self.identify_viral_velocity(candidate)
 
-        # Normalize velocity (1000 views/hour = score of 100)
-        velocity_score = min(velocity / 10, 50)
+        # Adaptive logarithmic view score (log10 scaling, 1k views = 0, 10M = 5)
+        if candidate.view_count > 0:
+            log_views = math.log10(candidate.view_count)
+            # Scale: log10(1000) = 3 -> score 0; log10(10_000_000) = 7 -> score 5
+            view_score = min(5.0, max(0.0, (log_views - 3.0) * 1.25))
+        else:
+            view_score = 0.0
 
-        # Engagement bonus (likes, comments, shares)
-        engagement_bonus = 0
-        if candidate.engagement_score:
-            engagement_bonus = min(candidate.engagement_score / 10, 25)
+        # Engagement bonus with standardized ratio weighting
+        # Normalize engagement_score to ratio (e.g. 0.065 = 6.5%)
+        raw_engagement = (
+            candidate.engagement_score / 100.0
+            if candidate.engagement_score and candidate.engagement_score > 1.0
+            else candidate.engagement_score or 0.0
+        )
+        # High engagement bonus (up to 5.0 points): 6.5% engagement = ~2.5 points, 20%+ = 5 points
+        engagement_bonus = min(5.0, raw_engagement * 25.0) if raw_engagement else 0.0
 
         # Duration bonus (shorts/preferred durations get boosted)
         duration_bonus = 0
         if candidate.duration_seconds:
-            # Optimal: 15-60 seconds for shorts
+            # Optimal: 15-60 seconds for shorts gets 15 boost, 60-180s gets 10
             if 15 <= candidate.duration_seconds <= 60:
                 duration_bonus = 15
             elif 60 < candidate.duration_seconds <= 180:
                 duration_bonus = 10
 
-        return min(int(velocity_score + engagement_bonus + duration_bonus), 100)
+        return min(int(view_score + engagement_bonus + duration_bonus), 100)
+
+    # Rate limiting utilities for scanner operations
+    _rate_limit_timestamp = 0.0
+    _rate_limit_delay = 1.0  # Minimum seconds between requests per scanner
+
+    async def _rate_limit(self):
+        """Ensure minimum delay between requests to avoid rate limiting."""
+        import asyncio
+        now = asyncio.get_running_loop().time()
+        elapsed = now - self._rate_limit_timestamp
+        if elapsed < self._rate_limit_delay:
+            wait_time = self._rate_limit_delay - elapsed
+            await asyncio.sleep(wait_time)
+        self._rate_limit_timestamp = asyncio.get_running_loop().time()

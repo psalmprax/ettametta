@@ -151,7 +151,7 @@ class CreditService:
                 reference_id=reference_id,
             )
             db.add(transaction)
-            
+
             if auto_commit:
                 await db.commit()
             else:
@@ -197,12 +197,12 @@ class CreditService:
                 reference_id=reference_id,
             )
             db.add(transaction)
-            
+
             if auto_commit:
                 await db.commit()
             else:
                 await db.flush()
-                
+
             return True
         except Exception as e:
             await db.rollback()

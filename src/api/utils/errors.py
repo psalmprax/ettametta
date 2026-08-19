@@ -18,25 +18,25 @@ class ErrorCode(str, Enum):
     AUTH_TOKEN_INVALID = "AUTH_TOKEN_INVALID"
     AUTH_USER_NOT_FOUND = "AUTH_USER_NOT_FOUND"
     AUTH_INSUFFICIENT_PERMISSIONS = "AUTH_INSUFFICIENT_PERMISSIONS"
-    
+
     # Validation errors
     VALIDATION_ERROR = "VALIDATION_ERROR"
     VALIDATION_MISSING_FIELD = "VALIDATION_MISSING_FIELD"
     VALIDATION_INVALID_FORMAT = "VALIDATION_INVALID_FORMAT"
-    
+
     # Resource errors
     RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
     RESOURCE_ALREADY_EXISTS = "RESOURCE_ALREADY_EXISTS"
     RESOURCE_CONFLICT = "RESOURCE_CONFLICT"
-    
+
     # External service errors
     EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR"
     EXTERNAL_SERVICE_UNAVAILABLE = "EXTERNAL_SERVICE_UNAVAILABLE"
     EXTERNAL_SERVICE_TIMEOUT = "EXTERNAL_SERVICE_TIMEOUT"
-    
+
     # Rate limiting
     RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
-    
+
     # Internal errors
     INTERNAL_ERROR = "INTERNAL_ERROR"
     DATABASE_ERROR = "DATABASE_ERROR"
@@ -56,14 +56,14 @@ class ErrorResponse(BaseModel):
     timestamp: datetime = datetime.now(timezone.utc)
     details: dict[str, Any] | None = None
     request_id: str | None = None
-    
+
     model_config = ConfigDict(use_enum_values=True)
 
 
 class ValidationErrorResponse(ErrorResponse):
     """Validation error response with field-level details."""
     field_errors: list[FieldError] = []
-    
+
     def __init__(self, **data):
         super().__init__(**data)
         self.error_code = ErrorCode.VALIDATION_ERROR
@@ -71,31 +71,31 @@ class ValidationErrorResponse(ErrorResponse):
 
 class ErrorHandler:
     """Helper class for creating standardized error responses."""
-    
+
     @staticmethod
     def not_found(resource: str, identifier: str = None) -> ErrorResponse:
         """Create a not found error."""
         message = f"{resource} not found"
         if identifier:
             message = f"{resource} with identifier '{identifier}' not found"
-        
+
         return ErrorResponse(
             error_code=ErrorCode.RESOURCE_NOT_FOUND,
             message=message
         )
-    
+
     @staticmethod
     def already_exists(resource: str, identifier: str = None) -> ErrorResponse:
         """Create an already exists error."""
         message = f"{resource} already exists"
         if identifier:
             message = f"{resource} with identifier '{identifier}' already exists"
-        
+
         return ErrorResponse(
             error_code=ErrorCode.RESOURCE_ALREADY_EXISTS,
             message=message
         )
-    
+
     @staticmethod
     def validation_error(message: str, field_errors: list[FieldError] = None) -> ValidationErrorResponse:
         """Create a validation error."""
@@ -104,7 +104,7 @@ class ErrorHandler:
             message=message,
             field_errors=field_errors or []
         )
-    
+
     @staticmethod
     def authentication_error(message: str = "Invalid credentials") -> ErrorResponse:
         """Create an authentication error."""
@@ -112,7 +112,7 @@ class ErrorHandler:
             error_code=ErrorCode.AUTH_INVALID_CREDENTIALS,
             message=message
         )
-    
+
     @staticmethod
     def unauthorized_error(message: str = "Unauthorized") -> ErrorResponse:
         """Create an unauthorized error."""
@@ -120,7 +120,7 @@ class ErrorHandler:
             error_code=ErrorCode.AUTH_TOKEN_INVALID,
             message=message
         )
-    
+
     @staticmethod
     def forbidden_error(message: str = "Insufficient permissions") -> ErrorResponse:
         """Create a forbidden error."""
@@ -128,7 +128,7 @@ class ErrorHandler:
             error_code=ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS,
             message=message
         )
-    
+
     @staticmethod
     def rate_limit_error(message: str = "Rate limit exceeded") -> ErrorResponse:
         """Create a rate limit error."""
@@ -137,7 +137,7 @@ class ErrorHandler:
             message=message,
             details={"retry_after": 60}
         )
-    
+
     @staticmethod
     def internal_error(message: str = "Internal server error", details: dict = None) -> ErrorResponse:
         """Create an internal error."""
@@ -146,14 +146,14 @@ class ErrorHandler:
             message=message,
             details=details
         )
-    
+
     @staticmethod
     def external_service_error(service: str, message: str = None) -> ErrorResponse:
         """Create an external service error."""
         msg = f"Error communicating with {service}"
         if message:
             msg = f"{msg}: {message}"
-        
+
         return ErrorResponse(
             error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
             message=msg

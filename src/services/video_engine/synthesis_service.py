@@ -58,7 +58,7 @@ class GenerativeService:
         self.model_manager = ModelManager()
         self.gpu_queue = GpuQueueManager()
         self.circuit_breaker = CircuitBreaker(failure_threshold=3)
-        
+
         # Check optional dependencies
         self.dependencies_available = {
             "torch": TORCH_AVAILABLE,
@@ -499,7 +499,7 @@ class GenerativeService:
 
             async with httpx.AsyncClient(timeout=600) as client:
                 response = await client.post(
-                    f"{remote_url.rstrip('/')}/generate", 
+                    f"{remote_url.rstrip('/')}/generate",
                     json=payload,
                     headers=headers
                 )
@@ -932,7 +932,7 @@ class GenerativeService:
             cap = cv2.VideoCapture(video_path)
             fps = cap.get(cv2.CAP_PROP_FPS)
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            
+
             temp_dir = video_dir / f"temp_enhance_{uuid.uuid4().hex[:8]}"
             temp_dir.mkdir(exist_ok=True)
 
@@ -964,7 +964,7 @@ class GenerativeService:
 
                 import shutil
                 shutil.rmtree(temp_dir, ignore_errors=True)
-                
+
                 logging.info(f"[GenerativeService] Enhancement completed: {enhanced_path}")
                 return str(enhanced_path)
             else:
@@ -1007,7 +1007,7 @@ class GenerativeService:
                         data = response.json()
                         job_id = data.get("job_id")
                         if job_id:
-                            for attempt in range(60):
+                            for _attempt in range(60):
                                 await asyncio.sleep(10)
                                 status_resp = await client.get(
                                     f"{render_node_url}/status/{job_id}"
@@ -1101,7 +1101,7 @@ class GenerativeService:
                 "inputs": {"images": ["8", 0], "filename_prefix": "ettametta_gen"}
             }
         }
-        
+
         return workflow
 
     async def pull_stock_for_niche(self, niche: str, count: int = 3) -> list[dict]:
@@ -1110,13 +1110,13 @@ class GenerativeService:
         Uses StockService to fetch and download assets.
         """
         from .stock_service import base_stock_service
-        
+
         logging.info(f"[GenerativeService] Pulling {count} stock assets for niche: {niche}")
-        
+
         try:
             urls = await base_stock_service.fetch_b_roll(niche, count=count)
             downloaded_assets = []
-            
+
             for url in urls:
                 path = await base_stock_service.download_stock_video(url, output_dir="local_downloads/stock")
                 if path:
@@ -1128,7 +1128,7 @@ class GenerativeService:
                         "motion_score": 0.8,
                         "relevance": 0.9
                     })
-            
+
             return downloaded_assets
         except Exception as e:
             logging.exception(f"[GenerativeService] Failed to pull stock for {niche}: {e}")

@@ -1,0 +1,47 @@
+{
+  "social_media_posts": [
+    {
+      "platform": "twitter",
+      "content": "Stop paying $50/hour for content writers.\n\n50 AI Prompts for Business Owners gives you:\n→ Marketing prompts\n→ Sales scripts\n→ Operations templates\n→ Content ideas\n→ Strategy frameworks\n\n$9.99. Use forever.\n\nhttps://gumroad.com/l/ai-prompts"
+    },
+    {
+      "platform": "twitter",
+      "content": "I was spending 3 hours writing ONE email.\n\nNow I use AI prompts and finish in 20 minutes.\n\n75 Email Marketing Prompts:\n→ Subject lines that get opened\n→ Welcome sequences\n→ Sales emails\n→ Re-engagement campaigns\n\n$9.99\nhttps://gumroad.com/l/email-prompts"
+    },
+    {
+      "platform": "instagram",
+      "content": "📸 Running out of content ideas?\n\n100 Social Media Prompts gives you:\n✅ Instagram (25 prompts)\n✅ TikTok (25 prompts)\n✅ LinkedIn (25 prompts)\n✅ Twitter/X (25 prompts)\n\n30+ days of content in minutes.\n\nLink in bio 🔗\n\n#socialmediamarketing #contentcreator #ai #chatgpt"
+    },
+    {
+      "platform": "linkedin",
+      "content": "I used to spend 10+ hours per week on content creation.\n\nNow it takes 2 hours.\n\nHow? I built a library of 325 AI prompts for every business function:\n\n→ Marketing\n→ Sales\n→ Operations\n→ Content creation\n→ Strategy\n\nThe result: 20+ hours saved every week.\n\nI packaged everything into a bundle for $29.99 (37% off).\n\nIf you're tired of staring at a blank screen, check it out."
+    },
+    {
+      "platform": "twitter",
+      "content": "The AI Business Automation Guide just dropped.\n\n50+ pages of:\n→ Marketing automation workflows\n→ Sales systems\n→ Content creation shortcuts\n→ Operations templates\n→ 50 copy-paste workflows\n\nSave 20+ hours/week.\n\n$24.99\nhttps://gumroad.com/l/ai-automation-guide"
+    },
+    {
+      "platform": "instagram",
+      "content": "💰 What's inside the AI Prompt Mega Bundle:\n\n📦 325 prompts total\n📦 4 complete packs\n📦 $18 savings (37% off)\n\nEverything you need to automate your business with AI.\n\nRegular price: $47.96\nBundle price: $29.99\n\nLink in bio 🔗\n\n#bundledeal #aiprompts #business #marketing #chatgpt"
+    }
+  ],
+  "email_sequences": [
+    {
+      "name": "Product Launch",
+      "emails": [
+        {
+          "subject": "New: 50 AI Prompts for Business Owners",
+          "body": "Hey [name],\n\nI just released something I've been working on:\n\n50 AI Prompts for Business Owners.\n\nIt's a collection of battle-tested prompts for:\n→ Marketing (10 prompts)\n→ Sales (10 prompts)\n→ Operations (10 prompts)\n→ Content (10 prompts)\n→ Strategy (10 prompts)\n\nEach one is designed to produce professional results in 30 seconds.\n\nNo subscription. No upsells. Just $9.99.\n\nCheck it out: [link]\n\n— [your name]"
+        },
+        {
+          "subject": "The $9.99 tool saving me 10+ hours/week",
+          "body": "Hey [name],\n\nQuick update on the AI Prompt Pack:\n\nPeople are loving it. Here's why:\n\n1. Copy any prompt\n2. Paste into ChatGPT/Claude\n3. Replace [brackets]\n4. Get professional content\n\nThat's it.\n\nNo more staring at blank screens.\nNo more paying for mediocre content.\n\nGet yours: [link]\n\n— [your name]"
+        },
+        {
+          "subject": "Last chance: Bundle deal ending soon",
+          "body": "Hey [name],\n\nQuick reminder:\n\nThe AI Prompt Mega Bundle (325 prompts) is 37% off until [date].\n\nYou get:\n→ 50 Business Prompts ($9.99 value)\n→ 100 Social Media Prompts ($12.99 value)\n→ 75 Email Marketing Prompts ($9.99 value)\n→ 100 Content Creator Prompts ($14.99 value)\n\nTotal value: $47.96\nYour price: $29.99\n\nDon't miss out: [link]\n\n— [your name]"
+        }
+      ]
+    }
+  ]
+}

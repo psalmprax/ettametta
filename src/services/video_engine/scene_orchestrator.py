@@ -132,7 +132,7 @@ class SceneBasedVideoOrchestrator:
             production_plan["upload_specs"],
             output_filename,
         )
-        
+
         # Step 4b: Generate Thumbnail
         thumbnail_path = None
         if final_result.get("success"):
@@ -156,11 +156,11 @@ class SceneBasedVideoOrchestrator:
                 for videos in production_plan.get("scene_videos", {}).values()
             ),
             "platforms_used": list(
-                set(
+                {
                     video.platform
                     for videos in production_plan.get("scene_videos", {}).values()
                     for video in videos[:1]  # Only count selected videos
-                )
+                }
             ),
             "upload_specs": production_plan.get("upload_specs"),
             "monetization_plan": monetization_plan,
@@ -214,19 +214,19 @@ class SceneBasedVideoOrchestrator:
             # 1. Acquire Source Videos with Stock Fallback
             from .downloader import base_downloader_service
             from .stock_service import base_stock_service
-            
+
             logger.info(f"Acquiring assets for {len(segments)} segments (with Pexels stock fallback)...")
-            
+
             async def download_asset_with_fallback(idx, segment):
                 """Try yt-dlp download first, then Pexels stock as fallback."""
                 source_path = segment.get("video_path") or segment.get("source_video")
                 video_uri = segment.get("url") or segment.get("source_uri")
-                
+
                 # 1. Local file already exists
                 if source_path and Path(source_path).exists():
                     logger.info(f"[Scene {idx+1}] Using local asset: {source_path}")
                     return (source_path, segment)
-                
+
                 # 2. Try yt-dlp download (YouTube, TikTok, etc.)
                 if video_uri:
                     try:
@@ -237,12 +237,12 @@ class SceneBasedVideoOrchestrator:
                             return (downloaded_path, segment)
                     except Exception as e:
                         logger.warning(f"[Scene {idx+1}] yt-dlp download failed: {e}")
-                
+
                 # 3. Pexels Stock Fallback — search using scene keywords
                 visual_prompt = segment.get("visual_prompt") or segment.get("scene", "")
                 niche_keyword = production_plan.get("niche") or "cinematic"
                 search_query = f"{visual_prompt} {niche_keyword}".strip()[:80]
-                
+
                 logger.info(f"[Scene {idx+1}] Falling back to Pexels stock: '{search_query}'")
                 try:
                     stock_urls = await base_stock_service.fetch_b_roll(search_query, count=1)
@@ -255,7 +255,7 @@ class SceneBasedVideoOrchestrator:
                             return (stock_path, segment)
                 except Exception as e:
                     logger.warning(f"[Scene {idx+1}] Pexels stock fallback failed: {e}")
-                
+
                 # 4. Absolute last resort — try with just the niche keyword
                 try:
                     logger.info(f"[Scene {idx+1}] Last resort stock search: '{niche_keyword} video'")
@@ -269,19 +269,19 @@ class SceneBasedVideoOrchestrator:
                             return (fallback_path, segment)
                 except Exception as e:
                     logger.exception(f"[Scene {idx+1}] All asset sources exhausted: {e}")
-                
+
                 logger.error(f"[Scene {idx+1}] CRITICAL: No video asset could be acquired")
                 return None
 
             # Execute all downloads concurrently
             download_tasks = [download_asset_with_fallback(i, seg) for i, seg in enumerate(segments)]
             video_files_raw = await asyncio.gather(*download_tasks)
-            
+
             # Filter out failed downloads
             video_files = [v for v in video_files_raw if v is not None]
 
             logger.info(f"Successfully acquired {len(video_files)} / {len(segments)} video assets.")
-            
+
             if not video_files:
                 return {"success": False, "error": "No source videos could be acquired (all sources exhausted)"}
 
@@ -291,7 +291,7 @@ class SceneBasedVideoOrchestrator:
 
                 normalized_clips = []
                 target_w, target_h = 1080, 1920 # Default vertical
-                
+
                 # Check production plan for orientation hints
                 if production_plan.get("aspect_ratio") == "16:9":
                     target_w, target_h = 1920, 1080
@@ -306,30 +306,30 @@ class SceneBasedVideoOrchestrator:
                         success = self.video_processor.base_ffmpeg_service.apply_fast_transform(
                             video_path, norm_path, width=target_w, height=target_h
                         )
-                        
+
                         final_path = norm_path if success else video_path
                         logger.info(f"Normalization success: {success}, using: {final_path}")
-                        
+
                         # 2. Load the normalized clip
                         clip = VideoFileClip(final_path)
                         duration = segment.get("duration", 5)
                         logger.info(f"Loaded clip duration: {clip.duration}, target: {duration}")
-                        
+
                         # Apply smart duration cropping (narrative aware)
                         if clip.duration > duration:
                             start_t = min(clip.duration * 0.1, clip.duration - duration)
                             clip = clip.subclipped(start_t, start_t + duration)
                             logger.info(f"Subclipped to: {clip.duration}")
-                        
+
                         # Add simple text overlay if prompt exists (Pillow-based, no ImageMagick)
                         if segment.get("visual_prompt") and self.video_processor.font_path:
                             logger.info(f"Applying text overlay: {segment['visual_prompt']}")
                             from PIL import Image, ImageDraw, ImageFont
                             import numpy as np
                             from moviepy import ImageClip
-                            
+
                             # ... (rest of the pillow logic)
-                            
+
                             # Create a small transparent overlay for text
                             txt_text = segment["visual_prompt"][:50]
                             font_size = 32
@@ -337,31 +337,31 @@ class SceneBasedVideoOrchestrator:
                                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
                             except Exception:
                                 font = ImageFont.load_default()
-                            
+
                             # Measure text
                             dummy_img = Image.new('RGBA', (target_w, 100))
                             draw = ImageDraw.Draw(dummy_img)
                             bbox = draw.textbbox((0, 0), txt_text, font=font)
                             tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
-                            
+
                             # Create actual overlay
                             overlay_img = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
                             draw = ImageDraw.Draw(overlay_img)
-                            
+
                             # Draw semi-transparent background for text
                             padding = 10
                             draw.rectangle(
-                                [(target_w - tw)//2 - padding, target_h - th - 60 - padding, 
+                                [(target_w - tw)//2 - padding, target_h - th - 60 - padding,
                                  (target_w + tw)//2 + padding, target_h - 60 + padding],
                                 fill=(0, 0, 0, 160)
                             )
                             draw.text(((target_w - tw)//2, target_h - th - 60), txt_text, font=font, fill=(255, 255, 255, 255))
-                            
+
                             # Convert to MoviePy clip
                             overlay_array = np.array(overlay_img)
                             txt_clip = ImageClip(overlay_array, is_mask=False, transparent=True).with_duration(clip.duration)
                             clip = CompositeVideoClip([clip, txt_clip])
-                        
+
                         normalized_clips.append(clip)
                     except Exception as clip_err:
                         logger.exception(f"Error processing clip {video_path}: {clip_err}")
@@ -369,7 +369,7 @@ class SceneBasedVideoOrchestrator:
                 if normalized_clips:
                     # Collect paths for FFmpeg concatenation
                     norm_paths = [f"{v_path}_norm.mp4" for v_path, _ in video_files]
-                    
+
                     # Add Intro
                     title = production_plan.get("niche") or "Viral Content"
                     intro_path = str(self.output_dir / f"intro_{int(time.time())}.mp4")
@@ -385,22 +385,22 @@ class SceneBasedVideoOrchestrator:
 
                     # 4. Final Render & Audio Ducking (Elite FFmpeg Path)
                     temp_output = str(output_path.parent / f"temp_no_audio_{output_path.name}")
-                    
+
                     # Close clips to free file handles for FFmpeg
                     for clip in normalized_clips:
                         clip.close()
-                    
+
                     transformer = self.video_processor.base_ffmpeg_service
                     concat_success = transformer.concatenate_videos(norm_paths, temp_output)
-                    
+
                     if concat_success:
                         logger.info("✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
-                        
+
                         # Use audio_plan or defaults
                         audio_plan = fusion_plan.get("audio_plan", {})
                         music_path = audio_plan.get("music_path") or "data/storage/audio/background/cinematic.mp3"
                         voiceover_path = audio_plan.get("voiceover_path") # Assumed to be passed or generated
-                        
+
                         if voiceover_path and os.path.exists(voiceover_path) and os.path.exists(music_path):
                             transformer.mix_production_audio_with_ducking(
                                 temp_output, voiceover_path, music_path, str(output_path)
@@ -408,11 +408,11 @@ class SceneBasedVideoOrchestrator:
                         else:
                             # Fallback if audio missing
                             os.rename(temp_output, str(output_path))
-                        
+
                         # 5. Vision-Based Quality Control
                         from src.services.video_engine.quality_control import base_qc_service
                         qc_report = await base_qc_service.audit_video(str(output_path), "nexus_auto")
-                        
+
                         return {
                             "success": True,
                             "video_path": str(output_path),
@@ -726,15 +726,15 @@ class SceneBasedVideoOrchestrator:
             from moviepy import ColorClip, CompositeVideoClip, ImageClip
             from PIL import Image, ImageDraw, ImageFont
             import numpy as np
-            
+
             logger.info("Injecting Branded Intro segment (Pillow-based)...")
             duration = 3.0
-            
+
             bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
-            
+
             img = Image.new('RGB', (w, h), color=(15, 15, 15))
             draw = ImageDraw.Draw(img)
-            
+
             try:
                 font_size = h // 20
                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
@@ -744,17 +744,17 @@ class SceneBasedVideoOrchestrator:
             cta_lines = ["ETTAMETTA PRESENTS", "", title]
             total_h = len(cta_lines) * (font_size * 1.5)
             current_y = (h - total_h) // 2
-            
+
             for i, line in enumerate(cta_lines):
                 bbox = draw.textbbox((0, 0), line, font=font)
                 line_w = bbox[2] - bbox[0]
                 color = (255, 255, 255) if i != 0 else (100, 200, 255)
                 draw.text(((w - line_w) // 2, current_y), line, font=font, fill=color)
                 current_y += font_size * 1.5
-            
+
             img_array = np.array(img)
             txt_clip = ImageClip(img_array).with_duration(duration)
-            
+
             intro_segment = CompositeVideoClip([bg, txt_clip])
             intro_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
             intro_segment.close()
@@ -769,15 +769,15 @@ class SceneBasedVideoOrchestrator:
             from moviepy import ColorClip, CompositeVideoClip, ImageClip
             from PIL import Image, ImageDraw, ImageFont
             import numpy as np
-            
+
             logger.info("Injecting Engagement CTA segment (Pillow-based)...")
             duration = 4.0
-            
+
             bg = ColorClip(size=(w, h), color=(15, 15, 15)).with_duration(duration)
-            
+
             img = Image.new('RGB', (w, h), color=(15, 15, 15))
             draw = ImageDraw.Draw(img)
-            
+
             try:
                 font_size = h // 25
                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
@@ -787,16 +787,16 @@ class SceneBasedVideoOrchestrator:
             cta_lines = ["LIKE • SHARE • FOLLOW", "", "Hit the 🔔 for more!"]
             total_h = len(cta_lines) * (font_size * 1.5)
             current_y = (h - total_h) // 2
-            
+
             for line in cta_lines:
                 bbox = draw.textbbox((0, 0), line, font=font)
                 line_w = bbox[2] - bbox[0]
                 draw.text(((w - line_w) // 2, current_y), line, font=font, fill=(255, 215, 0))
                 current_y += font_size * 1.5
-            
+
             img_array = np.array(img)
             txt_clip = ImageClip(img_array).with_duration(duration)
-            
+
             cta_segment = CompositeVideoClip([bg, txt_clip])
             cta_segment.write_videofile(output_path, fps=30, codec="libx264", audio=False, preset="ultrafast", logger=None)
             cta_segment.close()
@@ -811,33 +811,33 @@ class SceneBasedVideoOrchestrator:
             output_dir = os.path.dirname(video_path)
             thumb_name = os.path.basename(video_path).replace(".mp4", "_thumb.jpg")
             thumb_path = os.path.join(output_dir, thumb_name)
-            
+
             # Use absolute path to ensure it's found
             abs_thumb_path = str(Path(thumb_path).absolute())
-            
+
             logger.info(f"Generating high-impact thumbnail: {abs_thumb_path}")
-            
+
             # Extract frame at 25% of duration (to avoid intro/cta)
             cap = cv2.VideoCapture(video_path)
             fps = cap.get(cv2.CAP_PROP_FPS)
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             duration = total_frames / fps if fps > 0 else 0
             cap.release()
-            
+
             timestamp = "00:00:01"
             if duration > 4:
                 # Proper HH:MM:SS or just seconds
                 seconds = int(duration * 0.25)
                 timestamp = f"{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
-            
+
             cmd = [
                 "ffmpeg", "-y", "-ss", timestamp, "-i", video_path,
                 "-vframes", "1", "-q:v", "2", abs_thumb_path
             ]
-            
+
             import subprocess
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if os.path.exists(abs_thumb_path):
                 logger.info(f"Thumbnail created successfully: {abs_thumb_path}")
                 return abs_thumb_path

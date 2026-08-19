@@ -48,7 +48,7 @@ async def test_youtube_upload_validation(temp_token_dir):
     # Mock availability check and patch asyncio.sleep to prevent tenacity sleep delays
     with patch("src.services.distribution.publishing.GOOGLE_API_AVAILABLE", True), \
          patch("asyncio.sleep", new_callable=AsyncMock):
-         
+
         # 1. Circuit breaker is open
         publisher.breaker.state = "OPEN"
         with pytest.raises(RuntimeError) as excinfo:
@@ -121,13 +121,13 @@ async def test_youtube_upload_success(temp_token_dir, tmp_path):
 async def test_publishing_service_tiktok_instagram_fallback():
     """Verify TikTok/Instagram publishing falls back to manual action when automation is not used."""
     service = PublishingService()
-    
+
     metadata = {
         "title": "Fun Video",
         "description": "Look at this!",
         "tags": ["shorts", "reels"]
     }
-    
+
     # Tiktok fallback
     res_tiktok = await service.publish_to_platform(
         user_id="user1",
@@ -136,13 +136,13 @@ async def test_publishing_service_tiktok_instagram_fallback():
         metadata=metadata,
         use_automation=False
     )
-    
+
     assert res_tiktok["platform"] == "tiktok"
     assert res_tiktok["status"] == "manual_action_required"
     assert "manual_action_required" in res_tiktok["status"]
     assert "caption" in res_tiktok
     assert "hashtags" in res_tiktok
-    
+
     # Instagram fallback
     res_insta = await service.publish_to_platform(
         user_id="user1",
@@ -159,7 +159,7 @@ async def test_publishing_service_tiktok_instagram_fallback():
 async def test_publishing_service_tiktok_automation():
     """Verify TikTok publishing automation logic with success and fail scenarios."""
     service = PublishingService()
-    
+
     mock_publisher = AsyncMock()
     mock_publisher.post_to_tiktok.return_value = {
         "platform": "tiktok",
@@ -201,7 +201,7 @@ async def test_publishing_service_tiktok_automation():
 async def test_publishing_service_multiple_platforms():
     """Verify publishing to multiple platforms in parallel."""
     service = PublishingService()
-    
+
     # Mock publish_to_platform
     async def mock_publish(user_id, platform, video_path, metadata, use_automation=False):
         if platform == "youtube":
@@ -218,7 +218,7 @@ async def test_publishing_service_multiple_platforms():
             video_path="/path/to/vid.mp4",
             metadata={"title": "Vid"}
         )
-        
+
         assert res["published"] == 1
         assert res["failed"] == 1
         assert res["total"] == 2

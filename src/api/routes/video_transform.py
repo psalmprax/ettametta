@@ -290,12 +290,12 @@ async def auto_insert_affiliate_links(
             stmt = select(VideoJobDB).where(VideoJobDB.id == body.job_id)
             result = await db.execute(stmt)
             job = result.scalar_one_or_none()
-            
+
             if job:
                 # Use output_path as the video source
                 if not job.output_path:
                     raise HTTPException(
-                        status_code=400, 
+                        status_code=400,
                         detail=f"Job {body.job_id} has no output path. Status: {job.status}. Error: {job.error_message}"
                     )
                 video_path = job.output_path

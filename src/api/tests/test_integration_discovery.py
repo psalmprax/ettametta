@@ -17,17 +17,17 @@ class TestDiscoveryGoBridge:
                 "message": "Scan initiated for 2 niches",
                 "job_ids": ["job-1", "job-2"]
             }
-            
+
             with patch("api.routes.discovery.httpx.AsyncClient.post") as mock_post:
                 mock_post.return_value = MagicMock(spec=httpx.Response)
                 mock_post.return_value.status_code = 200
                 mock_post.return_value.json.return_value = mock_response
-                
+
                 response = await ac.post(
                     "/api/v1/discovery/discovery/scan",
                     json={"niches": ["Technology", "AI"]}
                 )
-                
+
                 # We expect 200 OR 401 (Hardened state requires auth)
                 assert response.status_code in [200, 401]
                 if response.status_code == 200:

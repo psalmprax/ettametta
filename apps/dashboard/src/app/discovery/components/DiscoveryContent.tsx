@@ -170,8 +170,9 @@ export function DiscoveryContent() {
     };
 
     useEffect(() => {
+        const refs = pollingRefs.current;
         return () => {
-            Object.values(pollingRefs.current).forEach(clearInterval);
+            Object.values(refs).forEach(clearInterval);
         };
     }, []);
 

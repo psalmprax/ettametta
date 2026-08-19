@@ -35,13 +35,13 @@ async def run_e2e_workflow():
 
     topic = "AI productivity tools 2026"
     duration = 30
-    
+
     # Initialize Engine
     engine = RealVideoFusionEngine(output_dir="output/vids/test_run")
-    
+
     # 1. DISCOVERY PHASE
     cache_file = Path("src/engines/temp_leads.json")
-    
+
     if cache_file.exists():
         print(f"\n[PHASE 1] Loading cached discovery results from {cache_file}")
         with open(cache_file, 'r') as f:
@@ -50,7 +50,7 @@ async def run_e2e_workflow():
         print(f"\n[PHASE 1] Multi-Platform Discovery: '{topic}'")
         # We use a smaller limit for the test to ensure speed
         videos = await discover_multi_platform(topic, max_per_platform=2)
-        
+
         if videos:
             with open(cache_file, 'w') as f:
                 json.dump(videos, f)
@@ -73,7 +73,7 @@ async def run_e2e_workflow():
             duration_sec=duration,
             session_id="test_e2e_001"
         )
-        
+
         if result.get("success"):
             print("\n" + "="*60)
             print("🏆 WORKFLOW SUCCESS")
@@ -81,7 +81,7 @@ async def run_e2e_workflow():
             print(f"🎬 Video Generated: {result['video_path']}")
             print(f"📝 Script Title: {result.get('script', {}).get('title')}")
             print(f"📦 Distribution Package: {result.get('distribution_package', {}).get('package_path', 'N/A')}")
-            
+
             # Verify file exists
             if os.path.exists(result['video_path']):
                 print(f"📁 Verification: File exists and size is {os.path.getsize(result['video_path'])} bytes.")
@@ -89,7 +89,7 @@ async def run_e2e_workflow():
                 print("❌ Verification Error: Video path returned but file not found on disk.")
         else:
             print(f"❌ FAILED: Production error - {result.get('error', 'Unknown error')}")
-            
+
     except Exception as e:
         logger.exception("Workflow execution crashed")
         print(f"❌ CRITICAL FAILURE: {str(e)}")

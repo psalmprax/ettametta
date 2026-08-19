@@ -35,7 +35,7 @@ async def list_analytics_posts(
             page=page,
             size=size,
         )
-        
+
         return success_response(
             data={
                 "posts": posts,
@@ -85,7 +85,7 @@ async def get_report(
 ):
     try:
         analytics_service = AnalyticsServiceExtended(db)
-        
+
         # Verify user owns this content
         await analytics_service.verify_content_access(
             post_id=post_id,
@@ -127,7 +127,7 @@ async def get_insights(
 ):
     try:
         analytics_service = AnalyticsServiceExtended(db)
-        
+
         # Verify user owns this content
         await analytics_service.verify_content_access(
             post_id=post_id,
@@ -157,7 +157,7 @@ async def get_monetization_suggestions(
 ):
     try:
         analytics_service = AnalyticsServiceExtended(db)
-        
+
         # Verify user owns this content
         await analytics_service.verify_content_access(
             post_id=post_id,
@@ -269,7 +269,7 @@ async def inject_pattern(
 ):
     try:
         analytics_service = AnalyticsServiceExtended(db)
-        
+
         # Verify user owns this content
         await analytics_service.verify_content_access(
             post_id=post_id,

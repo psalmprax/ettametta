@@ -104,7 +104,7 @@ class DiscoveryService:
             "job_id": job_id,
             "timestamp": datetime.datetime.now().isoformat()
         }
-        
+
         # OTEL: Add event to current span
         span = trace.get_current_span()
         if span.is_recording():
@@ -134,7 +134,7 @@ class DiscoveryService:
             span.set_attribute("niche", niche)
             span.set_attribute("deep_scan", deep_scan)
             span.set_attribute("region", region or "US")
-            
+
             if job_id:
                 span.set_attribute("job_id", job_id)
                 await base_state_machine.transition_to(job_id, JobState.QUEUED, JobState.PENDING)
@@ -256,6 +256,17 @@ class DiscoveryService:
 
         published_after = datetime.datetime.now(datetime.timezone.utc) - parse_horizon(horizon)
 
+        # Tier-aware scanner selection: production scanners for paid tiers,
+        # free scanners for free tier with better fallback chain
+        if tier in ("production", "pro", "enterprise"):
+            scanners_to_use = self.global_scanners + self.scanners
+        else:
+            # Free tier: primary scanners + limited globals with strong fallbacks
+            scanners_to_use = self.scanners + [
+                CloakRedditScanner(scraper_url=self._scraper_url),
+                CloakXScanner(scraper_url=self._scraper_url),
+            ]
+
         if deep_scan:
             await self._log(
                 f"Deploying Intelligent Discovery Swarm for '{niche}'...", "SYSTEM"
@@ -305,20 +316,16 @@ class DiscoveryService:
                 f"Intelligent Swarm returned {len(all_candidates)} candidates.",
                 "SUCCESS",
             )
-            
-            scanners_to_use = self.global_scanners + self.scanners
-        else:
-            scanners_to_use = self.scanners
 
-        # Add scanner tasks
+        # Add scanner tasks with tier-aware selection
         for scanner in scanners_to_use:
             tasks.append(scanner.scan_trends(niche, published_after=published_after, region=region))
 
-        # Add supplementary scanners
-        supplementary_scanners = (
-            self.global_scanners
-            if deep_scan or tier != "free"
-            else [
+        # Add supplementary scanners based on tier and deep_scan flag
+        if deep_scan or tier in ("production", "pro", "enterprise"):
+            supplementary_scanners = self.global_scanners
+        elif tier == "free":
+            supplementary_scanners = [
                 CloakXScanner(scraper_url=self._scraper_url),
                 CloakInstagramScanner(scraper_url=self._scraper_url),
                 CloakFacebookScanner(scraper_url=self._scraper_url),
@@ -326,12 +333,13 @@ class DiscoveryService:
                 base_bilibili_service,
                 base_rumble_service,
             ]
-        )
-    
+        else:
+            supplementary_scanners = []
+
         for g_scanner in supplementary_scanners:
             tasks.append(g_scanner.scan_trends(niche, published_after=published_after, region=region))
 
-        # Execute concurrently
+        # Execute concurrently with error handling
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         for res in results:
@@ -560,7 +568,7 @@ class DiscoveryService:
             from src.services.analytics.signal_bus import base_signal_bus
             avg_views = sum(c.view_count for c in candidates) / len(candidates)
             avg_viral = sum(c.viral_score for c in candidates) / len(candidates)
-        
+
             base_signal_bus.ingest_signal(
                 niche=niche,
                 platform="discovery_aggregate",
@@ -579,8 +587,10 @@ class DiscoveryService:
     ) -> list[ContentCandidate]:
         """
         Recalculates viral scores based on real-time velocity for each candidate.
-        Uses the scanner's velocity calculation if available, otherwise uses default formula.
+        Uses the scanner's velocity calculation if available, otherwise uses adaptive formula.
         """
+        from .scanner_base import DiscoveryScannerBase
+
         for candidate in candidates:
             try:
                 # Calculate real-time viral velocity
@@ -595,7 +605,7 @@ class DiscoveryService:
                     except Exception:
                         continue
 
-                 # Default calculation if no scanner worked
+                # Default calculation if no scanner worked
                 if velocity == 0.0:
                     import datetime
 
@@ -609,18 +619,39 @@ class DiscoveryService:
                     else:
                         velocity = candidate.view_count / 24  # Assume 24h old
 
-                # Recalculate viral_score based on velocity
-                # viral_score = min(int(velocity / 10), 100)
-                old_score = candidate.viral_score
+                # Recalculate viral_score based on velocity using ADAPTIVE logarithmic scaling
+                # Same scaling as base scanner: log10(view_count) scaled, engagement bonus
+                if candidate.view_count > 0:
+                    import math
 
-                # Blend old score with new velocity-based score (70% new, 30% old for stability)
-                if velocity > 0:
-                    new_score = min(int(velocity / 10), 100)
-                    candidate.viral_score = int(0.7 * new_score + 0.3 * old_score)
-                    # Store the calculated velocity in the model
-                    candidate.velocity = velocity
+                    log_views = math.log10(candidate.view_count)
+                    # Scale: log10(1000) = 3 -> score 0; log10(10_000_000) = 7 -> score 5
+                    view_score = min(5.0, max(0.0, (log_views - 3.0) * 1.25))
                 else:
-                    candidate.velocity = 0.0
+                    view_score = 0.0
+
+                # Engagement bonus with standardized ratio weighting (same as base scanner)
+                raw_engagement = (
+                    candidate.engagement_score / 100.0
+                    if candidate.engagement_score and candidate.engagement_score > 1.0
+                    else candidate.engagement_score or 0.0
+                )
+                engagement_bonus = min(5.0, raw_engagement * 25.0) if raw_engagement else 0.0
+
+                # Duration bonus
+                duration_bonus = 0
+                if candidate.duration_seconds:
+                    if 15 <= candidate.duration_seconds <= 60:
+                        duration_bonus = 15
+                    elif 60 < candidate.duration_seconds <= 180:
+                        duration_bonus = 10
+
+                # Final score: 70% velocity-based, 30% old score for stability
+                new_score = int(view_score + engagement_bonus + duration_bonus)
+                old_score = candidate.viral_score
+                candidate.viral_score = min(100, max(0, int(0.7 * new_score + 0.3 * old_score)))
+                # Store the calculated velocity
+                candidate.velocity = velocity
 
             except Exception as e:
                 logger.debug(
@@ -646,7 +677,7 @@ class DiscoveryService:
             prompt = f"""
             Based on these trending videos in the '{niche}' niche:
             {json.dumps(titles)}
-            
+
             Identify 3 hyper-targeted sub-niches or related keywords that should be scanned.
             Return ONLY a JSON array of strings. Example: ["Sub-Niche 1", "Keyword 2", "Topic 3"]
             """
@@ -705,7 +736,7 @@ class DiscoveryService:
             prompt = f"""
             Rank these {len(candidate_summaries)} candidates for the '{niche}' niche by 'Viral Potential' (Hook + Translatability).
             Return a JSON array of indices: [idx1, idx2, ...]
-            
+
             Candidates:
             {json.dumps(candidate_summaries)}
             """
@@ -1062,7 +1093,7 @@ class DiscoveryService:
             stmt = select(ContentCandidateDB)
             if min_viral_score > 0:
                 stmt = stmt.where(ContentCandidateDB.viral_score >= min_viral_score)
-            
+
             if region:
                 # Treat NULL region as equivalent to 'US' for backward compatibility
                 if region == 'US':

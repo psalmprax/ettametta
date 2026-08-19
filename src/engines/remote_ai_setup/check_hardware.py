@@ -23,7 +23,7 @@ def is_intel_gpu():
 
 def get_torch_install_command():
     """Returns the optimal pip install command for the current hardware."""
-    
+
     # 1. Apple Silicon (MPS)
     if is_apple_silicon():
         print("🍏 [Hardware] Apple Silicon detected. Using MPS-optimized Torch.", file=sys.stderr)

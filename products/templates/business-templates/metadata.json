@@ -1,0 +1,22 @@
+{
+  "name": "Business Operations Template Pack",
+  "slug": "business-templates",
+  "price": 19.99,
+  "currency": "USD",
+  "description": "15 ready-to-use Notion templates for SOPs, project management, CRM, and business planning. Copy and customize in minutes.",
+  "tags": [
+    "notion template",
+    "business",
+    "operations",
+    "project management",
+    "sop",
+    "crm"
+  ],
+  "category": "Digital Product",
+  "file": "business-templates.md",
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

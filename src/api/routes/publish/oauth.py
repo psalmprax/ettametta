@@ -332,7 +332,7 @@ async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
     }
 
     query_string = urllib.parse.urlencode(params)
-    # Use Facebook Login dialog (supports Instagram + Pages scopes) 
+    # Use Facebook Login dialog (supports Instagram + Pages scopes)
     auth_url = f"https://www.facebook.com/v20.0/dialog/oauth?{query_string}"
     return success_response(data={"url": auth_url})
 

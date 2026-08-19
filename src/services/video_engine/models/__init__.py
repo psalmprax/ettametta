@@ -12,7 +12,7 @@ from .ltx_video_inference import generate_ltx
 
 __all__ = [
     "generate_cogvideo",
-    "generate_mochi", 
+    "generate_mochi",
     "generate_wan_t2v",
     "generate_wan_v2v",
     "generate_animatediff",

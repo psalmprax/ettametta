@@ -9,22 +9,22 @@ async def test_langchain_vibe_analysis():
     # Patch where the code looks for it
     with patch("services.llm.langchain.LLMChain", create=True) as mock_chain, \
          patch("services.llm.langchain.ChatPromptTemplate", create=True):
-        
+
         mock_instance = mock_chain.return_value
-        
+
         async def mock_arun(*args, **kwargs):
             return '{"vibe": "Cinematic", "filter_override": "f7", "explanation": "Test explain"}'
-            
+
         mock_instance.arun = mock_arun
-        
+
         service = LangChainService()
         service.enabled = True
         service.llm = MagicMock()
-        
+
         # Manually set the internal availability flag
         with patch("services.llm.langchain._langchain_available", True):
             result = await service.analyze_video_vibe("tech", {"test": "data"})
-            
+
             assert result["vibe"] == "Cinematic"
             assert result["filter_override"] == "f7"
             assert service.circuit_breaker.failure_count == 0
@@ -34,7 +34,7 @@ async def test_crewai_strategy_delegation():
     """Verify StrategyService correctly delegates to CrewAI if enabled."""
     with patch("services.llm.crewai.CrewAIService.is_enabled", return_value=True), \
          patch("services.llm.crewai.CrewAIService.run_content_team") as mock_run:
-        
+
         mock_run.return_value = {
             "title": "Agentic Story",
             "vibe_summary": "High fidelity",
@@ -43,10 +43,10 @@ async def test_crewai_strategy_delegation():
                 {"scene_id": 1, "visual_prompt": "CrewAI prompt", "narration_text": "Text", "duration_hint": 5.0, "vibe": "Cinematic"}
             ]
         }
-        
+
         service = StrategyService()
         script = await service.generate_screenplay("A story about agents")
-        
+
         assert script.title == "Agentic Story"
         assert mock_run.called
 
@@ -56,12 +56,12 @@ async def test_nexus_cognitive_pipeline_integration():
     # We just need to verify that LangChain is CALLED within the logic
     # instead of mocking the whole orchestrator private methods
     from src.services.llm.langchain import langchain_service
-    
+
     with patch.object(langchain_service, "is_enabled", return_value=True), \
          patch.object(langchain_service, "analyze_video_vibe") as mock_analyze:
-        
+
         mock_analyze.return_value = {"vibe": "Hectic", "filter_override": "f12", "explanation": "Hectic vibe"}
-        
+
         # Test the direct service call which is what Nexus does
         res = await langchain_service.analyze_video_vibe("tech", {})
         assert res["vibe"] == "Hectic"

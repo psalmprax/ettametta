@@ -2,7 +2,7 @@
 Intelligent Video Workflow Skill for OpenClaw
 =============================================
 
-Enables agents to perform resilient multi-platform discovery and 
+Enables agents to perform resilient multi-platform discovery and
 produce high-fidelity narrative videos autonomously.
 """
 
@@ -33,7 +33,7 @@ class IntelligentWorkflowSkill(OpenClawBaseSkill):
         """
         # Merge action and niche into params for internal methods
         params = {"action": action, "niche": niche, **kwargs}
-        
+
         try:
             if action == "intelligent_scan":
                 res = await self._intelligent_scan(params)
@@ -41,7 +41,7 @@ class IntelligentWorkflowSkill(OpenClawBaseSkill):
                 res = await self._autonomous_fusion(params)
             else:
                 return f"⚠️ Unknown action: {action}"
-            
+
             if isinstance(res, dict) and res.get("success"):
                 return res.get("message", "Success")
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
@@ -55,9 +55,9 @@ class IntelligentWorkflowSkill(OpenClawBaseSkill):
         max_per_platform = params.get("max_per_platform", 3)
 
         logger.info(f"OpenClaw: Triggering intelligent scan for '{niche}'")
-        
+
         results = await discover_multi_platform(niche, max_per_platform=max_per_platform)
-        
+
         return {
             "success": True,
             "action": "intelligent_scan",

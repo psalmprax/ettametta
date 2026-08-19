@@ -19,22 +19,22 @@ class TestHardenedSoundDesign:
         voice_path, bg_path = mock_audio_paths
         service = SoundDesignService()
         service.enabled = True
-        
+
         # Patch the imports inside the method scope by patching the modules in sys.modules
         with patch("moviepy.audio.AudioClip.CompositeAudioClip") as mock_composite:
             with patch("moviepy.AudioFileClip") as mock_afc:
                 mock_clip = MagicMock()
                 mock_clip.duration = 10.0
                 mock_afc.return_value = mock_clip
-                
+
                 mock_mixed = MagicMock()
                 mock_composite.return_value = mock_mixed
-                
+
                 # Mock the export
                 mock_mixed.write_audiofile = MagicMock()
-                
+
                 result = await service.mix_audio_tracks(voice_path, bg_path)
-                
+
                 assert result is not None
                 assert "mixed_" in result
                 # Just verify it didn't return the original voice path (which happens on error/disabled)
@@ -45,7 +45,7 @@ class TestHardenedSoundDesign:
         voice_path, bg_path = mock_audio_paths
         service = SoundDesignService()
         service.enabled = False
-        
+
         result = await service.mix_audio_tracks(voice_path, bg_path)
         assert result == voice_path
 
@@ -56,12 +56,12 @@ class TestHardenedVoiceover:
         service = VoiceoverService()
         with patch("services.voiceover.service.get_secret") as mock_secret:
             mock_secret.side_effect = lambda key, default=None: "fish_speech" if key == "voice_engine" else default
-            
+
             with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
                 mock_post.return_value = MagicMock(status_code=200, json=lambda: {"audio_uri": "/test.mp3"})
                 with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
                     mock_get.return_value = MagicMock(status_code=200, content=b"fake audio")
-                    
+
                     # Mock file creation
                     with patch("builtins.open", MagicMock()):
                         result = await service.generate_voiceover("Hello World")
@@ -74,11 +74,11 @@ class TestHardenedVoiceover:
         with patch("services.voiceover.service.get_secret", return_value="elevenlabs"):
             with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
                 mock_post.side_effect = Exception("Connection Failed")
-                
+
                 with patch("gtts.gTTS") as mock_gtts:
                     mock_gtts_instance = MagicMock()
                     mock_gtts.return_value = mock_gtts_instance
-                    
+
                     result = await service.generate_voiceover("Hello Fallback")
                     assert result is not None
                     assert mock_gtts.called

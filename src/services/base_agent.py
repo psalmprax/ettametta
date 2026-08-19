@@ -324,10 +324,10 @@ class BaseEttamettaAgent:
         # Use direct httpx for local proxy to avoid library deadlocks/formatting issues
         import httpx
         from types import SimpleNamespace
-        
+
         # Determine the target endpoint
         target_url = f"{self.clients[provider].base_url}/chat/completions"
-        
+
         try:
             async with httpx.AsyncClient() as h_client:
                 h_resp = await h_client.post(
@@ -335,11 +335,11 @@ class BaseEttamettaAgent:
                     json=kwargs,
                     timeout=600.0
                 )
-                
+
                 if h_resp.status_code != 200:
                     logger.error(f"❌ [{self.agent_name}] Proxy error {h_resp.status_code}: {h_resp.text}")
                     raise ValueError(f"Proxy returned {h_resp.status_code}")
-                
+
                 raw_data = h_resp.json()
                 resp = SimpleNamespace(
                     choices=[

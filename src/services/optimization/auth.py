@@ -44,7 +44,7 @@ class TokenManager:
             )
             if account_id:
                 stmt = stmt.where(SocialAccount.id == account_id)
-            
+
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
             return self._decrypt(account.access_token) if account else None
@@ -78,7 +78,7 @@ class TokenManager:
             )
             if account_id:
                 stmt = stmt.where(SocialAccount.id == account_id)
-            
+
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
 
@@ -243,7 +243,7 @@ class TokenManager:
             )
             if account_id:
                 stmt = stmt.where(SocialAccount.id == account_id)
-            
+
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
 

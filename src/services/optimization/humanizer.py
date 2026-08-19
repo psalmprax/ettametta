@@ -71,10 +71,10 @@ class TextHumanizer:
     def humanize(cls, text: str) -> str:
         if not text:
             return text
-        
+
         for pattern, replacement in cls.SLOP_PATTERNS.items():
             text = re.sub(pattern, replacement, text)
-            
+
         # Clean up any resulting double spaces
         text = re.sub(r"\s+", " ", text)
         return text.strip()

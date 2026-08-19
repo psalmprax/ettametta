@@ -34,11 +34,11 @@ except ImportError:
 class LangChainService:
     """
     Any LangChain enhancement for LLM orchestration.
-    
+
     Disabled by default - set ENABLE_LANGCHAIN=true to enable.
     Uses existing Groq API as the LLM backend.
     """
-    
+
     def __init__(self):
         self.circuit_breaker = CircuitBreaker()
         self.hot_reload()
@@ -46,24 +46,24 @@ class LangChainService:
     def hot_reload(self):
         """Re-initialize service from current environment/settings."""
         self.enabled = os.getenv("ENABLE_LANGCHAIN", "false").lower() == "true"
-        
+
         if not self.enabled:
             self.llm = None
             self.memory = None
             return
-            
+
         if not _langchain_available:
             self.enabled = False
             return
-        
+
         # Initialize with Groq
         from src.api.config import settings
-        
+
         api_key = settings.GROQ_API_KEY
         if not api_key:
             self.enabled = False
             return
-        
+
         try:
             self.llm = ChatGroq(
                 model=settings.LANGCHAIN_MODEL or "llama-3.3-70b-versatile",
@@ -78,11 +78,11 @@ class LangChainService:
         except Exception as e:
             logger.exception(f"[LangChain] Failed to hot-reload: {e}")
             self.enabled = False
-    
+
     def is_enabled(self) -> bool:
         """Check if service is enabled and available."""
         return self.enabled and self.llm is not None and not self.circuit_breaker.is_open()
-    
+
     async def analyze_video_vibe(self, niche: str, metadata: dict[str, Any]) -> dict[str, Any]:
         """
         Cognitive analysis of video metadata to suggest optimal 'Vibe' and 'Style' overrides.
@@ -93,18 +93,18 @@ class LangChainService:
 
         prompt = ChatPromptTemplate.from_template("""
         Analyze the following video metadata for the {niche} niche and suggest a viral visual vibe.
-        
+
         METADATA:
         {metadata}
-        
+
         TASK:
         1. Suggest a 'vibe' (e.g., Cinematic, Energetic, Hectic, Calm, Noir).
         2. Suggest a 'filter_override' code (e.g., f7, f8, f9, f12).
         3. Explain why.
-        
+
         Output JSON only.
         """)
-        
+
         try:
             chain = LLMChain(llm=self.llm, prompt=prompt)
             result_str = await chain.arun(niche=niche, metadata=json.dumps(metadata))
@@ -117,27 +117,27 @@ class LangChainService:
             self.circuit_breaker.record_failure()
             logger.exception(f"[LangChain] Vibe Analysis Failed: {e}")
             return {}
-    
+
     async def chain_prompt(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         context: dict[str, Any] | None = None,
         system_message: str | None = None
     ) -> str:
         """
         Use LangChain for structured prompting with context.
-        
+
         Args:
             prompt: User prompt
             context: Additional context dict
             system_message: Any system message
-            
+
         Returns:
             LLM response string
         """
         if not self.is_enabled():
             raise RuntimeError("LangChain service is not enabled")
-        
+
         # Build messages
         messages = []
         if system_message:
@@ -147,11 +147,11 @@ class LangChainService:
             messages.append(HumanMessage(content=f"Context: {context_str}\n\n{prompt}"))
         else:
             messages.append(HumanMessage(content=prompt))
-        
+
         # Invoke LLM
         response = await self.llm.agenerate([messages])
         return response.generations[0][0].text
-    
+
     async def chain_with_template(
         self,
         template: str,
@@ -159,26 +159,26 @@ class LangChainService:
     ) -> str:
         """
         Use a prompt template with variables.
-        
+
         Args:
             template: Prompt template string with {var} placeholders
             template_vars: dict of variables to fill
-            
+
         Returns:
             Filled prompt response
         """
         if not self.is_enabled():
             raise RuntimeError("LangChain service is not enabled")
-        
+
         prompt = PromptTemplate(
             template=template,
             input_variables=list(template_vars.keys())
         )
-        
+
         chain = LLMChain(llm=self.llm, prompt=prompt)
         result = await chain.arun(**template_vars)
         return result
-    
+
     async def conversational_response(
         self,
         user_input: str,
@@ -186,38 +186,38 @@ class LangChainService:
     ) -> str:
         """
         Maintain conversation context with memory.
-        
+
         Args:
             user_input: User message
             session_id: Session identifier for memory
-            
+
         Returns:
             AI response with context
         """
         if not self.is_enabled():
             raise RuntimeError("LangChain service is not enabled")
-        
+
         # Get or create session memory
         memory_key = f"session_{session_id}"
         if not hasattr(self, '_session_memories'):
             self._session_memories = {}
-        
+
         if memory_key not in self._session_memories:
             self._session_memories[memory_key] = ConversationBufferMemory(
                 memory_key="chat_history",
                 return_messages=True
             )
-        
+
         memory = self._session_memories[memory_key]
-        
+
         chain = ConversationalChain(
             llm=self.llm,
             memory=memory
         )
-        
+
         result = await chain.arun(input=user_input)
         return result
-    
+
     async def predict_virality_score(
         self,
         script_text: str,
@@ -227,12 +227,12 @@ class LangChainService:
         """
         Use LangChain memory and cognitive patterns to predict a script's viral potential.
         Provides a 'Viral Probability' score and improvement tips.
-        
+
         Args:
             script_text: The video script content
             niche: Target niche (e.g. 'coding', 'funny')
             metadata: Additional context (visuals, duration, etc.)
-            
+
         Returns:
             dict containing viral_score, confidence, and feedback
         """
@@ -245,45 +245,45 @@ class LangChainService:
                 System: You are the Ettametta Predictor. Analyze the following script for viral potential.
                 Niche: {niche}
                 Metadata: {metadata}
-                
+
                 Script:
                 {script_text}
-                
+
                 Analyze based on:
                 1. Hook Strength (0-100)
                 2. Translatability (0-100)
                 3. Retention Hooks (0-100)
-                
+
                 Return a JSON object with:
                 - viral_score (int)
                 - probability (float)
                 - feedback (str)
                 - suggested_edits (list)
             """)
-            
+
             chain = LLMChain(llm=self.llm, prompt=prompt)
             result = await chain.arun(
                 niche=niche,
                 metadata=json.dumps(metadata or {}),
                 script_text=script_text
             )
-            
+
             # Record success
             self.circuit_breaker.record_success()
-            
+
             # Simple cleanup of response if it's not pure JSON
             if "```json" in result:
                 result = result.split("```json")[1].split("```")[0].strip()
-            
+
             return json.loads(result)
-            
+
         except Exception as e:
             self.circuit_breaker.record_failure()
             logger.exception(f"[LangChain] Virality prediction failed: {e}")
             return {"error": str(e), "viral_score": 0}
         finally:
             logger.info(f"[LangChain] Virality prediction completed in {time.time() - start_time:.2f}s")
-    
+
     async def parse_output(
         self,
         prompt: str,
@@ -291,24 +291,24 @@ class LangChainService:
     ) -> BaseModel:
         """
         Parse LLM output into a Pydantic model.
-        
+
         Args:
             prompt: User prompt
             output_class: Pydantic model class
-            
+
         Returns:
             Parsed Pydantic object
         """
         if not self.is_enabled():
             raise RuntimeError("LangChain service is not enabled")
-        
+
         parser = PydanticOutputParser(pydantic_object=output_class)
-        
+
         prompt_with_format = f"""{prompt}
 
 {parser.get_format_instructions()}
 """
-        
+
         response = await self.chain_prompt(prompt_with_format)
         return parser.parse(response)
 

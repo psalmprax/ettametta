@@ -2,7 +2,7 @@
 Performance Ledger: The Truth Layer (10/10)
 =========================================
 
-Persistent log of Predicted vs Actual retention to prove 
+Persistent log of Predicted vs Actual retention to prove
 the system's learning maturity.
 """
 
@@ -29,7 +29,7 @@ class PerformanceLedger:
             "error": round(abs(predicted - actual), 4),
             "model_confidence_mae": round(model_mae, 4)
         }
-        
+
         try:
             entries = []
             if os.path.exists(self.ledger_path):
@@ -38,12 +38,12 @@ class PerformanceLedger:
                         entries = json.load(f)
                     except json.JSONDecodeError:
                         entries = []
-            
+
             entries.append(entry)
-            
+
             with open(self.ledger_path, 'w') as f:
                 json.dump(entries, f, indent=4)
-                
+
             logger.info(f"📗 [Ledger] Logged {video_id} ({niche}): Err={entry['error']:.4f}")
         except Exception as e:
             logger.exception(f"Ledger log failed: {e}")
@@ -52,15 +52,15 @@ class PerformanceLedger:
         """Dashboard Report: How honest is the system?"""
         if not os.path.exists(self.ledger_path):
             return {"accuracy": "no_data", "raw_entries": []}
-            
+
         try:
             with open(self.ledger_path, 'r') as f:
                 entries = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             return {"accuracy": "no_data", "raw_entries": []}
-        
+
         if not entries: return {"accuracy": "no_data", "raw_entries": []}
-        
+
         avg_err = sum(e["error"] for e in entries) / len(entries)
         return {
             "avg_prediction_error": round(avg_err, 4),

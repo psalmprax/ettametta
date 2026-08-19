@@ -144,7 +144,7 @@ class IntelligenceHub:
 
         # Step 1: Route based on complexity
         primary = self._route_complexity(complexity)
-        
+
         # Step 2: Define candidates (Primary -> Fallbacks)
         if provider:
             p_norm = provider.lower()
@@ -153,7 +153,7 @@ class IntelligenceHub:
             candidates = [p_norm]
         else:
             candidates = [primary, "ollama", "dify", "vllm", "gemini", "groq", "openai"]
-        
+
         # Remove duplicates while preserving order
         candidates = list(dict.fromkeys(candidates))
         logger.info(f"[{request_id}] LLM Candidates: {candidates}")
@@ -229,7 +229,7 @@ class IntelligenceHub:
             except Exception as e:
                 logger.debug(f"Provider {p} failed: {e}")
                 self.breakers[p].record_failure()
-                
+
                 # Record health failure
                 self.provider_health[p]["errors"] += 1
                 self.provider_health[p]["last_error"] = time.time()
@@ -270,7 +270,7 @@ class IntelligenceHub:
 
     def reset_all_circuits(self):
         """Reset all provider circuit breakers."""
-        for provider, breaker in self.breakers.items():
+        for _provider, breaker in self.breakers.items():
             breaker.reset()
         logger.info("All provider circuits reset")
 
@@ -316,7 +316,7 @@ class IntelligenceHub:
     async def _call_ollama(
         self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
-        
+
         # Standard: RAG Context Injection
         effective_prompt = prompt
         if rag_context:
@@ -338,7 +338,7 @@ class IntelligenceHub:
         # Standard: Dynamic Timeout for RAG operations (120s vs 90s)
         # Kept tight to prevent Nexus jobs hanging in COMPOSING state
         timeout = settings.LLM_TIMEOUT * 2 # Standard: 2x base timeout for local Ollama
-        
+
         async def _try_post(url):
             async with httpx.AsyncClient(timeout=timeout) as client:
                 headers = {"X-Request-ID": rid}
@@ -534,7 +534,7 @@ class IntelligenceHub:
         url = os.getenv("VLLM_URL", "http://ettametta-ollama:11434/v1")
         if not url.endswith("/chat/completions"):
             url = f"{url.rstrip('/')}/chat/completions"
-        
+
         effective_prompt = prompt
         if rag_context:
             effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
@@ -576,14 +576,14 @@ class IntelligenceHub:
     ) -> dict[str, Any]:
         """Dify AI Orchestrator provider"""
         from src.services.llm.dify_client import base_dify_client
-        
+
         effective_prompt = prompt
         if rag_context:
             effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
-            
+
         # Combine system and user prompt for Dify query
         query = f"Instruction: {system}\n\nInput: {effective_prompt}"
-        
+
         start = time.time()
         try:
             # We use chat_messages by default for the orchestrator
@@ -593,9 +593,9 @@ class IntelligenceHub:
                 inputs={"json_mode": json_mode}
             )
             latency = time.time() - start
-            
+
             content = response.get("answer", "")
-            
+
             # Metadata for tracing
             usage = {
                 "total_tokens": 0,

@@ -25,17 +25,17 @@ class CookieManager:
                 for line in f:
                     if line.startswith("#") or not line.strip():
                         continue
-                    
+
                     parts = line.strip().split("\t")
                     if len(parts) >= 7:
                         name = parts[5]
                         value = parts[6]
                         cookies[name] = value
-            
+
             logger.info(f"[CookieManager] Successfully parsed {len(cookies)} cookies from {file_path}")
         except Exception as e:
             logger.exception(f"[CookieManager] Failed to parse {file_path}: {e}")
-            
+
         return cookies
 
     def get_cookies_for_platform(self, platform: str) -> dict[str, str]:
@@ -51,11 +51,11 @@ class CookieManager:
             "twitter": "twitter_cookies.txt",
             "linkedin": "linkedin_cookies.txt"
         }
-        
+
         filename = mapping.get(platform.lower())
         if not filename:
             return {}
-            
+
         file_path = os.path.join(self.cookies_dir, filename)
         return self.parse_netscape_cookies(file_path)
 

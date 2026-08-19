@@ -140,7 +140,7 @@ async def translate_script(
     translated_segments = await base_multiplatform_service.translate_script_segments(
         segments, request.target_language
     )
-    
+
     # Return updated script
     translated_script = {**request.script, "segments": translated_segments}
     return success_response(data=translated_script)
@@ -167,7 +167,7 @@ async def launch_automated_video(
                 duration_sec=request.duration_seconds,
                 style=request.style,
             )
-        
+
         # 2. Trigger Auto-Creator (Standard 4.2: Automated Pipeline)
         job_id = await base_creator_service.launch_automated_video(
             user_id=current_user.id,
@@ -182,7 +182,7 @@ async def launch_automated_video(
             cta_text=request.cta_text,
             cta_template=request.cta_template,
         )
-        
+
         return success_response(data={
             "message": "Cinema sequence initiated",
             "job_id": job_id,

@@ -21,7 +21,7 @@ class DummyNode(BaseNode):
         self.executed_count += 1
         if self.delay > 0:
             await asyncio.sleep(self.delay)
-        
+
         # Build output based on inputs and params
         input_vals = {dep: ctx[dep] for dep in self.inputs if dep in ctx}
         return {
@@ -52,7 +52,7 @@ def test_dag_compiler_linear():
 
     assert plan.total_nodes() == 3
     assert plan.total_batches() == 3
-    
+
     batches = plan.get_batches()
     assert len(batches) == 3
     assert [n.id for n in batches[0]] == ["A"]
@@ -75,7 +75,7 @@ def test_dag_compiler_parallel_batches():
 
     assert plan.total_nodes() == 4
     assert plan.total_batches() == 3
-    
+
     batches = plan.get_batches()
     # Batch 1: A and B
     batch1_ids = {n.id for n in batches[0]}
@@ -119,17 +119,17 @@ async def test_scheduler_execution_success(temp_cache_dir):
 
     cache = Cache(cache_dir=temp_cache_dir)
     scheduler = Scheduler(cache=cache)
-    
+
     results = await scheduler.run(plan, inputs={"global_var": "hello"})
 
     # Check results mapping
     assert "A" in results
     assert "B" in results
     assert "C" in results
-    
+
     assert results["A"]["params"]["val"] == 10
     assert results["B"]["params"]["val"] == 20
-    
+
     # Check that C correctly received the input results from A and B
     assert results["C"]["inputs"]["A"]["node_id"] == "A"
     assert results["C"]["inputs"]["B"]["node_id"] == "B"
@@ -147,7 +147,7 @@ async def test_scheduler_failure_handling(temp_cache_dir):
 
     compiler = DAGCompiler()
     plan = compiler.compile([node_a, node_fail])
-    
+
     cache = Cache(cache_dir=temp_cache_dir)
     scheduler = Scheduler(cache=cache)
 

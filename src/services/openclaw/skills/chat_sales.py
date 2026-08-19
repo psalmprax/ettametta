@@ -17,12 +17,12 @@ class ChatSalesSkill(OpenClawBaseSkill):
         plt = platform or kwargs.get("platform")
         target = target_identifier or kwargs.get("target_identifier")
         ctx = context or kwargs.get("context")
-        
+
         if not plt or not target or not ctx:
             return "⚠️ Chat Sales failed: Missing platform, target_identifier, or context"
 
         self.logger.info(f"[Chat Sales] Initiating conversational sales on {plt} for {target}")
-        
+
         try:
             # Simulated Groq/LLM call for Chat Sales Agent
             payload = {
@@ -44,7 +44,7 @@ class ChatSalesSkill(OpenClawBaseSkill):
                 "temperature": 0.7,
                 "max_tokens": 300,
             }
-            
+
             headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
             resp = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -52,13 +52,13 @@ class ChatSalesSkill(OpenClawBaseSkill):
                 headers=headers,
                 timeout=15,
             )
-            
+
             if resp.status_code == 200:
                 reply = resp.json()["choices"][0]["message"]["content"]
                 return f"💬 **Chat Sales Generated Response**\n\n{reply}"
             else:
                 return f"⚠️ Chat Sales failed: Status {resp.status_code}"
-                
+
         except Exception as e:
             self.logger.error(f"Chat Sales Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"

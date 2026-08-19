@@ -27,7 +27,7 @@ class PublishingSkill(OpenClawBaseSkill):
         jid = job_id or kwargs.get("job_id", "")
         plt = platform or kwargs.get("platform", "YouTube Shorts")
         n = niche or kwargs.get("niche", "Motivation")
-        
+
         return self.publish_job(job_id=jid, platform=plt, niche=n)
 
 

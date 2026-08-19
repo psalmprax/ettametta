@@ -137,7 +137,7 @@ class WorkflowSkill(OpenClawBaseSkill):
 
     async def _execute_step(self, step: WorkflowStep) -> Any:
         """
-        Execute a single workflow step. 
+        Execute a single workflow step.
         Hardened: Transitioned from placeholders to real service integrations.
         """
         action = step.action

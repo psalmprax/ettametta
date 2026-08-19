@@ -37,7 +37,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
         act = action
         if act == "assist":
             act = "full_production_assistance"
-            
+
         params = {"action": act, **kwargs}
 
         try:
@@ -55,7 +55,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
                 res = await self._full_production_assistance(params)
             else:
                 return f"⚠️ Unknown action: {act}"
-            
+
             if isinstance(res, dict) and res.get("success"):
                 return f"✅ **Production Assistance ({act})**\n{res.get('message', '')}"
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"

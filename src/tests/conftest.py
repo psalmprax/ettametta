@@ -27,12 +27,12 @@ def test_db():
     """Create a test database."""
     from src.api.utils.database import Base, engine
     # Explicitly import models to register them with Base.metadata
-    
+
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
+
     yield
-    
+
     # Cleanup
     Base.metadata.drop_all(bind=engine)
 

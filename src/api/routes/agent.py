@@ -38,7 +38,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
     """Detect video generation intent and trigger appropriate AI engine"""
     import re
     message_lower = message.lower()
-    
+
     # Detect video generation keywords
     video_keywords = ["generate video", "create video", "make video", "video of"]
     provider_keywords = ["pixverse", "kling", "haiper", "luma", "pika", "runway", "leonardo", "mochi", "wan", "cogvideo", "zeroscope", "animatediff", "lite4k", "zsky", "stability", "replicate"]
@@ -50,7 +50,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
         # Extract prompt from message
         prompt_match = re.search(r"video (?:of |about )?(.+?)(?:using|$)", message, re.IGNORECASE)
         prompt = prompt_match.group(1).strip() if prompt_match else message
-        
+
         return {
             "status": "triggered",
             "type": "video_generation",
@@ -74,10 +74,10 @@ async def chat_with_agent(
     """
     try:
         from src.services.openclaw.agent import base_openclaw_agent_service
-        
+
         # Determine user identifier (prefer username/id for skill tracking)
         identifier = current_user.username or str(current_user.id)
-        
+
         # Use OpenClawAgent for full skill integration (PAPERCLIP, SCIENTIFIC, etc.)
         response_text = await base_openclaw_agent_service.process_message(
             identifier=identifier,
@@ -179,7 +179,7 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
 
     # Dynamic worker generation from skill registry
     workers = []
-    
+
     # Categorization mapping
     VIDEO_GEN = ["PIXVERSE", "LUMA", "KAIBER", "PIKA", "RUNWAY", "KLING", "HAILUO", "HAIPER", "GENMO", "MORPH", "VIDU", "WAVESPEED", "SEEDANCE", "FRAMELOOP", "LEIAPIX", "VIDEOANY", "HEYGEN", "LTX", "LEONARDO", "INVIDEO", "FLIKI", "PERCHANCE"]
     INTEL = ["DISCOVERY", "RESEARCH", "NICHE", "COMPETITOR", "TREND_PRED", "SCRAPE", "ANALYTICS", "METRICS", "INGESTION"]
@@ -191,7 +191,7 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     for key, skill in base_openclaw_agent_service.skill_registry.items():
         # Extract metadata from skill instance if available, otherwise use defaults
         metadata = getattr(skill, "metadata", {})
-        
+
         category = "General"
         if key in VIDEO_GEN:
             category = "Video Generation"
@@ -247,7 +247,7 @@ async def list_agent_personas(
     from src.api.utils.models import PersonaDB
     from src.api.utils.api_responses import success_response
     from pydantic import BaseModel
-    
+
     class PersonaResponse(BaseModel):
         id: str
         name: str
@@ -255,7 +255,7 @@ async def list_agent_personas(
         voice_clone_id: str | None = None
 
         model_config = ConfigDict(from_attributes=True)
-    
+
     stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
     result = await db.execute(stmt)
     personas = result.scalars().all()
@@ -278,17 +278,17 @@ async def account_audit(
     Performs an autonomous audit of a social media account.
     """
     from src.services.openclaw.skills.audit import AuditSkill
-    
+
     try:
         audit_skill = AuditSkill()
         # OpenClaw skills typically return markdown or structured strings
         report = await asyncio.to_thread(
-            audit_skill.execute, 
-            action=body.action, 
-            platform=body.platform, 
+            audit_skill.execute,
+            action=body.action,
+            platform=body.platform,
             user_id=current_user.id
         )
-        
+
         # Parse score and recommendations if possible, or return raw report
         # The frontend expects {score, recommendations, sprint_plan}
         # For now, we return the raw report and some extracted metadata if available
@@ -320,12 +320,12 @@ async def sandbox_execute(
         # Real-First: In a production environment, this would spawn a Docker container or Firecracker VM.
         # For this version, we use the OpenClaw agent to "simulate" the execution results or use Open Interpreter.
         from src.services.openclaw.agent import base_openclaw_agent_service
-        
+
         result = await base_openclaw_agent_service.process_message(
             identifier=str(current_user.id),
             message=f"Execute this code in the sandbox and return the logs: \n\n```javascript\n{code}\n```"
         )
-        
+
         return success_response(
             data={
                 "status": "completed",

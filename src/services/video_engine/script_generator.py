@@ -44,13 +44,13 @@ def detect_niche_from_topic(topic: str) -> str:
     topic_lower = topic.lower()
     best_match = "General"
     best_score = 0
-    
+
     for niche, keywords in NICHE_TAXONOMY.items():
         score = sum(1 for kw in keywords if kw in topic_lower)
         if score > best_score:
             best_score = score
             best_match = niche
-    
+
     return best_match
 
 class ScriptGenerator:
@@ -86,24 +86,24 @@ class ScriptGenerator:
             raise Exception("IntelligenceHub failed for script generation")
 
     async def generate_script(
-        self, 
-        topic: str, 
-        niche: str | None = None, 
-        duration_sec: int = 60, 
+        self,
+        topic: str,
+        niche: str | None = None,
+        duration_sec: int = 60,
         style: str = "story",
         clips: list[dict] = None,
         session_id: str | None = None
     ) -> dict[str, Any]:
         """
         Generates a structured script for a faceless video with Asset-Aware Narration.
-        
+
         If niche is not provided or is 'General', auto-detects the best niche from the topic.
         """
         # Auto-detect niche if not provided or too generic
         if not niche or niche.lower() in ["general", "auto", ""]:
             niche = detect_niche_from_topic(topic)
             logging.info(f"Auto-detected niche '{niche}' for topic: {topic}")
-        
+
         # 1. Fetch crystallized winning patterns from Hermes
         hermes_context = ""
         try:
@@ -136,11 +136,11 @@ class ScriptGenerator:
 
         prompt = f"""
         You are a Viral Narrative Architect. Your mission is to engineer a high-velocity {duration_sec}-second video script for the {niche} niche.
-        
+
         TOPIC: {topic}
         STYLE: {style}
         GUIDANCE: {style_guidance}
-        
+
         {"⚡ WINNING PATTERNS (Crystallized from viral hits):" if hermes_context else ""}
         {hermes_context}
 
@@ -153,7 +153,7 @@ class ScriptGenerator:
         3. PATTERN INTERRUPTS: Every 7-10 seconds, inject a visual or narrative pattern interrupt (e.g., a sudden change in angle, a shocking fact, or a sound effect cue).
         4. ASSET BINDING: Use 'target_clip_id' from the assets above to ground your narration in reality.
         5. VISUAL PACING: Provide 'visual_style' hints (e.g., 'Rapid cuts', 'Slow pan', 'Glitch overlay').
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "title": "Aggressive Viral Title",
@@ -173,7 +173,7 @@ class ScriptGenerator:
             "hashtags": ["#tag1", "#tag2"]
         }}
         """
-        
+
         try:
             content = await self._call_ai(prompt)
             data = json.loads(content)

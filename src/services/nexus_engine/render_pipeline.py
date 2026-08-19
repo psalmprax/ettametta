@@ -93,7 +93,6 @@ async def extract_thumbnail(
     return thumbnail_path
 
 
-@staticmethod
 def _format_srt_time(seconds: float) -> str:
     """Format a float-seconds value as an SRT timestamp ``HH:MM:SS,mmm``."""
     h = int(seconds // 3600)

@@ -87,7 +87,7 @@ def apply_quantization(pipe, quant_mode: str = "int8"):
         # Apply dynamic quantization to linear layers
         from torchao.quantization import quantize_
 
-        for name, module in pipe.named_modules():
+        for _name, module in pipe.named_modules():
             if isinstance(module, torch.nn.Linear):
                 # Replace with quantized version
                 pass  # Diffusers handles this automatically in recent versions

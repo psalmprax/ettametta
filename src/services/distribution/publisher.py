@@ -2,7 +2,7 @@
 Viral Distribution Gateway (True 10/10)
 =====================================
 
-Handles automated scheduling and publishing to social platforms 
+Handles automated scheduling and publishing to social platforms
 and manages the A/B testing variants in the wild.
 """
 
@@ -31,15 +31,15 @@ class Publisher:
         """Schedules a video or variant for upload"""
         video_path = production_data.get("video_path")
         title = production_data.get("title")
-        
+
         logger.info(f"📤 [Publisher] Scheduling upload: {title} ({video_path})")
-        
+
         # Simulate API upload delay
         await asyncio.sleep(1)
-        
+
         publish_time = datetime.now()
         logger.info(f"✅ [Publisher] Post LIVE at {publish_time.strftime('%H:%M:%S')}")
-        
+
         # Add to flight plan to track for future analytics ingestion
         self.flight_plan.append({
             "video_id": production_data.get("variant_id", "v1"),
@@ -47,7 +47,7 @@ class Publisher:
             "scheduled_at": publish_time,
             "production_data": production_data
         })
-        
+
         return {"status": "published", "publish_time": publish_time}
 
     async def publish_to_platform(
@@ -107,7 +107,7 @@ class Publisher:
                     result = await self._publish_instagram(video_path, caption)
                 else:
                     raise ValueError(f"Platform {platform} not supported for real publishing yet.")
-                
+
                 if job_id:
                     await base_state_machine.transition_to(job_id, JobState.PUBLISHING, JobState.COMPLETED, result)
                 return result

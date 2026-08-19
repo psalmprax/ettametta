@@ -11,7 +11,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
     """
     Crypto/Donations strategy - Accept crypto tips or donations
     """
-    
+
     async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches crypto wallet addresses from database configuration.
@@ -22,15 +22,15 @@ class CryptoStrategy(BaseMonetizationStrategy):
             stmt = select(SystemSettings).filter(SystemSettings.key == "crypto_wallets")
             result = await db.execute(stmt)
             wallets_setting = result.scalar_one_or_none()
-            
+
             if not wallets_setting or not wallets_setting.value:
                 logging.warning("[CryptoStrategy] No crypto wallets configured. Set 'crypto_wallets' in settings (format: BTC:addr,ETH:addr).")
                 return []
-            
+
             # Parse wallets (format: BTC:addr,ETH:addr,USDT:addr)
             assets = []
             wallet_str = wallets_setting.value
-            
+
             if "BTC" in wallet_str.upper():
                 btc_addr = self._extract_wallet(wallet_str, "BTC")
                 if btc_addr:
@@ -43,20 +43,20 @@ class CryptoStrategy(BaseMonetizationStrategy):
                         "cta_text": "Send BTC Tip",
                         "type": "crypto"
                     })
-            
+
             if "ETH" in wallet_str.upper():
                 eth_addr = self._extract_wallet(wallet_str, "ETH")
                 if eth_addr:
                     assets.append({
                         "id": "eth_wallet",
-                        "name": "Ethereum", 
+                        "name": "Ethereum",
                         "symbol": "ETH",
                         "url": f"ethereum:{eth_addr}",
                         "address": eth_addr,
                         "cta_text": "Send ETH Tip",
                         "type": "crypto"
                     })
-            
+
             if "USDT" in wallet_str.upper():
                 usdt_addr = self._extract_wallet(wallet_str, "USDT")
                 if usdt_addr:
@@ -69,12 +69,12 @@ class CryptoStrategy(BaseMonetizationStrategy):
                         "cta_text": "Support via USDT",
                         "type": "crypto"
                     })
-            
+
             # Add generic donation link if configured
             stmt_donation = select(SystemSettings).filter(SystemSettings.key == "donation_link")
             result_donation = await db.execute(stmt_donation)
             donation_setting = result_donation.scalar_one_or_none()
-            
+
             if donation_setting and donation_setting.value:
                 assets.append({
                     "id": "donation_link",
@@ -83,13 +83,13 @@ class CryptoStrategy(BaseMonetizationStrategy):
                     "cta_text": "Donate Now",
                     "type": "donation"
                 })
-            
+
             if not assets:
                 logging.warning(f"[CryptoStrategy] Could not parse crypto wallets from: {wallets_setting.value}")
                 return []
-            
+
             return assets
-    
+
     async def validate_address(self, address: str, symbol: str) -> bool:
         """
         Validates a crypto address using regex or public APIs.
@@ -147,7 +147,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
         Generates a call to action for crypto tips/donations.
         """
         assets = await self.get_assets(niche)
-        
+
         if assets:
             crypto_asset = next((a for a in assets if a.get("type") == "crypto"), assets[0])
             if crypto_asset.get("type") == "crypto":
@@ -176,5 +176,5 @@ class CryptoStrategy(BaseMonetizationStrategy):
                 "Help us create more content! Every bit helps 💜",
                 "Like what you see? Support us! Link below 💜"
             ]
-        
+
         return random.choice(options)

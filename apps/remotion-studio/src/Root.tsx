@@ -12,6 +12,11 @@ import { CinematicLiquid, cinematicLiquidSchema } from './templates/CinematicLiq
 import { CinematicPrism, cinematicPrismSchema } from './templates/CinematicPrism';
 import { CinematicLidar, cinematicLidarSchema } from './templates/CinematicLidar';
 import { CinematicKinetic, cinematicKineticSchema } from './templates/CinematicKinetic';
+import { ABTestReveal } from './templates/ABTestReveal';
+import { ProductShowcase } from './templates/ProductShowcase';
+import { SocialReel } from './templates/SocialReel';
+import { NewsTicker } from './templates/NewsTicker';
+
 
 export const RemotionRoot: React.FC = () => {
     const [jobData, setJobData] = useState<any>(null);
@@ -229,6 +234,40 @@ export const RemotionRoot: React.FC = () => {
                     subtitle: 'ENERGY',
                     show_cta_overlay: false
                 }}
+            />
+            <Composition
+                id="ABTestReveal"
+                component={ABTestReveal}
+                durationInFrames={150}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+
+            {/* ─── NEW A/B TEST TEMPLATES ───────────────────────────────────────── */}
+            <Composition
+                id="ProductShowcase"
+                component={ProductShowcase}
+                durationInFrames={180}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="SocialReel"
+                component={SocialReel}
+                durationInFrames={180}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="NewsTicker"
+                component={NewsTicker}
+                durationInFrames={300}
+                fps={30}
+                width={1920}
+                height={1080}
             />
         </>
     );

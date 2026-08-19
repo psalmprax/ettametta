@@ -14,11 +14,11 @@ class GlobalReachAdapter:
         prompt = f"""
         Translate the following video metadata into {target_lang}.
         Maintain the viral, high-impact tone. Use natural local idioms.
-        
+
         TITLE: {title}
         DESCRIPTION: {description}
         TAGS: {", ".join(tags)}
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "title": "Translated title",
@@ -26,7 +26,7 @@ class GlobalReachAdapter:
             "tags": ["tag1", "tag2"]
         }}
         """
-        
+
         try:
             result = await base_intelligence_service.chat(
                 prompt=prompt,
@@ -34,7 +34,7 @@ class GlobalReachAdapter:
                 json_mode=True,
                 complexity="medium"
             )
-            
+
             content = result["response"]
             return json.loads(content)
         except Exception as e:
@@ -52,21 +52,21 @@ class GlobalReachAdapter:
         """
         prompt = f"""
         Translate these video script segments into {target_lang}.
-        
+
         CRITICAL RULES:
         1. Keep the EXACT same JSON structure and ALL keys (type, text, visual_cue, visual_style, tone, pattern_interrupt, duration).
         2. ONLY translate the content of the "text" and "visual_cue" fields.
         3. Do NOT change the number of segments.
-        
+
         SEGMENTS TO TRANSLATE:
         {json.dumps(segments, indent=2)}
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "segments": [ ... translated segments ... ]
         }}
         """
-        
+
         try:
             result = await base_intelligence_service.chat(
                 prompt=prompt,
@@ -74,16 +74,16 @@ class GlobalReachAdapter:
                 json_mode=True,
                 complexity="medium"
             )
-            
+
             content = result["response"]
             translated_data = json.loads(content)
-            
+
             # Safety Check: Handle both { "segments": [...] } and direct [...] formats
             if isinstance(translated_data, list):
                 return translated_data
             if isinstance(translated_data, dict):
                 return translated_data.get("segments", segments)
-            
+
             return segments
         except Exception as e:
             self.logger.error(f"[GlobalReachAdapter] Script Translation Error: {e}")

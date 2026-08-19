@@ -102,14 +102,14 @@ async def test_credit_operations(test_db):
 async def test_stripe_create_customer():
     """Verify Stripe customer creation helper."""
     service = PaymentService(stripe_api_key="sk_test_mock")
-    
+
     mock_customer = MagicMock()
     mock_customer.id = "cus_mock123"
     mock_customer.email = "test@example.com"
-    
+
     with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
         mock_to_thread.return_value = mock_customer
-        
+
         res = await service.create_customer(email="test@example.com", user_id="user_abc")
         assert res["stripe_customer_id"] == "cus_mock123"
         assert res["email"] == "test@example.com"
@@ -120,15 +120,15 @@ async def test_stripe_create_customer():
 async def test_stripe_create_subscription():
     """Verify Stripe checkout session creation for subscriptions."""
     service = PaymentService(stripe_api_key="sk_test_mock")
-    
+
     mock_session = MagicMock()
     mock_session.id = "sess_mock123"
     mock_session.url = "https://checkout.stripe.com/pay/sess_mock123"
-    
+
     with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread, \
          patch.object(settings, "PRODUCTION_DOMAIN", "https://ettametta.com"):
         mock_to_thread.return_value = mock_session
-        
+
         res = await service.create_subscription(
             stripe_customer_id="cus_mock123",
             tier="sovereign"
@@ -141,23 +141,23 @@ async def test_stripe_create_subscription():
 async def test_stripe_get_and_cancel_subscription():
     """Verify retrieval and cancellation logic for Stripe subscriptions."""
     service = PaymentService(stripe_api_key="sk_test_mock")
-    
+
     mock_sub = MagicMock()
     mock_sub.id = "sub_mock123"
     mock_sub.status = "active"
     mock_sub.current_period_end = 1716298800
     mock_sub.cancel_at = 1716298800
     mock_sub.metadata = {"tier": "sovereign"}
-    
+
     with patch("stripe.Subscription.retrieve", return_value=mock_sub), \
          patch("stripe.Subscription.modify", return_value=mock_sub):
-        
+
         # Test retrieve
         get_res = await service.get_subscription("sub_mock123")
         assert get_res["id"] == "sub_mock123"
         assert get_res["status"] == "active"
         assert get_res["tier"] == "sovereign"
-        
+
         # Test cancel
         cancel_res = await service.cancel_subscription("sub_mock123")
         assert cancel_res["id"] == "sub_mock123"
@@ -168,10 +168,10 @@ async def test_stripe_get_and_cancel_subscription():
 async def test_stripe_webhook_checkout_completed(test_db):
     """Verify webhook handling for checkout.session.completed."""
     service = PaymentService(stripe_api_key="sk_test_mock")
-    
+
     user_id = "user_webhook_123"
     stripe_customer_id = "cus_webhook_123"
-    
+
     # Pre-populate user in db
     async with AsyncSessionLocal() as db:
         user = UserDB(
@@ -197,7 +197,7 @@ async def test_stripe_webhook_checkout_completed(test_db):
             })
         })
     })
-    
+
     with patch("stripe.Webhook.construct_event", return_value=stripe_event):
         res = await service.handle_webhook(
             payload=b"raw_payload",
@@ -449,10 +449,10 @@ async def test_stripe_trial_second_trial_rejected(test_db):
 async def test_stripe_webhook_subscription_deleted(test_db):
     """Verify webhook handling for customer.subscription.deleted."""
     service = PaymentService(stripe_api_key="sk_test_mock")
-    
+
     user_id = "user_webhook_456"
     stripe_sub_id = "sub_deleted_123"
-    
+
     # Pre-populate active subscriber in db
     async with AsyncSessionLocal() as db:
         user = UserDB(
@@ -473,7 +473,7 @@ async def test_stripe_webhook_subscription_deleted(test_db):
             })
         })
     })
-    
+
     with patch("stripe.Webhook.construct_event", return_value=stripe_event):
         res = await service.handle_webhook(
             payload=b"raw_payload",

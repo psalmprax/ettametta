@@ -72,7 +72,7 @@ class JobStore:
     def remove_node(self, url: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM nodes WHERE url = ?", (url,))
-        
+
         # Clean up in-memory health state
         with LOCK:
             if url in NODE_HEALTH:
@@ -110,7 +110,7 @@ BACKGROUND_TASKS: set[asyncio.Task[Any]] = set()
 
 async def _check_single_node(client: httpx.AsyncClient, node_data: dict[str, Any]):
     node = node_data["url"]
-    
+
     # --- PUSH/PULL COHESION ---
     with LOCK:
         health = NODE_HEALTH.get(node, {})
@@ -225,11 +225,11 @@ async def node_pulse_heartbeat(request: HeartbeatRequest, x_worker_token: str = 
     if WORKER_TOKEN and x_worker_token != WORKER_TOKEN:
         print(f"⚠️ [Pulse] Token mismatch for {request.url}", flush=True)
         raise HTTPException(status_code=401, detail="Invalid Worker Token")
-        
+
     node = request.url
     job_store.add_node(node)
     job_store.update_node_status(node, "READY")
-    
+
     with LOCK:
         NODE_HEALTH[node] = {
             "online": True,
@@ -257,7 +257,7 @@ async def cluster_health():
 async def proxy_status(job_id: str):
     """Route status requests to the specific node handling the job"""
     target_node = job_store.get_node(job_id)
-    
+
     if not target_node:
         # If not in map, try all online nodes as fallback
         with LOCK:
@@ -309,40 +309,40 @@ async def provision_node(request: ProvisionNodeRequest, x_admin_token: str = Hea
     ip = request.ip
     ssh_key = request.ssh_key
     port = request.port
-    
+
     # Ensure registered in local store for visibility
     job_store.add_node(f"http://{ip}:8122")
     job_store.update_node_status(f"http://{ip}:8122", "PROVISIONING")
-    
+
     def run_provision():
         try:
             print(f"🛠️ [Provision] Starting secure deploy to {ip}...", flush=True)
             # We use /dev/stdin to pass the key content without saving to disk
             cmd = ["/bin/bash", "./deploy_to_gpu_server.sh", ip, str(port)]
-            
+
             # Environment variables for the script to pick up the key from a virtual descriptor
             env = os.environ.copy()
-            # We'll need a way for the script to use the key. 
+            # We'll need a way for the script to use the key.
             # Easiest hardened way: Python writes to a temporary named pipe or uses /dev/stdin.
             # Let's use a temporary file in /dev/shm (RAM-only disk) if /dev/stdin is tricky for rsync.
-            
+
             os.makedirs("/dev/shm/vf_provision", mode=0o700, exist_ok=True)
             fd, temp_key = tempfile.mkstemp(dir="/dev/shm/vf_provision")
             try:
                 with os.fdopen(fd, "w") as f:
                     f.write(ssh_key)
-                
+
                 env["SSH_KEY"] = temp_key
                 env["AI_CLUSTER_SECRET"] = WORKER_TOKEN or ""
-                
+
                 # Streaming deployment telemetry to logs
                 process = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-                
+
                 for line in process.stdout:
                     print(line.strip(), flush=True)
-                
+
                 process.wait()
-                
+
                 if process.returncode == 0:
                     print(f"✅ [Provision] Node {ip} deployed successfully.", flush=True)
                     job_store.update_node_status(f"http://{ip}:8122", "READY")
@@ -366,24 +366,24 @@ async def proxy_post(path: str, request: Request):
     # Guard: Do not proxy management endpoints even if they match the catch-all
     if path in ["register", "nodes", "nodes/provision"]:
         raise HTTPException(status_code=400, detail="Management path hit proxy handler - check routing order")
-    
+
     try:
         body = await request.json()
     except Exception:
         # Fallback for empty/non-JSON bodies
         body = {}
-    
+
     # Identify requested model for routing
     model_key = body.get("model") or body.get("model_key")
     if not model_key:
         if "hunyuan" in path: model_key = "hunyuan_480p"
         elif "animatediff" in path: model_key = "animatediff_v15"
         elif "generate" in path: model_key = "ltx_2_19b"
-    
+
     target_node = select_best_node(model_key)
-    
+
     headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
-    
+
     async with httpx.AsyncClient(timeout=300.0) as client:
         try:
             resp = await client.post(f"{target_node}/{path}", json=body, headers=headers)
@@ -391,11 +391,11 @@ async def proxy_post(path: str, request: Request):
                 data = resp.json()
             except Exception:
                 data = {"raw": resp.text}
-            
+
             # Remember which node has this job for status/download requests
             if "job_id" in data:
                 job_store.save_job(data["job_id"], target_node)
-            
+
             return data
         except Exception as e:
             traceback.print_exc()

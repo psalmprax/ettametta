@@ -25,7 +25,7 @@ sys.modules["api.config"] = mock_config
 async def run_audit():
     print("🚀 ETTAMETTA RED-TEAM HARDENING AUDIT (25/25 TARGET)")
     print("-" * 50)
-    
+
     services = [
         ("OS Worker", "api.utils.os_worker", "ai_worker"),
         ("Video Processor", "services.video_engine.processor", "VideoProcessor"),
@@ -34,26 +34,26 @@ async def run_audit():
         ("LLM Service", "services.llm.service", "unified_llm_service"),
         ("OCR Service", "services.video_engine.base_ocr_service", "base_ocr_service"),
     ]
-    
+
     results = []
-    
+
     for name, module_path, attr in services:
         try:
             import importlib
             mod = importlib.import_module(module_path)
             obj = getattr(mod, attr)
-            
+
             # Instantiate if it's a class
             if isinstance(obj, type):
                 instance = obj()
             else:
                 instance = obj
-                
+
             report = instance.get_dependency_report()
             status = "Top Notch" if report['healthy'] else "Soft-Fallback"
             if "circuit_status" in report:
                 status += f" (Circuit: {report['circuit_status']})"
-            
+
             print(f"✅ {name:20}: {status}")
             results.append(True)
         except Exception as e:
@@ -62,20 +62,20 @@ async def run_audit():
 
     print("\n🔒 SECURITY INJECTION TESTING (SANDBOX LOCKDOWN)")
     print("-" * 50)
-    
+
     try:
         from src.services.llm.interpreter import interpreter_service
-        
+
         # Test 1: Direct getattr
         payload1 = "getattr(str, 'upper')"
         res1 = await interpreter_service.execute_code(payload1)
         print(f"🛡️  Test 1 (Direct getattr):   {'BLOCKED' if not res1['success'] else 'FAILED'}")
-        
+
         # Test 2: Obfuscated concatenation
         payload2 = 'o = "o"; s = "s."; res = o + s + "sy" + "stem"; print(res)'
         res2 = await interpreter_service.execute_code(payload2)
         print(f"🛡️  Test 2 (Obfuscated OS):   {'BLOCKED' if not res2['success'] else 'FAILED'}")
-        
+
         # Test 3: Sandbox Escape (__class__)
         payload3 = '"".__class__.__mro__[1].__subclasses__()'
         res3 = await interpreter_service.execute_code(payload3)

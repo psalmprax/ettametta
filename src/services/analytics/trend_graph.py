@@ -2,7 +2,7 @@
 Trend Graph Engine (9.9/10)
 ===========================
 
-Graph-based topics relationships to detect cross-platform cascades 
+Graph-based topics relationships to detect cross-platform cascades
 and strategic influence patterns.
 """
 
@@ -30,7 +30,7 @@ class TrendGraph:
 
     def detect_cross_platform_cascades(self, current_vitals: dict[str, Any]) -> list[str]:
         """
-        Identifies topics that are likely to 'jump' platforms based 
+        Identifies topics that are likely to 'jump' platforms based
         on established graph influence.
         """
         cascades = []
@@ -38,7 +38,7 @@ class TrendGraph:
             if weight > 0.5: # Strong relational bond
                  # If topic A is spiking on Reddit, predict topic B on TikTok
                  cascades.append(b if a in current_vitals else a)
-        
+
         return list(set(cascades))
 
     def get_related_clusters(self, topic: str) -> list[str]:

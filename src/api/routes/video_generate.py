@@ -57,7 +57,9 @@ async def generate_single_video(
     """
     try:
         # Engine access check still manual because it depends on request body
-        await engine_access_required(body.engine)(current_user)
+        # engine_access_required returns a sync dependency callable (Depends-style),
+        # so invoke it directly — do NOT await the returned function.
+        engine_access_required(body.engine)(current_user)
         # daily_limit_reached dependency already checked via Depends
         # Engine-specific billing action mapping
         engine_action = get_engine_action(body.engine)
@@ -108,7 +110,7 @@ async def generate_single_video(
         try:
             for i, variant in enumerate(variant_prompts):
                 task_id = str(uuid.uuid4())
-                
+
                 # Consume Credits with auto_commit=False (flushes to session)
                 success, msg = await credit_service.consume_credits(
                     user_id=current_user.id,

@@ -11,14 +11,14 @@ def test_remote_e2e():
     print("🚀 Starting E2E Remote Video Generation Test...")
     print(f"📡 Target API: {API_BASE}")
     print(f"🛠️ Using Blueprint: {BLUEPRINT_ID}")
-    
+
     payload = {
         "niche": "Cyberpunk",
         "topic": "Neon Rain Cityscape",
         "blueprint_id": BLUEPRINT_ID,
         "engine": "ltx-video"  # Specify LTX for faster completion
     }
-    
+
     # We use a long timeout for the initial request just in case
     with httpx.Client(timeout=60) as client:
         # 1. Trigger Composition
@@ -30,20 +30,20 @@ def test_remote_e2e():
         except Exception as e:
             print(f"❌ Network error contacting API: {e}")
             return False
-        
+
         job_data = resp.json()
         job_id = job_data.get("job_id")
         if not job_id:
             print(f"❌ No job_id returned: {job_data}")
             return False
-            
+
         print(f"✅ Job Created: {job_id}")
-        
+
         # 2. Poll Status
         start_time = time.time()
         timeout = 900 # 15 minutes for remote generation
         last_status = None
-        
+
         print("🕒 Polling status (this may take several minutes)...")
         while time.time() - start_time < timeout:
             try:
@@ -53,16 +53,16 @@ def test_remote_e2e():
                     current_status = status_data.get("status")
                     progress = status_data.get("progress", 0)
                     current_node = status_data.get("current_node", "N/A")
-                    
+
                     if current_status != last_status:
                         print(f"🔄 [{time.strftime('%H:%M:%S')}] Status: {current_status} | Node: {current_node} | Progress: {progress}%")
                         last_status = current_status
-                    
+
                     if current_status == "COMPLETED":
                         print("\n🎉 SUCCESS! E2E Remote Generation Test Passed.")
                         print(f"📂 Local Output Path: {status_data.get('output_path')}")
                         return True
-                    
+
                     if current_status == "FAILED":
                         print(f"\n❌ Job Failed: {status_data.get('error')}")
                         return False
@@ -70,9 +70,9 @@ def test_remote_e2e():
                     print(f"⚠️ Failed to get status: {status_resp.status_code}")
             except Exception as e:
                 print(f"⚠️ Polling error: {e}")
-                
+
             time.sleep(10)
-        
+
         print(f"\n❌ Test timed out after {timeout} seconds.")
         return False
 

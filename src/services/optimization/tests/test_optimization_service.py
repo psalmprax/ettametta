@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from src.services.optimization.service import base_optimization_service
-from src.services.optimization.models import PostMetadata
 
 @pytest.mark.asyncio
 async def test_generate_viral_package_humanizes_output():
@@ -15,27 +14,27 @@ async def test_generate_viral_package_humanizes_output():
         '  "cta": "It is important to note that you must follow."\n'
         '}'
     )
-    
+
     # Mock redis and database
     mock_redis = MagicMock()
     mock_redis.get.return_value = None
     base_optimization_service._redis_client = mock_redis
-    
+
     # Setup db mock
     mock_db_instance = AsyncMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_db_instance.execute = AsyncMock(return_value=mock_result)
-    
+
     with patch("src.services.optimization.service.settings.GROQ_API_KEY", "valid_key"), \
          patch.object(base_optimization_service, "_call_groq", AsyncMock(return_value=mock_response)), \
          patch("src.services.optimization.service.async_session_factory") as mock_db:
         mock_db.return_value.__aenter__.return_value = mock_db_instance
-        
+
         result = await base_optimization_service.generate_viral_package(
             content_id="123", niche="niche", platform="tiktok"
         )
-        
+
         # Expected humanized versions:
         # "Delve" -> "Dig"
         # "vibrant" -> "lively"
@@ -57,13 +56,13 @@ async def test_optimize_seo_content_humanizes_output():
         '  "hashtags": ["seo", "test"]\n'
         '}'
     )
-    
+
     with patch("src.services.optimization.service.settings.GROQ_API_KEY", "valid_key"), \
          patch.object(base_optimization_service, "_call_groq", AsyncMock(return_value=mock_response)):
         result = await base_optimization_service.optimize_seo_content(
             title="Old", description="Old desc", platform="youtube", niche="niche"
         )
-        
+
         # Expected humanized versions:
         # "Pivotal" -> "Key"
         # "Landscape" -> "Environment"
@@ -76,11 +75,11 @@ async def test_optimize_seo_content_humanizes_output():
 async def test_generate_viral_hooks_humanizes_output():
     """Verify that generate_viral_hooks humanizes all returned hook suggestions."""
     mock_response = '["Delve deeper", "A vibrant future", "Leverage this"]'
-    
+
     with patch("src.services.optimization.service.settings.GROQ_API_KEY", "valid_key"), \
          patch.object(base_optimization_service, "_call_groq", AsyncMock(return_value=mock_response)):
         result = await base_optimization_service.generate_viral_hooks(
             niche="niche", platform="youtube", count=3
         )
-        
+
         assert result == ["Dig deeper", "A lively future", "Use this"]

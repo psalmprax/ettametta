@@ -17,32 +17,32 @@ class DataScrapingSkill(OpenClawBaseSkill):
         target_url = url or kwargs.get("url") or kwargs.get("target_url")
         if not target_url:
             return "⚠️ Data Scraping failed: Missing URL"
-            
+
         fields = extract_fields or kwargs.get("extract_fields")
-        
+
         self.logger.info(f"[Data Scraping] Executing scrape for {target_url}")
-        
+
         try:
             # Simulated Jina/Scraping API call
             # In production, this would call Jina Reader API or a Playwright service
             jina_url = f"https://r.jina.ai/{target_url}"
             resp = requests.get(jina_url, timeout=20)
-            
+
             if resp.status_code == 200:
                 scraped_text = resp.text
-                
+
                 # If fields are requested, use LLM to extract structured data
                 if fields:
                     return self._extract_structured_data(scraped_text, fields, target_url)
-                
+
                 return f"🕸️ **Data Scraped Successfully**\n\nURL: {target_url}\nContent Length: {len(scraped_text)} characters.\n\nPreview:\n{scraped_text[:500]}..."
             else:
                 return f"⚠️ Data Scraping failed: Status {resp.status_code}"
-                
+
         except Exception as e:
             self.logger.error(f"Data Scraping Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
-            
+
     def _extract_structured_data(self, text: str, fields: list, url: str) -> str:
         fields_str = ", ".join(fields)
         try:
@@ -64,7 +64,7 @@ class DataScrapingSkill(OpenClawBaseSkill):
                 "temperature": 0.1,
                 "max_tokens": 1500,
             }
-            
+
             headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
             resp = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -72,13 +72,13 @@ class DataScrapingSkill(OpenClawBaseSkill):
                 headers=headers,
                 timeout=20,
             )
-            
+
             if resp.status_code == 200:
                 extraction = resp.json()["choices"][0]["message"]["content"]
                 return f"🕸️ **Structured Data Extracted**\n\nURL: {url}\n\n{extraction}"
             else:
                 return f"⚠️ Extraction failed: Status {resp.status_code}"
-                
+
         except Exception as e:
             self.logger.error(f"Data Extraction Error: {e}")
             return f"⚠️ Extraction Error: {str(e)}"

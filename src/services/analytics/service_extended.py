@@ -43,13 +43,13 @@ class AnalyticsServiceExtended:
     ) -> Tuple[List[PublishedContentDB], int]:
         """
         List all published posts with pagination.
-        
+
         Args:
             user_id: ID of the user
             user_role: Role of the user (for admin access)
             page: Page number
             size: Page size
-            
+
         Returns:
             Tuple of (posts list, total count)
         """
@@ -57,26 +57,26 @@ class AnalyticsServiceExtended:
         stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
-        
+
         # User isolation (unless admin)
         if user_role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == user_id)
-        
+
         # Order by published date
         stmt = stmt.order_by(PublishedContentDB.published_at.desc())
-        
+
         # Get total count
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_result = await self.db.execute(count_stmt)
         total_items = total_result.scalar() or 0
-        
+
         # Apply pagination
         offset = (page - 1) * size
         stmt = stmt.offset(offset).limit(size)
-        
+
         result = await self.db.execute(stmt)
         posts = result.scalars().all()
-        
+
         return posts, total_items
 
     # ============================================================
@@ -90,11 +90,11 @@ class AnalyticsServiceExtended:
     ) -> Dict[str, Any]:
         """
         Get summary statistics for all posts.
-        
+
         Args:
             user_id: ID of the user
             user_role: Role of the user
-            
+
         Returns:
             Dictionary with summary statistics
         """
@@ -102,16 +102,16 @@ class AnalyticsServiceExtended:
         post_stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
-        
+
         # User isolation
         if user_role != UserRole.ADMIN:
             post_stmt = post_stmt.where(PublishedContentDB.user_id == user_id)
-        
+
         # Count total posts
         count_stmt = select(func.count()).select_from(post_stmt.subquery())
         result = await self.db.execute(count_stmt)
         total_posts = result.scalar() or 0
-        
+
         # Get metrics
         metrics_stmt = select(
             func.sum(PublishedContentDB.view_count).label("total_views"),
@@ -119,18 +119,18 @@ class AnalyticsServiceExtended:
             func.sum(PublishedContentDB.share_count).label("total_shares"),
             func.avg(PublishedContentDB.retention_rate).label("avg_retention"),
         )
-        
+
         if user_role != UserRole.ADMIN:
             metrics_stmt = metrics_stmt.where(PublishedContentDB.user_id == user_id)
-        
+
         result = await self.db.execute(metrics_stmt)
         row = result.fetchone()
-        
+
         total_views = row.total_views or 0
         total_likes = row.total_likes or 0
         total_shares = row.total_shares or 0
         avg_retention = row.avg_retention or 0.0
-        
+
         return {
             "total_posts": total_posts,
             "total_views": int(total_views),
@@ -152,11 +152,11 @@ class AnalyticsServiceExtended:
     ) -> Dict[str, Any]:
         """
         Get dashboard summary statistics.
-        
+
         Args:
             user_id: ID of the user
             user_role: Role of the user
-            
+
         Returns:
             Dictionary with dashboard statistics
         """
@@ -164,29 +164,29 @@ class AnalyticsServiceExtended:
         post_stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
-        
+
         if user_role != UserRole.ADMIN:
             post_stmt = post_stmt.where(PublishedContentDB.user_id == user_id)
-        
+
         result = await self.db.execute(
             select(func.count()).select_from(post_stmt.subquery())
         )
         total_posts = result.scalar() or 0
-        
+
         # Count video jobs
         job_stmt = select(VideoJobDB)
-        
+
         if user_role != UserRole.ADMIN:
             job_stmt = job_stmt.where(VideoJobDB.user_id == user_id)
-        
+
         result = await self.db.execute(
             select(func.count()).select_from(job_stmt.subquery())
         )
         total_jobs = result.scalar() or 0
-        
+
         # Calculate success rate
         success_rate = (total_posts / total_jobs * 100) if total_jobs > 0 else 0
-        
+
         # Get metrics from published content
         metrics_stmt = select(
             func.sum(PublishedContentDB.view_count).label("total_views"),
@@ -195,30 +195,30 @@ class AnalyticsServiceExtended:
             func.sum(PublishedContentDB.comment_count).label("total_comments"),
             func.avg(PublishedContentDB.retention_rate).label("avg_retention"),
         )
-        
+
         if user_role != UserRole.ADMIN:
             metrics_stmt = metrics_stmt.where(PublishedContentDB.user_id == user_id)
-        
+
         result = await self.db.execute(metrics_stmt)
         row = result.fetchone()
-        
+
         total_views = row.total_views or 0
         total_likes = row.total_likes or 0
         total_shares = row.total_shares or 0
         total_comments = row.total_comments or 0
         avg_retention = row.avg_retention or 0.0
-        
+
         # Calculate engagement score
         engagement_score = 0.0
         if total_views > 0:
             engagement_score = ((total_likes + total_comments + total_shares) / total_views) * 100
-        
+
         # Count active trends
         result = await self.db.execute(
             select(func.count(NicheTrendDB.niche.distinct()))
         )
         active_trends_count = result.scalar() or 0
-        
+
         # Calculate velocity (recent trends)
         yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
         result = await self.db.execute(
@@ -227,7 +227,7 @@ class AnalyticsServiceExtended:
             )
         )
         recent_count = result.scalar() or 0
-        
+
         # Count pending jobs
         result = await self.db.execute(
             select(func.count(VideoJobDB.id)).where(
@@ -239,11 +239,11 @@ class AnalyticsServiceExtended:
             )
         )
         pending_jobs = result.scalar() or 0
-        
+
         # Calculate engine load
         MAX_CAPACITY = 10
         engine_load = int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
-        
+
         # Format reach
         if total_views >= 1000000:
             reach_formatted = f"{total_views / 1000000:.1f}M"
@@ -251,7 +251,7 @@ class AnalyticsServiceExtended:
             reach_formatted = f"{total_views / 1000:.1f}K"
         else:
             reach_formatted = str(total_views)
-        
+
         return {
             "active_trends": active_trends_count,
             "videos_processed": total_jobs,
@@ -279,22 +279,22 @@ class AnalyticsServiceExtended:
     ) -> Dict[str, Any]:
         """
         Get A/B test results for specific content.
-        
+
         Args:
             content_id: ID of the content
-            
+
         Returns:
             Dictionary with A/B test results
         """
         stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
         result = await self.db.execute(stmt)
         test = result.scalar_one_or_none()
-        
+
         if not test:
             raise ValueError("A/B test not found for this content")
-        
+
         winner = "A" if test.variant_a_view_count > test.variant_b_view_count else "B"
-        
+
         return {
             "test_id": test.id,
             "variant_a_title": test.variant_a_title,
@@ -316,26 +316,26 @@ class AnalyticsServiceExtended:
     ) -> List[Tuple[str, str, str, int, int, int, Optional[datetime.datetime]]]:
         """
         Export all published posts for CSV download.
-        
+
         Args:
             user_id: ID of the user
             user_role: Role of the user
-            
+
         Returns:
             List of tuples with post data
         """
         stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
-        
+
         if user_role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == user_id)
-        
+
         stmt = stmt.order_by(PublishedContentDB.published_at.desc())
-        
+
         result = await self.db.execute(stmt)
         posts = result.scalars().all()
-        
+
         return [
             (
                 post.id,
@@ -356,16 +356,16 @@ class AnalyticsServiceExtended:
     async def get_storage_stats(self) -> Dict[str, Any]:
         """
         Get storage usage statistics.
-        
+
         Returns:
             Dictionary with storage statistics
         """
         from src.services.storage.manager import storage_manager
         from src.api.config import settings
-        
+
         current_size = storage_manager.get_output_dir_size()
         threshold_bytes = storage_manager.threshold_bytes
-        
+
         return {
             "current_size_gb": round(current_size / (1024**3), 2),
             "threshold_gb": storage_manager.threshold_gb,
@@ -392,28 +392,28 @@ class AnalyticsServiceExtended:
     ) -> PublishedContentDB:
         """
         Verify that user has access to specific content.
-        
+
         Args:
             post_id: ID of the post
             user_id: ID of the user
             user_role: Role of the user
-            
+
         Returns:
             PublishedContentDB object
-            
+
         Raises:
             HTTPException: If content not found or access denied
         """
         from fastapi import HTTPException
-        
+
         stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
         result = await self.db.execute(stmt)
         content = result.scalar_one_or_none()
-        
+
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
-        
+
         if content.user_id != user_id and user_role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Access denied")
-        
+
         return content

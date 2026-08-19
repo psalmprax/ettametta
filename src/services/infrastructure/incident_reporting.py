@@ -17,7 +17,7 @@ class IncidentReportingService:
     Standard 3.12: Compliance Hardening (EU AI Act Article 71).
     Handles the dissemination of serious incident reports to external authorities via webhooks.
     """
-    
+
     async def report_incident(self, incident_type: str, details: dict[str, Any], severity: str = "CRITICAL"):
         """
         Triggers all active incident webhooks.
@@ -30,12 +30,12 @@ class IncidentReportingService:
             "platform_id": settings.APP_NAME,
             "details": details
         }
-        
+
         async with AsyncSessionLocal() as db:
             stmt = select(IncidentWebhookDB).where(IncidentWebhookDB.is_active)
             result = await db.execute(stmt)
             webhooks = result.scalars().all()
-            
+
             if not webhooks:
                 logger.info("No active incident webhooks registered.")
                 return
@@ -44,7 +44,7 @@ class IncidentReportingService:
                 for webhook in webhooks:
                     try:
                         headers = {"Content-Type": "application/json"}
-                        
+
                         # Apply HMAC signature if secret exists
                         if webhook.secret:
                             signature = hmac.new(
@@ -53,16 +53,16 @@ class IncidentReportingService:
                                 hashlib.sha256
                             ).hexdigest()
                             headers["X-AlphaHecta-Signature"] = signature
-                        
+
                         resp = await client.post(webhook.url, json=payload, headers=headers)
-                        
+
                         if resp.status_code < 300:
                             webhook.last_triggered_at = datetime.now(timezone.utc)
                             await db.commit()
                             logger.info(f"Incident report sent to {webhook.url}")
                         else:
                             logger.error(f"Failed to send incident report to {webhook.url}: {resp.status_code}")
-                            
+
                     except Exception as e:
                         logger.exception(f"Error triggering webhook {webhook.url}: {e}")
 

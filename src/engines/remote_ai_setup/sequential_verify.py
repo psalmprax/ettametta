@@ -17,7 +17,7 @@ def clear_vram():
 def run_verification():
     output_dir = "/workspace/ettametta_ai/outputs/verify"
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # 1. Hunyuan Verification
     print("\n--- STAGE 1: HunyuanVideo Verification ---")
     try:
@@ -30,16 +30,16 @@ def run_verification():
         print(f"✅ Hunyuan Success: {path}")
     except Exception as e:
         print(f"❌ Hunyuan Failed: {e}")
-    
+
     clear_vram()
-    
+
     # 2. LTX-2 Verification (Simplest 4-bit load test)
     print("\n--- STAGE 2: LTX-2 19B (4-bit) Verification ---")
     try:
         # We simulate the LTX2 load from main.py logic here
         # For the sake of verification, we'll try to load the transformer component
         print("📥 LTX-2 Load Test initiating...")
-        # Since we're in a standalone script, we'd normally import from main.py 
+        # Since we're in a standalone script, we'd normally import from main.py
         # but to keep it clean we'll just check if we can run a minimal generation via the model manager
         # (Assuming model_manager is configured for LTX)
         print("✅ LTX-2 Layer Load Logic Verified (Simulated for speed in this script)")

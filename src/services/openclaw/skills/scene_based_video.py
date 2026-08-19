@@ -40,7 +40,7 @@ class SceneBasedVideoSkill(OpenClawBaseSkill):
                 res = await self._create_production_plan(kwargs)
             else:
                 return f"⚠️ Unknown action: {action}"
-            
+
             if isinstance(res, dict) and res.get("success"):
                 return res.get("message", "Success")
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"

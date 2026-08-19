@@ -15,7 +15,7 @@ class StorageManager:
     def get_output_dir_size(self) -> int:
         """Calculates the total size of the output directory in bytes."""
         total_size = 0
-        for dirpath, dirnames, filenames in os.walk(self.output_dir):
+        for dirpath, _dirnames, filenames in os.walk(self.output_dir):
             for f in filenames:
                 fp = os.path.join(dirpath, f)
                 # skip if it is symbolic link
@@ -37,7 +37,7 @@ class StorageManager:
                     fp = os.path.join(dirpath, f)
                     if os.path.isfile(fp):
                         files.append((fp, os.path.getmtime(fp)))
-            
+
             files.sort(key=lambda x: x[1])
 
             # Migrate until we are at 80% of threshold
@@ -49,7 +49,7 @@ class StorageManager:
                 for file_path, _ in files:
                     if bytes_liberated >= bytes_to_liberate:
                         break
-                    
+
                     file_size = os.path.getsize(file_path)
                     success = await self._safe_move_to_cloud(file_path, db)
                     if success:
@@ -62,11 +62,11 @@ class StorageManager:
         """Moves a single file to OCI and updates DB references."""
         filename = os.path.basename(local_path)
         from sqlalchemy import select
-        
+
         try:
             # 1. Upload to Cloud
             object_key = base_storage_service.upload_to_cloud(local_path, filename)
-            
+
             if not object_key:
                 logging.warning(f"[StorageManager] Upload for {filename} failed. Aborting move.")
                 return False
@@ -78,21 +78,21 @@ class StorageManager:
             video_jobs = result.scalars().all()
             for job in video_jobs:
                 job.output_path = object_key
-            
+
             # NexusJobDB
             stmt = select(NexusJobDB).where(NexusJobDB.output_path == local_path)
             result = await db.execute(stmt)
             nexus_jobs = result.scalars().all()
             for n_job in nexus_jobs:
                 n_job.output_path = object_key
-            
+
             # ScheduledPostDB
             stmt = select(ScheduledPostDB).where(ScheduledPostDB.video_path == local_path)
             result = await db.execute(stmt)
             scheduled_posts = result.scalars().all()
             for post in scheduled_posts:
                 post.video_path = object_key
-            
+
             await db.commit()
 
             # 4. Verify (In a real scenario, we might want a checksum, but exist check is min)
@@ -113,13 +113,13 @@ class StorageManager:
 
         logging.info(f"[StorageManager] Applying retention policy: {days} days")
         cutoff_date = datetime.now() - timedelta(days=days)
-        
+
         try:
             # Note: We need to extend base_storage_service to support listing and deleting
             # For now, we assume base_storage_service has access to s3_client
             client = base_storage_service.s3_client
             bucket = base_storage_service.bucket
-            
+
             paginator = client.get_paginator('list_objects_v2')
             for page in paginator.paginate(Bucket=bucket):
                 if 'Contents' in page:
@@ -128,10 +128,10 @@ class StorageManager:
                         if last_modified < cutoff_date:
                             logging.info(f"[StorageManager] Deleting expired cloud object: {obj['Key']}")
                             client.delete_object(Bucket=bucket, Key=obj['Key'])
-                            
+
                             # Any: Clean up DB references if we want to mark them as 'purged'
                             # This is complex because we don't want to break the UI, just show 'Asset Expired'
-                            
+
         except Exception as e:
             logging.exception(f"[StorageManager] Error applying retention policy: {e}")
 

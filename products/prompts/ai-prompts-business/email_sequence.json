@@ -1,0 +1,21 @@
+{
+  "name": "50 AI Prompts for Business Owners sequence",
+  "emails": [
+    {
+      "subject": "Your 50 AI Prompts for Business Owners is ready!",
+      "body": "Thanks for your interest in 50 AI Prompts for Business Owners.\n\nYour download is ready: https://your-store.gumroad.com/l/ai-prompts\n\nQuick tips to get started:\n1. Download the files\n2. Open in Canva (free)\n3. Customize to your brand\n4. Use immediately\n\nNeed help? Reply to this email.",
+      "delay_days": 0
+    },
+    {
+      "subject": "Pro tips for business marketing",
+      "body": "Here are 3 ways to get more from your 50 AI Prompts for Business Owners:\n\n1. Customize colors to match your brand\n2. Add your logo for a professional look\n3. Save as templates for reuse\n\nWant more templates? Check out our other products.",
+      "delay_days": 3
+    },
+    {
+      "subject": "Need more business marketing templates?",
+      "body": "We have more products that pair perfectly with 50 AI Prompts for Business Owners.\n\nCheck out our full collection and save 20% with code WELCOME20.\n\nThanks for being a customer!",
+      "delay_days": 7
+    }
+  ],
+  "trigger": "purchase"
+}

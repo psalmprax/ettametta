@@ -40,20 +40,20 @@ ANIMEDIFF_MODELS = {
 def load_motion_adapter(motion_model: str = "sdxl"):
     """Load AnimateDiff motion adapter"""
     global _motion_adapter
-    
+
     if _motion_adapter is not None:
         return _motion_adapter
-    
+
     model_config = ANIMEDIFF_MODELS.get(motion_model, ANIMEDIFF_MODELS["sdxl"])
     motion_path = model_config["motion"]
-    
+
     print(f"📥 Loading AnimateDiff Motion Adapter: {motion_path}", flush=True)
-    
+
     _motion_adapter = MotionAdapter.from_pretrained(
         motion_path,
         torch_dtype=hardware_manager.dtype
     ).to(hardware_manager.get_device_obj())
-    
+
     print("✅ AnimateDiff Motion Adapter loaded", flush=True)
     return _motion_adapter
 
@@ -61,37 +61,37 @@ def load_motion_adapter(motion_model: str = "sdxl"):
 def load_sdxl_animatediff():
     """Load SDXL with AnimateDiff (recommended for quality)"""
     global _sdxl_pipe
-    
+
     if _sdxl_pipe is not None:
         return _sdxl_pipe
-    
+
     from diffusers import AutoPipelineForText2Image
-    
+
     print("📥 Loading SDXL + AnimateDiff...", flush=True)
-    
+
     # Load motion adapter
     motion_adapter = load_motion_adapter("sdxl")
-    
+
     # Create pipeline with motion
     pipe = AutoPipelineForText2Image.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=hardware_manager.dtype,
         variant="fp16"
     )
-    
+
     # Load motion adapter into pipeline
     pipe.motion_adapter = motion_adapter
-    
+
     # Enable Hardware device
     pipe = pipe.to(hardware_manager.get_device_obj())
-    
+
     # Set scheduler for better results
     pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
-    
+
     # Enable memory optimizations
     pipe.enable_vae_slicing()
     pipe.enable_vae_tiling()
-    
+
     _sdxl_pipe = pipe
     print("✅ SDXL + AnimateDiff loaded successfully", flush=True)
     return _sdxl_pipe
@@ -100,32 +100,32 @@ def load_sdxl_animatediff():
 def load_sd15_animatediff():
     """Load SD 1.5 with AnimateDiff (faster, less VRAM)"""
     global _sd15_pipe
-    
+
     if _sd15_pipe is not None:
         return _sd15_pipe
-    
+
     from diffusers import AutoPipelineForText2Image
-    
+
     print("📥 Loading SD 1.5 + AnimateDiff...", flush=True)
-    
+
     # Load motion adapter
     motion_adapter = load_motion_adapter("sd15")
-    
+
     # Create pipeline
     pipe = AutoPipelineForText2Image.from_pretrained(
         "runwayml/stable-diffusion-v1-5",
         torch_dtype=hardware_manager.dtype,
         variant="fp16"
     )
-    
+
     # Attach motion adapter
     pipe.motion_adapter = motion_adapter
-    
+
     pipe = pipe.to("cuda")
     pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
-    
+
     pipe.enable_vae_slicing()
-    
+
     _sd15_pipe = pipe
     print("✅ SD 1.5 + AnimateDiff loaded successfully", flush=True)
     return _sd15_pipe
@@ -144,7 +144,7 @@ def generate_animatediff_video(
 ) -> tuple[str, str]:
     """
     Generate animated video using AnimateDiff
-    
+
     Args:
         prompt: Text description
         negative_prompt: What to avoid
@@ -156,7 +156,7 @@ def generate_animatediff_video(
     """
     print(f"🎬 AnimateDiff: '{prompt[:50]}...' ({model_type})", flush=True)
     start_time = time.time()
-    
+
     # Select model
     if model_type == "sdxl":
         pipe = load_sdxl_animatediff()
@@ -171,7 +171,7 @@ def generate_animatediff_video(
             height = 512
         if width > 512:
             width = 512
-    
+
     # Generate
     with torch.inference_mode():
         output = pipe(
@@ -183,20 +183,20 @@ def generate_animatediff_video(
             width=width,
             num_frames=num_frames,
         )
-    
+
     # Extract frames
     frames = output.frames[0] if hasattr(output, 'frames') else output.images
-    
+
     # Save as video
     job_id = f"ad_{model_type}_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     export_to_video(frames, output_video_path=output_path, fps=8)
-    
+
     elapsed = time.time() - start_time
     print(f"✅ Generated {job_id}.mp4 ({num_frames} frames) in {elapsed:.1f}s", flush=True)
-    
+
     return job_id, output_path
 
 
@@ -212,7 +212,7 @@ def generate_from_image_animatediff(
 ) -> tuple[str, str]:
     """
     Animate a static image using AnimateDiff
-    
+
     Args:
         image_path: Path to input image
         prompt: Motion description (e.g., "walking, left to right")
@@ -222,15 +222,15 @@ def generate_from_image_animatediff(
     """
     print(f"🎬 AnimateDiff Image Animation: {image_path}", flush=True)
     start_time = time.time()
-    
+
     # Load image
     init_image = Image.open(image_path).convert("RGB")
-    
+
     # Resize for SDXL
     init_image = init_image.resize((1024, 1024))
-    
+
     pipe = load_sdxl_animatediff()
-    
+
     with torch.inference_mode():
         output = pipe(
             prompt=prompt,
@@ -241,16 +241,16 @@ def generate_from_image_animatediff(
             strength=strength,
             num_frames=num_frames,
         )
-    
+
     frames = output.frames[0] if hasattr(output, 'frames') else output.images
-    
+
     job_id = f"ad_img_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     export_to_video(frames, output_video_path=output_path, fps=8)
-    
+
     elapsed = time.time() - start_time
     print(f"✅ Generated animated video in {elapsed:.1f}s", flush=True)
-    
+
     return job_id, output_path

@@ -7,18 +7,18 @@ logger = logging.getLogger("ExperimentController")
 class ExperimentController:
     """
     10/10 Autonomy: The Imperial Exploration vs Exploitation Engine.
-    Decides when to follow a proven winner and when to risk a production cycle 
+    Decides when to follow a proven winner and when to risk a production cycle
     on a new narrative frontier.
     """
-    
+
     def __init__(self, epsilon: float = 0.2):
         self.epsilon = epsilon # 20% exploration by default
 
     def classify_mission(self) -> dict[str, Any]:
         """Classifies the next content mission."""
-        
+
         is_experiment = random.random() < self.epsilon
-        
+
         if is_experiment:
             mission = {
                 "type": "EXPERIMENTAL",
@@ -37,7 +37,7 @@ class ExperimentController:
                 "strategy": "PROVEN_HERMES_PATTERN"
             }
             logger.info("🛡️ [Experiment] Classifying Mission: SAFE (Exploitation High)")
-            
+
         return mission
 
     def update_epsilon(self, system_health_score: float):

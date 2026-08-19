@@ -29,11 +29,11 @@ class RemotionRenderSkill(OpenClawBaseSkill):
         """
         comp = composition or kwargs.get("composition", "main")
         p = props or kwargs.get("props") or kwargs
-        
+
         # Extract specific remotion flags from kwargs
         use_gpu = kwargs.get("use_gpu", False)
         frames = kwargs.get("frames")
-        
+
         return self.render_remotion_clip(
             composition=comp,
             props=p,
@@ -71,7 +71,7 @@ class RemotionRenderSkill(OpenClawBaseSkill):
             cmd.append("--disable-gpu")
             # Force software rendering for maximum compatibility on CPU
             cmd.append("--gl=swiftshader")
-        
+
         if frames:
             cmd.append(f"--frames={frames}")
 

@@ -247,7 +247,7 @@ async def create_niche_alert(
         )
         monitor_result = await db.execute(stmt_monitor)
         monitor = monitor_result.scalar_one_or_none()
-        
+
         if not monitor:
             monitor = MonitoredNiche(user_id=current_user.id, niche=request.niche, is_active=True)
             db.add(monitor)
@@ -274,7 +274,7 @@ async def create_niche_alert(
                 is_active=request.enabled,
             )
             db.add(alert)
-        
+
         await db.commit()
         return success_response(
             data={

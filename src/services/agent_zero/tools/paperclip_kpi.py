@@ -8,13 +8,13 @@ class PaperclipKPITool:
     """
     Paperclip KPI tracking tool for Agent Zero.
     """
-    
+
     def __init__(self):
         self.kpi_store = "/tmp/agent_zero_kpis.json"
         if not os.path.exists(self.kpi_store):
             with open(self.kpi_store, "w") as f:
                 json.dump({}, f)
-                
+
     def record_kpi(self, video_id: str, platform: str, views: int, revenue: float = 0.0) -> str:
         """
         Record and compare KPIs to previous baseline.
@@ -22,20 +22,20 @@ class PaperclipKPITool:
         try:
             with open(self.kpi_store, "r") as f:
                 data = json.load(f)
-                
+
             prev_views = data.get(video_id, {}).get("views", 0)
             diff = views - prev_views
-            
+
             data[video_id] = {
                 "platform": platform,
                 "views": views,
                 "revenue": revenue,
                 "delta": diff
             }
-            
+
             with open(self.kpi_store, "w") as f:
                 json.dump(data, f)
-                
+
             trend = "📈 Trending Up" if diff > 0 else "📉 Stale"
             return f"Paperclip KPI Recorded for {video_id} ({platform}): {views} views. {trend} (+{diff})"
         except Exception as e:
@@ -48,15 +48,15 @@ class PaperclipKPITool:
         try:
             with open(self.kpi_store, "r") as f:
                 data = json.load(f)
-                
+
             winning_niches = {}
             for vid, kpi in data.items():
                 if kpi["views"] > 500: # Threshold for 'winning'
                     winning_niches[vid] = kpi
-                    
+
             if not winning_niches:
                 return "Advice: Increase volume. No viral outliers found."
-                
+
             return f"Advice: Found {len(winning_niches)} viral anchors. Initiate 'Organic Ad' replication in these domains."
         except Exception as e:
             return f"Error getting advice: {str(e)}"

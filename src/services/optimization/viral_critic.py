@@ -5,16 +5,16 @@ from typing import Any
 
 class ViralCritic:
     """
-    AI Production Reviewer. 
+    AI Production Reviewer.
     Audits the final production package against viral psychological triggers.
     """
-    
+
     def __init__(self):
         self.logger = logging.getLogger("ViralCritic")
 
-    async def review_production(self, 
-        title: str, 
-        script: dict, 
+    async def review_production(self,
+        title: str,
+        script: dict,
         video_metadata: dict,
         session_id: str | None = None
     ) -> dict[str, Any]:
@@ -26,21 +26,21 @@ class ViralCritic:
         prompt = f"""
         You are the 'Viral Architect' - an expert critic for YouTube Shorts and TikTok.
         Review the following production metadata and provide a strict score (0-10).
-        
+
         PRODUCTION INFO:
         Title: {title}
         Total Duration: {video_metadata.get('duration')}s
         Clips Used: {video_metadata.get('segments_used')}
-        
+
         SCRIPT CONTENT:
         {json.dumps(script.get('segments'), indent=2)}
-        
+
         CRITERIA:
         1. HOOK VELOCITY: Does the opening sentence (first 3s) create immediate curiosity?
         2. NARRATIVE BRIDGING: Do the transitions between clips feel logical or forced?
         3. RETENTION DENSITY: Is the visual pacing appropriate?
         4. CALL TO ACTION: Is the final CTA clear and high-urgency?
-        
+
         OUTPUT JSON:
         {{
             "overall_score": 8.5,
@@ -62,14 +62,14 @@ class ViralCritic:
                 session_id=session_id,
                 json_mode=True
             )
-            
+
             review_data = json.loads(result["response"])
             self.logger.info(f"✅ Audit Complete ({result['provider'].upper()}): Score {review_data.get('overall_score')}/10")
             return review_data
 
         except Exception as e:
             self.logger.error(f"ViralCritic Hub call failed: {e}")
-            
+
         return self._get_fallback_review()
 
     def _get_fallback_review(self) -> dict:

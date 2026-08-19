@@ -69,7 +69,7 @@ class StrategyService:
         user_prompt = f"""
         NARRATIVE IDEA: {prompt}
         STYLE OVERLAY: {style}
-        
+
         TASK:
         1. Create a title for the story.
         2. Break the story into 3-5 logical scenes.
@@ -78,7 +78,7 @@ class StrategyService:
            - A 'narration_text' that tells the story (keep it concise).
            - A 'duration_hint' in seconds (usually 4.0-7.0s).
            - A 'vibe' (Cinematic, Hectic, Dramatic, etc.).
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "title": "Story Title",
@@ -210,9 +210,9 @@ DEEP ANALYSIS REPORT:
         TRANSCRIPT: "{full_text[:2000]}"
         {visual_context}
         {analysis_context}
-        
+
         DECISION CRITERIA:
-        1. STYLE OVERRIDE: 
+        1. STYLE OVERRIDE:
            - 'Cinematic': f7 (Overlays), f9 (Glow), Speed 0.98x.
            - 'ASMR/Calm': No Jitter, Speed 0.95x, f9 (Glow).
            - 'Glitch/High-Art': f8 (High Jitter), f12 (Glitch), Speed 1.05x.
@@ -222,7 +222,7 @@ DEEP ANALYSIS REPORT:
         4. FILTERS: 'f6' (Speed Ramping), 'f7' (Cinematic), 'f8' (Jitter), 'f9' (Glow), 'f10' (Grain), 'f11' (Grayscale), 'f12' (Glitch).
         5. HOOKS: Identify 1-3 specific segments (start/end in seconds) that are the most viral, emotional, or high-energy parts of the transcript.
         6. B-ROLL: Provide 3-5 search keywords for stock footage.
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "speed_range": [min, max],

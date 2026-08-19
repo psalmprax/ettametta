@@ -79,7 +79,7 @@ async def get_env_keys(current_user: UserDB = Depends(admin_required)):
     env_path = ".env"
     if not os.path.exists(env_path):
         return {"message": ".env file not found", "keys": []}
-    
+
     keys = []
     with open(env_path, "r") as f:
         for line in f:
@@ -87,7 +87,7 @@ async def get_env_keys(current_user: UserDB = Depends(admin_required)):
             if line and not line.startswith("#") and "=" in line:
                 key = line.split("=")[0]
                 keys.append(key)
-    
+
     return success_response(data={"keys": keys, "count": len(keys)})
 
 @router.post("/system/env/upload")
@@ -108,22 +108,22 @@ async def upload_env_file(
 
     content = await file.read()
     decoded_content = content.decode("utf-8")
-    
+
     # 2. Granular Validation
     lines = decoded_content.splitlines()
     valid_lines = []
     errors = []
-    
+
     # Simple regex for KEY=VALUE pairs, allowing comments and empty lines
     # Keys must be alphanumeric/underscore
     kv_pattern = re.compile(r"^[A-Z0-9_]+=[^#]*")
-    
+
     for i, line in enumerate(lines):
         line = line.strip()
         if not line or line.startswith("#"):
             valid_lines.append(line)
             continue
-            
+
         if kv_pattern.match(line):
             valid_lines.append(line)
         else:
@@ -146,12 +146,12 @@ async def upload_env_file(
     # 4. Persistence
     with open(env_path, "w") as f:
         f.write("\n".join(valid_lines))
-    
+
     # 5. Hot-swap (Current Process Only)
     if load_dotenv:
         load_dotenv(env_path, override=True)
         logger.info("⚡ Admin: Environment hot-swapped for current API process.")
-    
+
     # 6. Audit Logging
     await audit_service.log(
         action="ADMIN_ENV_UPLOAD",
@@ -188,7 +188,7 @@ async def restart_system(
     db=Depends(get_db)
 ):
     """
-    Triggers a controlled shutdown of the API process. 
+    Triggers a controlled shutdown of the API process.
     Requires 'restart: always' in docker-compose.yml to effect a reboot.
     """
     await audit_service.log(
@@ -248,7 +248,7 @@ async def register_incident_webhook(
     db.add(new_webhook)
     await db.commit()
     await db.refresh(new_webhook)
-    
+
     # EU AI Act Art. 14: log human oversight for configuring incident reporting
     await audit_service.log_human_oversight(
         action="COMPLIANCE_WEBHOOK_REGISTERED",
@@ -256,7 +256,7 @@ async def register_incident_webhook(
         reason=f"Registered incident webhook: {name or url}",
         db=db,
     )
-    
+
     return success_response(data={"id": new_webhook.id, "status": "Registered"})
 
 
@@ -312,11 +312,11 @@ async def list_audits(
     """
     from src.api.utils.models import SelfHealingAuditDB
     from sqlalchemy import select, desc
-    
+
     stmt = select(SelfHealingAuditDB).order_by(desc(SelfHealingAuditDB.created_at)).limit(50)
     result = await db.execute(stmt)
     logs = result.scalars().all()
-    
+
     return success_response(
         data=[
             {

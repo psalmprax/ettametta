@@ -107,13 +107,13 @@ class OpenClawAgent(BaseEttamettaAgent):
     - Predict upcoming trends
     - Generate viral content ideas
     - Scan niches for opportunities
-    
+
     You have access to the following tools:
     {tools_description}
-    
+
     PLANNING MODE:
     When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
-    
+
     If a tool is needed, output:
     "Plan: [Sub-agent names] - [Action description]"
     {{

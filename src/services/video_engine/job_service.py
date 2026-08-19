@@ -80,31 +80,31 @@ class VideoJobService:
 
     async def get_user_jobs(self, user_id: str | None = None, limit: int = 10, offset: int = 0, include_all: bool = False) -> tuple[list[dict], int]:
         """
-        Get jobs for a user or all jobs if include_all=True (admin). 
+        Get jobs for a user or all jobs if include_all=True (admin).
         Aggregates results from both standard Video engine and Nexus high-fidelity engine.
         Returns (unified_jobs, total_count).
         """
         from src.api.utils.models import NexusJobDB
-        
+
         # 1. Fetch Video Jobs
         video_stmt = select(VideoJobDB)
         if user_id and not include_all:
             video_stmt = video_stmt.where(VideoJobDB.user_id == user_id)
-        
+
         video_result = await self.db.execute(video_stmt.order_by(VideoJobDB.created_at.desc()))
         video_jobs = list(video_result.scalars().all())
-        
+
         # 2. Fetch Nexus Jobs
         nexus_stmt = select(NexusJobDB)
         if user_id and not include_all:
             nexus_stmt = nexus_stmt.where(NexusJobDB.user_id == user_id)
-            
+
         nexus_result = await self.db.execute(nexus_stmt.order_by(NexusJobDB.created_at.desc()))
         nexus_jobs = list(nexus_result.scalars().all())
-        
+
         # 3. Unify and Normalize
         unified_list = []
-        
+
         for v in video_jobs:
             try:
                 # Defensive check for status and metadata
@@ -127,7 +127,7 @@ class VideoJobService:
             except Exception as e:
                 logger.exception(f"[JobService] Error normalizing video job {v.id if hasattr(v, 'id') else 'unknown'}: {e}")
                 continue
-            
+
         for n in nexus_jobs:
             try:
                 try:
@@ -149,7 +149,7 @@ class VideoJobService:
             except Exception as e:
                 logger.exception(f"[JobService] Error normalizing nexus job {n.id if hasattr(n, 'id') else 'unknown'}: {e}")
                 continue
-            
+
         # 4. Sort and Paginate
         # Defensive sorting: ensure created_at is not None
         from datetime import datetime
@@ -165,13 +165,13 @@ class VideoJobService:
         unified_list.sort(key=safe_sort_key, reverse=True)
         total_count = len(unified_list)
         paginated_jobs = unified_list[offset:offset+limit]
-        
+
         return paginated_jobs, total_count
 
     async def get_job_by_id(self, job_id: str, user_id: str) -> dict | None:
         """Get a specific job from either Video or Nexus tables"""
         from src.api.utils.models import NexusJobDB
-        
+
         # Check Video jobs first
         stmt = select(VideoJobDB).where(
             VideoJobDB.id == job_id, VideoJobDB.user_id == user_id
@@ -191,7 +191,7 @@ class VideoJobService:
                 "updated_at": v.updated_at,
                 "engine": "video_transform"
             }
-            
+
         # Check Nexus jobs
         stmt_n = select(NexusJobDB).where(
             NexusJobDB.id == job_id, NexusJobDB.user_id == user_id
@@ -211,7 +211,7 @@ class VideoJobService:
                 "updated_at": n.updated_at,
                 "engine": "nexus_compose"
             }
-            
+
         return None
 
     async def update_job_status(self, job_id: str, status: SystemJobStatus | str) -> bool:
@@ -222,7 +222,7 @@ class VideoJobService:
             except KeyError:
                 logger.warning(f"[JobService] Invalid status string: {status}, ignoring update.")
                 return False
-        
+
         stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
         result = await self.db.execute(stmt)
         job = result.scalar_one_or_none()
@@ -240,7 +240,7 @@ class VideoJobService:
     async def delete_job(self, job_id: str, user_id: str) -> bool:
         """Delete a job from either Video or Nexus tables"""
         from src.api.utils.models import NexusJobDB
-        
+
         # Check Video jobs
         stmt = select(VideoJobDB).where(
             VideoJobDB.id == job_id, VideoJobDB.user_id == user_id
@@ -251,7 +251,7 @@ class VideoJobService:
             await self.db.delete(v)
             await self.db.commit()
             return True
-            
+
         # Check Nexus jobs
         stmt_n = select(NexusJobDB).where(
             NexusJobDB.id == job_id, NexusJobDB.user_id == user_id
@@ -262,53 +262,53 @@ class VideoJobService:
             await self.db.delete(n)
             await self.db.commit()
             return True
-            
+
         return False
 
     async def abort_job(self, job_id: str, user_id: str, user_role: UserRole) -> bool:
         """
         Abort a running video job.
-        
+
         Args:
             job_id: ID of the job to abort
             user_id: ID of the user requesting abort
             user_role: Role of the user (for admin check)
-            
+
         Returns:
             True if job was aborted, False otherwise
         """
         from src.api.utils.celery import celery_app
         from src.api.routes.ws import notify_job_update_sync
         from src.api.utils.models import NexusJobDB
-        
+
         try:
             # Try Video jobs first
             stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
             result = await self.db.execute(stmt)
             job = result.scalar_one_or_none()
-            
+
             # Try Nexus jobs if not found
             if not job:
                 stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
                 result = await self.db.execute(stmt)
                 job = result.scalar_one_or_none()
-            
+
             if not job:
                 logger.warning(f"[JobService] Job {job_id} not found for abort")
                 return False
-            
+
             # Check authorization
             if user_role != UserRole.ADMIN and job.user_id != user_id:
                 logger.warning(f"[JobService] User {user_id} not authorized to abort job {job_id}")
                 return False
-            
+
             # Revoke Celery task
             celery_app.control.revoke(job_id, terminate=True)
-            
+
             # Update job status
             job.status = SystemJobStatus.ABORTED
             await self.db.commit()
-            
+
             # Notify WebSocket clients
             notify_job_update_sync(
                 {
@@ -318,10 +318,10 @@ class VideoJobService:
                     "output_path": job.output_path,
                 }
             )
-            
+
             logger.info(f"[JobService] Job {job_id} aborted successfully")
             return True
-            
+
         except Exception as e:
             await self.db.rollback()
             logger.exception(f"[JobService] Failed to abort job {job_id}: {e}")

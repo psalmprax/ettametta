@@ -706,12 +706,12 @@ async def trigger_flywheel_evolution(
     Calculates weighted engagement scores, kills losers, and prepares winner for iteration.
     """
     from src.services.optimization.flywheel import base_flywheel_service
-    
+
     winner = await base_flywheel_service.run_evolution_cycle(parent_job_id)
-    
+
     if not winner:
         raise HTTPException(status_code=404, detail="No variants found for this parent job")
-    
+
     return success_response(data={
         "status": "evolution_complete",
         "winner_id": winner["job_id"],
@@ -731,9 +731,9 @@ async def trigger_global_evolution(
     Prunes underperforming strategies across all active niches.
     """
     from src.services.optimization.flywheel import base_flywheel_service
-    
+
     summary = await base_flywheel_service.trigger_global_evolution()
-    
+
     return success_response(data={
         "status": "global_evolution_initiated",
         "summary": summary,
@@ -770,10 +770,10 @@ async def create_variant_ab_test(
     stmt = select(VideoJobDB).where(
         cast(VideoJobDB.job_metadata["parent_id"], SA_String) == parent_job_id,
     ).order_by(VideoJobDB.created_at.asc())
-    
+
     result = await db.execute(stmt)
     variant_jobs = result.scalars().all()
-    
+
     # Sort by variant_index from metadata if available
     variant_jobs.sort(key=lambda j: (j.job_metadata or {}).get("variant_index", 0))
 
@@ -807,10 +807,10 @@ async def create_variant_ab_test(
         status_val_a = variant_a_job.status.value if hasattr(variant_a_job.status, 'value') else variant_a_job.status
     if variant_b_job:
         status_val_b = variant_b_job.status.value if hasattr(variant_b_job.status, 'value') else variant_b_job.status
-    
+
     if not variant_a_job or status_val_a != SystemJobStatus.COMPLETED.value:
         raise HTTPException(status_code=400, detail="Variant A job is not yet completed")
-    
+
     if not variant_a_output:
         raise HTTPException(status_code=400, detail="Variant A has no output path")
 
@@ -949,7 +949,7 @@ async def publish_variant_ab_test(
 
     variant_results = []
 
-    for variant_label, variant_title, variant_desc, video_path in [
+    for variant_label, variant_title, _variant_desc, video_path in [
         ("A", test.variant_a_title, test.variant_a_description, variant_a_path),
         ("B", test.variant_b_title, test.variant_b_description, variant_b_path or variant_a_path),
     ]:

@@ -69,10 +69,10 @@ async def abort_job(
             user_id=current_user.id,
             user_role=current_user.role,
         )
-        
+
         if not success:
             raise HTTPException(status_code=404, detail="Job not found or unauthorized")
-        
+
         return success_response(
             data={
                 "status": SystemJobStatus.ABORTED.value,

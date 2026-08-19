@@ -258,7 +258,7 @@ class AssetManager:
         )
 
         remotion_clips = []
-        for v_path, count in zip(visual_paths, counts):
+        for v_path, count in zip(visual_paths, counts, strict=False):
             if count is not None:
                 remotion_clips.append({"url": v_path, "duration_in_frames": count})
             else:

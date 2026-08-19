@@ -19,7 +19,7 @@ class SEOAuditorSkill(OpenClawBaseSkill):
         keyword = target_keyword or kwargs.get("target_keyword", "General")
 
         self.logger.info(f"[SEO Auditor] Executing SEO audit for url={target_url}, keyword={keyword}")
-        
+
         try:
             # Simulated Groq/LLM call for SEO analysis
             payload = {
@@ -44,7 +44,7 @@ class SEOAuditorSkill(OpenClawBaseSkill):
                 "temperature": 0.5,
                 "max_tokens": 1500,
             }
-            
+
             headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
             resp = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -52,13 +52,13 @@ class SEOAuditorSkill(OpenClawBaseSkill):
                 headers=headers,
                 timeout=15,
             )
-            
+
             if resp.status_code == 200:
                 analysis = resp.json()["choices"][0]["message"]["content"]
                 return f"🔍 **SEO Audit Complete**\n\n{analysis}"
             else:
                 return f"⚠️ SEO Audit failed: Status {resp.status_code}"
-                
+
         except Exception as e:
             self.logger.error(f"SEO Auditor Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"

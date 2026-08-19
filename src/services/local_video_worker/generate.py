@@ -39,28 +39,28 @@ def synthesize_local_task(prompt: str, duration_seconds: int = 5) -> str:
         return error_msg
 
     init_pipeline()
-    
+
     if pipe is None:
         error_msg = "Pipeline failed to initialize."
         logging.error(error_msg)
         return error_msg
-        
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
+
     # Calculate frames based on requested duration (assume 24 fps)
     num_frames = duration_seconds * 24
-    
+
     logging.info(f"Synthesizing {duration_seconds}s ({num_frames} frames) for prompt: {prompt[:30]}...")
-    
+
     try:
         # Generate video utilizing diffusers
         video_result = pipe(prompt, num_frames=num_frames).frames
-        
+
         # Save output
         import uuid
         filename = f"clip_{uuid.uuid4().hex[:8]}.mp4"
         output_path = os.path.join(OUTPUT_DIR, filename)
-        
+
         # Depending on the exact model output, saving mechanisms differ.
         # Often it requires a helper function to export to mp4.
         # Assuming the pipeline returns an object with a save() method:
@@ -71,7 +71,7 @@ def synthesize_local_task(prompt: str, duration_seconds: int = 5) -> str:
              import imageio
              from PIL import Image
              import numpy as np
-             
+
              # Convert frames to numpy arrays if necessary, then write
              if isinstance(video_result, list):
                  writer = imageio.get_writer(output_path, fps=24)
@@ -86,7 +86,7 @@ def synthesize_local_task(prompt: str, duration_seconds: int = 5) -> str:
 
         logging.info(f"Video saved to {output_path}")
         return output_path
-        
+
     except Exception as e:
         error_msg = f"Synthesis failed: {str(e)}"
         logging.exception(error_msg)

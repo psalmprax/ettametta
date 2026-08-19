@@ -398,10 +398,10 @@ class AnalyticsService:
                 stmt = select(PerformanceSnapshotDB).where(
                     PerformanceSnapshotDB.content_id == post_id
                 ).order_by(PerformanceSnapshotDB.snapshot_at.asc())
-                
+
                 result = await db.execute(stmt)
                 snapshots = result.scalars().all()
-                
+
                 return [
                     {
                         "time": s.snapshot_at.isoformat(),
@@ -494,7 +494,7 @@ class AnalyticsService:
         from sqlalchemy import select
 
         suggestions = []
-        
+
         try:
             async with async_session_factory() as db:
                 # 1. Check for specific Affiliate Links in this niche
@@ -555,7 +555,7 @@ class AnalyticsService:
                     "product": f"Elite {niche} Tools",
                     "status": "Discovery needed"
                 })
-        
+
         return suggestions
 
     def calculate_statistical_significance(self, champ_views: int, champ_engagements: int, chall_views: int, chall_engagements: int) -> dict:
@@ -564,30 +564,30 @@ class AnalyticsService:
         Uses the pooled proportion formula.
         """
         import math
-        
+
         if champ_views < 30 or chall_views < 30:
             return {"status": "INCONCLUSIVE", "confidence": 0, "p_value": 1.0, "reason": "Sample size too small (<30)"}
 
         p1 = champ_engagements / champ_views
         p2 = chall_engagements / chall_views
-        
+
         # Pooled proportion
         p_pooled = (champ_engagements + chall_engagements) / (champ_views + chall_views)
-        
+
         try:
             # Standard Error
             se = math.sqrt(p_pooled * (1 - p_pooled) * (1/champ_views + 1/chall_views))
             if se == 0: return {"status": "INCONCLUSIVE", "confidence": 0, "p_value": 1.0}
-            
+
             z_score = (p2 - p1) / se
-            
+
             # P-value calculation using erf
             p_value = 1 - (0.5 * (1 + math.erf(abs(z_score) / math.sqrt(2))))
             confidence = (1 - p_value) * 100
-            
+
             # 95% threshold (Z critical = 1.96)
             status = "SIGNIFICANT" if p_value < 0.05 else "INSIGNIFICANT"
-            
+
             return {
                 "status": status,
                 "confidence": round(confidence, 2),
@@ -605,37 +605,37 @@ class AnalyticsService:
         Allows for 'Early Exit' from underperforming A/B tests to save CPU cycles.
         """
         import math
-        
+
         if champ_views < 15 or chall_views < 15:
             return {"decision": "CONTINUE", "llr": 0.0}
 
         p1 = max(0.0001, champ_engagements / champ_views)
-        
+
         # Null Hypothesis H0: p2 = p1
         # Alternative Hypothesis H1: p2 = p1 * (1 + target_improvement)
         p_h0 = p1
         p_h1 = min(0.9999, p1 * (1 + target_improvement))
-        
+
         try:
             s = chall_engagements
             n = chall_views
-            
+
             # Log-Likelihood Ratio: log( (p_h1^s * (1-p_h1)^(n-s)) / (p_h0^s * (1-p_h0)^(n-s)) )
             llr = s * math.log(p_h1 / p_h0) + (n - s) * math.log((1 - p_h1) / (1 - p_h0))
-            
+
             # Thresholds for alpha=0.05, beta=0.05
             # A = (1-beta)/alpha = 0.95/0.05 = 19.0
             # B = beta/(1-alpha) = 0.05/0.95 = 0.0526
             upper_bound = math.log(19.0)
             lower_bound = math.log(0.0526)
-            
+
             if llr >= upper_bound:
                 return {"decision": "STOP_WINNER", "llr": round(llr, 4), "status": "SIGNIFICANT_SUCCESS"}
             elif llr <= lower_bound:
                 return {"decision": "STOP_LOSER", "llr": round(llr, 4), "status": "EARLY_EXIT_FAILURE"}
             else:
                 return {"decision": "CONTINUE", "llr": round(llr, 4)}
-                
+
         except Exception as e:
             self.logger.debug(f"[Analytics] SPRT decision error: {e}")
             return {"decision": "CONTINUE", "llr": 0.0}
@@ -654,10 +654,10 @@ class AnalyticsService:
                 stmt = select(PerformanceSnapshotDB).where(
                     PerformanceSnapshotDB.content_id == post_id
                 ).order_by(PerformanceSnapshotDB.snapshot_at.desc()).limit(1)
-                
+
                 result = await db.execute(stmt)
                 last_s = result.scalar_one_or_none()
-                
+
                 if last_s and last_s.snapshot_at.date() == today:
                     # Update today's existing snapshot
                     last_s.view_count = max(last_s.view_count, views)
@@ -739,7 +739,7 @@ class AnalyticsService:
         stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
-        
+
         if not include_all:
             stmt = stmt.where(PublishedContentDB.user_id == user_id)
 
@@ -821,10 +821,10 @@ class AnalyticsService:
 
         if not content:
             return False
-        
+
         if role == UserRole.ADMIN or content.user_id == user_id:
             return True
-        
+
         return False
 
     async def get_ab_test_results(self, db, content_id: str):

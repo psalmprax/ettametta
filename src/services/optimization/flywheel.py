@@ -57,7 +57,7 @@ class FlywheelService:
                 # 2. Fetch latest metrics (Mocked for now until Analytics API integrated)
                 # In production, this would call base_youtube_service.get_advanced_metrics
                 metrics = await self._fetch_variant_metrics(variant.id)
-                
+
                 score = await self.calculate_engagement_score(
                     ctr=metrics.get("ctr", 0.0),
                     retention=metrics.get("retention", 0.0),
@@ -73,7 +73,7 @@ class FlywheelService:
 
             # 3. Sort and Rank
             scored_variants.sort(key=lambda x: x["score"], reverse=True)
-            
+
             winner = scored_variants[0]
             logger.info(f"🏆 [Flywheel] Winner identified: {winner['job_id']} (Score: {winner['score']:.2f})")
 
@@ -95,14 +95,14 @@ class FlywheelService:
             # 1. Attempt to get real stats from the database/publisher
             # Note: In a full implementation, we'd query the 'PublishedContentDB' for the platform_id
             # and then call base_youtube_service.get_metrics(platform_id)
-            
+
             # For now, we simulate a 'Real-First' transition:
             # We try to find the video_id in the job metadata
             async with async_session_factory() as db:
                 stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
                 result = await db.execute(stmt)
                 job = result.scalar_one_or_none()
-                
+
                 if job and job.job_metadata.get("youtube_video_id"):
                     # Real call would go here:
                     # stats = await base_youtube_service.get_metrics(job.job_metadata["youtube_video_id"])
@@ -127,7 +127,7 @@ class FlywheelService:
         Runs an evolution cycle across all active niches in the platform.
         """
         logger.info("🌍 [Flywheel] Initiating Global Evolution Cycle")
-        
+
         async with async_session_factory() as db:
             # 1. Identify all parent jobs from the last 7 days
             seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
@@ -135,17 +135,17 @@ class FlywheelService:
                 VideoJobDB.created_at >= seven_days_ago,
                 VideoJobDB.job_metadata["parent_id"].astext is not None
             ).distinct()
-            
+
             result = await db.execute(stmt)
             parent_ids = result.scalars().all()
-            
+
             summary = {
                 "cycles_run": 0,
                 "variants_scanned": 0,
                 "losers_pruned": 0,
                 "winners_promoted": []
             }
-            
+
             for pid in parent_ids:
                 winner = await self.run_evolution_cycle(pid)
                 if winner:
@@ -155,7 +155,7 @@ class FlywheelService:
                         "winner_id": winner["job_id"],
                         "score": winner["score"]
                     })
-            
+
             logger.info(f"✅ [Flywheel] Global Evolution Complete. Cycles: {summary['cycles_run']}")
             return summary
 

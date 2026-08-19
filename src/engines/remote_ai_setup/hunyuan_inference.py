@@ -28,20 +28,20 @@ HUNYUAN_MODELS = {
 def load_hunyuan_model(model_type: str = "480p", quantize: bool = True, force_reload: bool = False):
     """Load HunyuanVideo 1.5 model (lazy loading) with VRAM optimization"""
     global _hunyuan_pipe
-    
+
     # Force reload: clear existing model from GPU first
     if force_reload and _hunyuan_pipe is not None:
         clear_hunyuan_model()
-    
+
     if _hunyuan_pipe is not None:
         return _hunyuan_pipe
-    
+
     from diffusers import DiffusionPipeline
-    
+
     # Get model path from dictionary
     model_path = HUNYUAN_MODELS.get(model_type, HUNYUAN_MODELS["480p"])
     print(f"📥 Loading HunyuanVideo: {model_path} (Quantize: {quantize})", flush=True)
-    
+
     pipe_kwargs = {
         "torch_dtype": hardware_manager.dtype,
         "device_map": "auto" if hardware_manager.device != "cpu" else None,
@@ -57,10 +57,10 @@ def load_hunyuan_model(model_type: str = "480p", quantize: bool = True, force_re
         model_path,
         **pipe_kwargs
     )
-    
+
     # Enable VAE tiling for memory efficiency
     _hunyuan_pipe.vae.enable_tiling()
-    
+
     # Note: device_map="balanced" already handles device placement, no need for enable_model_cpu_offload()
     print("✅ HunyuanVideo 1.5 optimized and loaded", flush=True)
     return _hunyuan_pipe
@@ -69,28 +69,28 @@ def load_hunyuan_model(model_type: str = "480p", quantize: bool = True, force_re
 def load_hunyuan_gguf_model():
     """Load HunyuanVideo GGUF model using llama.cpp (more memory efficient)"""
     global _hunyuan_gguf_pipe
-    
+
     if _hunyuan_gguf_pipe is not None:
         return _hunyuan_gguf_pipe
-    
+
     try:
         from llama_cpp import Llama
         from huggingface_hub import hf_hub_download
-        
+
         print("📥 Downloading HunyuanVideo GGUF model...", flush=True)
         model_path = hf_hub_download(
             repo_id="jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
             filename="*.gguf",
             resume_download=True,
         )
-        
+
         _hunyuan_gguf_pipe = Llama(
             model_path=model_path,
             n_ctx=4096,
             n_threads=8,
             n_gpu_layers=0 if os.getenv("FORCE_CPU") == "true" else 64,  # Conditional offload
         )
-        
+
         print("✅ HunyuanVideo GGUF loaded successfully", flush=True)
         return _hunyuan_gguf_pipe
     except ImportError:
@@ -117,7 +117,7 @@ def generate_hunyuan_video(
 ) -> str:
     """
     Generate video using HunyuanVideo (Local or API)
-    
+
     Args:
         prompt: Text prompt for video generation
         model_type: One of "480p", "720p", "gguf"
@@ -126,17 +126,17 @@ def generate_hunyuan_video(
     """
     import traceback
     print(f"🎬 HunyuanVideo: '{prompt[:50]}...' (model: {model_type}, quantize: {quantize}, force_reload: {force_reload})", flush=True)
-    
+
     # Use GGUF model
     if model_type == "gguf":
         return generate_hunyuan_gguf(prompt, output_dir)
-    
+
     if use_api and os.getenv("HF_TOKEN"):
         print("☁️ Using fal-ai Cloud Provider via InferenceClient...", flush=True)
         try:
             client = InferenceClient(provider="fal-ai", api_key=os.getenv("HF_TOKEN"))
             video = client.text_to_video(prompt, model="hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v")
-            
+
             job_id = f"hun_api_{int(time.time())}"
             output_path = os.path.join(output_dir, f"{job_id}.mp4")
             with open(output_path, "wb") as f:
@@ -148,15 +148,15 @@ def generate_hunyuan_video(
     # Local Mode
     print(f"🖥️ Using Local Rendering (model: {model_type})...", flush=True)
     start_time = time.time()
-    
+
     try:
         # Clear hardware-optimized cache
         hardware_manager.clear_cache()
-        
+
         pipe = load_hunyuan_model(model_type, quantize=quantize, force_reload=force_reload)
-        
+
         # Note: device_map already handles device placement, no need for .to("cuda")
-        
+
         with torch.inference_mode():
             print(f"🔄 Generating video with {num_frames} frames, {num_inference_steps} steps...", flush=True)
             result = pipe(
@@ -168,16 +168,16 @@ def generate_hunyuan_video(
                 num_frames=num_frames,
                 # HunyuanVideo doesn't use guidance_scale, it uses the negative_prompt directly
             ).frames[0]
-        
+
         job_id = f"hun_loc_{int(time.time())}"
         output_path = os.path.join(output_dir, f"{job_id}.mp4")
         os.makedirs(output_dir, exist_ok=True)
         export_to_video(result, output_video_path=output_path)
-        
+
         elapsed = time.time() - start_time
         print(f"✅ Generated {job_id}.mp4 in {elapsed:.1f}s", flush=True)
         return job_id, output_path
-        
+
     except Exception as e:
         print(f"❌ HunyuanVideo generation failed: {e}", flush=True)
         traceback.print_exc()
@@ -188,21 +188,21 @@ def generate_hunyuan_gguf(prompt: str, output_dir: str = "/workspace/remote_ai_g
     """Generate video using HunyuanVideo GGUF model"""
     print("🎬 HunyuanVideo GGUF: Generating video...", flush=True)
     start_time = time.time()
-    
+
     pipe = load_hunyuan_gguf_model()
     if pipe is None:
         raise RuntimeError("GGUF model not available. Please install llama-cpp-python")
-    
+
     # GGUF models typically output via different mechanism
     # This is a placeholder - actual implementation depends on GGUF model format
     job_id = f"hun_gguf_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Note: GGUF video generation requires specific implementation
     # The jayn7/HunyuanVideo-1.5_T2V_720p-GGUF model may need custom processing
     print("⚠️ GGUF video generation is model-specific. Model: jayn7/HunyuanVideo-1.5_T2V_720p-GGUF", flush=True)
-    
+
     elapsed = time.time() - start_time
     print(f"✅ GGUF generation initiated in {elapsed:.1f}s", flush=True)
     return job_id, output_path

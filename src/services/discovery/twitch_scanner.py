@@ -14,7 +14,7 @@ class TwitchScanner:
     Twitch API requires Client-ID authentication, but we can scrape the
     directory pages for free discovery.
     """
-    
+
     def __init__(self):
         self.platform = "Twitch"
         self.base_url = "https://www.twitch.tv"
@@ -23,23 +23,23 @@ class TwitchScanner:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
-    
+
     async def scan_trends(self, niche: str, **kwargs) -> list[ContentCandidate]:
         """
         Scans Twitch for top clips in categories related to the niche.
         Uses the directory and search pages for discovery.
         """
         logger.info(f"[TwitchScanner] Scanning Twitch for clips in: {niche}")
-        
+
         candidates = []
-        
+
         # Try browsing categories
         try:
             results = await self._browse_categories(niche)
             candidates.extend(results)
         except Exception as e:
             logger.warning(f"[TwitchScanner] Category browse failed: {e}")
-        
+
         # Try searching
         if not candidates:
             try:
@@ -47,7 +47,7 @@ class TwitchScanner:
                 candidates.extend(results)
             except Exception as e:
                 logger.warning(f"[TwitchScanner] Search failed: {e}")
-        
+
         # Remove duplicates
         seen = set()
         unique = []
@@ -55,34 +55,34 @@ class TwitchScanner:
             if c.source_uri not in seen:
                 seen.add(c.source_uri)
                 unique.append(c)
-        
+
         logger.info(f"[TwitchScanner] Found {len(unique)} clips")
         return unique[:15]
-    
+
     async def _browse_categories(self, niche: str) -> list[ContentCandidate]:
         """Browse Twitch categories/directory."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        
+
         url = f"{self.base_url}/directory"
         candidates = []
-        
+
         try:
             async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
                 response = await client.get(url)
-                
+
                 if response.status_code != 200:
                     return []
-                
+
                 # Look for JSON data in script tags
                 script_matches = re.findall(
                     r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>',
                     response.text,
                     re.DOTALL
                 )
-                
+
                 for json_str in script_matches:
                     try:
                         data = json.loads(json_str)
@@ -90,38 +90,38 @@ class TwitchScanner:
                         candidates.extend(clips)
                     except Exception:
                         pass
-                        
+
         except Exception as e:
             logger.warning(f"[TwitchScanner] Browse error: {e}")
-        
+
         return candidates
-    
+
     async def _search_clips(self, niche: str) -> list[ContentCandidate]:
         """Search Twitch for clips."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        
+
         # Twitch search URL
         url = f"{self.base_url}/search/clips?term={niche.replace(' ', '%20')}"
-        
+
         candidates = []
-        
+
         try:
             async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
                 response = await client.get(url)
-                
+
                 if response.status_code != 200:
                     return []
-                
+
                 # Extract JSON data
                 script_matches = re.findall(
                     r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>',
                     response.text,
                     re.DOTALL
                 )
-                
+
                 for json_str in script_matches:
                     try:
                         data = json.loads(json_str)
@@ -129,12 +129,12 @@ class TwitchScanner:
                         candidates.extend(clips)
                     except Exception:
                         pass
-                        
+
         except Exception as e:
             logger.warning(f"[TwitchScanner] Search error: {e}")
-        
+
         return candidates
-    
+
     def _extract_clips_from_json(self, data: dict, niche: str) -> list[ContentCandidate]:
         """Extract clip data from Twitch JSON."""
         try:

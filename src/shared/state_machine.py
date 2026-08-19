@@ -22,7 +22,7 @@ class JobStateMachine:
     Standard 1.1: Event-Driven State Machine for Video Job lifecycles.
     Ensures state transitions are published to the Event Bus for cross-service sync.
     """
-    
+
     # Valid transitions: Current State -> List of Allowed Next States
     _TRANSITIONS = {
         None: [JobState.FAILED, JobState.QUEUED, JobState.PENDING],
@@ -58,7 +58,7 @@ class JobStateMachine:
             "metadata": metadata or {},
             "timestamp": None # Set by event bus
         }
-        
+
         await base_event_service.emit("job.state_changed", event_payload)
         logger.info(f"🔄 [State] Job {job_id} transitioned: {current_state} -> {next_state}")
 

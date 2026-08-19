@@ -2,7 +2,7 @@
 Training Pipeline for Oracle Retraining (True 10/10)
 ===================================================
 
-Aggregates real-world feedback and triggers the Oracle's 
+Aggregates real-world feedback and triggers the Oracle's
 Machine Learning training loop.
 """
 
@@ -25,17 +25,17 @@ class TrainingPipeline:
         features = base_oracle_service.extract_features(fusion_plan)
         # Use retention_p50 as the gold-standard metric for content quality
         metric = metrics.get("retention_p50", metrics.get("views", 0) / 10000) # Fallback to normalized views
-        
+
         sample = {
             "features": features.tolist(),
             "metric": float(metric)
         }
-        
+
         with open(self.data_path, "a") as f:
             f.write(json.dumps(sample) + "\n")
-            
+
         logger.info("💾 [Pipeline] New training sample recorded. Total samples check...")
-        
+
         # Check if we should retrain
         self._check_and_trigger_retraining()
 
@@ -44,14 +44,14 @@ class TrainingPipeline:
         try:
             with open(self.data_path, "r") as f:
                 lines = f.readlines()
-            
+
             if len(lines) >= self.batch_threshold:
                 logger.info(f"🔄 [Pipeline] Batch threshold ({self.batch_threshold}) met. Triggering Oracle Retraining...")
                 samples = [json.loads(line) for line in lines]
                 base_oracle_service.train_on_batch(samples)
-                
+
                 # Move samples to archive or clear (for simple loop)
-                # os.remove(self.data_path) 
+                # os.remove(self.data_path)
         except Exception as e:
             logger.exception(f"Training check failed: {e}")
 

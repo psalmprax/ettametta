@@ -26,7 +26,7 @@ class AIWorker:
         self.groq_api_key = os.getenv("GROQ_API_KEY")
         # Local Whisper Configuration
         self.whisper_model_size = "base"
-        self.whisper_model = None 
+        self.whisper_model = None
 
     def get_dependency_report(self):
         """Returns health of local AI drivers."""
@@ -60,7 +60,7 @@ class AIWorker:
             except Exception:
                 logger.exception("[OS-Worker] Failed to load Whisper model")
                 return []
-            
+
         def _run_transcribe():
             segments, _ = self.whisper_model.transcribe(audio_path, beam_size=5)
             words = []

@@ -343,7 +343,7 @@ class SoundDesignService:
     def get_available_moods(self) -> list[str]:
         """Get list of available mood categories"""
         return list(
-            set(mood for moods in self.NICHE_MOOD_MAP.values() for mood in moods)
+            {mood for moods in self.NICHE_MOOD_MAP.values() for mood in moods}
         )
 
     def get_available_sfx_types(self) -> list[str]:

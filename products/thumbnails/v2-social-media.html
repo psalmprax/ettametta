@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    width: 1080px; height: 1080px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(145deg, #1a0a0a 0%, #4a1a1a 40%, #8b2500 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    color: white; overflow: hidden; position: relative;
+}
+.glow { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,107,107,0.2) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.badge { position: absolute; top: 50px; right: 50px; background: linear-gradient(135deg, #fdcb6e, #e17055); color: #1a0a0a; padding: 14px 28px; border-radius: 30px; font-weight: 800; font-size: 16px; letter-spacing: 1px; box-shadow: 0 4px 20px rgba(253,203,110,0.4); }
+.icon { font-size: 90px; margin-bottom: 30px; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3)); }
+h1 { font-size: 60px; font-weight: 900; text-align: center; margin-bottom: 12px; line-height: 1.1; letter-spacing: -2px; }
+h1 span { background: linear-gradient(90deg, #fdcb6e, #fab1a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { font-size: 22px; color: #fab1a0; margin-bottom: 35px; letter-spacing: 0.5px; }
+.price { font-size: 64px; font-weight: 900; background: linear-gradient(90deg, #fdcb6e, #ffeaa7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 30px; }
+.features { display: flex; gap: 16px; }
+.feature { text-align: center; padding: 20px 28px; background: rgba(255,255,255,0.08); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+.feature .num { font-size: 34px; font-weight: 800; color: #fdcb6e; }
+.feature .label { font-size: 12px; color: #fab1a0; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+.line { position: absolute; bottom: 80px; width: 200px; height: 3px; background: linear-gradient(90deg, transparent, #fdcb6e, transparent); }
+</style></head><body>
+<div class="glow"></div>
+<div class="badge">100 PROMPTS</div>
+<div class="icon">📱</div>
+<h1>Social Media<br><span>Prompts</span></h1>
+<p class="subtitle">Never Run Out of Content Ideas</p>
+<span class="price">$12.99</span>
+<div class="features">
+    <div class="feature"><div class="num">25</div><div class="label">Instagram</div></div>
+    <div class="feature"><div class="num">25</div><div class="label">TikTok</div></div>
+    <div class="feature"><div class="num">25</div><div class="label">LinkedIn</div></div>
+    <div class="feature"><div class="num">25</div><div class="label">Twitter</div></div>
+</div>
+<div class="line"></div>
+</body></html>

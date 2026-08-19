@@ -41,7 +41,7 @@ class ScannerService:
             "instagram": InstagramScanner(),
             "x": XScanner()
         }
-        
+
         # Per-platform circuit breakers to prevent cascading failures
         self.breakers = {
             name: CircuitBreaker(name=f"Scanner_{name}", failure_threshold=3, recovery_timeout=600)
@@ -53,18 +53,18 @@ class ScannerService:
         Scan all configured platforms for trending content in parallel.
         """
         all_candidates = []
-        
+
         async def run_scanner(name: str, scanner: any) -> List[ContentCandidate]:
             breaker = self.breakers[name]
-            
+
             if breaker.is_open():
                 logger.warning(f"[Scanner] Circuit for {name} is OPEN. Skipping.")
                 return []
-                
+
             try:
                 # Use settings-based timeout for scanning (Scraping can be slow)
-                timeout = settings.LLM_TIMEOUT * 2 
-                
+                timeout = settings.LLM_TIMEOUT * 2
+
                 logger.info(f"[Scanner] Running {name} for niche: {niche}")
                 result = await asyncio.wait_for(
                     scanner.scan_trends(niche),
@@ -102,7 +102,7 @@ class ScannerService:
                     # Clean up ID and extract external_id
                     # Standard candidate IDs are "platform_externalid"
                     ext_id = candidate.id.split('_', 1)[1] if '_' in candidate.id else candidate.id
-                    
+
                     # Check if this content already exists
                     from sqlalchemy import select
                     stmt = select(ContentCandidateDB).where(
@@ -151,7 +151,7 @@ class ScannerService:
                 except Exception as e:
                     logger.exception(f"Failed to save candidate {candidate.id}: {e}")
                     await db.rollback()
-            
+
             await db.commit()
 
         return saved_count

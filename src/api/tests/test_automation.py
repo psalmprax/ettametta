@@ -14,12 +14,12 @@ from src.api.config import settings
 @pytest.mark.requires_api
 class TestAutomationE2E:
     """End-to-End test suite for the autonomous pipeline."""
-    
+
     @pytest.fixture
     def base_url(self):
         """Return the API base URL. Defaults to localhost if not set."""
         return os.getenv("TEST_API_URL", "http://localhost:8000")
-    
+
     @pytest.fixture
     def headers(self):
         """Authentication headers using INTERNAL_API_TOKEN."""
@@ -33,14 +33,14 @@ class TestAutomationE2E:
         """Verify that a real discovery scan returns results."""
         if not os.getenv("REAL_WORLD_E2E"):
             pytest.skip("REAL_WORLD_E2E not set. Skipping live Discovery hit.")
-            
+
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{base_url}/discovery/scan",
                 json={"niches": ["Motivation"]},
                 headers=headers
             )
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "success"
@@ -51,10 +51,10 @@ class TestAutomationE2E:
         """Verify that a video transformation job can be submitted with a real URL."""
         if not os.getenv("REAL_WORLD_E2E"):
             pytest.skip("REAL_WORLD_E2E not set. Skipping live Transform hit.")
-            
+
         # Using a reliable public sample MP4
         sample_url = "https://raw.githubusercontent.com/intel-iot-devkit/sample-videos/master/person-bicycle-car-detection.mp4"
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{base_url}/video/transform",
@@ -66,7 +66,7 @@ class TestAutomationE2E:
                 },
                 headers=headers
             )
-            
+
             assert response.status_code == 200
             data = response.json()
             assert "task_id" in data
@@ -77,7 +77,7 @@ class TestAutomationE2E:
         """Verify that Lite4K synthesis starts correctly."""
         if not os.getenv("REAL_WORLD_E2E"):
             pytest.skip("REAL_WORLD_E2E not set. Skipping live Synthesis hit.")
-            
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{base_url}/video/generate",
@@ -88,7 +88,7 @@ class TestAutomationE2E:
                 },
                 headers=headers
             )
-            
+
             # 200 if processed, 402 if credits missing (test tokens should have credits)
             assert response.status_code in [200, 202, 402]
 
@@ -100,6 +100,6 @@ class TestAutomationE2E:
                 f"{base_url}/discovery/sentinel/trigger",
                 headers=headers
             )
-            
+
             # Endpoint may vary, but we verify it's not a 404
             assert response.status_code != 404

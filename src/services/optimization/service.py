@@ -199,9 +199,9 @@ class OptimizationService:
 
             prompt = f"""
             You are a viral content strategist. Generate a high-velocity viral metadata package for a {platform} video in the {niche} niche.
-            
+
             {f"IMPORTANT: You MUST append the following monetization CTA to the very end of the description exactly as written: {commerce_info or affiliate_info}" if (commerce_info or affiliate_info) else "Focus on high engagement and retention hooks."}
-            
+
             Provide the result in JSON format with the following keys:
             - title: A hook-driven, high-CTR title (max 50 chars)
             - description: A compelling description with highly relevant hashtags. If a MONETIZATION CTA was provided, it MUST be the final sentence. (max 250 chars)

@@ -484,7 +484,7 @@ def build_from_style(
         FFmpeg command list
     """
     opt = FFmpegGraphOptimizer()
-    
+
     # Color grading
     color_profile = style_config.get("color_profile", {})
     if color_profile:
@@ -494,19 +494,19 @@ def build_from_style(
             "saturation": color_profile.get("saturation", 1.1),
             "grain": color_profile.get("grain", 0.0),
         })
-    
+
     # Text overlays
     if text_overlays:
         for i, overlay in enumerate(text_overlays):
             opt.add_op(f"text_{i}", "drawtext", overlay)
-    
+
     # Denoise + sharpen for production quality
     opt.add_op("denoise", "denoise", {"strength": 3})
     opt.add_op("sharpen", "sharpen", {"strength": 1.0})
-    
+
     # Determine hardware acceleration
     hw_accel = opt.detect_hw_accel()
-    
+
     return opt.to_ffmpeg_command(input_path, output_path, quality_mode=quality_mode, hw_accel=hw_accel)
 
 

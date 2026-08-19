@@ -7,12 +7,14 @@ Finds trending videos, analyzes performance patterns, and identifies repurposing
 
 import logging
 import asyncio
+from collections import defaultdict
 import httpx
 from typing import Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
 import re
 import json
+import random
 
 from src.api.utils.vault import get_secret
 from groq import Groq
@@ -91,6 +93,7 @@ class VideoLeadScanner:
         self.ai_available = self.groq_client is not None
         self.logger = logging.getLogger(__name__)
         self.process_semaphore = asyncio.Semaphore(5)
+        self._rate_limit_delay = 1.0  # Minimum seconds between yt-dlp requests
         self._last_request_time = 0.0
 
         if not self.ai_available:
@@ -164,14 +167,14 @@ class VideoLeadScanner:
             return []
 
         platform_results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         all_leads = []
         for result in platform_results:
             if isinstance(result, list):
                 all_leads.extend(result)
             elif isinstance(result, Exception):
                 self.logger.error(f"Platform scan task failed: {result}")
-        
+
         return all_leads
 
     async def _run_fallback_scan(self, query: str, niche: str) -> list[VideoLead]:
@@ -180,14 +183,14 @@ class VideoLeadScanner:
         try:
             from .duckduckgo_scanner import base_duckduckgo_service
             ddg_candidates = await base_duckduckgo_service.scan_trends(query)
-            
+
             leads = []
             for c in ddg_candidates:
                 # Some scanners return 'general' category, we want videos
                 if getattr(c, "category", "video") == "video":
                     lead = self._map_candidate_to_lead(c, niche)
                     leads.append(lead)
-            
+
             self.logger.info(f"DuckDuckGo fallback found {len(leads)} leads")
             return leads
         except Exception:
@@ -198,7 +201,7 @@ class VideoLeadScanner:
         """Map a generic ContentCandidate to a specialized VideoLead."""
         # Normalize viral score to 0-10 range if it comes in raw (0-100)
         v_score = c.viral_score / 10.0 if c.viral_score > 10 else c.viral_score
-        
+
         return VideoLead(
             video_id=c.id,
             platform=c.platform.lower(),
@@ -626,11 +629,11 @@ class VideoLeadScanner:
         num_scenes = len(scene_videos)
         for i, (scene_key, videos) in enumerate(scene_videos.items()):
             scene_data = scenes[i] if i < len(scenes) else {}
-            
+
             # Skip if we have no media sources for this scene
             if not (scene_data.get("video_path") or scene_data.get("source_uri") or videos):
                 continue
-                
+
             segment = self._create_fusion_segment(
                 i, scene_key, videos, scene_data, target_duration, num_scenes, total_duration
             )
@@ -659,7 +662,7 @@ class VideoLeadScanner:
     ) -> dict[str, Any]:
         """Create a single fusion segment with calculated timing and source data."""
         best_video = videos[0] if videos else None
-        
+
         # Determine segment duration
         duration = scene_data.get("duration")
         if not duration:
@@ -814,10 +817,10 @@ class VideoLeadScanner:
         # 1. Sanitize query to prevent command injection / shell exploits
         clean_query = re.sub(r"[^a-zA-Z0-9\s\-_.,!?]", "", query)[:200]
         self.logger.info(f"Scraping {platform} for: {clean_query}")
-        
+
         cmd = self._build_ytdlp_command(clean_query, platform, max_results)
         output = await self._execute_ytdlp_process(cmd, platform)
-        
+
         if not output:
             return []
 
@@ -845,7 +848,7 @@ class VideoLeadScanner:
             "trends": f"ytsearch{max_results}:trending {datetime.now().year} ",
         }
         prefix = search_prefixes.get(platform, f"ytsearch{max_results}:")
-        
+
         return [
             "yt-dlp",
             "-j",
@@ -855,13 +858,17 @@ class VideoLeadScanner:
         ]
 
     async def _execute_ytdlp_process(self, cmd: list[str], platform: str) -> str:
-        """Execute yt-dlp command and return stdout with leaky bucket rate limiting"""
-        # Leaky bucket rate limiter: sleep if requests are too frequent
+        """Execute yt-dlp command and return stdout with leaky bucket rate limiting + jitter"""
+        # Leaky bucket rate limiter with jitter to prevent thundering herd
         now = asyncio.get_running_loop().time()
-        delay = 2.0 - (now - self._last_request_time)
-        if delay > 0:
-            self.logger.info(f"Rate limiting query interval: sleeping for {delay:.2f}s")
-            await asyncio.sleep(delay)
+        elapsed = now - self._last_request_time
+        min_interval = self._rate_limit_delay  # seconds
+        if elapsed < min_interval:
+            jitter = 0.5  # randomness to prevent sync issues
+            wait_time = min_interval - elapsed + (jitter * (2 * __import__("random").random() - 1))
+            if wait_time > 0:
+                self.logger.info(f"Rate limiting: sleeping for {wait_time:.2f}s")
+                await asyncio.sleep(wait_time)
         self._last_request_time = asyncio.get_running_loop().time()
 
         async with self.process_semaphore:
@@ -876,11 +883,11 @@ class VideoLeadScanner:
                     await process.wait()
                     self.logger.error(f"ytdlp {platform} process timed out after 30s")
                     return ""
-                
+
                 if process.returncode != 0:
                     self.logger.error(f"ytdlp {platform} search failed: {stderr.decode()}")
                     return ""
-                    
+
                 return stdout.decode().strip()
             except OSError as e:
                 self.logger.error(f"ytdlp system execution error: {e}")
@@ -895,7 +902,7 @@ class VideoLeadScanner:
         """Parse a single line of structured JSON yt-dlp output into a VideoLead"""
         if not line or not line.strip():
             return None
-            
+
         try:
             data = json.loads(line)
             v_id = data.get("id") or ""
@@ -903,21 +910,21 @@ class VideoLeadScanner:
             v_uploader = data.get("uploader") or "Unknown"
             v_views = data.get("view_count")
             v_url = data.get("webpage_url") or data.get("url") or f"https://www.youtube.com/watch?v={v_id}"
-            
+
             # Duration parsing
             v_dur_val = data.get("duration")
             v_dur = float(v_dur_val) if v_dur_val is not None else 30.0
-            
+
             # Upload date extraction
             v_date_str = data.get("upload_date")
             try:
                 v_date = datetime.strptime(v_date_str, "%Y%m%d") if v_date_str else datetime.now()
             except Exception:
                 v_date = datetime.now()
-                
+
             v_desc = data.get("description") or ""
             views = int(v_views) if v_views is not None else 10000
-            
+
             return VideoLead(
                 video_id=v_id,
                 platform=platform,
@@ -1020,17 +1027,18 @@ class VideoLeadScanner:
         if views <= 0:
             return 0.0
 
-        # Logarithmic view score (e.g. log10(10k) = 4.0, log10(10M) = 7.0)
-        # Scale views between 1k (score=0) to 10M (score=5)
+        # Adaptive logarithmic view score (log10 scaling, 1k views = 0, 10M = 5)
+        # Uses same scaling as base scanner for consistency
         log_views = math.log10(views)
         view_score = min(5.0, max(0.0, (log_views - 3.0) * 1.25))
 
-        # Standardize engagement_score to ratio (e.g. 0.065 or 6.5)
-        raw_engagement = engagement_score / 100.0 if engagement_score > 1.0 else engagement_score
-        
-        # High engagement bonus (up to 5.0 points)
-        # Gives substantial weight to engagement ratios (e.g. 10% = 2.5 points, 20%+ = 5 points)
-        engagement_bonus = min(5.0, raw_engagement * 25.0)
+        # Engagement bonus with standardized ratio weighting (same as base scanner)
+        # Normalize engagement_score to ratio (e.g. 0.065 = 6.5%)
+        raw_engagement = (
+            engagement_score / 100.0 if engagement_score > 1.0 else engagement_score
+        )
+        # High engagement bonus (up to 5.0 points): 6.5% engagement = ~2.5 points, 20%+ = 5 points
+        engagement_bonus = min(5.0, raw_engagement * 25.0) if raw_engagement else 0.0
 
         # Final score, capped at 10.0
         return min(10.0, view_score + engagement_bonus)
@@ -1164,7 +1172,7 @@ class VideoLeadScanner:
                 url = f"https://www.youtube.com/watch?v={video_id}"
             elif platform == "tiktok":
                 url = f"https://www.tiktok.com/embed/v2/{video_id}"
-        
+
         if not url:
             return {}
 
@@ -1177,7 +1185,7 @@ class VideoLeadScanner:
             "--no-download",
             url
         ]
-        
+
         output = await self._execute_ytdlp_process(cmd, platform)
         if not output:
             return {
@@ -1211,7 +1219,7 @@ class VideoLeadScanner:
             }
 
         v_id, v_title, v_uploader, v_views, v_likes, v_comments, v_duration, v_upload_date, v_description = parts[:9]
-        
+
         def safe_int(val, default=0):
             try:
                 return int(val) if val and val != "None" else default
@@ -1237,16 +1245,16 @@ class VideoLeadScanner:
         views = video_data.get("view_count", 0)
         likes = video_data.get("like_count", 0)
         comments = video_data.get("comment_count", 0)
-        
+
         engagement_score = 0.0
         like_ratio = 0.0
         comment_ratio = 0.0
-        
+
         if views > 0:
             like_ratio = (likes / views) * 100
             comment_ratio = (comments / views) * 100
             engagement_score = like_ratio + (comment_ratio * 2.0)
-            
+
         comments_density = "low"
         if comment_ratio > 0.5:
             comments_density = "high"
@@ -1277,7 +1285,7 @@ class VideoLeadScanner:
         Handles markdown blocks, malformed wrapping, conversational prefixes, and bullet points.
         """
         content = content.strip()
-        
+
         # Try direct parsing first
         parsed = self._parse_list(content)
         if parsed is not None:
@@ -1316,7 +1324,7 @@ class VideoLeadScanner:
         description = video_data.get("description", "")
         views = video_data.get("view_count", 0)
         likes = video_data.get("like_count", 0)
-        
+
         if self.groq_client:
             try:
                 prompt = (
@@ -1328,7 +1336,7 @@ class VideoLeadScanner:
                     f"Description: {description[:500]}\n"
                     "Respond with a plain JSON list of strings."
                 )
-                
+
                 async with asyncio.timeout(30.0):
                     chat_completion = await asyncio.to_thread(
                         self.groq_client.chat.completions.create,
@@ -1339,7 +1347,7 @@ class VideoLeadScanner:
                         model="llama3-8b-8192",
                         temperature=0.2
                     )
-                
+
                 content = chat_completion.choices[0].message.content
                 return self._extract_json_array(content)
             except asyncio.TimeoutError:
@@ -1358,7 +1366,7 @@ class VideoLeadScanner:
             factors.append("Frictionless Solution Hook")
         if likes > 50000:
             factors.append("Social Proof Bias")
-            
+
         return factors
 
     async def _generate_repurposing_suggestions(
@@ -1366,7 +1374,7 @@ class VideoLeadScanner:
     ) -> list[str]:
         """Generate suggestions for repurposing this content"""
         title = video_data.get("title", "")
-        
+
         if self.groq_client:
             try:
                 prompt = (
@@ -1375,7 +1383,7 @@ class VideoLeadScanner:
                     f"Original Title: {title}\n"
                     "Respond with a plain JSON list of strings."
                 )
-                
+
                 async with asyncio.timeout(30.0):
                     chat_completion = await asyncio.to_thread(
                         self.groq_client.chat.completions.create,
@@ -1386,7 +1394,7 @@ class VideoLeadScanner:
                         model="llama3-8b-8192",
                         temperature=0.7
                     )
-                
+
                 content = chat_completion.choices[0].message.content
                 return self._extract_json_array(content)
             except asyncio.TimeoutError:

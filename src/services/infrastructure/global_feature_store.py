@@ -36,10 +36,10 @@ class GlobalFeatureStore:
         await self.connect()
         key = f"{self.prefix}{niche}"
         payload = await self._redis.hgetall(key)
-        
+
         if not payload:
             return None
-            
+
         return json.loads(payload.get("data", "{}"))
 
     async def get_velocity_vitals(self, niche: str) -> dict[str, float]:
@@ -47,7 +47,7 @@ class GlobalFeatureStore:
         features = await self.get_features(niche)
         if not features:
             return {"velocity": 0.0, "acceleration": 0.0}
-            
+
         return {
             "velocity": features.get("velocity", 0.0),
             "acceleration": features.get("acceleration", 0.0),

@@ -48,38 +48,38 @@ class DistributedEventBus:
         """
         await self.connect()
         logger.info(f"[Bus] Worker {self.consumer_name} subscribed to {topic_filter}")
-        
+
         while True:
             try:
                 # Read new messages from the group
                 results = await self._redis.xreadgroup(
-                    self.group_name, 
-                    self.consumer_name, 
-                    {self.stream_name: ">"}, 
-                    count=1, 
+                    self.group_name,
+                    self.consumer_name,
+                    {self.stream_name: ">"},
+                    count=1,
                     block=5000
                 )
-                
+
                 if not results:
                     continue
 
-                for stream_name, messages in results:
+                for _stream_name, messages in results:
                     for message_id, data in messages:
                         try:
                             topic = data.get("topic")
                             if topic == topic_filter or topic_filter == "*":
                                 payload = json.loads(data.get("payload", "{}"))
                                 await callback(payload)
-                            
+
                             # Acknowledge completion (XACK)
                             await self._redis.xack(self.stream_name, self.group_name, message_id)
                         except Exception as e:
                             logger.exception(f"[Bus] Worker failed to process event {message_id}: {e}")
-                            
+
                             # 10/10 Resilience: Retries & DLQ
                             payload = json.loads(data.get("payload", "{}"))
                             retries = payload.get("_retries", 0)
-                            
+
                             if retries < self.max_retries:
                                 logger.info(f"[Bus] Retrying event {message_id} (Attempt {retries + 1}/{self.max_retries})")
                                 payload["_retries"] = retries + 1
@@ -87,10 +87,10 @@ class DistributedEventBus:
                             else:
                                 logger.exception(f"[Bus] Event {message_id} exceeded max retries. Moving to DLQ.")
                                 await self._move_to_dlq(topic, payload, str(e))
-                            
+
                             # Ack the failed one so it doesn't stay in PEL
                             await self._redis.xack(self.stream_name, self.group_name, message_id)
-                            
+
             except Exception as e:
                 logger.exception(f"[Bus] Subscription loop error: {e}")
                 await asyncio.sleep(2)
@@ -116,7 +116,7 @@ class DistributedEventBus:
 
     async def claim_stale_messages(self, min_idle_time: int = 60000):
         """
-        10/10 Fail-Safe: Reclaims messages that were started but never finished 
+        10/10 Fail-Safe: Reclaims messages that were started but never finished
         by other workers (e.g., node crashes).
         """
         await self.connect()
@@ -125,7 +125,7 @@ class DistributedEventBus:
             pending = await self._redis.xpending_range(
                 self.stream_name, self.group_name, "-", "+", 10
             )
-            
+
             for msg in pending:
                 if msg["idle"] > min_idle_time:
                     msg_id = msg["message_id"]

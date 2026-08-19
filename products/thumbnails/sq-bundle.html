@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    width: 1080px; height: 1080px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #2d3436 0%, #636e72 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    color: white; overflow: hidden;
+}
+.badge { position: absolute; top: 40px; right: 40px; background: #e17055; color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: 700; font-size: 18px; }
+.icon { font-size: 100px; margin-bottom: 25px; }
+h1 { font-size: 50px; font-weight: 800; text-align: center; margin-bottom: 15px; line-height: 1.15; background: linear-gradient(90deg, #fdcb6e 0%, #e17055 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { font-size: 24px; color: #b2bec3; margin-bottom: 25px; }
+.price-box { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+.price-old { font-size: 30px; color: #636e72; text-decoration: line-through; }
+.price { font-size: 56px; font-weight: 800; color: #fdcb6e; }
+.discount { background: #e17055; padding: 10px 18px; border-radius: 24px; font-weight: 700; font-size: 16px; }
+.features { display: flex; gap: 16px; }
+.feature { text-align: center; padding: 16px 22px; background: rgba(255,255,255,0.1); border-radius: 14px; }
+.feature .num { font-size: 32px; font-weight: 800; color: #fdcb6e; }
+.feature .label { font-size: 12px; color: #b2bec3; text-transform: uppercase; margin-top: 4px; }
+</style></head><body>
+<div class="badge">37% OFF</div>
+<div class="icon">📦</div>
+<h1>AI Prompt Mega<br>Bundle</h1>
+<p class="subtitle">325 Prompts for Everything</p>
+<div class="price-box">
+    <span class="price-old">$47.96</span>
+    <span class="price">$29.99</span>
+    <span class="discount">SAVE $18</span>
+</div>
+<div class="features">
+    <div class="feature"><div class="num">50</div><div class="label">Business</div></div>
+    <div class="feature"><div class="num">100</div><div class="label">Social</div></div>
+    <div class="feature"><div class="num">75</div><div class="label">Email</div></div>
+    <div class="feature"><div class="num">100</div><div class="label">Content</div></div>
+</div>
+</body></html>

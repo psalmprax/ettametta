@@ -303,11 +303,11 @@ def download_and_process_task(
         if generate_thumbnail:
             logger.info(f"[Task] Generating neural thumbnail for {task_id}")
             from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
-            
+
             # Ensure temp dir exists
             thumb_dir = f"/tmp/ettametta/thumbnails/{task_id}"
             os.makedirs(thumb_dir, exist_ok=True)
-            
+
             thumbs = base_ffmpeg_service.generate_thumbnails(processed_path, thumb_dir, count=1)
             if thumbs:
                 thumb_key = base_storage_service.upload_file(thumbs[0])
@@ -339,7 +339,7 @@ def download_and_process_task(
         # 4. Upload to Social Platform
         await update_job(status=SystemJobStatus.UPLOADING, progress=85)
         url = ""
-        current_user_id = user_id 
+        current_user_id = user_id
         if platform == "YouTube Shorts":
             url = await base_youtube_service.upload_video(processed_path, metadata, user_id=current_user_id)
         elif platform == "TikTok":
@@ -434,7 +434,7 @@ def download_and_process_task(
                     error_message=f"Attempt {self.request.retries + 1} failed: {error_msg}",
                 )
             )
-            raise 
+            raise
 
         # We can't await here because we're in the except block of run_async wrapper
         # But we want to update the job status.

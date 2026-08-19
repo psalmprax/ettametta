@@ -26,7 +26,7 @@ async def test_nexus_composition_route():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # Note: This might return 401 if auth is enforced, but we test the route logic
         response = await ac.post("/api/v1/nexus/compose", json=payload)
-    
+
     assert response.status_code in [200, 401]
 
 @pytest.mark.asyncio
@@ -48,13 +48,13 @@ async def test_discovery_deep_scan_route():
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post("/api/v1/discovery/scan", json=payload)
-    
+
     assert response.status_code in [200, 401]
 
 @pytest.mark.asyncio
 async def test_autocreator_fallback_logic():
     from src.services.monetization.auto_merch import base_auto_merch_service
-    
+
     # Hardened Reality: Should raise ValueError if no keys are set
     with pytest.raises(ValueError) as exc:
         await base_auto_merch_service._publish_to_pod("Test Niche", "https://example.com/a.png")
@@ -64,7 +64,7 @@ async def test_autocreator_fallback_logic():
 async def test_trigger_scan_bridge_failure():
     """Verify handling of Go service being down (Connection Error)."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        # We expect the error to bubble up or return 500. 
+        # We expect the error to bubble up or return 500.
         # In ASGITransport, it often bubbles up if not caught by middleware.
         with patch("src.api.routes.discovery.httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
             with pytest.raises(httpx.ConnectError):

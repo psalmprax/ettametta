@@ -1,0 +1,22 @@
+{
+  "name": "AI Business Automation Guide",
+  "slug": "ai-business-automation-guide",
+  "price": 24.99,
+  "currency": "USD",
+  "description": "Complete guide to automating your business with AI. 50+ pages of strategies, workflows, and real examples. Save 20+ hours per week.",
+  "tags": [
+    "ai automation",
+    "business",
+    "productivity",
+    "chatgpt",
+    "workflow",
+    "guide"
+  ],
+  "category": "Digital Product",
+  "file": "ai-business-automation-guide.md",
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

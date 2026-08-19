@@ -34,7 +34,7 @@ class KaiberSkill(OpenClawBaseSkill):
         p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
         if not p:
             return "⚠️ Kaiber failed: Missing prompt"
-            
+
         res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "16:9"))
         if res.get("status") == "success":
             return f"🎬 **Kaiber Video Generated!**\nURL: {res['video_uri']}"

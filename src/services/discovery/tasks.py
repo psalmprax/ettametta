@@ -303,7 +303,7 @@ def process_high_potential_candidates():
 
     async def run_process():
         logger.info("[Autonomous] Checking for high-potential candidates...")
-        
+
         async with async_session_factory() as db:
             # Find candidates that are analyzed, high potential, and not yet processed
             stmt = select(ContentCandidateDB).where(
@@ -312,19 +312,19 @@ def process_high_potential_candidates():
             )
             result = await db.execute(stmt)
             candidates = result.scalars().all()
-            
+
             high_potential = []
             for c in candidates:
                 results = c.analysis_results or {}
                 if results.get("viral_potential") == "high":
                     high_potential.append(c)
-            
+
             if not high_potential:
                 logger.info("[Autonomous] No new high-potential candidates found.")
                 return 0
-                
+
             logger.info(f"[Autonomous] Found {len(high_potential)} high-potential candidates.")
-            
+
             triggered_count = 0
             for candidate in high_potential:
                 try:
@@ -333,13 +333,13 @@ def process_high_potential_candidates():
                     stmt_admin = select(UserDB).where(UserDB.role == UserRole.ADMIN)
                     result_admin = await db.execute(stmt_admin)
                     admin = result_admin.scalar_one_or_none()
-                    
+
                     job_id = str(uuid.uuid4())
-                    
+
                     # 2. Create a Nexus Job entry
                     new_job = NexusJobDB(
                         id=job_id,
-                        user_id=admin.id if admin else None, 
+                        user_id=admin.id if admin else None,
                         niche=candidate.niche or "general",
                         status=SystemJobStatus.QUEUED,
                         job_metadata={
@@ -351,13 +351,13 @@ def process_high_potential_candidates():
                     )
                     db.add(new_job)
                     await db.flush() # Ensure job is in DB for foreign key
-                    
+
                     # 3. Link candidate to job
                     candidate.nexus_job_id = job_id
                     candidate.is_processed = True
-                    
+
                     await db.commit()
-                    
+
                     # 3. Dispatch the Nexus task
                     from src.services.nexus_engine.tasks import create_cinema_video_task
                     create_cinema_video_task.delay(
@@ -366,14 +366,14 @@ def process_high_potential_candidates():
                         niche=candidate.niche or "general",
                         style="CINEMATIC_DOC"
                     )
-                    
+
                     triggered_count += 1
                     logger.info(f"[Autonomous] Triggered Nexus job {job_id} for candidate {candidate.id}")
-                    
+
                 except Exception as e:
                     logger.exception(f"[Autonomous] Failed to trigger job for {candidate.id}: {e}")
                     await db.rollback()
-                    
+
             return triggered_count
 
     try:

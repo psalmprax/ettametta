@@ -42,7 +42,7 @@ class ConnectionManager:
     async def _broadcast_event_bus(self, payload: dict):
         """Callback for the DistributedEventBus to broadcast events to WS clients"""
         message = json.dumps({
-            "type": "job_update", 
+            "type": "job_update",
             "data": payload,
             "source": "event_bus"
         })

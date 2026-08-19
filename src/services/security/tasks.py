@@ -11,14 +11,14 @@ def system_audit_task():
     """
     logger.info("[Sentinel Task] Running scheduled logic audit...")
     report = base_security_service.audit_system_integrity()
-    
+
     # Log audit event
     base_security_service.log_event(
-        "SCHEDULED_AUDIT", 
-        "info", 
+        "SCHEDULED_AUDIT",
+        "info",
         {"score": report["score"], "findings_count": len(report["findings"])}
     )
-    
+
     return {
         "status": "success",
         "score": report["score"],

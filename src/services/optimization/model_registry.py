@@ -52,7 +52,7 @@ class ModelRegistry:
 
             with open(self.registry_file, "w") as f:
                 json.dump(data, f, indent=4)
-            
+
             logger.info(f"[Registry] Registered new version: {version_id} (MAE: {mae})")
             return True
         except Exception as e:
@@ -77,7 +77,7 @@ class ModelRegistry:
 
         with open(self.registry_file, "w") as f:
             json.dump(data, f, indent=4)
-        
+
         logger.info(f"[Registry] PROMOTED {version_id} to CHAMPION. Old champion {old_champion} archived.")
 
     def get_champion_path(self) -> str:

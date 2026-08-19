@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 async def get_secret_async(key: str, default=None, user_id: str = None, db: AsyncSession = None) -> str:
     """
-    Retrieves a secret asynchronously. 
+    Retrieves a secret asynchronously.
     Priority:
     1. User-specific override (UserSetting table)
     2. System-wide setting (SystemSettings table)
@@ -19,7 +19,7 @@ async def get_secret_async(key: str, default=None, user_id: str = None, db: Asyn
         # 1. Check User-specific override if user_id is provided
         if user_id:
             stmt = select(UserSetting).where(
-                UserSetting.user_id == user_id, 
+                UserSetting.user_id == user_id,
                 UserSetting.key == key.lower()
             )
             result = await session.execute(stmt)
@@ -33,14 +33,14 @@ async def get_secret_async(key: str, default=None, user_id: str = None, db: Asyn
         db_setting = result_sys.scalar_one_or_none()
         if db_setting and db_setting.value:
             return db_setting.value
-            
+
         # 3. Check api.config settings
         config_key = key.upper()
         if hasattr(settings, config_key):
             val = getattr(settings, config_key)
             if val:
                 return val
-                
+
         return default
 
     try:
@@ -65,14 +65,14 @@ def get_secret(key: str, default=None, user_id: str = None) -> str:
     Avoids asyncio issues in Celery workers.
     """
     from src.api.utils.database import SessionLocal
-    
+
     try:
         with SessionLocal() as session:
             # 1. Check User-specific override
             if user_id:
                 from .models import UserSetting
                 user_setting = session.query(UserSetting).filter(
-                    UserSetting.user_id == user_id, 
+                    UserSetting.user_id == user_id,
                     UserSetting.key == key.lower()
                 ).first()
                 if user_setting and user_setting.value:
@@ -85,14 +85,14 @@ def get_secret(key: str, default=None, user_id: str = None) -> str:
             ).first()
             if db_setting and db_setting.value:
                 return db_setting.value
-                
+
             # 3. Check api.config settings
             config_key = key.upper()
             if hasattr(settings, config_key):
                 val = getattr(settings, config_key)
                 if val:
                     return val
-                    
+
             return default
     except Exception as e:
         logger.warning(f"Database unreachable during sync secret resolution for {key}: {e}. Falling back to config.")

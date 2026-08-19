@@ -43,15 +43,15 @@ def setup_observability(service_name: str):
     # 2. Setup OpenTelemetry
     resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
-    
+
     otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
     if otlp_endpoint:
         exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
         processor = BatchSpanProcessor(exporter)
         provider.add_span_processor(processor)
-    
+
     trace.set_tracer_provider(provider)
-    
+
     logging.info(f"Observability initialized for {service_name}", extra={"otel_enabled": bool(otlp_endpoint)})
 
 def get_logger(name: str):

@@ -2,7 +2,7 @@
 The Stream Heartbeat: Persistent Runtime Ingestion (10/10)
 =========================================================
 
-Ensures that no viral signals are lost even if the system 
+Ensures that no viral signals are lost even if the system
 crashes, using a SQLite-backed persistent queue.
 """
 
@@ -54,7 +54,7 @@ class PersistentQueue:
             )
             row = cursor.fetchone()
             if not row: return None
-            
+
             q_id, topic, data_json = row
             conn.execute(f"UPDATE queue SET status = '{SystemJobStatus.PROCESSING.value}' WHERE id = ?", (q_id,))
             return {"id": q_id, "topic": topic, "data": json.loads(data_json)}
@@ -76,7 +76,7 @@ class StreamProcessor:
         """Continuous worker loop with fault recovery"""
         self.is_running = True
         logger.info("⚡ [Stream] Persistent Heartbeat: ACTIVE")
-        
+
         while self.is_running:
             item = self.queue.pop()
             if item:
@@ -85,7 +85,7 @@ class StreamProcessor:
                     self.queue.complete(item["id"])
                 except Exception as e:
                     logger.exception(f"❌ [Stream] Processing Error: {e}")
-            
+
             await asyncio.sleep(1) # Frequency management
 
 # Singleton Instance

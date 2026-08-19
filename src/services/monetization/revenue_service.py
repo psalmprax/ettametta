@@ -21,7 +21,7 @@ class MonetizationService:
     async def get_revenue_summary(self, user_id: str, days: int = 30) -> dict[str, Any]:
         """
         Get real revenue summary based on published content performance.
-        
+
         Uses a simplified RPM (Revenue Per Mille) model for estimation:
         - YouTube: $5.00 per 1,000 views
         - TikTok: $0.02 per 1,000 views (Creator Fund approx)
@@ -30,7 +30,7 @@ class MonetizationService:
         async with async_session_factory() as db:
             # Calculate date range
             start_date = datetime.utcnow() - timedelta(days=days)
-            
+
             # Fetch published content for this user within the date range
             stmt = select(PublishedContentDB).where(
                 PublishedContentDB.user_id == user_id,
@@ -38,20 +38,20 @@ class MonetizationService:
             )
             result = await db.execute(stmt)
             contents = result.scalars().all()
-            
+
             total_revenue = 0.0
             platform_breakdown = []
             daily_breakdown = []
-            
+
             # Group by platform
             platform_stats = {}
             daily_stats = {}
-            
+
             for content in contents:
                 platform = content.platform or "Unknown"
                 pub_date = content.published_at.date() if content.published_at else datetime.now(timezone.utc).date()
                 date_str = pub_date.isoformat()
-                
+
                 # Initialize stats
                 if platform not in platform_stats:
                     platform_stats[platform] = {
@@ -59,14 +59,14 @@ class MonetizationService:
                         "views": 0,
                         "clicks": 0
                     }
-                
+
                 if date_str not in daily_stats:
                     daily_stats[date_str] = {"date": date_str, "amount": 0.0}
-                
+
                 # Estimate revenue based on platform RPM
                 views = content.view_count or 0
                 clicks = content.click_count or 0
-                
+
                 if platform.lower() == "youtube":
                     rev = (views / 1000.0) * 5.00  # $5 RPM
                 elif platform.lower() == "tiktok":
@@ -75,14 +75,14 @@ class MonetizationService:
                     rev = clicks * 0.50  # $0.50 per click
                 else:
                     rev = (views / 1000.0) * 1.00  # Default $1 RPM
-                
+
                 platform_stats[platform]["revenue"] += rev
                 platform_stats[platform]["views"] += views
                 platform_stats[platform]["clicks"] += clicks
-                
+
                 daily_stats[date_str]["amount"] += rev
                 total_revenue += rev
-            
+
             # Format platform breakdown
             for platform, stats in platform_stats.items():
                 platform_breakdown.append({
@@ -91,14 +91,14 @@ class MonetizationService:
                     "views": stats["views"],
                     "clicks": stats["clicks"]
                 })
-            
+
             # Format daily breakdown
             daily_breakdown = list(daily_stats.values())
             daily_breakdown.sort(key=lambda x: x["date"])
-            
+
             # Calculate averages
             daily_average = total_revenue / days if days > 0 else 0
-            
+
             return {
                 "total_revenue": round(total_revenue, 2),
                 "currency": "USD",
@@ -113,11 +113,11 @@ class MonetizationService:
         """Find the top performing video from the list."""
         if not contents:
             return None
-        
+
         # Sort by view count
         sorted_contents = sorted(contents, key=lambda x: x.view_count or 0, reverse=True)
         top = sorted_contents[0]
-        
+
         # Estimate its revenue
         views = top.view_count or 0
         if top.platform and top.platform.lower() == "youtube":
@@ -126,7 +126,7 @@ class MonetizationService:
             rev = (views / 1000.0) * 0.02
         else:
             rev = (views / 1000.0) * 1.00
-            
+
         return {
             "title": top.title or "Untitled",
             "revenue": round(rev, 2),
@@ -135,24 +135,24 @@ class MonetizationService:
 
     async def get_monetization_goals(self, user_id: str) -> dict[str, Any]:
         """
-        Get real monetization goals. 
+        Get real monetization goals.
         In a full implementation, this would query a UserSettings or Goals table.
         For now, we use a default goal structure.
         """
         # Default monthly goal
         monthly_goal = 2000.00
-        
+
         # Get current month's revenue
         summary = await self.get_revenue_summary(user_id, days=30)
         current_progress = summary["total_revenue"]
-        
+
         # Calculate projected end of month
         days_remaining = 30 - (datetime.now(timezone.utc).day)
         daily_avg = summary["daily_average"]
         projected_end = current_progress + (daily_avg * days_remaining)
-        
+
         percentage = (current_progress / monthly_goal * 100) if monthly_goal > 0 else 0
-        
+
         return {
             "monthly_goal": monthly_goal,
             "current_progress": round(current_progress, 2),

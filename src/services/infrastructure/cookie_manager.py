@@ -22,7 +22,7 @@ class CookieManager:
             if time.time() - mtime > 86400:
                 logger.warning("🕒 [Cookies] YouTube cookies are older than 24 hours. Refresh recommended.")
             return str(self.youtube_path)
-        
+
         logger.error(f"❌ [Cookies] YouTube cookies missing or empty at {self.youtube_path}")
         return None
 

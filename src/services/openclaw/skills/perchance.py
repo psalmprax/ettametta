@@ -23,11 +23,11 @@ class PerchanceSkill(OpenClawBaseSkill):
         p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
         if not p:
             return "⚠️ Perchance failed: Missing prompt"
-            
+
         res = await self.generate_with_settings(
-            p, 
-            style=style or kwargs.get("style", "photo"), 
-            resolution=resolution or kwargs.get("resolution", "hd"), 
+            p,
+            style=style or kwargs.get("style", "photo"),
+            resolution=resolution or kwargs.get("resolution", "hd"),
             aspect_ratio=aspect_ratio or kwargs.get("aspect_ratio", "9:16")
         )
         if res.get("status") == "success" and res.get("image_uris"):

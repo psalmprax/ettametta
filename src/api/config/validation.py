@@ -3,6 +3,15 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+MISSING_LLM_KEYS = (
+    "GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, "
+    "ANTHROPIC_API_KEY, GOOGLE_API_KEY, or DIFY_API_KEY"
+)
+
+NO_LLM_KEYS_WARNING = "LLM key required: set GROQ, OPENAI, XAI, DEEPSEEK, or ANTHROPIC"
+SECRET_KEY_MIN = 32
+SECRET_KEY_MSG = "SECRET_KEY - Must be set with 32+ characters in production"
+
 
 def validate_critical_config(settings: Any) -> dict:
     """
@@ -33,9 +42,7 @@ def validate_critical_config(settings: Any) -> dict:
             or settings.SECRET_KEY.startswith("dev_")
             or len(settings.SECRET_KEY) < 32
         ):
-            result["errors"].append(
-                "SECRET_KEY - Must be set with 32+ characters in production"
-            )
+            result["errors"].append(SECRET_KEY_MSG)
 
         # Domain
         if not settings.PRODUCTION_DOMAIN or "localhost" in settings.PRODUCTION_DOMAIN:
@@ -61,7 +68,8 @@ def validate_critical_config(settings: Any) -> dict:
         )
         if not has_llm and not settings.DIFY_API_KEY:
             result["errors"].append(
-                "At least one LLM API key required: GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, or DIFY_API_KEY"
+                f"At least one LLM API key required: "
+                f"{MISSING_LLM_KEYS}"
             )
 
     # Development warnings (non-blocking)
@@ -78,9 +86,7 @@ def validate_critical_config(settings: Any) -> dict:
             ]
         )
         if not has_llm:
-            result["warnings"].append(
-                "No LLM API keys configured - AI features will use fallback mode. Set GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, or ANTHROPIC_API_KEY"
-            )
+            result["warnings"].append(NO_LLM_KEYS_WARNING)
 
         # Warn if OAuth credentials missing
         if not settings.GOOGLE_CLIENT_ID:
@@ -141,13 +147,14 @@ def validate_critical_config(settings: Any) -> dict:
     if gpu_info.get("device") != "cpu":
         if not gpu_info.get("detected"):
             result["warnings"].append(
-                "GPU VRAM auto-detection failed - using conservative defaults. Set GPU_QUEUE_SLOTS env var to override."
+                "GPU VRAM auto-detection failed. Set GPU_QUEUE_SLOTS to override."
             )
         else:
             vram_gb = gpu_info.get("vram_gb")
             effective_slots = settings.EFFECTIVE_GPU_QUEUE_SLOTS
             result["info"].append(
-                f"GPU detected: {gpu_info.get('gpu_name', 'Unknown')} ({vram_gb}GB VRAM) - allowing {effective_slots} concurrent video jobs"
+                f"GPU detected: {gpu_info.get('gpu_name', '?')} ({vram_gb}GB) - "
+                f"{effective_slots} concurrent video jobs allowed"
             )
 
     return result
@@ -181,7 +188,8 @@ def print_validation_report(settings: Any) -> list:
         logger.info("✅ All configuration checks passed!")
     else:
         logger.warning(
-            f"📊 Configuration check complete: {len(validation['errors'])} errors, {len(validation['warnings'])} warnings"
+            f"📊 Configuration check complete: {len(validation['errors'])} errors, "
+            f"{len(validation['warnings'])} warnings"
         )
 
     return validation["errors"]

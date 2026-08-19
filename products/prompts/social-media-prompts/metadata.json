@@ -1,0 +1,22 @@
+{
+  "name": "100 Social Media Prompts for Business",
+  "slug": "social-media-prompts",
+  "price": 12.99,
+  "currency": "USD",
+  "description": "100 ready-to-use AI prompts for Instagram, TikTok, LinkedIn, and Twitter. Never run out of content ideas again.",
+  "tags": [
+    "social media",
+    "instagram",
+    "tiktok",
+    "linkedin",
+    "content ideas",
+    "ai prompts"
+  ],
+  "category": "Digital Product",
+  "file": "100-social-media-prompts.md",
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

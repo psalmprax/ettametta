@@ -166,7 +166,7 @@ class AIVideoGeneratorService:
         headers = {"Authorization": f"Bearer {api_key}"}
 
         async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
+            for _attempt in range(max_attempts):
                 try:
                     response = await client.get(
                         f"{self.PROVIDER_CONFIGS['runway']['api_url']}/generation/{job_id}",
@@ -257,7 +257,7 @@ class AIVideoGeneratorService:
         headers = {"Authorization": f"Bearer {api_key}"}
 
         async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
+            for _attempt in range(max_attempts):
                 try:
                     response = await client.get(
                         f"{self.PROVIDER_CONFIGS['pika']['api_url']}/generation/{job_id}",

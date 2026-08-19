@@ -21,30 +21,30 @@ def test_process_high_potential_candidates_trigger():
     with patch("src.api.utils.database.async_session_factory") as mock_sf, \
          patch("src.services.discovery.tasks.celery_app.send_task"), \
          patch("src.services.discovery.tasks.asyncio.run") as mock_run:
-        
+
         # mock_run should just return the result of the coroutine it's given
         # but since it's async, we need to run it.
         # Actually, let's just mock the whole run_process call or similar.
-        
+
         # Setup DB mock
         mock_session = AsyncMock()
         mock_sf.return_value.__aenter__.return_value = mock_session
-        
+
         # Mock finding admin user
         mock_result_admin = MagicMock()
         mock_result_admin.scalar_one_or_none.return_value = mock_admin
-        
+
         # Mock finding high potential candidates
         mock_result_candidates = MagicMock()
         mock_result_candidates.scalars.return_value.all.return_value = [mock_candidate]
-        
+
         # Sequence of execute calls: 1. Find Admin, 2. Find Candidates
         mock_session.execute.side_effect = [mock_result_admin, mock_result_candidates]
 
         # Since we are mocking asyncio.run, we need to manually simulate what it does
         # Or better: let process_high_potential_candidates run but mock the internal run_process
         # But run_process is local.
-        
+
         # Let's use a simpler approach: mock asyncio.run to return the count we want
         mock_run.return_value = 1
 
@@ -62,7 +62,7 @@ def test_process_high_potential_candidates_skips_processed():
     with patch("src.api.utils.database.async_session_factory"), \
          patch("src.services.discovery.tasks.celery_app.send_task"), \
          patch("src.services.discovery.tasks.asyncio.run") as mock_run:
-        
+
         mock_run.return_value = 0
         processed_count = process_high_potential_candidates()
 

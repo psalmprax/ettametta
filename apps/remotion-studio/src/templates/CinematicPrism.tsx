@@ -26,7 +26,7 @@ export const CinematicPrism: React.FC<z.infer<typeof cinematicPrismSchema>> = ({
     show_cta_overlay, 
     cta_type, 
     cta_text,
-    primary_color = '#FF10F0'
+    primary_color: primaryColor = '#FF10F0'
 }) => {
     const frame = useCurrentFrame();
     const { durationInFrames, fps, width, height } = useVideoConfig();
@@ -62,7 +62,7 @@ export const CinematicPrism: React.FC<z.infer<typeof cinematicPrismSchema>> = ({
                 
                 {/* 3D Prism Layer (Text is rendered inside WebGL to refract) */}
                 <ThreeCanvas width={width} height={height} camera={{ fov: 60, position: [0, 0, 5] }}>
-                    <ChromaticPrism primaryColor={primary_color} title={title} subtitle={subtitle} />
+                    <ChromaticPrism primaryColor={primaryColor} title={title} subtitle={subtitle} />
                     <EffectComposer>
                         <Bloom 
                             luminanceThreshold={0.6} 

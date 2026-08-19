@@ -27,11 +27,11 @@ class AnalyticsSkill(OpenClawBaseSkill):
         """
         try:
             response = requests.get(f"{self.api_url}/stats/summary", headers=self._get_headers(), timeout=10)
-            
+
             if response.status_code == 200:
                 raw_data = response.json()
                 data = raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
-                
+
                 return (
                     "📊 **Empire Analytics Summary**:\n"
                     f"• Total Reach: `{data.get('total_reach', '0')}`\n"
@@ -44,7 +44,7 @@ class AnalyticsSkill(OpenClawBaseSkill):
                 return "🔒 **Analytics Access Denied**: Agent needs authentication."
             else:
                 return f"⚠️ **Analytics Error**: Status {response.status_code}"
-                
+
         except Exception as e:
             logger.exception(f"Analytics Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
@@ -58,10 +58,10 @@ class AnalyticsSkill(OpenClawBaseSkill):
             if response.status_code == 200:
                 raw_data = response.json()
                 posts = raw_data.get("data", []) if isinstance(raw_data, dict) else raw_data
-                
+
                 if not posts:
                     return "📝 **Recent Posts**: No posts published yet."
-                
+
                 msg = "📝 **Recent Posts**:\n"
                 for p in posts[:limit]:
                     title = p.get('title', 'Untitled')
@@ -80,15 +80,15 @@ class AnalyticsSkill(OpenClawBaseSkill):
         try:
             base_url = self.api_url.replace("/analytics", "/monetization")
             response = requests.get(f"{base_url}/report", headers=self._get_headers(), timeout=10)
-            
+
             if response.status_code == 200:
                 raw_data = response.json()
                 data = raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
-                
+
                 total = data.get('total_revenue', 0.0)
                 epm = data.get('epm', 0.0)
                 logs = data.get('logs', [])
-                
+
                 return (
                     "💰 **Revenue Report**:\n"
                     f"• Total Generated: `${total:.2f}`\n"

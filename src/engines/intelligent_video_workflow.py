@@ -22,7 +22,7 @@ from src.services.llm.intelligence_hub import base_intelligence_service
 async def expand_query_intelligently(query: str, session_id: str | None = None) -> list[str]:
     """Use LLM to expand a base query into high-converting viral variations with resilient fallback."""
     print(f"  🧠 Expanding query intelligently: {query}")
-    
+
     prompt = f"""Take this topic: "{query}"
 Generate 3 viral, high-intent search variations that people use to find trending short-form content.
 Avoid generic terms. Return ONLY a JSON list of strings."""
@@ -34,15 +34,15 @@ Avoid generic terms. Return ONLY a JSON list of strings."""
             session_id=session_id,
             json_mode=True
         )
-        
+
         parsed = json.loads(result["response"])
         variations = parsed if isinstance(parsed, list) else list(parsed.values())[0]
-        
+
         if isinstance(variations, list):
             unique_variations = list(set([query] + variations[:4]))
             print(f"  ✨ Query swarm generated ({result['provider'].upper()}): {unique_variations}")
             return unique_variations
-            
+
     except BaseException as e:
         print(f"  [ERROR] Intelligent expansion failed: {str(e)[:50]}")
         import sys
@@ -121,7 +121,7 @@ def search_by_date_youtube(
     import random
     if random.random() < 0.2 and date_filter == "today":
         date_filter = "thisweek" # Expand slightly
-    
+
     date_arg = date_ranges.get(date_filter, today.strftime("%Y%m%d"))
 
     try:
@@ -164,11 +164,11 @@ async def search_youtube_api(query: str, max_results: int = 5, region: str | Non
     """Search YouTube using the official Data API v3."""
     print(f"  🔍 YouTube API: {query} (Region: {region})")
     from src.api.config import settings
-    
+
     api_key = settings.YOUTUBE_API_KEY
     if not api_key:
         return []
-        
+
     url = "https://www.googleapis.com/youtube/v3/search"
     params = {
         "part": "snippet",
@@ -179,14 +179,14 @@ async def search_youtube_api(query: str, max_results: int = 5, region: str | Non
         "regionCode": region or "US",
         "videoEmbeddable": "true"
     }
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params)
             if response.status_code != 200:
                 print(f"  ⚠️ YouTube API Error: {response.status_code}")
                 return []
-                
+
             data = response.json()
             videos = []
             for item in data.get("items", []):
@@ -722,16 +722,16 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
     # Wave 2: Concurrent Multi-Platform Swarm
     print(f"  [DISCOVERY] Launching Discovery Swarm ({len(search_swarm)} variations x 11 platforms)...")
     sys.stdout.flush()
-    
+
     import random
     tasks = []
     for sub_query in search_swarm:
         # 1. Temporal Jitter: Randomize date focus to find different "waves"
         date_jitter = random.choice(["today", "thisweek", "thismonth"])
-        
+
         # Wrap sync functions in to_thread
         tasks.append(asyncio.to_thread(search_by_date_youtube, sub_query, max_per_platform, date_jitter))
-        
+
         # Add async functions
         tasks.extend([
             scrape_tiktok(sub_query, max_per_platform),
@@ -774,14 +774,14 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
         all_results.extend(fallback_results)
 
     # Final Audit
-    platforms = set(r.get("platform", "unknown") for r in all_results)
+    platforms = {r.get("platform", "unknown") for r in all_results}
     print(f"  ✅ Results: {len(all_results)} total from {len(platforms)} unique platforms.")
     return all_results
 
 
 async def analyze_content_type(video: dict, session_id: str | None = None) -> dict:
     """Analyze content type and narrative patterns using LLM with resilient fallback."""
-    
+
     prompt = f"""Analyze this content candidate:
 Title: "{video.get("title", "")}"
 Platform: {video.get("platform", "unknown")}
@@ -802,10 +802,10 @@ Reply with JSON ONLY: {{"hook_strength": N, "category": "string", "pattern": "st
             session_id=session_id,
             json_mode=True
         )
-        
+
         analysis = json.loads(result["response"])
         print(f"  🎬 Analysis ({result['provider'].upper()}): {analysis.get('pattern')} (Score: {analysis.get('hook_strength')}/10)")
-        
+
         return {
             "category": analysis.get("category", "other"),
             "content_type": analysis.get("pattern", "unknown"),
@@ -919,27 +919,27 @@ async def main():
         return
 
     print(f"\n[2/4] ANALYZING & FILTERING ({len(videos)} candidates in parallel)...")
-    
+
     # Run analysis tasks in parallel
     analysis_tasks = [analyze_content_type(v) for v in videos]
     analyses = await asyncio.gather(*analysis_tasks)
-    
+
     eligible = []
     for i, v in enumerate(videos):
         analysis = analyses[i]
         v["analysis"] = analysis
         v["category"] = analysis.get("category", "other")
-        
+
         # Check eligibility (Freshness + AI Assessment)
         check = await check_eligibility(v)
         v["eligibility"] = check
-        
+
         if check.get("eligible") and analysis.get("usable"):
             eligible.append(v)
             status = "✅"
         else:
             status = "❌"
-            
+
         print(f"  {status} [{v['platform'][:3]}] {v['title'][:40]:40} | Cat: {v['category']}")
 
     print("\n" + "=" * 60)
@@ -947,7 +947,7 @@ async def main():
     print("=" * 60)
     print(f"Videos found: {len(videos)}")
     print(f"Eligible: {len(eligible)}/{len(videos)}")
-    
+
     # Display leaderboard
     print("\n🏆 VIRAL LEADERBOARD (Top 3)")
     eligible.sort(key=lambda x: x.get("analysis", {}).get("score", 0), reverse=True)

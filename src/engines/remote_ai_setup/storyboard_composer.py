@@ -65,11 +65,11 @@ def fetch_likeness_image(character_name):
     # fallback to the known reliable Davido image if we can't reliably parse DDG HTML
     # Updated to extremely high-fidelity portraits for I2V character consistency
     fallback_map = {
-        "Davido": "https://img.vibe.com/wp-content/uploads/2023/04/Davido-Timeless-Album-1680533355.jpg", 
+        "Davido": "https://img.vibe.com/wp-content/uploads/2023/04/Davido-Timeless-Album-1680533355.jpg",
         "Donald Trump": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Donald_Trump_official_portrait.jpg/1200px-Donald_Trump_official_portrait.jpg",
         "Hillary Clinton": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Hillary_Clinton_official_portrait.jpg/1200px-Hillary_Clinton_official_portrait.jpg"
     }
-    
+
     img_url = fallback_map.get(character_name, "")
     if not img_url:
         # Simple DDG HTML Search (POC)
@@ -108,7 +108,7 @@ def ensure_tunnel():
     print(f"🚀 Starting local SSH port forwarding ({local_port} -> 8005)...")
     cmd = f"ssh -i {SSH_KEY} -f -N -L {local_port}:localhost:8122 {SSH_HOST} -p {SSH_PORT}"
     subprocess.run(cmd, shell=True, stderr=subprocess.DEVNULL)
-    
+
     print("⏳ Waiting for health check to pass via tunnel...")
     # Wait for tunnel
     for _ in range(10):
@@ -121,7 +121,7 @@ def ensure_tunnel():
             pass
         time.sleep(2)
         print(".", end="", flush=True)
-    
+
     print("\n❌ Failed to connect to API via tunnel after multiple attempts.")
     return False
 
@@ -150,7 +150,7 @@ def poll_and_download(job_id, output_path):
             if r.status_code == 200:
                 print(f"   📥 Downloading {job_id} to local disk...")
                 with open(output_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192): 
+                    for chunk in r.iter_content(chunk_size=8192):
                         if chunk: f.write(chunk)
                 print(f"   ✅ Saved clip: {output_path}")
                 return True
@@ -173,9 +173,9 @@ def assemble_master(video_files, final_output):
         for vf in video_files:
             # FFmpeg concat demuxer requires absolute paths or relative paths correctly formatted
             f.write(f"file '{os.path.abspath(vf)}'\n")
-    
+
     cmd = [
-        "/home/psalmprax/.local/bin/ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_file, 
+        "/home/psalmprax/.local/bin/ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_file,
         "-c", "copy", final_output
     ]
     try:
@@ -191,10 +191,10 @@ def assemble_master(video_files, final_output):
 def run_storyboard(storyboard_list, mode_label):
     print(f"\n🚀 Running {mode_label.upper()} Mode...")
     completed_clips = []
-    
+
     for i, scene in enumerate(storyboard_list):
         print(f"\n--- Processing {mode_label} Scene {i+1}/{len(storyboard_list)} ---")
-        
+
         # Inject Likeness if character is specified
         if "character_name" in scene and scene["character_name"]:
             b64_img = fetch_likeness_image(scene["character_name"])
@@ -212,7 +212,7 @@ def run_storyboard(storyboard_list, mode_label):
                 print(f"❌ Failed to download {mode_label} Scene {i+1}.")
         else:
             print(f"❌ Skipping {mode_label} Scene {i+1} due to generation error.")
-            
+
     if len(completed_clips) > 1:
         master_path = os.path.join(OUTPUT_DIR, f"{mode_label.upper()}_MASTER_SEQUENCE.mp4")
         assemble_master(completed_clips, master_path)
@@ -228,9 +228,9 @@ def main():
     if not ensure_tunnel():
         print("Exiting: Could not establish secure connection to rendering node.")
         return
-        
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
+
     # Wait for eager model loading to finish
     print("⏳ Waiting for remote engine to allocate VRAM and initialize (approx 30s)...")
     for _ in range(30):
@@ -242,10 +242,10 @@ def main():
         except Exception:
             pass
         time.sleep(10)
-        
+
     if RUN_MODE in ["sequential", "both"]:
         run_storyboard(STORYBOARD_SEQUENTIAL, "sequential")
-        
+
     if RUN_MODE in ["multi_shot", "both"]:
         run_storyboard(STORYBOARD_MULTI_SHOT, "multi_shot")
 

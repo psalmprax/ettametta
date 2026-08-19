@@ -61,7 +61,7 @@ function MetricsGrid({ metrics }: { readonly metrics: DesignCardProps["metrics"]
   return (
     <div className="grid grid-cols-2 gap-4 mb-6 relative z-10 flex-grow">
       {metrics?.map((metric, i) => (
-        <div key={i} className="space-y-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 group-hover:bg-white/[0.04] transition-all">
+        <div key={i} className="space-y-2 p-2 rounded-lg bg-white/[0.02] border border-white/5 group-hover:bg-white/[0.04] transition-all">
           <div className="flex flex-col">
             <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{metric.label}</span>
             <span className={cn("text-lg font-black tabular-nums tracking-tighter", metric.color || "text-emerald-500")}>
@@ -91,7 +91,7 @@ function CardActions({ credits, onShare, onRefresh, onMore }: {
 }) {
   return (
     <div className="flex items-center gap-2 mb-6 relative z-10">
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-1.5 flex items-center justify-between flex-1 mr-2 px-4 h-11">
+      <div className="bg-white/5 border border-white/10 rounded-lg p-1 flex items-center justify-between flex-1 mr-2 px-2 h-9">
         <div className="flex items-center gap-2">
           <CreditCard className="h-3.5 w-3.5 text-amber-500" />
           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Credits</span>
@@ -100,17 +100,17 @@ function CardActions({ credits, onShare, onRefresh, onMore }: {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {onShare && (
-          <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="h-11 w-11 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/10 text-zinc-400 hover:text-white group/btn">
+          <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="h-9 w-9 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center transition-all border border-white/10 text-zinc-400 hover:text-white group/btn">
             <Share2 className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
           </button>
         )}
         {onRefresh && (
-          <button onClick={(e) => { e.stopPropagation(); onRefresh(); }} className="h-11 w-11 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/10 text-zinc-400 hover:text-white group/btn">
+          <button onClick={(e) => { e.stopPropagation(); onRefresh(); }} className="h-9 w-9 bg-white/5 hover:bg-white/10 rounded-lg flex items-center justify-center transition-all border border-white/10 text-zinc-400 hover:text-white group/btn">
             <RotateCcw className="h-4 w-4 group-hover/btn:rotate-180 transition-transform duration-500" />
           </button>
         )}
         {onMore && (
-          <button onClick={(e) => { e.stopPropagation(); onMore(); }} className="h-11 w-11 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-2xl flex items-center justify-center transition-all border border-cyan-500/20 text-cyan-400 group/btn">
+          <button onClick={(e) => { e.stopPropagation(); onMore(); }} className="h-9 w-9 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg flex items-center justify-center transition-all border border-cyan-500/20 text-cyan-400 group/btn">
             <MoreVertical className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
           </button>
         )}
@@ -157,7 +157,7 @@ export function DesignCard({
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
       className={cn(
-        "group bg-[#0B0B0D] border border-white/5 hover:border-cyan-500/30 rounded-[24px] p-5 transition-all duration-500 relative overflow-hidden flex flex-col h-full shadow-2xl",
+        "group bg-[#0B0B0D] border border-white/5 hover:border-cyan-500/30 rounded-lg p-3 transition-all duration-500 relative overflow-hidden flex flex-col h-full shadow-2xl",
         onClick && "cursor-pointer active:scale-95"
       )}
     >

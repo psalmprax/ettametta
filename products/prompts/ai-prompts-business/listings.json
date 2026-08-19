@@ -1,0 +1,47 @@
+[
+  {
+    "platform": "gumroad",
+    "product_name": "50 AI Prompts for Business Owners",
+    "price": 9.99,
+    "description": "50 battle-tested AI prompts to automate your business marketing, sales, and operations. Save 10+ hours per week.",
+    "url": "https://gumroad.com",
+    "status": "ready_to_list",
+    "listing_url": "",
+    "guide": "docs/GUMROAD_GUIDE.md",
+    "assets": {
+      "cover": "prompts/ai-prompts-business/assets/cover-screenshot.png",
+      "product": "prompts/ai-prompts-business/50-ai-prompts-for-business-v2.md",
+      "description": "prompts/ai-prompts-business/gumroad_description_clean.txt"
+    }
+  },
+  {
+    "platform": "lemonsqueezy",
+    "product_name": "50 AI Prompts for Business Owners",
+    "price": 9.99,
+    "description": "50 battle-tested AI prompts to automate your business marketing, sales, and operations. Save 10+ hours per week.",
+    "url": "https://lemonsqueezy.com",
+    "status": "ready_to_list",
+    "listing_url": "",
+    "guide": "docs/LEMONSQUEEZY_GUIDE.md",
+    "assets": {
+      "cover": "prompts/ai-prompts-business/assets/cover-screenshot.png",
+      "product": "prompts/ai-prompts-business/50-ai-prompts-for-business-v2.md",
+      "description": "prompts/ai-prompts-business/gumroad_description_clean.txt"
+    }
+  },
+  {
+    "platform": "payhip",
+    "product_name": "50 AI Prompts for Business Owners",
+    "price": 9.99,
+    "description": "50 battle-tested AI prompts to automate your business marketing, sales, and operations. Save 10+ hours per week.",
+    "url": "https://payhip.com",
+    "status": "ready_to_list",
+    "listing_url": "",
+    "guide": "docs/PAYHIP_GUIDE.md",
+    "assets": {
+      "cover": "prompts/ai-prompts-business/assets/cover-screenshot.png",
+      "product": "prompts/ai-prompts-business/50-ai-prompts-for-business-v2.md",
+      "description": "prompts/ai-prompts-business/gumroad_description_clean.txt"
+    }
+  }
+]

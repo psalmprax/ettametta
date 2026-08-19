@@ -110,12 +110,12 @@ function DashboardContent() {
                 router.replace(`/dashboard?engine=${item.id}`);
               }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all group",
                 activeEngine === item.id ? "bg-primary/10 text-primary border border-primary/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
               )}
             >
               <item.icon className="h-4 w-4" />
-              <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+              <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
               {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />}
             </button>
           ))}
@@ -123,19 +123,19 @@ function DashboardContent() {
       }
       rightPanel={<AgentMatrix agents={agents} />}
     >
-      <div className="p-6 sm:p-10 space-y-10 relative h-full overflow-y-auto custom-scrollbar">
+      <div className="p-2 space-y-2 relative h-full overflow-hidden flex flex-col">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeEngine}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+            className="flex-1 min-h-0 flex flex-col"
           >
             {activeEngine === "overview" && (
-              <div className="flex flex-col gap-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="flex-1 min-h-0 flex flex-col gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 shrink-0">
                   <DesignCard 
                     title="Active Trends" 
                     status="ACTIVE" 
@@ -177,59 +177,34 @@ function DashboardContent() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="p-8 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] -mr-16 -mt-16" />
-                        <div className="flex items-center justify-between mb-4 relative z-10">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-3">
-                                <Activity className="h-5 w-5 text-primary" />
-                                Real-time Throughput
-                            </h3>
-                            <span className="text-[10px] font-mono text-primary animate-pulse">LIVE_STREAM</span>
-                        </div>
-                        <div className="h-[200px] relative z-10">
-                            <AreaChartCustom 
-                                data={Array.from({ length: 20 }, (_, i) => ({ time: i, value: 30 + ((i * 11 + 7) % 50) }))} 
-                                dataKey="value" 
-                                color="rgba(6,182,212,1)" 
-                                height="100%"
-                                gradientId="overviewThroughput"
-                            />
-                        </div>
+                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-2">
+                  {/* Left Column: Throughput & Pipeline Flow */}
+                  <div className="flex flex-col gap-2 min-h-0">
+                    <div className="flex-1 min-h-0 p-4 rounded-lg bg-[#0F0F11]/60 border border-white/5 flex flex-col relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] -mr-16 -mt-16" />
+                      <div className="flex items-center justify-between mb-2 relative z-10 shrink-0">
+                        <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-primary" />
+                          Real-time Throughput
+                        </h3>
+                        <span className="text-[9px] font-mono text-primary animate-pulse">LIVE_STREAM</span>
+                      </div>
+                      <div className="flex-1 min-h-0 relative z-10">
+                        <AreaChartCustom 
+                          data={Array.from({ length: 20 }, (_, i) => ({ time: i, value: 30 + ((i * 11 + 7) % 50) }))} 
+                          dataKey="value" 
+                          color="rgba(6,182,212,1)" 
+                          height="100%"
+                          gradientId="overviewThroughput"
+                        />
+                      </div>
                     </div>
 
-                    <div className="p-8 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[60px] -mr-16 -mt-16" />
-                        <div className="p-4 border-b border-white/5 flex items-center justify-between relative z-10">
-                            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Global Propagation Matrix</span>
-                            <span className="text-[8px] font-mono text-emerald-500/50">DATA_HUB_ACTIVE</span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-3 relative z-10">
-                            {displayLogs.slice(0, 8).map((log, i) => (
-                            <div key={i} className="flex gap-4 items-center border-b border-white/[0.02] pb-2 last:border-0">
-                                <span className="text-zinc-800 shrink-0">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                                <div className="flex-1 flex items-center justify-between">
-                                    <span className={cn(
-                                        "truncate mr-4",
-                                        log.level === "ACTION" ? "text-cyan-400" :
-                                        log.level === "ERROR" ? "text-rose-500" : "text-zinc-500"
-                                    )}>{log.message}</span>
-                                    <div className="w-16 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
-                                        <MiniAreaChart data={sparklineData} color={log.level === "ERROR" ? "#f43f5e" : "#10b981"} height={20} />
-                                    </div>
-                                </div>
-                            </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                  <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Pipeline Flow</span>
-                      <span className="text-[8px] font-mono text-cyan-500/50">4-STAGE_PIPELINE</span>
-                    </div>
-                    <div className="p-4">
+                    <div className="p-3 rounded-lg bg-[#0F0F11]/40 border border-white/5 shrink-0 flex flex-col">
+                      <div className="flex items-center justify-between mb-2 shrink-0">
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Pipeline Flow</span>
+                        <span className="text-[8px] font-mono text-cyan-500/50">4-STAGE_PIPELINE</span>
+                      </div>
                       <ProcessingFlow 
                         steps={[
                           { id: 'ingest', label: 'INGEST', status: 'complete' },
@@ -242,58 +217,88 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Logs</span>
-                      <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
-                    </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                    {displayLogs.slice(0, 15).map((log, i) => (
-                      <div key={i} className="flex gap-4">
-                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                        <span className={cn(
-                          log.level === "ACTION" ? "text-cyan-400" :
-                          log.level === "ERROR" ? "text-rose-500" : "text-zinc-600"
-                        )}>{log.message}</span>
+                  {/* Right Column: Propagation Matrix & System Logs */}
+                  <div className="flex flex-col gap-2 min-h-0">
+                    <div className="flex-1 min-h-0 p-4 rounded-lg bg-[#0F0F11]/60 border border-white/5 flex flex-col relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[60px] -mr-16 -mt-16" />
+                      <div className="pb-2 border-b border-white/5 flex items-center justify-between relative z-10 shrink-0">
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Global Propagation Matrix</span>
+                        <span className="text-[8px] font-mono text-emerald-500/50">DATA_HUB_ACTIVE</span>
                       </div>
-                    ))}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar pt-2 font-mono text-[9px] space-y-2 relative z-10">
+                        {displayLogs.slice(0, 12).map((log, i) => (
+                          <div key={i} className="flex gap-4 items-center border-b border-white/[0.02] pb-1 last:border-0">
+                            <span className="text-zinc-800 shrink-0">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                            <div className="flex-1 flex items-center justify-between">
+                              <span className={cn(
+                                "truncate mr-4",
+                                log.level === "ACTION" ? "text-cyan-400" :
+                                log.level === "ERROR" ? "text-rose-500" : "text-zinc-500"
+                              )}>{log.message}</span>
+                              <div className="w-12 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <MiniAreaChart data={sparklineData} color={log.level === "ERROR" ? "#f43f5e" : "#10b981"} height={15} />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-h-0 p-4 rounded-lg bg-[#0F0F11]/40 border border-white/5 flex flex-col overflow-hidden">
+                      <div className="pb-2 border-b border-white/5 flex items-center justify-between shrink-0">
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Logs</span>
+                        <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
+                      </div>
+                      <div className="flex-1 overflow-y-auto custom-scrollbar pt-2 font-mono text-[9px] space-y-1">
+                        {displayLogs.slice(0, 20).map((log, i) => (
+                          <div key={i} className="flex gap-4">
+                            <span className="text-zinc-800 shrink-0">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                            <span className={cn(
+                              "break-all",
+                              log.level === "ACTION" ? "text-cyan-400" :
+                              log.level === "ERROR" ? "text-rose-500" : "text-zinc-600"
+                            )}>{log.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
             {activeEngine === "egress" && (
-              <div className="flex-1 p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-8 min-h-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                    <Zap className="h-5 w-5 text-emerald-400" />
+              <div className="flex-1 p-4 rounded-lg bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-4 min-h-0 overflow-hidden">
+                <div className="flex items-center justify-between shrink-0">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-emerald-400" />
                     Live Egress Stream
                   </h3>
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase">Observer_Active</span>
+                  <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[9px] font-bold text-emerald-500 uppercase">Observer_Active</span>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
                   {(pulse?.active_segments || []).length > 0 ? (
                     (pulse?.active_segments || []).map((node: any, i: number) => (
-                      <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                            <Globe className="h-5 w-5 text-emerald-400" />
+                      <div key={i} className="p-3 bg-white/5 border border-white/5 rounded-lg flex items-center justify-between group hover:border-emerald-500/30 transition-all text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                            <Globe className="h-4 w-4 text-emerald-400" />
                           </div>
                           <div>
-                            <h4 className="text-sm font-bold text-white">Egress_Gate_{node.label}</h4>
-                            <p className="text-[10px] text-zinc-500">Node Load: {node.load}%</p>
+                            <h4 className="font-bold text-white">Egress_Gate_{node.label}</h4>
+                            <p className="text-[9px] text-zinc-500">Node Load: {node.load}%</p>
                           </div>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">ACTIVE</span>
+                        <span className="text-[9px] font-mono text-emerald-500 font-bold uppercase tracking-widest">ACTIVE</span>
                       </div>
                     ))
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center space-y-4 py-20 opacity-40">
-                      <Globe className="h-12 w-12 text-zinc-700 animate-pulse" />
-                      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Awaiting Egress Signal...</p>
+                    <div className="h-full flex flex-col items-center justify-center space-y-2 py-20 opacity-40">
+                      <Globe className="h-10 w-10 text-zinc-700 animate-pulse" />
+                      <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Awaiting Egress Signal...</p>
                     </div>
                   )}
                 </div>
@@ -301,34 +306,34 @@ function DashboardContent() {
             )}
 
             {activeEngine === "engine" && (
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
-                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col items-center justify-center space-y-6 text-center">
-                  <Activity className="h-16 w-16 text-cyan-400 animate-pulse" />
-                  <div className="space-y-2">
-                    <h4 className="text-xl font-bold text-white uppercase tracking-tighter">Neural Throughput</h4>
-                    <p className="text-xs text-zinc-500 max-w-[300px]">Live telemetry stream from global orchestration nodes. Monitoring {pulse?.active_segments?.length || 0} active neural channels.</p>
+              <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-0">
+                <div className="p-4 rounded-lg bg-[#0F0F11]/60 border border-white/5 flex flex-col items-center justify-center space-y-4 text-center">
+                  <Activity className="h-12 w-12 text-cyan-400 animate-pulse" />
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-tighter">Neural Throughput</h4>
+                    <p className="text-[10px] text-zinc-500 max-w-[260px]">Live telemetry stream from global orchestration nodes. Monitoring {pulse?.active_segments?.length || 0} active neural channels.</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                      <span className="block text-[10px] font-bold text-zinc-600 uppercase">Latency</span>
-                      <span className="text-lg font-bold text-cyan-400">{pulse?.metrics?.latency?.toFixed(0) || pulse?.latency_ms?.toFixed(0) || "---"}ms</span>
+                  <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+                    <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                      <span className="block text-[8px] font-bold text-zinc-600 uppercase">Latency</span>
+                      <span className="text-sm font-bold text-cyan-400">{pulse?.metrics?.latency?.toFixed(0) || pulse?.latency_ms?.toFixed(0) || "---"}ms</span>
                     </div>
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                      <span className="block text-[10px] font-bold text-zinc-600 uppercase">Signal</span>
-                      <span className="text-lg font-bold text-emerald-500">{(pulse?.metrics?.signal_strength || 1.0) * 100}%</span>
+                    <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                      <span className="block text-[8px] font-bold text-zinc-600 uppercase">Signal</span>
+                      <span className="text-sm font-bold text-emerald-500">{(pulse?.metrics?.signal_strength || 1.0) * 100}%</span>
                     </div>
                   </div>
                 </div>
-                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-white uppercase tracking-widest">Active Channels</h4>
-                    <span className="text-[10px] font-mono text-cyan-400">{status === "open" ? "SYNCED" : "RECONNECTING..."}</span>
+                <div className="p-4 rounded-lg bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-4 min-h-0 overflow-hidden">
+                  <div className="flex items-center justify-between shrink-0">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-widest">Active Channels</h4>
+                    <span className="text-[9px] font-mono text-cyan-400">{status === "open" ? "SYNCED" : "RECONNECTING..."}</span>
                   </div>
-                  <div className="space-y-4">
-                    {(pulse?.active_segments || []).slice(0, 5).map((node: any) => (
-                      <div key={node.label} className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-xl">
-                        <span className="text-xs font-bold text-zinc-400">{node.label}</span>
-                        <div className="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+                  <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+                    {(pulse?.active_segments || []).slice(0, 10).map((node: any) => (
+                      <div key={node.label} className="flex items-center justify-between p-3 bg-white/2 border border-white/5 rounded-lg text-xs">
+                        <span className="font-bold text-zinc-400">{node.label}</span>
+                        <div className="h-1 w-20 bg-white/5 rounded-full overflow-hidden">
                           <motion.div 
                             animate={{ width: [`${node.load}%`, `${Math.min(100, node.load + 10)}%`, `${node.load}%`] }}
                             transition={{ duration: 3, repeat: Infinity }}
@@ -338,7 +343,7 @@ function DashboardContent() {
                       </div>
                     ))}
                     {(!pulse?.active_segments || pulse.active_segments.length === 0) && (
-                      <div className="text-center py-10 text-zinc-600 text-[10px] uppercase font-bold tracking-widest">Awaiting Neural Link...</div>
+                      <div className="text-center py-10 text-zinc-600 text-[9px] uppercase font-bold tracking-widest">Awaiting Neural Link...</div>
                     )}
                   </div>
                 </div>
@@ -346,19 +351,19 @@ function DashboardContent() {
             )}
 
             {activeEngine === "history" && (
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-4">
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
                 {activityFeed.map((activity, idx) => (
-                  <div key={idx} className="p-6 rounded-2xl bg-[#0F0F11]/60 border border-white/5 flex items-center justify-between group hover:border-violet-500/30 transition-all">
-                    <div className="flex items-center gap-6">
-                      <div className="h-12 w-12 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                        <History className="h-6 w-6 text-violet-400" />
+                  <div key={idx} className="p-4 rounded-lg bg-[#0F0F11]/60 border border-white/5 flex items-center justify-between group hover:border-violet-500/30 transition-all text-xs">
+                    <div className="flex items-center gap-4">
+                      <div className="h-9 w-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                        <History className="h-4 w-4 text-violet-400" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white uppercase">{activity.title || "NEURAL_SEQUENCE"}</span>
-                        <span className="text-[10px] text-zinc-500">{new Date(activity.published_at).toLocaleString()}</span>
+                        <span className="font-bold text-white uppercase">{activity.title || "NEURAL_SEQUENCE"}</span>
+                        <span className="text-[9px] text-zinc-500">{new Date(activity.published_at).toLocaleString()}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <span className="text-[8px] font-mono text-zinc-600">ID: {activity.id?.slice(0, 12)}</span>
                       <div className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-bold text-emerald-500 uppercase">SUCCESS</div>
                     </div>
@@ -368,16 +373,16 @@ function DashboardContent() {
             )}
 
             {activeEngine === "logs" && (
-              <div className="flex-1 flex flex-col bg-[#0F0F11]/80 rounded-[32px] border border-white/5 overflow-hidden">
-                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/40">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="h-4 w-4 text-cyan-400" />
-                    <h3 className="text-xs font-bold text-white uppercase tracking-widest">Master System Log Stream</h3>
+              <div className="flex-1 flex flex-col bg-[#0F0F11]/80 rounded-lg border border-white/5 overflow-hidden min-h-0">
+                <div className="p-3 border-b border-white/5 flex items-center justify-between bg-black/40 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-3.5 w-3.5 text-cyan-400" />
+                    <h3 className="text-[9px] font-bold text-white uppercase tracking-widest">Master System Log Stream</h3>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-[10px] space-y-1">
                   {displayLogs.map((log, i) => (
-                    <div key={i} className="flex gap-6 items-start border-b border-white/[0.02] pb-2">
+                    <div key={i} className="flex gap-4 items-start border-b border-white/[0.02] pb-1 last:border-0">
                       <span className="text-zinc-800 shrink-0">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                       <span className={cn(
                         "break-all",

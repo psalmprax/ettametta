@@ -22,7 +22,7 @@ class LandingPageSkill(OpenClawBaseSkill):
             key_benefits = kwargs.get("key_benefits", [])
 
         self.logger.info(f"[Landing Page] Generating landing page structure for {product_name}")
-        
+
         try:
             benefits_str = "\n".join([f"- {b}" for b in key_benefits])
             # Simulated Groq/LLM call for Landing Page generation
@@ -49,7 +49,7 @@ class LandingPageSkill(OpenClawBaseSkill):
                 "temperature": 0.7,
                 "max_tokens": 1500,
             }
-            
+
             headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
             resp = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -57,13 +57,13 @@ class LandingPageSkill(OpenClawBaseSkill):
                 headers=headers,
                 timeout=20,
             )
-            
+
             if resp.status_code == 200:
                 copy = resp.json()["choices"][0]["message"]["content"]
                 return f"📄 **Landing Page Structure Generated**\n\n{copy}"
             else:
                 return f"⚠️ Landing Page Generation failed: Status {resp.status_code}"
-                
+
         except Exception as e:
             self.logger.error(f"Landing Page Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"

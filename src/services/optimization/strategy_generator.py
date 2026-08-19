@@ -2,7 +2,7 @@
 The Strategist: Psychological Angle Engine (10/10)
 =================================================
 
-Calculates the best 'Creative Angle' for a topic to ensure 
+Calculates the best 'Creative Angle' for a topic to ensure
 maximum psychological impact and hook retention.
 """
 
@@ -28,17 +28,17 @@ class ViralStrategist:
 
     async def select_best_angle(self, topic: str, niche: str) -> dict[str, Any]:
         """
-        Uses LLM context (simulated) to pick the framing with the 
+        Uses LLM context (simulated) to pick the framing with the
         highest predicted viral ROI for the current trend velocity.
         """
         logger.info(f"Selecting viral framing for '{topic}'...")
-        
+
         # Logic: If 'velocity' is high, use 'The Warning' or 'the_secret'
         # If saturation is high, use 'the_contradiction' to cut through noise
-        
+
         # DEFAULT:
         angle_key = "the_contradiction"
-        
+
         return {
             "angle_name": angle_key,
             "description": self.angle_library[angle_key],

@@ -1,0 +1,21 @@
+{
+  "name": "75 Email Marketing Prompts",
+  "slug": "email-marketing-prompts",
+  "price": 9.99,
+  "currency": "USD",
+  "description": "75 AI prompts for email subject lines, sequences, newsletters, and campaigns. Double your open rates.",
+  "tags": [
+    "email marketing",
+    "newsletters",
+    "copywriting",
+    "subject lines",
+    "ai prompts"
+  ],
+  "category": "Digital Product",
+  "file": "75-email-marketing-prompts.md",
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

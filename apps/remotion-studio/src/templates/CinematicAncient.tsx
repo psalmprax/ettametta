@@ -21,7 +21,7 @@ export const CinematicAncient: React.FC<z.infer<typeof cinematicAncientSchema>> 
     subtitle, 
     video_url, 
     audio_url, 
-    primary_color = '#FFD700', // Default ancient gold
+    primary_color: primaryColor = '#FFD700', // Default ancient gold
     show_cta_overlay, 
     cta_type, 
     cta_text 
@@ -68,7 +68,7 @@ export const CinematicAncient: React.FC<z.infer<typeof cinematicAncientSchema>> 
                     camera={{ position: [0, 0, 12], fov: 45 }}
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 >
-                    <AncientAstrolabe primaryColor={primary_color} />
+                    <AncientAstrolabe primaryColor={primaryColor} />
                 </ThreeCanvas>
 
                 {/* Floating Aesthetic Typography */}
@@ -91,7 +91,7 @@ export const CinematicAncient: React.FC<z.infer<typeof cinematicAncientSchema>> 
                         letterSpacing: '15px',
                         margin: 0,
                         textTransform: 'uppercase',
-                        textShadow: `0 0 30px ${primary_color}88`
+                        textShadow: `0 0 30px ${primaryColor}88`
                     }}>
                         {title}
                     </h1>

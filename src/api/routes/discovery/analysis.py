@@ -374,7 +374,7 @@ async def get_niche_insights(
         prompt = f"""
         You are a viral growth expert for the {niche} niche on YouTube Shorts/TikTok.
         Provide a viral optimization strategy for this niche.
-        
+
         Return ONLY a JSON object with this structure:
         {{
             "recommendation": "string (single actionable sentence, max 30 words)",

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    width: 1080px; height: 1080px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(145deg, #0a0a1a 0%, #1a0a2e 40%, #6c5ce7 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    color: white; overflow: hidden; position: relative;
+}
+.glow { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(108,92,231,0.4) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.badge { position: absolute; top: 50px; right: 50px; background: linear-gradient(135deg, #a29bfe, #6c5ce7); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; font-size: 16px; box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+.icon { font-size: 100px; margin-bottom: 25px; }
+h1 { font-size: 56px; font-weight: 900; text-align: center; margin-bottom: 12px; line-height: 1.1; }
+h1 span { background: linear-gradient(90deg, #a29bfe, #fd79a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { font-size: 22px; color: #a29bfe; margin-bottom: 30px; }
+.price { font-size: 64px; font-weight: 900; background: linear-gradient(90deg, #a29bfe, #fd79a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 25px; }
+.features { display: flex; gap: 16px; }
+.feature { text-align: center; padding: 18px 24px; background: rgba(255,255,255,0.08); border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); }
+.feature .num { font-size: 32px; font-weight: 800; color: #a29bfe; }
+.feature .label { font-size: 12px; color: #fd79a8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+</style></head><body>
+<div class="glow"></div>
+<div class="badge">200 PROMPTS</div>
+<div class="icon">🎨</div>
+<h1>Midjourney<br><span>Prompt Pack</span></h1>
+<p class="subtitle">Create Stunning AI Art in Seconds</p>
+<span class="price">$7.99</span>
+<div class="features">
+    <div class="feature"><div class="num">200</div><div class="label">Prompts</div></div>
+    <div class="feature"><div class="num">8</div><div class="label">Categories</div></div>
+    <div class="feature"><div class="num">3</div><div class="label">Platforms</div></div>
+</div>
+</body></html>

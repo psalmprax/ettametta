@@ -82,13 +82,13 @@ async def upload_document(
     try:
         content = await file.read()
         text = content.decode("utf-8")
-        
+
         doc_id = await base_knowledge_service.ingest_text(
             text=text,
             dataset_id="default",
             metadata={"filename": file.filename}
         )
-        
+
         return success_response(data={
             "document_id": doc_id,
             "filename": file.filename,

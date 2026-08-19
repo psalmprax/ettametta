@@ -26,7 +26,7 @@ export const CinematicLiquid: React.FC<z.infer<typeof cinematicLiquidSchema>> = 
     show_cta_overlay, 
     cta_type, 
     cta_text,
-    primary_color = '#00F2FE'
+    primary_color: primaryColor = '#00F2FE'
 }) => {
     const frame = useCurrentFrame();
     const { durationInFrames, fps, width, height } = useVideoConfig();
@@ -64,7 +64,7 @@ export const CinematicLiquid: React.FC<z.infer<typeof cinematicLiquidSchema>> = 
                 
                 {/* 3D Liquid Metal Layer */}
                 <ThreeCanvas width={width} height={height} camera={{ fov: 60, position: [0, 0, 8] }}>
-                    <LiquidMetalSphere primaryColor={primary_color} />
+                    <LiquidMetalSphere primaryColor={primaryColor} />
                     <EffectComposer>
                         <Bloom 
                             luminanceThreshold={0.7} 
@@ -98,13 +98,13 @@ export const CinematicLiquid: React.FC<z.infer<typeof cinematicLiquidSchema>> = 
                         {title}
                     </h1>
                     <p style={{
-                        color: primary_color,
-                        fontSize: '35px',
-                        fontWeight: 400,
-                        letterSpacing: '20px',
-                        margin: '40px 0 0 0',
-                        textTransform: 'uppercase',
-                        textShadow: `0 0 20px ${primary_color}`
+color: primaryColor,
+                    fontSize: '35px',
+                    fontWeight: 400,
+                    letterSpacing: '20px',
+                    margin: '40px 0 0 0',
+                    textTransform: 'uppercase',
+                    textShadow: `0 0 20px ${primaryColor}`
                     }}>
                         {subtitle}
                     </p>

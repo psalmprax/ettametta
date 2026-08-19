@@ -19,10 +19,10 @@ async def test_drift_detector_persistence(test_db):
     # 0. Initial count
     async with AsyncSessionLocal() as db:
         initial_count = len((await db.execute(select(DriftHistoryDB))).all())
-    
+
     # 1. Record a delta
     await base_drift_service.record_delta(0.75, 0.70)
-    
+
     # 2. Check persistence
     async with AsyncSessionLocal() as db:
         results = (await db.execute(select(DriftHistoryDB))).scalars().all()
@@ -36,16 +36,16 @@ async def test_experiment_batcher_persistence(test_db):
     strategy = f"test_strat_{asyncio.get_running_loop().time()}"
     batch = await base_experiment_service.create_cohort_batch(strategy, size=2)
     batch_id = batch["batch_id"]
-    
+
     # 2. Check DB
     async with AsyncSessionLocal() as db:
         db_batch = await db.get(ExperimentCohortDB, batch_id)
         assert db_batch is not None
         assert db_batch.strategy == strategy
-    
+
     # 3. Assign a participant
     await base_experiment_service.assign_to_batch("vid_101")
-    
+
     # 4. Check DB update
     async with AsyncSessionLocal() as db:
         db_batch = await db.get(ExperimentCohortDB, batch_id)
@@ -59,12 +59,12 @@ async def test_recovery_service_logic(test_db):
     from src.services.analytics.drift_detector import DriftDetector
     local_detector = DriftDetector()
     local_detector.drift_history = []
-    
+
     # 2. Manually add a DB entry
     async with AsyncSessionLocal() as db:
         db.add(DriftHistoryDB(predicted_retention=0.8, actual_retention=0.7, delta=0.1))
         await db.commit()
-    
+
     # 3. Sync
     # We cheat here and just use the base but actually we want to test the class logic
     await base_drift_service.sync_from_db()

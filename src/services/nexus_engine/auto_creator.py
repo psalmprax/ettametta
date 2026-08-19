@@ -121,10 +121,10 @@ class AutoCreator:
         from .style_library import get_style
         style = normalize_nexus_style(style)
         style_config = get_style(style)
-        
+
         num_chapters = max(1, duration_seconds // 60)
         all_segments = []
-        
+
         logger.info(f"[AutoCreator] Generating {num_chapters} chapters for style: {style}")
 
         for i in range(num_chapters):
@@ -132,17 +132,17 @@ class AutoCreator:
             if all_segments:
                 last_segment = all_segments[-1].get("text", "")
                 context += f" Previous context: {last_segment[-200:]}"
-            
+
             part_segments = await self._generate_script_part(
                 topic, niche, duration_seconds, f"Chapter {i+1}", context=context, style=style
             )
-            
+
             if part_segments:
                 all_segments.extend(part_segments)
-            
+
         if not all_segments:
             raise RuntimeError("Script generation returned no segments after multiple attempts.")
-            
+
         return all_segments
 
     async def _generate_script_part(
@@ -161,10 +161,10 @@ class AutoCreator:
         Target Duration: {duration} seconds
         Part Info: {chapter_info}
         {context}
-        
+
         Generate a JSON object with a 'segments' key. This key MUST contain a list of 6 to 8 segments.
         Each segment MUST have: 'text', 'visual_prompt', 'mood', 'type'.
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{ "segments": [ ... ] }}
         """
@@ -176,24 +176,24 @@ class AutoCreator:
                 json_mode=True,
                 complexity="high"
             )
-            
+
             content = json.loads(response["response"])
             segments = []
             if isinstance(content, list):
                 segments = content
             elif isinstance(content, dict):
                 segments = content.get("segments", content.get("script", [content]))
-            
+
             return segments
         except Exception:
             logger.exception("[AutoCreator] _generate_script_part error")
             raise
 
     async def create_cinema_video(
-        self, 
-        job_id: str, 
-        topic: str, 
-        niche: str, 
+        self,
+        job_id: str,
+        topic: str,
+        niche: str,
         blueprint_id: str = "story-factory",
         engine: str = "cloud",
         script: list[dict] | None = None,
@@ -206,7 +206,7 @@ class AutoCreator:
     ) -> str:
         """
         Main creation loop protected by CircuitBreaker.
-        
+
         Args:
             automation_mode: Controls DAG usage and AI involvement.
                 - MANUAL: Respects ``use_dag`` flag (legacy behavior).
@@ -293,7 +293,7 @@ class AutoCreator:
 
         # 2. Cognition — Source assets
         await notify("cognition", NodeStatus.ACTIVE, 30)
-        
+
         # For PARTIAL mode: wait for approval before executing
         # Only when AI actually generated a DAG (not when script was provided)
         ai_generated_script = script is None and is_at_least(automation_mode, AutomationMode.PARTIAL)
@@ -309,7 +309,7 @@ class AutoCreator:
             segments, job_id, niche, engine=engine, style=style, use_dag=use_dag,
         )
         voice_paths = await self._generate_voiceovers(segments, job_id)
-        
+
         if not visual_paths or not voice_paths:
             raise ValueError("Asset sourcing failed.")
         await notify("cognition", NodeStatus.COMPLETED, 50)
@@ -317,7 +317,7 @@ class AutoCreator:
         # 3. Synthesis
         await notify("synthesis", NodeStatus.ACTIVE, 60)
         from src.services.nexus_engine.orchestrator import base_nexus_service
-        
+
         from .style_library import get_style
         style_config = get_style(style)
         vfx_type = style_config.get("remotion_flags", {}).get("vfx", "default")
@@ -336,9 +336,9 @@ class AutoCreator:
 
         if not output_path:
             raise RuntimeError("Assembly failed.")
-            
+
         await notify("synthesis", NodeStatus.COMPLETED, 90)
-        
+
         # 4. Egress
         await notify("egress", NodeStatus.ACTIVE, 95)
         # Final output path persistence
@@ -351,7 +351,7 @@ class AutoCreator:
                 metadata["output_path"] = output_path
                 job.job_metadata = metadata
                 await db.commit()
-                
+
         await notify("egress", NodeStatus.COMPLETED, 100)
         return output_path
 
@@ -361,24 +361,26 @@ class AutoCreator:
         retry=retry_if_exception_type(Exception),
         reraise=True
     )
-    async def publish_job(self, job_id: str, platforms: list[str] = ["youtube"]) -> dict:
+    async def publish_job(self, job_id: str, platforms: list[str] = None) -> dict:
         """Publishes a completed job with resilience."""
         from src.services.distribution.publishing import base_publishing_service
         from src.api.utils.database import async_session_factory
         from src.api.utils.models import NexusJobDB
         from sqlalchemy import select
 
+        if platforms is None:
+            platforms = ["youtube"]
         async with async_session_factory() as db:
             stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
             result = await db.execute(stmt)
             job = result.scalar_one_or_none()
-            
+
             if not job or "output_path" not in job.job_metadata:
                 raise ValueError("Job not ready for publishing.")
 
             output_path = job.job_metadata["output_path"]
             publish_results = {}
-            
+
             for platform in platforms:
                 try:
                     res = await base_publishing_service.publish_to_platform(
@@ -1021,7 +1023,7 @@ class AutoCreator:
                     if message is None:
                         logger.info(f"[AutoCreator] Approval listener timeout for {job_id}, exiting")
                         break
-                        
+
                 except asyncio.TimeoutError:
                     logger.debug(f"[AutoCreator] Listener timeout for {job_id} (expected)")
                     break
@@ -1237,17 +1239,17 @@ class AutoCreator:
 
         prompt = seg.get("visual_prompt", niche)
         logger.info(f"[AutoCreator] Sourcing visual for segment {i}: {prompt}")
-        
+
         # Fetch up to 3 candidates for re-roll
         urls = await base_stock_service.fetch_b_roll(prompt, count=3)
         if not urls:
             logger.warning(f"[AutoCreator] No stock found for: {prompt}. Using fallback.")
             urls = await base_stock_service.fetch_b_roll(niche, count=1)
-        
+
         best_path = await self._download_and_audit_visual_asset(urls, seg, i, job_id, niche)
         if best_path:
             return best_path
-        
+
         # If all 3 fail, try one last time with generic niche prompt and skip audit
         logger.error(f"[AutoCreator] Segment {i} exhausted re-rolls. Falling back to generic.")
         fallback_urls = await base_stock_service.fetch_b_roll(niche, count=1)
@@ -1255,7 +1257,7 @@ class AutoCreator:
             f_path = await base_stock_service.download_stock_video(fallback_urls[0])
             if f_path:
                 return f_path
-        
+
         return None
 
     async def _download_and_audit_visual_asset(self, urls, seg, i, job_id, niche):
@@ -1266,7 +1268,7 @@ class AutoCreator:
             path = await base_stock_service.download_stock_video(url)
             if not path:
                 continue
-            
+
             # Perform Scored Vision Audit (Phase 10-05)
             result = await self._vision_audit(path, seg.get("visual_prompt", niche), job_id, i)
             score = result.get("score", 50)
@@ -1370,7 +1372,7 @@ class AutoCreator:
     async def _generate_voiceovers(self, segments, job_id):
         from src.services.audio.voiceover import base_voiceover_service
         voice_paths = []
-        for i, seg in enumerate(segments):
+        for _i, seg in enumerate(segments):
             text = seg.get("text", "")
             if text:
                 path = await base_voiceover_service.generate_voiceover(text)

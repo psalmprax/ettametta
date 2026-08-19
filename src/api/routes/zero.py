@@ -25,7 +25,7 @@ async def start_zero(background_tasks: BackgroundTasks, current_user: UserDB = D
     """
     if base_agent_zero_service.is_running:
         return {"message": "Agent Zero is already active", "status": "active"}
-    
+
     background_tasks.add_task(base_agent_zero_service.start)
     return {"message": "Agent Zero Ignition Sequence Started", "status": "initializing"}
 

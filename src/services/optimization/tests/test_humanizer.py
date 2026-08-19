@@ -1,4 +1,3 @@
-import pytest
 from src.services.optimization.humanizer import base_humanizer
 
 def test_humanizer_replacements():

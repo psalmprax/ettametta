@@ -63,24 +63,24 @@ async def extract_content_patterns(
 async def _perform_ai_pattern_analysis(text: str, content: ContentCandidateDB) -> dict[str, Any]:
     """
     Perform AI-powered text analysis to extract niches, sentiment, viral potential, and keywords.
-    
+
     Uses LLM service for intelligent content analysis instead of basic keyword matching.
     """
     if not text.strip():
         # Fallback to basic analysis for empty text
         return _perform_pattern_analysis(text, content)
-    
+
     try:
         # Construct analysis prompt for LLM
         analysis_prompt = f"""
         Analyze this content for viral potential and extract key insights:
-        
+
         Title: {content.title or 'N/A'}
         Description: {content.description or 'N/A'}
         Platform: {content.platform}
         View Count: {content.view_count or 0}
         Engagement Score: {content.engagement_score or 0.0}
-        
+
         Provide a JSON response with:
         {{
             "niches": ["list of relevant content niches like entertainment, education, motivation, tech, gaming, etc."],
@@ -91,12 +91,12 @@ async def _perform_ai_pattern_analysis(text: str, content: ContentCandidateDB) -
             "target_audience": "likely target demographic",
             "content_type": "tutorial/review/news/entertainment/etc."
         }}
-        
+
         Base niches on: entertainment, education, motivation, tech, gaming, music, sports, fashion, food, news, business, lifestyle, health, travel, finance, politics, science, art, animals, comedy, diy, cooking, fitness, beauty, gaming, anime, manga, crypto, investing, real_estate, parenting, pets, books, movies, tv_shows, podcasts.
-        
+
         Consider viral indicators like: controversy, relatability, usefulness, emotion, uniqueness, timeliness, visual appeal, shareability.
         """
-        
+
         # Call LLM service for analysis
         llm_response = await unified_llm_service.complete(
             prompt=analysis_prompt,
@@ -104,7 +104,7 @@ async def _perform_ai_pattern_analysis(text: str, content: ContentCandidateDB) -
             temperature=0.3,  # Lower temperature for more consistent analysis
             max_tokens=1024
         )
-        
+
         # Parse LLM response
         import json
         try:
@@ -114,9 +114,9 @@ async def _perform_ai_pattern_analysis(text: str, content: ContentCandidateDB) -
                 response_text = response_text[7:]
             if response_text.endswith("```"):
                 response_text = response_text[:-3]
-            
+
             analysis_data = json.loads(response_text.strip())
-            
+
             # Validate and structure the response
             return {
                 "niches": analysis_data.get("niches", ["entertainment"]) if isinstance(analysis_data.get("niches"), list) else ["entertainment"],
@@ -131,7 +131,7 @@ async def _perform_ai_pattern_analysis(text: str, content: ContentCandidateDB) -
             # Fallback to basic analysis if LLM response parsing fails
             print(f"LLM analysis parsing failed, falling back to basic: {e}")
             return _perform_pattern_analysis(text, content)
-            
+
     except Exception as e:
         # Fallback to basic analysis if LLM service fails
         print(f"LLM analysis service failed, falling back to basic: {e}")

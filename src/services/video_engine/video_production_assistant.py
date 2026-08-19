@@ -181,11 +181,11 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
                 for videos in production_plan.get("scene_videos", {}).values()
             ),
             "platforms_used": list(
-                set(
+                {
                     video.get("platform", "unknown")
                     for videos in production_plan.get("scene_videos", {}).values()
                     for video in videos[:1]
-                )
+                }
             ),
             "production_complexity": "Medium"
             if production_plan.get("quality_score", 0) > 7
@@ -217,7 +217,7 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
         """CONVERTS AI CRITIQUE INTO ACTIONABLE EDITING COMMANDS (Tier 10)"""
         actions = []
         suggestions = critic_report.get("improvement_suggestions", [])
-        
+
         for suggestion in suggestions:
             if "hook" in suggestion.lower():
                 actions.append(f"RE-SEQUENCE: Move highest energy clip to 0:01 (Direct Response to: {suggestion})")
@@ -227,7 +227,7 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
                 actions.append(f"ENHANCE: Add high-contrast text overlay in last 3s (Direct Response to: {suggestion})")
             else:
                 actions.append(f"ADJUST: {suggestion}")
-                
+
         return actions
 
 

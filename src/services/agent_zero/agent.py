@@ -53,16 +53,16 @@ class AgentZero(BaseEttamettaAgent):
                     "next_run_at": self.next_run_at,
                     "current_step": self.current_step
                 }
-                
+
                 stmt = select(AgentZeroState).where(AgentZeroState.key == "agent_zero_state")
                 result = await db.execute(stmt)
                 setting = result.scalar_one_or_none()
-                
+
                 if setting:
                     setting.value = state
                 else:
                     db.add(AgentZeroState(key="agent_zero_state", value=state))
-                
+
                 await db.commit()
         except Exception as e:
             logger.exception(f"[AgentZero] Persistence failed: {e}")
@@ -73,12 +73,12 @@ class AgentZero(BaseEttamettaAgent):
             return
         self.is_running = True
         self.current_step = "IDLE"
-        
+
         if auto_resume:
             await self._log("Autonomous Loop Resuming from persistent state.", "SYSTEM")
         else:
             await self._log("Autonomous Loop Ignition Sequence Initiated.", "SYSTEM")
-        
+
         await self._persist_state()
 
         # Start A/B testing automation in background
@@ -96,7 +96,7 @@ class AgentZero(BaseEttamettaAgent):
                         if not self.is_running:
                             break
                         await asyncio.sleep(1)
-                    
+
                     if not self.is_running:
                         break
 
@@ -104,7 +104,7 @@ class AgentZero(BaseEttamettaAgent):
                 self.last_run_at = time.time()
                 self.next_run_at = self.last_run_at + (4 * 3600)
                 await self._persist_state()
-                
+
                 await self.run_iteration()
                 self.current_step = "WAITING"
                 await self._log(
@@ -182,7 +182,7 @@ class AgentZero(BaseEttamettaAgent):
 
         # 2. Discover Trends with Knowledge Context
         self.current_step = "SCOUTING"
-        
+
         # Standard: RAG Retrieval Hook
         try:
             from src.services.llm.knowledge import base_knowledge_service
@@ -356,7 +356,7 @@ class AgentZero(BaseEttamettaAgent):
         Act as a Viral Content Strategist and Elite Affiliate Marketer.
         Trend: {trend["title"]}
         Sentiment analysis: {json.dumps(analysis)}
-        
+
         Generate a cinematic video strategy.
         Return ONLY a JSON object with:
         {{

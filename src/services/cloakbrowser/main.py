@@ -105,7 +105,7 @@ NOISE_TITLES = {
     "for you", "home", "search", "discover", "reels", "shorts",
     "trending", "popular", "live", "shop", "menu", "more",
     "sign up with phone or email",
-    "terms of service", "privacy policy", "community guidelines",
+    "community guidelines",
 }
 
 NOISE_URL_PATTERNS = [
@@ -872,6 +872,156 @@ async def _scrape_twitch_inner(niche: str, region: str, max_results: int) -> lis
 
     return results
 
+# ── Etsy scraper ──────────────────────────────────────────────
+
+async def scrape_etsy(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_etsy_inner(niche, region, max_results)
+
+async def _scrape_etsy_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.etsy.com/search?q={query}&ref=search_bar"
+        logger.info(f"[Etsy] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+
+        # Wait for product grid to load
+        for selector in [
+            'div[data-search-results]',
+            'ul[data-search-results]',
+            'div.results-list',
+            '[class*="listing-card"]',
+            'div[class*="v2-listing"]',
+        ]:
+            try:
+                await page.wait_for_selector(selector, timeout=10000)
+                break
+            except Exception:
+                continue
+
+        # Scroll to load more products
+        for _ in range(3):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(2)
+
+        # Try multiple selector strategies for product cards
+        items = await page.query_selector_all('div[data-search-results] > div')
+        if not items:
+            items = await page.query_selector_all('ul[data-search-results] > li')
+        if not items:
+            items = await page.query_selector_all('[class*="listing-card"]')
+        if not items:
+            items = await page.query_selector_all('div[class*="v2-listing"]')
+        if not items:
+            items = await page.query_selector_all('li[class*="wt-grid__item-xs-6"]')
+
+        logger.info(f"[Etsy] Found {len(items)} raw product cards")
+
+        for item in items[:max_results * 2]:
+            try:
+                # Get listing link
+                link_el = await item.query_selector('a[href*="/listing/"]')
+                if not link_el:
+                    link_el = await item.query_selector('a[href*="etsy.com"]')
+                if not link_el:
+                    continue
+
+                href = await link_el.get_attribute("href") or ""
+                if not href or "/listing/" not in href:
+                    continue
+
+                # Extract listing ID from URL
+                lid_match = re.search(r'/listing/(\d+)', href)
+                listing_id = lid_match.group(1) if lid_match else ""
+                if not listing_id:
+                    listing_id = hashlib.md5(href.encode()).hexdigest()[:12]
+
+                # Get title
+                title_el = await item.query_selector('h3')
+                if not title_el:
+                    title_el = await item.query_selector('[class*="listing-title"]')
+                if not title_el:
+                    title_el = await item.query_selector('a[href*="/listing/"] span')
+                title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href):
+                    continue
+
+                # Get price
+                price_el = await item.query_selector('[class*="currency-value"]')
+                if not price_el:
+                    price_el = await item.query_selector('span[class*="price"]')
+                if not price_el:
+                    price_el = await item.query_selector('p[class*="price"]')
+                price_text = await price_el.inner_text() if price_el else "0"
+                price = price_text.strip().replace("$", "").replace(",", "").split()[0] if price_text else "0"
+
+                # Get sales/reviews count
+                sales_el = await item.query_selector('[class*="reviews-count"]')
+                if not sales_el:
+                    sales_el = await item.query_selector('span[class*="star"]')
+                if not sales_el:
+                    sales_el = await item.query_selector('a[href*="#reviews"]')
+                sales_text = await sales_el.inner_text() if sales_el else "0"
+                sales = re.sub(r'[^0-9.]', '', sales_text) if sales_text else "0"
+
+                # Get shop name
+                shop_el = await item.query_selector('[class*="shop-name"]')
+                if not shop_el:
+                    shop_el = await item.query_selector('span[class*="seller"]')
+                shop = await shop_el.inner_text() if shop_el else "Unknown"
+
+                # Get thumbnail
+                thumb_el = await item.query_selector('img')
+                thumbnail = ""
+                if thumb_el:
+                    thumbnail = await thumb_el.get_attribute("src") or ""
+                    if not thumbnail:
+                        thumbnail = await thumb_el.get_attribute("data-src") or ""
+
+                # Get star rating
+                rating_el = await item.query_selector('[class*="star-rating"]')
+                if not rating_el:
+                    rating_el = await item.query_selector('[aria-label*="star"]')
+                rating_text = await rating_el.get_attribute("aria-label") if rating_el else ""
+                rating_match = re.search(r'([\d.]+)', rating_text) if rating_text else None
+                rating = float(rating_match.group(1)) if rating_match else 0.0
+
+                full_url = href if href.startswith("http") else f"https://www.etsy.com{href}"
+                results.append({
+                    "id": listing_id,
+                    "url": full_url,
+                    "title": title.strip()[:200],
+                    "price": price,
+                    "sales": sales,
+                    "shop": shop.strip(),
+                    "rating": rating,
+                    "views": sales,
+                    "thumbnail": thumbnail,
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Etsy] Skip item: {e}")
+                continue
+
+        logger.info(f"[Etsy] Found {len(results)} products for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Etsy] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
 # ── Generic web scraper ───────────────────────────────────────
 
 async def scrape_web(
@@ -1103,6 +1253,903 @@ async def scrape_twitch_endpoint(
         return {"success": True, "candidates": candidates}
     except Exception as e:
         logger.exception(f"[Twitch] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+@app.get("/scrape/etsy")
+async def scrape_etsy_endpoint(
+    niche: str = Query(..., description="Product search query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(20, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_etsy(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[Etsy] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Pinterest scraper ────────────────────────────────────────
+
+async def scrape_pinterest(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_pinterest_inner(niche, region, max_results)
+
+async def _scrape_pinterest_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.pinterest.com/search/pins/?q={query}&rs=typed"
+        logger.info(f"[Pinterest] Scraping: {url}")
+
+        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+
+        # Wait for pin grid to load
+        for selector in [
+            '[data-test-id="search-page"]',
+            '[data-test-id="pinGrid"]',
+            'div[data-grid-item]',
+            '[role="list"]',
+            'div[class*="GrowthUnauthPin"]',
+        ]:
+            try:
+                await page.wait_for_selector(selector, timeout=10000)
+                break
+            except Exception:
+                continue
+
+        await asyncio.sleep(2)
+
+        # Scroll to load more pins
+        for _ in range(3):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(2)
+
+        # Extract pin links
+        pin_links = await page.query_selector_all('a[href*="/pin/"]')
+        if not pin_links:
+            pin_links = await page.query_selector_all('a[data-test-id="pin"]')
+        if not pin_links:
+            pin_links = await page.query_selector_all('div[data-grid-item] a')
+
+        seen_urls = set()
+        logger.info(f"[Pinterest] Found {len(pin_links)} pin links")
+
+        for link in pin_links[:max_results * 3]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or "/pin/" not in href or href in seen_urls:
+                    continue
+                seen_urls.add(href)
+
+                # Extract pin ID
+                pin_match = re.search(r'/pin/(\d+)', href)
+                pin_id = pin_match.group(1) if pin_match else ""
+                if not pin_id:
+                    pin_id = hashlib.md5(href.encode()).hexdigest()[:12]
+
+                # Get image
+                img_el = await link.query_selector("img")
+                title = ""
+                thumbnail = ""
+                if img_el:
+                    title = await img_el.get_attribute("alt") or ""
+                    thumbnail = await img_el.get_attribute("src") or ""
+                    if not thumbnail:
+                        thumbnail = await img_el.get_attribute("data-src") or ""
+
+                if not title or is_noise(title, href):
+                    title = f"Pinterest pin {pin_id}"
+
+                # Get description from nearby text
+                desc_el = await link.query_selector("[title]")
+                if desc_el:
+                    alt_title = await desc_el.get_attribute("title") or ""
+                    if alt_title and len(alt_title) > len(title):
+                        title = alt_title
+
+                full_url = href if href.startswith("http") else f"https://www.pinterest.com{href}"
+                results.append({
+                    "id": pin_id,
+                    "url": full_url,
+                    "title": title.strip()[:200],
+                    "author": "Unknown",
+                    "views": "0",
+                    "thumbnail": thumbnail,
+                })
+
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Pinterest] Skip item: {e}")
+                continue
+
+        logger.info(f"[Pinterest] Found {len(results)} pins for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Pinterest] Scrape failed: {e}")
+        if "Target page, context or browser has been closed" in str(e):
+            async with _browser_lock:
+                await _cleanup_browser()
+    finally:
+        await _safe_close_context(context)
+
+    return results
+
+@app.get("/scrape/pinterest")
+async def scrape_pinterest_endpoint(
+    niche: str = Query(..., description="Search query"),
+    region: str = Query("US", description="Region code"),
+    max_results: int = Query(20, ge=1, le=50),
+):
+    try:
+        candidates = await scrape_pinterest(niche, region, max_results)
+        return {"success": True, "candidates": candidates}
+    except Exception as e:
+        logger.exception(f"[Pinterest] Endpoint error: {e}")
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Gumroad scraper ──────────────────────────────────────────
+
+async def scrape_gumroad(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_gumroad_inner(niche, region, max_results)
+
+async def _scrape_gumroad_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://gumroad.com/discover?query={query}"
+        logger.info(f"[Gumroad] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        for selector in ['[class*="product"]', '[class*="discover"]', 'a[href*="/l/"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/l/"]')
+        if not links:
+            links = await page.query_selector_all('[class*="product-card"] a')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen:
+                    continue
+                seen.add(href)
+                lid_match = re.search(r'/l/([^/?]+)', href)
+                prod_id = lid_match.group(1) if lid_match else hashlib.md5(href.encode()).hexdigest()[:12]
+                title_el = await link.query_selector("h3, h4, [class*='title'], p")
+                title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href):
+                    title = f"Gumroad product {prod_id}"
+                price_el = await link.query_selector("[class*='price'], span")
+                price_text = await price_el.inner_text() if price_el else "0"
+                price = re.sub(r'[^0-9.]', '', price_text.split()[0]) if price_text else "0"
+                full_url = href if href.startswith("http") else f"https://gumroad.com{href}"
+                results.append({"id": prod_id, "url": full_url, "title": title.strip()[:200], "price": price, "author": "Unknown", "views": "0", "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Gumroad] Skip: {e}")
+                continue
+        logger.info(f"[Gumroad] Found {len(results)} products for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Gumroad] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/gumroad")
+async def scrape_gumroad_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_gumroad(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Product Hunt scraper ─────────────────────────────────────
+
+async def scrape_producthunt(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_producthunt_inner(niche, region, max_results)
+
+async def _scrape_producthunt_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.producthunt.com/search?q={query}"
+        logger.info(f"[ProductHunt] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        await asyncio.sleep(4)
+
+        # Product Hunt uses spotlight-result-product-* buttons (not links!)
+        items = await page.query_selector_all('[data-test*="spotlight-result-product"]')
+        logger.info(f"[ProductHunt] Found {len(items)} spotlight items")
+
+        for item in items[:max_results]:
+            try:
+                # Extract product ID from data-test attribute
+                dt = await item.get_attribute("data-test") or ""
+                prod_match = re.search(r'product-(\d+)', dt)
+                prod_id = prod_match.group(1) if prod_match else hashlib.md5(dt.encode()).hexdigest()[:12]
+
+                # Get title (first line of text)
+                text = await item.inner_text() or ""
+                lines = [l.strip() for l in text.split("\n") if l.strip()]
+                title = lines[0] if lines else f"Product Hunt {prod_id}"
+
+                if not title or is_noise(title, ""):
+                    title = f"Product Hunt {prod_id}"
+
+                full_url = f"https://www.producthunt.com/products/{prod_id}"
+                results.append({"id": prod_id, "url": full_url, "title": title[:200], "author": "Unknown", "views": "0", "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[ProductHunt] Skip: {e}")
+                continue
+        logger.info(f"[ProductHunt] Found {len(results)} products for '{niche}'")
+    except Exception as e:
+        logger.error(f"[ProductHunt] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/producthunt")
+async def scrape_producthunt_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_producthunt(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── DeviantArt scraper ───────────────────────────────────────
+
+async def scrape_deviantart(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_deviantart_inner(niche, region, max_results)
+
+async def _scrape_deviantart_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.deviantart.com/search?q={query}"
+        logger.info(f"[DeviantArt] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        for selector in ['[class*="result"]', 'a[href*="/art/"]', '[data-hook="thumb"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/art/"]')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen or "/art/" not in href:
+                    continue
+                seen.add(href)
+                art_id = hashlib.md5(href.encode()).hexdigest()[:12]
+                img_el = await link.query_selector("img")
+                title = ""
+                thumbnail = ""
+                if img_el:
+                    title = await img_el.get_attribute("alt") or ""
+                    thumbnail = await img_el.get_attribute("src") or ""
+                if not title or is_noise(title, href):
+                    title = f"DeviantArt {art_id}"
+                full_url = href if href.startswith("http") else f"https://www.deviantart.com{href}"
+                results.append({"id": art_id, "url": full_url, "title": title.strip()[:200], "author": "Unknown", "views": "0", "thumbnail": thumbnail})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[DeviantArt] Skip: {e}")
+                continue
+        logger.info(f"[DeviantArt] Found {len(results)} items for '{niche}'")
+    except Exception as e:
+        logger.error(f"[DeviantArt] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/deviantart")
+async def scrape_deviantart_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_deviantart(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Behance scraper ──────────────────────────────────────────
+
+async def scrape_behance(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_behance_inner(niche, region, max_results)
+
+async def _scrape_behance_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.behance.net/search/projects?search={query}"
+        logger.info(f"[Behance] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        for selector in ['[class*="ProjectCover"]', 'a[href*="/gallery/"]', '[class*="project"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/gallery/"]')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen:
+                    continue
+                seen.add(href)
+                proj_id = hashlib.md5(href.encode()).hexdigest()[:12]
+                img_el = await link.query_selector("img")
+                title = ""
+                thumbnail = ""
+                if img_el:
+                    title = await img_el.get_attribute("alt") or ""
+                    thumbnail = await img_el.get_attribute("src") or ""
+                if not title or is_noise(title, href):
+                    title = f"Behance project {proj_id}"
+                full_url = href if href.startswith("http") else f"https://www.behance.net{href}"
+                results.append({"id": proj_id, "url": full_url, "title": title.strip()[:200], "author": "Unknown", "views": "0", "thumbnail": thumbnail})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Behance] Skip: {e}")
+                continue
+        logger.info(f"[Behance] Found {len(results)} projects for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Behance] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/behance")
+async def scrape_behance_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_behance(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Dribbble scraper ─────────────────────────────────────────
+
+async def scrape_dribbble(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_dribbble_inner(niche, region, max_results)
+
+async def _scrape_dribbble_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://dribbble.com/search/{query}"
+        logger.info(f"[Dribbble] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        for selector in ['[class*="shot"]', 'a[href*="/shots/"]', '[class*="screenshot"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/shots/"]')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen or "/shots/" not in href:
+                    continue
+                seen.add(href)
+                shot_id = hashlib.md5(href.encode()).hexdigest()[:12]
+                img_el = await link.query_selector("img")
+                title = ""
+                thumbnail = ""
+                if img_el:
+                    title = await img_el.get_attribute("alt") or ""
+                    thumbnail = await img_el.get_attribute("src") or ""
+                if not title or is_noise(title, href):
+                    title = f"Dribbble shot {shot_id}"
+                full_url = href if href.startswith("http") else f"https://dribbble.com{href}"
+                results.append({"id": shot_id, "url": full_url, "title": title.strip()[:200], "author": "Unknown", "views": "0", "thumbnail": thumbnail})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Dribbble] Skip: {e}")
+                continue
+        logger.info(f"[Dribbble] Found {len(results)} shots for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Dribbble] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/dribbble")
+async def scrape_dribbble_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_dribbble(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Unsplash scraper ─────────────────────────────────────────
+
+async def scrape_unsplash(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_unsplash_inner(niche, region, max_results)
+
+async def _scrape_unsplash_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://unsplash.com/s/photos/{query}"
+        logger.info(f"[Unsplash] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=35000)
+        for selector in ['[class*="photo"]', 'figure', 'a[href*="/photos/"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/photos/"]')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen or "/photos/" not in href:
+                    continue
+                seen.add(href)
+                photo_id = hashlib.md5(href.encode()).hexdigest()[:12]
+                img_el = await link.query_selector("img")
+                title = ""
+                thumbnail = ""
+                if img_el:
+                    title = await img_el.get_attribute("alt") or ""
+                    thumbnail = await img_el.get_attribute("src") or ""
+                if not title or is_noise(title, href):
+                    title = f"Unsplash photo {photo_id}"
+                full_url = href if href.startswith("http") else f"https://unsplash.com{href}"
+                results.append({"id": photo_id, "url": full_url, "title": title.strip()[:200], "author": "Unknown", "views": "0", "thumbnail": thumbnail})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Unsplash] Skip: {e}")
+                continue
+        logger.info(f"[Unsplash] Found {len(results)} photos for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Unsplash] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/unsplash")
+async def scrape_unsplash_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_unsplash(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Pexels scraper ───────────────────────────────────────────
+
+async def scrape_pexels(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_pexels_inner(niche, region, max_results)
+
+async def _scrape_pexels_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.pexels.com/search/{query}/"
+        logger.info(f"[Pexels] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=35000)
+        for selector in ['[class*="photo"]', 'a[href*="/photo/"]', '[data-testid*="image"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/photo/"]')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen or "/photo/" not in href:
+                    continue
+                seen.add(href)
+                photo_id = hashlib.md5(href.encode()).hexdigest()[:12]
+                img_el = await link.query_selector("img")
+                title = ""
+                thumbnail = ""
+                if img_el:
+                    title = await img_el.get_attribute("alt") or ""
+                    thumbnail = await img_el.get_attribute("src") or ""
+                if not title or is_noise(title, href):
+                    title = f"Pexels photo {photo_id}"
+                full_url = href if href.startswith("http") else f"https://www.pexels.com{href}"
+                results.append({"id": photo_id, "url": full_url, "title": title.strip()[:200], "author": "Unknown", "views": "0", "thumbnail": thumbnail})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Pexels] Skip: {e}")
+                continue
+        logger.info(f"[Pexels] Found {len(results)} photos for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Pexels] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/pexels")
+async def scrape_pexels_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_pexels(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Hacker News scraper ──────────────────────────────────────
+
+async def scrape_hackernews(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_hackernews_inner(niche, region, max_results)
+
+async def _scrape_hackernews_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://hn.algolia.com/?q={query}&sort=byDate"
+        logger.info(f"[HackerNews] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        for selector in ['.Story', '[class*="story"]', 'a[href*="item?id="]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        items = await page.query_selector_all('.Story')
+        if not items:
+            items = await page.query_selector_all('[class*="Story"]')
+        for item in items[:max_results]:
+            try:
+                title_el = await item.query_selector('.Story_title a, [class*="title"] a')
+                if not title_el:
+                    title_el = await item.query_selector("a")
+                title = await title_el.inner_text() if title_el else ""
+                href = await title_el.get_attribute("href") if title_el else ""
+                if not title or is_noise(title, href or ""):
+                    continue
+                item_id = hashlib.md5((href or title).encode()).hexdigest()[:12]
+                score_el = await item.query_selector('[class*="score"], [class*="points"]')
+                score_text = await score_el.inner_text() if score_el else "0"
+                score = re.sub(r'[^0-9]', '', score_text)
+                results.append({"id": item_id, "url": href or "", "title": title.strip()[:200], "author": "Unknown", "views": score, "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[HackerNews] Skip: {e}")
+                continue
+        logger.info(f"[HackerNews] Found {len(results)} stories for '{niche}'")
+    except Exception as e:
+        logger.error(f"[HackerNews] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/hackernews")
+async def scrape_hackernews_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_hackernews(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Indie Hackers scraper ────────────────────────────────────
+
+async def scrape_indiehackers(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_indiehackers_inner(niche, region, max_results)
+
+async def _scrape_indiehackers_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.indiehackers.com/search?q={query}"
+        logger.info(f"[IndieHackers] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        for selector in ['[class*="post"]', 'a[href*="/post/"]', '[class*="feed"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        links = await page.query_selector_all('a[href*="/post/"]')
+        seen = set()
+        for link in links[:max_results * 2]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen:
+                    continue
+                seen.add(href)
+                post_id = hashlib.md5(href.encode()).hexdigest()[:12]
+                title_el = await link.query_selector("h3, h4, [class*='title']")
+                title = await title_el.inner_text() if title_el else ""
+                if not title:
+                    title = await link.inner_text()
+                if not title or is_noise(title, href):
+                    title = f"IndieHackers post {post_id}"
+                full_url = href if href.startswith("http") else f"https://www.indiehackers.com{href}"
+                results.append({"id": post_id, "url": full_url, "title": title.strip()[:200], "author": "Unknown", "views": "0", "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[IndieHackers] Skip: {e}")
+                continue
+        logger.info(f"[IndieHackers] Found {len(results)} posts for '{niche}'")
+    except Exception as e:
+        logger.error(f"[IndieHackers] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/indiehackers")
+async def scrape_indiehackers_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_indiehackers(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── GitHub Trending scraper ──────────────────────────────────
+
+async def scrape_github(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_github_inner(niche, region, max_results)
+
+async def _scrape_github_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        url = "https://github.com/trending?since=daily"
+        logger.info(f"[GitHub] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=35000)
+        await asyncio.sleep(3)
+
+        # Get all repo links directly
+        links = await page.query_selector_all('h2 a')
+        logger.info(f"[GitHub] Found {len(links)} h2 links")
+        seen = set()
+        for link in links[:max_results]:
+            try:
+                href = await link.get_attribute("href") or ""
+                if not href or href in seen:
+                    continue
+                seen.add(href)
+                title = await link.inner_text() or ""
+                title = title.strip()
+                if not title or is_noise(title, href):
+                    logger.debug(f"[GitHub] Skipping: title={title[:30]}, noise={is_noise(title, href)}")
+                    continue
+                repo_id = href.strip().replace("/", "_")
+                full_url = f"https://github.com{href}"
+                author = href.split("/")[1] if href.startswith("/") and "/" in href else "Unknown"
+                results.append({"id": repo_id, "url": full_url, "title": title[:200], "author": author, "views": "0", "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[GitHub] Skip: {e}")
+                continue
+        logger.info(f"[GitHub] Found {len(results)} repos for '{niche}'")
+    except Exception as e:
+        logger.error(f"[GitHub] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/github")
+async def scrape_github_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_github(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── Amazon scraper ───────────────────────────────────────────
+
+async def scrape_amazon(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_amazon_inner(niche, region, max_results)
+
+async def _scrape_amazon_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.amazon.com/s?k={query}"
+        logger.info(f"[Amazon] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=50000)
+        for selector in ['#search', '[data-component-type="s-search-result"]', '.s-result-item']:
+            try:
+                await page.wait_for_selector(selector, timeout=10000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(3)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(2)
+        items = await page.query_selector_all('[data-component-type="s-search-result"]')
+        if not items:
+            items = await page.query_selector_all('.s-result-item')
+        for item in items[:max_results * 2]:
+            try:
+                link_el = await item.query_selector("h2 a, a.a-link-normal[href*='/dp/']")
+                if not link_el:
+                    continue
+                href = await link_el.get_attribute("href") or ""
+                if not href or "/dp/" not in href:
+                    continue
+                asin_match = re.search(r'/dp/([A-Z0-9]{10})', href)
+                asin = asin_match.group(1) if asin_match else hashlib.md5(href.encode()).hexdigest()[:12]
+                title_el = await item.query_selector("h2 span")
+                title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href):
+                    continue
+                price_el = await item.query_selector(".a-price .a-offscreen, .a-price-whole")
+                price_text = await price_el.inner_text() if price_el else "0"
+                price = re.sub(r'[^0-9.]', '', price_text.split()[0]) if price_text else "0"
+                rating_el = await item.query_selector(".a-icon-alt")
+                rating_text = await rating_el.inner_text() if rating_el else ""
+                rating_match = re.search(r'([\d.]+)', rating_text)
+                rating = float(rating_match.group(1)) if rating_match else 0.0
+                reviews_el = await item.query_selector('[aria-label*="stars"] + span, .a-size-base.s-underline-text')
+                reviews_text = await reviews_el.inner_text() if reviews_el else "0"
+                reviews = re.sub(r'[^0-9]', '', reviews_text)
+                full_url = f"https://www.amazon.com{href.split('?')[0]}"
+                results.append({"id": asin, "url": full_url, "title": title.strip()[:200], "price": price, "rating": rating, "sales": reviews, "shop": "Amazon", "views": reviews, "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[Amazon] Skip: {e}")
+                continue
+        logger.info(f"[Amazon] Found {len(results)} products for '{niche}'")
+    except Exception as e:
+        logger.error(f"[Amazon] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/amazon")
+async def scrape_amazon_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_amazon(niche, region, max_results)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "candidates": []}
+
+# ── eBay scraper ─────────────────────────────────────────────
+
+async def scrape_ebay(niche: str, region: str = "US", max_results: int = 20) -> list[dict]:
+    async with _scrape_semaphore:
+        return await _scrape_ebay_inner(niche, region, max_results)
+
+async def _scrape_ebay_inner(niche: str, region: str, max_results: int) -> list[dict]:
+    browser = await get_browser()
+    context = await new_stealth_context(browser)
+    page = await context.new_page()
+    results = []
+    try:
+        query = niche.replace(" ", "+")
+        url = f"https://www.ebay.com/sch/i.html?_nkw={query}"
+        logger.info(f"[eBay] Scraping: {url}")
+        await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        for selector in ['.srp-results', '[class*="item"]', 'a[href*="/itm/"]']:
+            try:
+                await page.wait_for_selector(selector, timeout=8000)
+                break
+            except Exception:
+                continue
+        await asyncio.sleep(2)
+        for _ in range(2):
+            await page.evaluate("window.scrollBy(0, window.innerHeight)")
+            await asyncio.sleep(1.5)
+        items = await page.query_selector_all('.s-item')
+        if not items:
+            items = await page.query_selector_all('[class*="item__info"]')
+        for item in items[:max_results * 2]:
+            try:
+                link_el = await item.query_selector('a[href*="/itm/"]')
+                if not link_el:
+                    continue
+                href = await link_el.get_attribute("href") or ""
+                if not href or "/itm/" not in href:
+                    continue
+                item_match = re.search(r'/itm/(\d+)', href)
+                item_id = item_match.group(1) if item_match else hashlib.md5(href.encode()).hexdigest()[:12]
+                title_el = await item.query_selector('.s-item__title, [class*="title"]')
+                title = await title_el.inner_text() if title_el else ""
+                if not title or is_noise(title, href) or "Shop on eBay" in title:
+                    continue
+                price_el = await item.query_selector('.s-item__price, [class*="price"]')
+                price_text = await price_el.inner_text() if price_el else "0"
+                price = re.sub(r'[^0-9.]', '', price_text.split()[0]) if price_text else "0"
+                full_url = href.split("?")[0] if "?" in href else href
+                results.append({"id": item_id, "url": full_url, "title": title.strip()[:200], "price": price, "author": "eBay", "views": "0", "thumbnail": ""})
+                if len(results) >= max_results:
+                    break
+            except Exception as e:
+                logger.debug(f"[eBay] Skip: {e}")
+                continue
+        logger.info(f"[eBay] Found {len(results)} products for '{niche}'")
+    except Exception as e:
+        logger.error(f"[eBay] Scrape failed: {e}")
+    finally:
+        await _safe_close_context(context)
+    return results
+
+@app.get("/scrape/ebay")
+async def scrape_ebay_endpoint(niche: str = Query(...), region: str = Query("US"), max_results: int = Query(20, ge=1, le=50)):
+    try:
+        return {"success": True, "candidates": await scrape_ebay(niche, region, max_results)}
+    except Exception as e:
         return {"success": False, "error": str(e), "candidates": []}
 
 @app.get("/scrape/web")

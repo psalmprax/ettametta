@@ -12,12 +12,12 @@ class AffiliateStrategy(BaseMonetizationStrategy):
             stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.niche == niche)
             result = await db.execute(stmt)
             links = result.scalars().all()
-            
+
             if not links:
                 # Return empty list instead of mock data when no affiliate links configured
                 logging.warning(f"[AffiliateStrategy] No affiliate links found for niche: {niche}. Configure links in the database.")
                 return []
-            
+
             return [{
                 "id": str(link.id),
                 "name": link.product_name,
@@ -30,12 +30,12 @@ class AffiliateStrategy(BaseMonetizationStrategy):
     async def generate_cta(self, niche: str, context: str) -> str:
         # Fetch the links so we can grab one
         links = await self.get_assets(niche)
-        
+
         # Pick one at random if multiple exist
         if not links:
             logging.warning(f"[AffiliateStrategy] No affiliate links found for niche: {niche}. Configure links in the database.")
             return ""
-        
+
         chosen_link = random.choice(links)
         product_url = chosen_link.get("url", "")
         product_name = chosen_link.get("name", "gear")

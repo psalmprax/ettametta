@@ -75,10 +75,10 @@ class TestVideoGeneration:
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_ltx_video_generation(self):
+    async def test_ltx_video_generation_stream(self):
         if not GENERATIVE_SERVICE_AVAILABLE:
             pytest.skip("Generative service not available")
-        """Test LTX-Video engine."""
+        """Test LTX-Video engine (stream-style prompt)."""
         prompt = "Water flowing in a stream"
         result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="ltx-video", aspect_ratio="16:9", style="Cinematic"

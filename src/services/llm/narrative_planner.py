@@ -16,30 +16,30 @@ class NarrativePlanner:
 
     async def plan_story(self, topic: str, niche: str, duration_sec: int = 60, session_id: str | None = None, feedback: str | None = None) -> dict[str, Any]:
         """Creates a high-level Narrative Blueprint for the attention economy."""
-        
+
         logger.info(f"🧠 [NRM] Designing Narrative Blueprint for: {topic}")
-        
+
         feedback_clause = f"\nPREVIOUS FEEDBACK: {feedback}\nPlease address these issues in the new version." if feedback else ""
 
         prompt = f"""
         You are the Narrative Reasoning Model (NRM). Your task is to design a high-retention 'Story Blueprint' for a {duration_sec}-second video.
-        
+
         TOPIC: {topic}
         NICHE: {niche}
         {feedback_clause}
-        
+
         TARGET QUALITY: ELITE (95%+ Attention Score)
-        
+
         CRITICAL REQUIREMENTS:
         1. HOOK: Must be visceral and immediate (Time 0-5s).
         2. CONFLICT: Establish a high-stakes tension early.
         3. CURIOSITY GAPS: You MUST include at least 3 distinct 'Curiosity Gaps' with clear payoff timestamps to maximize retention.
-        
+
         TASK:
         1. DECOMPOSE: Identify the Core Claim, the Conflict, and the Stakes.
         2. EMOTIONAL ARC: Map the intended emotional states over the duration.
         3. ATTENTION TRIGGERS: Identify 3 'Curiosity Gaps' to open and close.
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "core_claim": "One sentence summary of the main point",
@@ -59,7 +59,7 @@ class NarrativePlanner:
             "visual_direction": "The overall cinematic style"
         }}
         """
-        
+
         try:
             result = await base_intelligence_service.chat(
                 prompt=prompt,
@@ -67,7 +67,7 @@ class NarrativePlanner:
                 session_id=session_id,
                 json_mode=True
             )
-            
+
             blueprint = json.loads(result["response"])
             logger.info(f"✨ [NRM] Narrative Blueprint Crystallized via {result['provider'].upper()}.")
             return blueprint

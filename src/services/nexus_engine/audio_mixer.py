@@ -10,7 +10,7 @@ class AudioMixer:
         """
         try:
             output_path = voiceover_path.replace(".mp3", "_mixed.mp3")
-            
+
             # Simple FFmpeg command for mixing two audio tracks
             # [0:a] is voiceover, [1:a] is music
             # volume=music_vol dips the music
@@ -22,10 +22,10 @@ class AudioMixer:
                 "-acodec", "libmp3lame",
                 output_path
             ]
-            
+
             subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             return output_path
-            
+
         except Exception as e:
             logging.exception(f"[AudioMixer] FFmpeg Mix Error: {e}")
             return None

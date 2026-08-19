@@ -30,17 +30,17 @@ class MarketScreenerTool:
             1. Sentiment Score (0-100)
             2. Monetization Potential (High/Medium/Low)
             3. Recommended CTA type (Shop/Learn More/Join)
-            
+
             Return ONLY a JSON object.
             """
-            
+
             chat_completion = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model=self.model,
                 response_format={"type": "json_object"}
             )
             return json.loads(chat_completion.choices[0].message.content)
-            
+
         except Exception as e:
             logger.exception(f"MarketScreenerTool Error: {e}")
             return {"error": str(e)}

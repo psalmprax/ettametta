@@ -25,8 +25,15 @@ class TestCoreSettings:
         assert "redis" in s.REDIS_URL
 
     def test_api_key_none_by_default(self):
+        # Default means "not configured": assert the key is None when the
+        # corresponding env var is absent, independent of any on-disk .env.
+        from unittest.mock import patch
         from src.core.config import CoreSettings
-        s = CoreSettings()
+
+        with patch.dict(os.environ, {}, clear=False):
+            for key in ("GROQ_API_KEY", "OPENAI_API_KEY", "ELEVENLABS_API_KEY"):
+                os.environ.pop(key, None)
+            s = CoreSettings()
         assert s.GROQ_API_KEY is None
         assert s.OPENAI_API_KEY is None
         assert s.ELEVENLABS_API_KEY is None

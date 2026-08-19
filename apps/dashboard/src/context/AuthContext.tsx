@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { User } from "@/lib/types";
 
@@ -79,6 +79,8 @@ class TokenManager {
 /** Module-internal — do not consume from outside. */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const PUBLIC_PATHS = ["/login", "/register"];
+
 import { API_BASE } from "@/lib/config";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { toast } from "sonner";
@@ -87,19 +89,67 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [credits, setCredits] = useState<number | null>(null);
     const router = useRouter();
     const pathname = usePathname();
 
-    const publicPaths = ["/login", "/register"];
-
-    const logout = () => {
+    const logout = useCallback(() => {
         TokenManager.clearToken();
         setToken(null);
         setUser(null);
         router.push("/login");
-    };
+    }, [router]);
 
-    const login = async (authToken: string, remember: boolean = false) => {
+    const fetchUser = useCallback(async (authToken: string) => {
+        await withRealFallback(
+            async (signal) => {
+                return fetch(`${API_BASE}/auth/me`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                    signal,
+                });
+            },
+            {
+                fallback: null as any,
+                onUnauthorized: () => {
+                    console.warn("[AuthContext] /auth/me returned 401 — logging out");
+                    logout();
+                },
+                onSuccess: (userData: User) => {
+                    if (userData && (userData.username || userData.email)) {
+                        setUser(userData);
+                        TokenManager.setUser(userData);
+                    } else {
+                        logout();
+                    }
+                },
+                onFallback: (err) => {
+                    console.warn("[AuthContext] Failed to refresh user profile, preserving local session:", err);
+                }
+            }
+        );
+    }, [logout]);
+
+    const fetchCredits = useCallback(async (authToken: string) => {
+        await withRealFallback(
+            async (signal) => {
+                return fetch(`${API_BASE}/credits/balance`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                    signal,
+                });
+            },
+            {
+                fallback: null as any,
+                onSuccess: (data: { balance: number }) => {
+                    if (data && typeof data.balance === "number") {
+                        setCredits(data.balance);
+                        TokenManager.setCredits(data.balance);
+                    }
+                }
+            }
+        );
+    }, []);
+
+    const login = useCallback(async (authToken: string, remember: boolean = false) => {
         if (!authToken || authToken === "undefined" || authToken === "null") {
             console.error("AuthContext: Attempted login with invalid token:", authToken);
             toast.error("Invalid login token — please try logging in again");
@@ -109,7 +159,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         TokenManager.setToken(authToken, remember);
         setToken(authToken);
         
-        // Directly verify token is valid and fetch user WITH proper error handling
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -129,18 +178,16 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
             setUser(userData);
             TokenManager.setUser(userData);
             
-            // Fetch credits in background, don't block login
             fetchCredits(authToken);
             
-            // Explicitly confirm user is loaded before returning
             return true;
         } catch (e) {
             logout();
             throw e;
         }
-    };
+    }, [logout, fetchCredits]);
 
-    const register = async (email: string, password: string, username?: string) => {
+    const register = useCallback(async (email: string, password: string, username?: string) => {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -156,78 +203,19 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
                 return { success: true };
             } else {
                 const data = await response.json();
-                // Standard: Extract from nested error object
                 const errorMessage = data.error?.message || data.message || data.detail || "Registration failed";
                 return { success: false, error: errorMessage };
             }
         } catch (err) {
             return { success: false, error: "Connection failed" };
         }
-    };
+    }, []);
 
-    const fetchUser = async (authToken: string) => {
-        await withRealFallback(
-            async (signal) => {
-                return fetch(`${API_BASE}/auth/me`, {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                    signal,
-                });
-            },
-            {
-                fallback: null as any,
-                // /auth/me is the single source of truth for "is this session
-                // still valid?" — a 401 here means the token is genuinely
-                // bad, so trigger the full AuthContext logout flow (which
-                // clears storage and uses router.push to navigate, NOT a
-                // hard window.location). This is the ONE call site in the
-                // app that should wipe the session on 401.
-                onUnauthorized: () => {
-                    console.warn("[AuthContext] /auth/me returned 401 — logging out");
-                    logout();
-                },
-                onSuccess: (userData: User) => {
-                    if (userData && (userData.username || userData.email)) {
-                        setUser(userData);
-                        TokenManager.setUser(userData);
-                    } else {
-                        logout();
-                    }
-                },
-                onFallback: (err) => {
-                    console.warn("[AuthContext] Failed to refresh user profile, preserving local session:", err);
-                }
-            }
-        );
-    };
-
-    const [credits, setCredits] = useState<number | null>(null);
-
-    const fetchCredits = async (authToken: string) => {
-        await withRealFallback(
-            async (signal) => {
-                return fetch(`${API_BASE}/credits/balance`, {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                    signal,
-                });
-            },
-            {
-                fallback: null as any,
-            onSuccess: (data: { balance: number }) => {
-                if (data && typeof data.balance === "number") {
-                    setCredits(data.balance);
-                    TokenManager.setCredits(data.balance);
-                }
-            }
-            }
-        );
-    };
-
-    const initAuth = async () => {
+    const initAuth = useCallback(async () => {
         const storedToken = TokenManager.getToken();
         const storedUser = TokenManager.getUser();
         const storedCredits = TokenManager.getCredits();
 
-        // Fix "null" string token bug - reject invalid token values
         if (storedToken && storedToken !== "null" && storedToken !== "undefined" && storedToken.trim().length > 0) {
             setToken(storedToken);
             if (storedUser) {
@@ -236,7 +224,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
             if (storedCredits !== null) {
                 setCredits(storedCredits);
             }
-            // Always fetch fresh user and credits if we have a token
             await Promise.all([
                 fetchUser(storedToken),
                 fetchCredits(storedToken)
@@ -244,42 +231,37 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         }
 
         setIsLoading(false);
-    };
+    }, [fetchUser, fetchCredits]);
 
     useEffect(() => {
         initAuth();
-    }, []);
+    }, [initAuth]);
 
-    const refreshCredits = async () => {
+    const refreshCredits = useCallback(async () => {
         if (token) {
             await fetchCredits(token);
         }
-    };
+    }, [token, fetchCredits]);
 
     useEffect(() => {
-        // Never redirect during active login flow - give time for state to propagate
         if (token && !user) return;
         
-        // Only redirect after auth initialization is complete AND we have confirmed no user exists
-        if (!isLoading && !user && !publicPaths.includes(pathname)) {
-            // Always verify both token AND user exist in storage before redirecting
+        if (!isLoading && !user && !PUBLIC_PATHS.includes(pathname)) {
             const storedToken = TokenManager.getToken();
             const storedUser = TokenManager.getUser();
             
-            // Only redirect if there is truly no active session at all
             if (!storedToken || !storedUser) {
                 router.push("/login");
             }
         }
     }, [user, isLoading, pathname, router, token]);
 
-    // Periodically refresh credits (every 2 mins)
     useEffect(() => {
         if (token && !isLoading) {
             const interval = setInterval(refreshCredits, 120000);
             return () => clearInterval(interval);
         }
-    }, [token, isLoading]);
+    }, [token, isLoading, refreshCredits]);
 
     return (
         <AuthContext.Provider

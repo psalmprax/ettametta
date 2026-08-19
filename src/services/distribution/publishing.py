@@ -51,11 +51,11 @@ class YouTubePublisher:
         if not token_file.exists():
             logger.warning(f"No YouTube token found for user {user_id}")
             return None
-        
+
         try:
             with open(token_file, 'r') as f:
                 token_data = json.load(f)
-            
+
             creds = Credentials(
                 token=token_data['token'],
                 refresh_token=token_data.get('refresh_token'),
@@ -75,12 +75,12 @@ class YouTubePublisher:
         reraise=True
     )
     async def upload_video(
-        self, 
+        self,
         user_id: str,
-        video_path: str, 
-        title: str, 
-        description: str, 
-        tags: list[str], 
+        video_path: str,
+        title: str,
+        description: str,
+        tags: list[str],
         privacy_status: str = "private"
     ) -> dict[str, Any]:
         """
@@ -88,7 +88,7 @@ class YouTubePublisher:
         """
         if not GOOGLE_API_AVAILABLE:
             raise RuntimeError("Google API libraries not installed.")
-        
+
         if self.breaker.is_open():
             raise RuntimeError("YouTube API is currently blocked by CircuitBreaker")
 
@@ -111,7 +111,7 @@ class YouTubePublisher:
                         'privacyStatus': privacy_status
                     }
                 }
-                
+
                 if not Path(video_path).exists():
                     raise FileNotFoundError(f"Video file not found: {video_path}")
 
@@ -124,13 +124,13 @@ class YouTubePublisher:
 
             logger.info(f"[YouTube] Starting resilient upload for '{title}'...")
             response = await asyncio.to_thread(_sync_upload)
-            
+
             video_id = response['id']
             video_url = f"https://www.youtube.com/watch?v={video_id}"
-            
+
             self.breaker.record_success()
             logger.info(f"[YouTube] Successfully uploaded: {video_url}")
-            
+
             return {
                 "platform": "youtube",
                 "video_id": video_id,
@@ -155,10 +155,10 @@ class PublishingService:
         self.automation_breaker = CircuitBreaker(name="Publish-Automation", failure_threshold=2)
 
     async def publish_to_platform(
-        self, 
+        self,
         user_id: str,
-        platform: str, 
-        video_path: str, 
+        platform: str,
+        video_path: str,
         metadata: dict[str, Any],
         use_automation: bool = False
     ) -> dict[str, Any]:
@@ -207,7 +207,7 @@ class PublishingService:
                 except Exception as e:
                     self.automation_breaker.record_failure()
                     logger.warning(f"[Publishing] {platform} automation failed, falling back to manual: {e}")
-            
+
             # Fallback to Manual Publish Kit
             return {
                 "platform": platform,
@@ -259,7 +259,7 @@ class PublishingService:
         failed = 0
         processed: list[dict[str, Any]] = []
 
-        for platform, result in zip(platforms, results):
+        for platform, result in zip(platforms, results, strict=False):
             if isinstance(result, Exception):
                 failed += 1
                 processed.append({

@@ -978,7 +978,7 @@ async def opencli_post_multi(
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     output = []
-    for platform, result in zip(platforms, results):
+    for platform, result in zip(platforms, results, strict=False):
         if isinstance(result, Exception):
             output.append(
                 {"platform": platform, "success": False, "error": str(result)}

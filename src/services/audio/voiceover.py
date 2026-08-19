@@ -44,8 +44,8 @@ class VoiceoverService:
     @retry(
         stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
         wait=wait_exponential(
-            multiplier=settings.RETRY_MULTIPLIER, 
-            min=settings.RETRY_MIN_WAIT, 
+            multiplier=settings.RETRY_MULTIPLIER,
+            min=settings.RETRY_MIN_WAIT,
             max=settings.RETRY_MAX_WAIT
         ),
         retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
@@ -67,12 +67,12 @@ class VoiceoverService:
                     payload = {"text": text, "voice": voice_id or "default"}
                     logger.info(f"[VoiceoverService] POST {self.fish_endpoint}/generate")
                     response = await client.post(
-                        f"{self.fish_endpoint}/generate", 
-                        json=payload, 
+                        f"{self.fish_endpoint}/generate",
+                        json=payload,
                         timeout=settings.VOICEOVER_TIMEOUT
                     )
                     response.raise_for_status()
-                    
+
                     data = response.json()
                     uri = data.get("audio_uri")
                     if uri:
@@ -80,10 +80,10 @@ class VoiceoverService:
                         logger.info(f"[VoiceoverService] GET audio from: {full_uri}")
                         audio_resp = await client.get(full_uri, timeout=settings.VOICEOVER_TIMEOUT * 2)
                         audio_resp.raise_for_status()
-                        
+
                         with open(file_path, "wb") as f:
                             f.write(audio_resp.content)
-                        
+
                         self.breakers["fish"].record_success()
                         logger.info(f"[VoiceoverService] Fish Speech Success: {file_path}")
                         return f"outputs/audio/{file_name}"
@@ -109,7 +109,7 @@ class VoiceoverService:
                     response.raise_for_status()
                     with open(file_path, "wb") as f:
                         f.write(response.content)
-                    
+
                     self.breakers["elevenlabs"].record_success()
                     logger.info(f"[VoiceoverService] ElevenLabs Success: {file_path}")
                     return f"outputs/audio/{file_name}"
@@ -130,7 +130,7 @@ class VoiceoverService:
                 logger.exception(f"[VoiceoverService] gTTS Fallback Failed: {e}")
         else:
             logger.warning("[VoiceoverService] gTTS not available, skipping fallback")
-        
+
         return None
 
 base_voiceover_service = VoiceoverService()

@@ -71,15 +71,15 @@ class UnifiedLLMService:
     def __init__(self, default_provider: LLMProvider | None = None):
         # 1. Initialize Circuit Breakers first
         self.circuit_breakers = {
-            provider: CircuitBreaker(name=f"UnifiedLLM-{provider.value}") 
+            provider: CircuitBreaker(name=f"UnifiedLLM-{provider.value}")
             for provider in LLMProvider
         }
-        
+
         # 2. Setup configuration
         self.default_provider = default_provider or LLMProvider(settings.DEFAULT_LLM_PROVIDER)
         self._api_keys: dict[LLMProvider, str] = {}
         self._load_api_keys()
-        
+
         # 3. Framework integration
         self.enable_langchain = os.getenv("ENABLE_LANGCHAIN", "false").lower() == "true"
         self.enable_crewai = os.getenv("ENABLE_CREWAI", "false").lower() == "true"
@@ -142,7 +142,7 @@ class UnifiedLLMService:
             if not self.is_available(try_provider):
                 continue
 
-            # Use provider-specific model if we're falling back or if the requested model 
+            # Use provider-specific model if we're falling back or if the requested model
             # doesn't belong to this provider
             current_model = model
             if try_provider != provider or (model and model not in self.PROVIDER_MODELS[try_provider]):
@@ -360,7 +360,7 @@ class UnifiedLLMService:
             if "/v1" not in base_url:
                 base_url = f"{base_url}/v1"
             url = f"{base_url}/chat/completions"
-            
+
             headers = {"Content-Type": CONTENT_TYPE_JSON}
             payload = {
                 "model": model or settings.OLLAMA_MODEL,

@@ -108,7 +108,7 @@ class StoryboardService:
             logger.info("Injecting Likeness Portrait into AI Diffusion stream (Image-To-Video active).")
 
         logger.info(f"🎬 Requesting Shot: '{prompt[:60]}...'")
-        
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(f"{self.api_url}/video", json=scene_payload, timeout=20) as r:
@@ -127,7 +127,7 @@ class StoryboardService:
     async def poll_and_download(self, job_id: str, output_path: str):
         logger.info(f"   ⏳ Polling {job_id} until completion...")
         download_url = f"{self.api_url}/download/{job_id}"
-        
+
         while True:
             try:
                 async with aiohttp.ClientSession() as session:
@@ -152,13 +152,13 @@ class StoryboardService:
     def assemble_master(self, video_files: list, final_output: str):
         logger.info(f"🎞️ Assembling {len(video_files)} sequential shots into Master Sequence...")
         list_file = self.output_dir / "concat_list.txt"
-        
+
         with open(list_file, "w") as f:
             for vf in video_files:
                 f.write(f"file '{os.path.abspath(vf)}'\n")
-        
+
         cmd = [
-            self.ffmpeg_path, "-y", "-", "concat", "-safe", "0", "-i", str(list_file), 
+            self.ffmpeg_path, "-y", "-", "concat", "-safe", "0", "-i", str(list_file),
             "-c", "copy", final_output
         ]
         try:
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # Internal Test Routine
     async def main_test():
         composer = StoryboardService()
-        
+
         # We will test an Image-to-Video sequence.
         # Generating 1 minute of video directly (1440 frames) is unsupported by current foundational open-source models (LTX/SVD).
         # Standard cinematography generates a 1 minute video by concatenating 10 to 12 x 5-second scenes.
@@ -184,7 +184,7 @@ if __name__ == "__main__":
             character_name="Davido",
             frames=25  # ~1 second B-Roll test
         )
-        
+
         if job_id:
             out_file = str(composer.output_dir / f"likeness_test_{job_id}.mp4")
             await composer.poll_and_download(job_id, out_file)

@@ -345,7 +345,7 @@ async def execute_tool(request: ToolRequest):
     # Verify internal token
     if settings.INTERNAL_API_TOKEN and request.internal_token != settings.INTERNAL_API_TOKEN:
         return {"status": "error", "message": "Unauthorized internal call"}
-    
+
     try:
         result = await agent.execute_tool({
             "tool": request.tool,

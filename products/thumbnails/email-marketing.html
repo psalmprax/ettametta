@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 1280px; height: 720px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; overflow: hidden; position: relative;
+        }
+        .badge { position: absolute; top: 30px; right: 30px; background: #fff; color: #6c5ce7; padding: 10px 20px; border-radius: 25px; font-weight: 700; font-size: 16px; }
+        .icon { font-size: 80px; margin-bottom: 20px; }
+        h1 { font-size: 48px; font-weight: 800; text-align: center; margin-bottom: 15px; line-height: 1.2; }
+        .subtitle { font-size: 22px; color: #dfe6e9; margin-bottom: 25px; }
+        .price { font-size: 48px; font-weight: 800; margin-bottom: 20px; }
+        .features { display: flex; gap: 30px; margin-top: 10px; }
+        .feature { text-align: center; padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 12px; }
+        .feature .num { font-size: 32px; font-weight: 800; }
+        .feature .label { font-size: 12px; color: #dfe6e9; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div class="badge">75 PROMPTS</div>
+    <div class="icon">📧</div>
+    <h1>Email Marketing<br>Prompts</h1>
+    <p class="subtitle">Write Emails That Get Opened, Read, Clicked</p>
+    <span class="price">$9.99</span>
+    <div class="features">
+        <div class="feature"><div class="num">15</div><div class="label">Subject Lines</div></div>
+        <div class="feature"><div class="num">10</div><div class="label">Welcome</div></div>
+        <div class="feature"><div class="num">15</div><div class="label">Sales</div></div>
+        <div class="feature"><div class="num">10</div><div class="label">Re-engage</div></div>
+    </div>
+</body>
+</html>

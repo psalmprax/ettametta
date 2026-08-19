@@ -29,7 +29,7 @@ class BrowserSkill(OpenClawBaseSkill):
         """
         try:
             await self._ensure_browser()
-            
+
             if action == "navigate" and url:
                 await self.page.goto(url)
                 return f"✅ Navigated to {url}"

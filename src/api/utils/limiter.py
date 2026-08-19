@@ -11,14 +11,14 @@ def get_user_rate_limit(request: Request) -> str:
     # Note: SlowAPI's key_func usually runs BEFORE dependencies like get_current_user.
     # To do tiered limiting properly, we'd ideally use a header or JWT-based key.
     # For now, we'll return the base limits from settings.
-    
+
     # Check if user is already attached to request (might be if middleware set it)
     user = getattr(request.state, "user", None)
     if not user:
         return f"{settings.LIMIT_FREE}/hour"
-    
+
     tier = getattr(user, "subscription", SubscriptionTier.FREE)
-    
+
     if tier == SubscriptionTier.STUDIO or tier == SubscriptionTier.SOVEREIGN:
         return f"{settings.LIMIT_SOVEREIGN}/hour"
     elif tier == SubscriptionTier.PREMIUM or tier == SubscriptionTier.BASIC:

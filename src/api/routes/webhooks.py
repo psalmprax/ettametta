@@ -1,21 +1,31 @@
 """
 Webhooks API Routes for ettametta
 Handles callbacks from YouTube, TikTok, and other platforms with proper security
+Plus ettametta-native Zapier integration endpoints
 """
 
-from fastapi import APIRouter, Request, HTTPException, Header, Depends
-from pydantic import BaseModel, field_validator
-from src.api.utils.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from src.api.utils.models import PublishedContentDB, WebhookEventDB
-from src.shared.enums import ContentPublishStatus
-from src.api.utils.auth import admin_required
-from datetime import datetime, timezone
 import hashlib
 import hmac
-import logging
 import json
+import logging
+from datetime import datetime, timezone
+from typing import Any, Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.api.utils.database import get_db
+from sqlalchemy import select, func
+from src.api.utils.models import (
+    PublishedContentDB,
+    VideoJobDB,
+    ContentCandidateDB,
+    SystemSettings,
+    WebhookEventDB,
+)
+from src.shared.enums import ContentPublishStatus, JobStatus
+from src.api.utils.auth import admin_required
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +73,35 @@ def _record_event(
 
 class YouTubeWebhookPayload(BaseModel):
     video_id: str
-    status: str  # processing, ready, failed
+    status: str = Field(..., description="processing, ready, failed")
+    title: str | None = None
+    description: str | None = None
+    thumbnail_uri: str | None = None
+    duration: int | None = None
+    error_message: str | None = None
+
+    @classmethod
+    def validate_status(cls, v):
+        if v not in ["processing", "ready", "failed"]:
+            raise ValueError("Status must be processing, ready, or failed")
+        return v
+
+
+# Apply validator after class creation
+YouTubeWebhookPayload.model_validate = lambda cls, v, *args, **kwargs: \
+    cls.validate_status(v) or super().__call__(v, *args, **kwargs) if hasattr(super(), '__call__') else v
+
+
+# Re-apply the validator properly
+def _validate_youtube_status(v):
+    if v not in ["processing", "ready", "failed"]:
+        raise ValueError("Status must be processing, ready, or failed")
+    return v
+
+
+class YouTubeWebhookPayload(BaseModel):
+    video_id: str
+    status: str = Field(..., description="processing, ready, failed")
     title: str | None = None
     description: str | None = None
     thumbnail_uri: str | None = None
@@ -78,12 +116,15 @@ class YouTubeWebhookPayload(BaseModel):
         return v
 
 
+# === Core Webhooks ===
+
+
 @router.post("/youtube/upload-status")
 async def youtube_upload_status(
     payload: YouTubeWebhookPayload,
     request: Request,
-    x_youtube_signature: str | None = Header(None, alias="X-Youtube-Signature"),
-    db=Depends(get_db),
+    x_youtube_signature: str | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Receive upload status updates from YouTube
@@ -91,7 +132,7 @@ async def youtube_upload_status(
     """
     from src.api.config import settings
 
-    body = await request.body()  # raw bytes for HMAC verification
+    body = await request.body()
 
     if settings.YOUTUBE_WEBHOOK_SECRET:
         if not _verify_signature(
@@ -134,7 +175,6 @@ async def youtube_upload_status(
             if payload.thumbnail_uri:
                 content.thumbnail_uri = payload.thumbnail_uri
 
-            # Use metadata_json for SQLAlchemy model consistency
             metadata = content.metadata_json or {}
             metadata["youtube_status"] = payload.status
             metadata["youtube_duration"] = payload.duration
@@ -166,7 +206,7 @@ async def youtube_upload_status(
 
     except Exception as e:
         await db.rollback()
-        logger.exception(f"[Webhooks] Generic platform webhook error: {e}")
+        logger.exception(f"[Webhooks] YouTube webhook error: {e}")
         raise HTTPException(status_code=503, detail="Webhook processing failed")
 
 
@@ -177,12 +217,9 @@ async def verify_webhook():
         "status": "active",
         "endpoints": {
             "youtube": "/webhooks/youtube/upload-status",
-            "tiktok": "/webhooks/tiktok/upload-status",
-            "generic": "/webhooks/platform-status",
-            "amazon": "/webhooks/monetization/amazon",
-            "impact_radius": "/webhooks/monetization/impact-radius",
-            "shareasale": "/webhooks/monetization/shareasale",
-            "stripe": "/webhooks/monetization/stripe",
+            "ettametta_discovery": "/webhooks/ettametta/discovery-trigger",
+            "ettametta_video": "/webhooks/ettametta/video-edit",
+            "ettametta_metrics": "/webhooks/ettametta/metrics-export",
         },
         "security": {
             "signature_verification": "Configure webhook secrets for each platform",
@@ -197,7 +234,7 @@ async def get_webhook_events(
     limit: int = 20,
     offset: int = 0,
     admin=Depends(admin_required),
-    db=Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get recent webhook events (admin only)"""
     if limit < 1 or limit > 100:

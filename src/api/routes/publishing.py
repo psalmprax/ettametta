@@ -34,7 +34,7 @@ async def publish_video(
 ) -> dict[str, Any]:
     """
     Publish a video to a social media platform.
-    
+
     Requires OAuth connection to the platform (configured in settings).
     """
     try:
@@ -67,7 +67,7 @@ async def get_publishing_status(
     """
     platform_key = platform.lower()
     is_connected = await token_manager.get_token(platform_key, user_id=current_user.id) is not None
-    
+
     return success_response(data={
         "platform": platform,
         "connected": is_connected,
@@ -106,10 +106,10 @@ async def init_oauth_auth(
     Supported platforms: instagram, x (twitter), linkedin, facebook
     """
     supported_platforms = ["youtube", "tiktok", "instagram", "x", "twitter", "linkedin", "facebook"]
-    
+
     if platform.lower() not in supported_platforms:
         raise HTTPException(status_code=400, detail=f"Platform '{platform}' not supported for OAuth")
-    
+
     return success_response(data={
         "platform": platform,
         "status": "oauth_required",

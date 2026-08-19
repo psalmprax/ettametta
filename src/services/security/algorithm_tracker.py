@@ -35,7 +35,7 @@ class AlgorithmSentinel(BaseEttamettaAgent):
             import json
             prompt = """
             Analyze the current macro social media algorithm trends (TikTok, YouTube Shorts).
-            Output JSON strictly with these keys: 
+            Output JSON strictly with these keys:
             - "score" (integer 0-100 indicating stability)
             - "status" ("NOMINAL", "WARNING", or "NEUTRAL")
             - "recommendations" (list of 3 string tips for hook/pacing shifts)
@@ -49,18 +49,18 @@ class AlgorithmSentinel(BaseEttamettaAgent):
             try:
                 if not response_content or "exhausted" in response_content.lower():
                     raise ValueError("LLM response empty or exhausted")
-                
+
                 # Handle cases where LLM might wrap in markdown blocks
                 clean_content = response_content.strip()
                 if "```json" in clean_content:
                     clean_content = clean_content.split("```json")[1].split("```")[0].strip()
                 elif "```" in clean_content:
                     clean_content = clean_content.split("```")[1].split("```")[0].strip()
-                
+
                 # Remove common LLM prefixes if any
                 if clean_content.startswith("JSON:"):
                     clean_content = clean_content[5:].strip()
-                
+
                 data = json.loads(clean_content)
             except Exception as parse_err:
                 # 10/10 UX Stabilization: Only log if it's not a known exhaustion/empty state

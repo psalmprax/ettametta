@@ -11,15 +11,15 @@ class VariantGenerator:
     Focuses on varying hooks, styles, and script phrasing to 'find winners fast'.
     """
 
-    async def generate_variant_prompts(self, 
-        original_prompt: str, 
-        count: int = 5, 
+    async def generate_variant_prompts(self,
+        original_prompt: str,
+        count: int = 5,
         strategy: str = "hook_variation",
         session_id: str | None = None
     ) -> list[dict[str, Any]]:
         """
         Generates N variant prompts based on the original concept.
-        
+
         Strategies:
         - hook_variation: Changes the first 3-5 seconds of the script.
         - style_variation: Changes the visual style (e.g., Cinematic vs Raw).
@@ -30,17 +30,17 @@ class VariantGenerator:
         prompt = f"""
         You are a 'Growth Loop Engineer'. Your goal is to generate {count} diverse variants of a video idea.
         The goal is to find which 'Hook' and 'Angle' performs best on social media.
-        
+
         ORIGINAL PROMPT:
         {original_prompt}
-        
+
         STRATEGY: {strategy}
-        
+
         REQUIREMENTS:
         1. Each variant must have a unique HOOK (the first 3 seconds).
         2. Each variant must have a slightly different script tone (e.g., Urgent, Educational, Story-driven, Contrarian).
         3. Output a list of JSON objects.
-        
+
         JSON STRUCTURE:
         [
             {{
@@ -60,7 +60,7 @@ class VariantGenerator:
                 session_id=session_id,
                 json_mode=True
             )
-            
+
             variants = json.loads(result["response"])
             if not isinstance(variants, list):
                 # Fallback if it's a dict
@@ -68,7 +68,7 @@ class VariantGenerator:
                     variants = variants["variants"]
                 else:
                     variants = [variants]
-            
+
             logger.info(f"✅ [VariantGenerator] Successfully generated {len(variants)} variants.")
             return variants[:count]
 

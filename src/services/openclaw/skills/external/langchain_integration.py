@@ -84,7 +84,7 @@ class LangChainService:
             llm = self.ChatGroq(model=model_name)
             chains = []
 
-            for i, prompt in enumerate(prompts):
+            for _i, prompt in enumerate(prompts):
                 prompt_template = self.ChatPromptTemplate.from_template(prompt)
                 chain = self.LLMChain(llm=llm, prompt=prompt_template)
                 chains.append(chain)

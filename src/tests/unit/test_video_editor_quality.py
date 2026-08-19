@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Mock heavy dependencies to avoid import errors
 class MockTorch:
     float32 = "float32"
-    
+
     class nn:
         class Module: pass
         def Linear(*args, **kwargs): return MagicMock()
@@ -44,16 +44,16 @@ class MockTorch:
 
     @staticmethod
     def device(name): return name
-    
+
     @staticmethod
     def load_state_dict(*args, **kwargs): return MagicMock()
-    
+
     @staticmethod
     def save(*args, **kwargs): return True
-    
+
     @staticmethod
     def set_num_threads(*args, **kwargs): pass
-    
+
     @staticmethod
     def manual_seed(*args, **kwargs): pass
 

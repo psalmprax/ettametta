@@ -72,7 +72,7 @@ async def _check_and_post_scheduled_internal(task_self):
             logger.info(
                 f"[Scheduler] Found {len(pending_posts)} pending posts to process (batch cycle at {now.isoformat()})"
             )
-            
+
             if len(pending_posts) == 0:
                 return {
                     "processed": 0,
@@ -88,10 +88,10 @@ async def _check_and_post_scheduled_internal(task_self):
                 user_id = post.user_id
                 account_id = post.account_id
                 video_path = post.video_path
-                
+
                 try:
                     logger.info(f"[Scheduler] Processing post {post_id}: platform={platform}, video={video_path}")
-                    
+
                     meta_dict = post.metadata_json
                     if not meta_dict:
                         logger.error(f"[Scheduler] No metadata for post {post_id}")

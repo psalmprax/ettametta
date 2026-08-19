@@ -20,7 +20,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
                 stmt = select(LeadGenDB).where(LeadGenDB.niche == niche)
                 result = await db.execute(stmt)
                 configs = result.scalars().all()
-                
+
                 if configs:
                     return [{
                         "id": str(config.id),
@@ -61,13 +61,13 @@ class LeadGenStrategy(BaseMonetizationStrategy):
             # datacenter is the last part of the API key (e.g., us19)
             dc = settings.MAILCHIMP_API_KEY.split("-")[-1]
             url = f"https://{dc}.api.mailchimp.com/3.0/lists/{settings.MAILCHIMP_LIST_ID}/members"
-            
+
             data = {
                 "email_address": email,
                 "status": "subscribed",
                 "merge_fields": {"NICHE": niche}
             }
-            
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, auth=("apikey", settings.MAILCHIMP_API_KEY), json=data, timeout=10.0)
                 if response.status_code >= 500: # Trigger retry on server errors
@@ -99,11 +99,11 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         # In a real setup, we would call an AI worker to generate this
         from src.api.utils.os_worker import ai_worker
         prompt = f"Generate a short viral video CTA for a {niche} lead magnet. Context: {context}. Max 10 words."
-        
+
         try:
             cta = await ai_worker.generate_text(prompt)
             if cta: return cta.strip()
         except Exception:
             pass
-            
+
         return f"Download our FREE {niche} guide! Link in bio 🚀"

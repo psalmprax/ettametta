@@ -55,6 +55,10 @@ class SystemJobStatus(str, Enum):
     PROCESSING = "PROCESSING"
 
 
+# Backward compatibility alias
+JobStatus = SystemJobStatus
+
+
 class ContentPublishStatus(str, Enum):
     """Status enum for content publishing operations."""
 

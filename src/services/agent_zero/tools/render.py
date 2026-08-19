@@ -24,12 +24,12 @@ class RenderTool:
                 "audio_uri": audio_uri
             }
             response = requests.post(self.api_url, json=payload, timeout=30)
-            
+
             if response.status_code in [200, 202]:
                 return response.json()
             else:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
-                
+
         except Exception as e:
             logger.exception(f"RenderTool Error: {e}")
             return {"error": str(e)}

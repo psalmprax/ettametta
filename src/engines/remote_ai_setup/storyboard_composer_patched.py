@@ -47,7 +47,7 @@ STORYBOARD = [
 def fetch_likeness_image(character_name):
     print(f"🔍 Sourcing HD Reference Image for '{character_name}'...")
     fallback_map = {
-        "Davido": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Davido_2022.jpg/800px-Davido_2022.jpg", 
+        "Davido": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Davido_2022.jpg/800px-Davido_2022.jpg",
         "Donald Trump": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Donald_Trump_official_portrait.jpg/1200px-Donald_Trump_official_portrait.jpg",
         "Hillary Clinton": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Hillary_Clinton_official_portrait.jpg/1200px-Hillary_Clinton_official_portrait.jpg"
     }
@@ -96,7 +96,7 @@ def assemble_master(video_files, final_output):
     list_file = os.path.join(OUTPUT_DIR, "concat_list.txt")
     with open(list_file, "w") as f:
         for vf in video_files: f.write(f"file '{os.path.abspath(vf)}'\n")
-    
+
     cmd = ["ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_file, "-c", "copy", final_output]
     try:
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
@@ -107,18 +107,18 @@ def main():
     print("============== ETTAMETTA: STORYBOARD COMPOSER (BYPASS) ==============")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     completed_clips = []
-    
+
     for i, scene in enumerate(STORYBOARD):
         print(f"\n--- Processing Scene {i+1}/{len(STORYBOARD)} ---")
         if "character_name" in scene:
             b64 = fetch_likeness_image(scene["character_name"])
             if b64: scene["image_base64"] = b64
-        
+
         job_id = generate_shot(scene)
         if job_id:
             out_path = os.path.join(OUTPUT_DIR, f"scene_{i+1:02d}_{job_id}.mp4")
             if poll_and_download(job_id, out_path): completed_clips.append(out_path)
-            
+
     if len(completed_clips) > 1:
         assemble_master(completed_clips, os.path.join(OUTPUT_DIR, "FINAL_MASTER_30s.mp4"))
 

@@ -33,7 +33,7 @@ class OCRService:
         """Lazy initialization of the EasyOCR reader."""
         if self._init_attempted:
             return
-        
+
         self._init_attempted = True
         if check_easyocr_available():
             try:
@@ -74,20 +74,20 @@ class OCRService:
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        
+
         all_detections = []
-        
+
         # Sample frames (every 1 second or sample_rate frames)
         for i in range(0, frame_count, sample_rate):
             cap.set(cv2.CAP_PROP_POS_FRAMES, i)
             ret, frame = cap.read()
             if not ret:
                 break
-            
+
             # Perform OCR on the frame
             # EasyOCR returns: [ ([[x,y],[x,y],[x,y],[x,y]], text, confidence), ... ]
             results = self.reader.readtext(frame)
-            
+
             for (bbox, text, prob) in results:
                 if prob > 0.3: # Filter low confidence
                     # bbox is 4 points: tl, tr, br, bl
@@ -104,7 +104,7 @@ class OCRService:
                         },
                         "normalized_y": (tl[1] + br[1]) / (2 * height) # 0 to 1
                     })
-        
+
         cap.release()
         return all_detections
 
@@ -123,33 +123,33 @@ class OCRService:
         # Zone 2: Middle (0.4-0.6)
         # Zone 3: Lower Middle (0.6-0.8)
         # Zone 4: Bottom (0.8-1.0)
-        
+
         zones = [0, 0, 0, 0, 0]
         for d in detections:
             y = d["normalized_y"]
             idx = int(y * 5)
             if idx > 4: idx = 4
             zones[idx] += 1
-            
+
         logging.info(f"[OCRService] Vertical Density Map: {zones}")
 
         # Priority 1: Use Bottom (Preferred for mobile)
         if zones[4] == 0 and zones[3] == 0:
             return "bottom"
-        
+
         # Priority 2: Use Top (Secondary for mobile)
         if zones[0] == 0 and zones[1] == 0:
             return "top"
-            
+
         # Priority 3: Use Center (Least desirable but fallback)
         if zones[2] == 0:
             return "center"
-            
+
         # Priority 4: If everything is crowded, pick the zone with minimum density
         # We exclude center (index 2) from this pick if possible
         candidates = [0, 4] # Top vs Bottom
         best_zone = min(candidates, key=lambda i: zones[i])
-        
+
         return "top" if best_zone == 0 else "bottom"
 
 base_ocr_service = OCRService()

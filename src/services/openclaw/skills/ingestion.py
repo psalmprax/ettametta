@@ -27,12 +27,12 @@ class DataIngestionSkill(OpenClawBaseSkill):
             return self.fetch_rss(source, limit)
         elif action == "github":
             return self.github_trending(source, timeframe=kwargs.get("timeframe", "daily"), limit=limit)
-        
+
         # Multi-source fallback
         sources = kwargs.get("sources", [])
         if sources:
             return self.ingest_multi_source(sources)
-            
+
         return f"⚠️ Unsupported ingestion action: {action}"
 
     def fetch_rss(self, feed_url: str, limit: int = 5) -> str:

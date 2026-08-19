@@ -91,20 +91,32 @@ class AutonomousVideoEditor:
         n_clips = len(video_clips)
 
         for i, segment in enumerate(script_segments):
-            # Reuse the corresponding clip; if we run out, wrap around the last.
-            if n_clips == 0:
-                clip_match = None
-            elif i < n_clips:
-                clip_match = video_clips[i]
-            else:
-                clip_match = video_clips[-1]
+# Select clip with round-robin variety when more segments than clips
+# n_clips == 0: no clips available
+            clip_match = None
+# n_clips == 1: only one clip available
+            clip_match = video_clips[0]
+# i < n_clips: normal case, use clip at index i
+            clip_match = video_clips[i]
+# Round-robin: reuse clips in cyclic order for variety
+            clip_match = video_clips[i % n_clips]
 
-            # Dynamic pacing: shorter clips for high-energy styles
+            # Dynamic pacing with style-aware duration adjustment
             base_duration = segment.get("duration", 5)
+            # Style-based pacing: aggressive = shorter, smooth = longer, dynamic = adaptive
             if style == "aggressive":
-                base_duration = min(base_duration, 3)
-            elif style == "asmr":
-                base_duration = max(base_duration, 8)
+                base_duration = max(1, base_duration - 2)
+            elif style == "smooth":
+                # Adaptive: shorten if segment text has high-energy words
+                energy_words = ["viral", "trending", "breakthrough", "explosive", " shocking"]
+                if any(w in segment.get("text", "").lower() for w in energy_words):
+                    base_duration = max(1, base_duration - 2)
+                else:
+                    base_duration = base_duration  # keep original
+            elif style == "cinematic":
+                base_duration = base_duration + 2
+            elif style == "minimal":
+                base_duration = max(1, base_duration - 1)
 
             timeline.append({
                 "segment_index": i,
@@ -142,12 +154,22 @@ class AutonomousVideoEditor:
         effects = []
         text_lower = segment.get("text", "").lower()
 
-        if any(w in text_lower for w in ["important", "key", "critical"]):
+        # High-importance words trigger highlight effect
+        if any(w in text_lower for w in ["important", "key", "critical", "viral"]):
             effects.append("highlight_text")
-        if any(w in text_lower for w in ["shocking", "surprising", "wow"]):
+
+        # Shocking/surprising content gets visual emphasis
+        if any(w in text_lower for w in ["shocking", "surprising", "wow", "amazing"]):
             effects.extend(["zoom_in", "screen_shake"])
+
+        # Style-specific effects
         if style == "dynamic":
             effects.append("subtle_motion")
+        elif style == "cinematic":
+            effects.append("color_grade")
+        elif style == "minimal":
+            # No extra effects for minimal style
+            pass
 
         return effects
 

@@ -3,9 +3,21 @@ import time
 import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
+from prometheus_client import Counter, Histogram
 from src.api.utils.tracing import set_request_id, get_request_id
 from src.api.config import settings
 
+# Prometheus metrics (prefixed to avoid conflicts with built-in metrics)
+REQUEST_COUNT = Counter(
+    "ettametta_http_requests_total",
+    "Total number of requests to the ettametta API",
+    ["method", "endpoint", "status"],
+)
+REQUEST_DURATION = Histogram(
+    "ettametta_http_request_duration_seconds",
+    "Request duration in seconds",
+    ["method", "endpoint"],
+)
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +33,16 @@ class TracingMiddleware(BaseHTTPMiddleware):
 
         # Propagate back to client
         response.headers["X-Request-ID"] = rid
+
+        # Update Prometheus metrics
+        method = request.method
+        endpoint = request.url.path
+        status = str(response.status_code)
+        REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status).inc()
+        REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(
+            response.headers.get("X-Process-Time", "0.0")
+        )
+
         return response
 
 

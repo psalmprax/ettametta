@@ -22,9 +22,9 @@ class MythosReasoningAgent:
         3. Coda: Finalize output.
         """
         trace = []
-        
+
         target_provider = provider or self.provider
-        
+
         # --- PRELUDE ---
         logger.info(f"[Mythos] Entering Prelude (Provider: {target_provider or 'auto'}) for prompt: {prompt}")
         latent_state = await self._prelude(prompt, target_provider)
@@ -39,7 +39,7 @@ class MythosReasoningAgent:
         # --- CODA ---
         logger.info(f"[Mythos] Entering Coda (Provider: {target_provider or 'auto'}) for finalization")
         final_answer = await self._coda(prompt, latent_state, target_provider)
-        
+
         return {
             "answer": final_answer,
             "trace": trace,
@@ -54,7 +54,7 @@ class MythosReasoningAgent:
             "Convert the input into a dense 'Latent Reasoning State'—a list of high-level abstractions and initial hypotheses."
         )
         user = f"Input: {prompt}\n\nGenerate initial Latent Reasoning State:"
-        
+
         # If provider is specified, we might need a custom call pattern or just pass it to hub if it supported it.
         # IntelligenceHub.chat now supports a 'provider' override.
         res = await self.hub.chat(prompt=user, system_prompt=system, complexity="high", provider=provider)
@@ -62,7 +62,7 @@ class MythosReasoningAgent:
 
     async def _recurrent_step(self, original_input: str, current_state: str, step: int, provider: str = None) -> str:
         """
-        Refines the reasoning state. 
+        Refines the reasoning state.
         Uses 'Input Injection' (passing the original input) to prevent state drift.
         """
         system = (
@@ -76,7 +76,7 @@ class MythosReasoningAgent:
             f"Current Latent State: {current_state}\n\n"
             "Produce the Evolved Latent State:"
         )
-        
+
         res = await self.hub.chat(prompt=user, system_prompt=system, complexity="high", provider=provider)
         return res.get("response", "")
 
@@ -93,6 +93,6 @@ class MythosReasoningAgent:
             f"Matured Latent State: {final_state}\n\n"
             "Final Response:"
         )
-        
+
         res = await self.hub.chat(prompt=user, system_prompt=system, complexity="high", provider=provider)
         return res.get("response", "")

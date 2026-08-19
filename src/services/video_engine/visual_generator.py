@@ -53,7 +53,7 @@ class VisualGenerator:
             encoded_prompt = urllib.parse.quote(prompt)
             # Use portrait orientation for short-form content
             pollinations_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1792&nologo=true&seed={hash(prompt) % 1000}"
-            
+
             async with httpx.AsyncClient() as client:
                 img_res = await client.get(pollinations_url, timeout=30.0)
                 if img_res.status_code == 200:

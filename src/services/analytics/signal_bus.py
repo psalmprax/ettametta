@@ -2,7 +2,7 @@
 The Signal Bus & Feature Store (9.9/10)
 =====================================
 
-High-speed ingestion and time-series feature calculation for 
+High-speed ingestion and time-series feature calculation for
 real-time viral forecasting.
 """
 
@@ -52,16 +52,16 @@ class SignalBus:
         # 1. Calculation Logic (Simplified for CPU-first logic)
         velocity = raw_metrics.get("growth_rate", 0.0)
         saturation = raw_metrics.get("saturation", 0.1)
-        
+
         # 2. Acceleration Calculation (d2/dt2)
         acceleration = self._calculate_acceleration(niche, velocity)
-        
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "INSERT INTO signals VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (time.time(), niche, platform, velocity, acceleration, saturation, 0.5)
             )
-        
+
         logger.info(f"📡 [Bus] Ingested {platform} signal for '{niche}'. Accel: {acceleration:.2f}")
 
     def _calculate_acceleration(self, niche: str, current_velocity: float) -> float:

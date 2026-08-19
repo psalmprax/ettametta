@@ -30,7 +30,7 @@ class DiscoveryServiceExtended:
     async def get_summary_stats(self) -> Dict[str, Any]:
         """
         Get discovery module summary statistics.
-        
+
         Returns:
             Dictionary with discovery statistics
         """
@@ -69,10 +69,10 @@ class DiscoveryServiceExtended:
     async def list_monitored_niches(self, user_id: str) -> List[Dict[str, Any]]:
         """
         List all monitored niches for a specific user with their alert status.
-        
+
         Args:
             user_id: ID of the user
-            
+
         Returns:
             List of dictionaries with niche and alert information
         """
@@ -98,7 +98,7 @@ class DiscoveryServiceExtended:
 
             result = await self.db.execute(stmt)
             rows = result.all()
-            
+
             return [
                 {
                     "niche": r[0],
@@ -118,13 +118,13 @@ class DiscoveryServiceExtended:
         """
         Persistently watch/monitor a niche for a user.
         Also creates or updates an alert for the niche.
-        
+
         Args:
             user_id: ID of the user
             niche: Niche to watch
             threshold: Viral score threshold for alerts
             enabled: Whether the alert is enabled
-            
+
         Returns:
             Dictionary with the status of the operation
         """

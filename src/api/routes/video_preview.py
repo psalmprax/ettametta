@@ -29,23 +29,23 @@ async def preview_video(
         Path("data/storage/outputs/edited"),
         Path("data/storage/outputs"),
     ]
-    
+
     video_path = None
     for output_dir in output_dirs:
         potential_path = output_dir / f"{job_id}.mp4"
         if potential_path.exists():
             video_path = potential_path
             break
-        
+
         # Also check for files that contain job_id in their name
         if output_dir.exists():
             for f in output_dir.glob(f"*{job_id}*.mp4"):
                 video_path = f
                 break
-    
+
     if not video_path or not video_path.exists():
         raise HTTPException(status_code=404, detail=f"Video not found for job {job_id}")
-    
+
     return FileResponse(
         path=str(video_path),
         media_type="video/mp4",
@@ -71,23 +71,23 @@ async def download_video(
         Path("data/storage/outputs/edited"),
         Path("data/storage/outputs"),
     ]
-    
+
     video_path = None
     for output_dir in output_dirs:
         potential_path = output_dir / f"{job_id}.mp4"
         if potential_path.exists():
             video_path = potential_path
             break
-        
+
         # Also check for files that contain job_id in their name
         if output_dir.exists():
             for f in output_dir.glob(f"*{job_id}*.mp4"):
                 video_path = f
                 break
-    
+
     if not video_path or not video_path.exists():
         raise HTTPException(status_code=404, detail=f"Video not found for job {job_id}")
-    
+
     return FileResponse(
         path=str(video_path),
         media_type="video/mp4",

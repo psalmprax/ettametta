@@ -11,7 +11,7 @@ class Claw4ScienceSkill(OpenClawBaseSkill):
     Skill for transforming technical/academic data into "Science-Pop" viral scripts.
     Integrates with academic repositories and scientific summaries.
     """
-    
+
     def __init__(self):
         super().__init__()
         self._groq_client: Optional[Any] = None
@@ -38,32 +38,32 @@ class Claw4ScienceSkill(OpenClawBaseSkill):
         """
         if action == "trends":
             return self.fetch_scientific_niche_trends(topic)
-            
+
         return self.convert_technical_to_viral(raw_data, kwargs.get("platform", "TikTok"))
-        
+
     def convert_technical_to_viral(self, raw_data: str, target_platform: str = "TikTok") -> str:
         """
         Uses LLM to rewrite dense scientific data into a viral short-form script.
         """
         prompt = f"""
         TRANSFORM THE FOLLOWING SCIENTIFIC DATA INTO A VIRAL {target_platform} SCRIPT:
-        
+
         DATA: {raw_data}
-        
+
         RULES:
         1. **HOOK**: Start with a "Did you know?" or "This changes everything" hook.
         2. **CONTRAST**: Simplify the complexity (ELIMINATE JARGON).
         3. **PACING**: Fast cuts every 1.5 - 2 seconds.
         4. **MONETIZATION**: Suggest a related niche (e.g., 'Bio-Hacking', 'Quantum Computing', 'Space Tech').
         5. **DURATION**: 15-30 seconds.
-        
+
         Output format:
         [00:00] HOOK: ...
         [00:05] THE PROBLEM: ...
         [00:15] THE SOLUTION: ...
         [00:25] CTA: ...
         """
-        
+
         try:
             completion = self.groq_client.chat.completions.create(
                 messages=[

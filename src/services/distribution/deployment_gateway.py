@@ -24,22 +24,22 @@ class DeploymentGateway:
     async def generate_production_package(self, production_data: dict[str, Any]) -> dict[str, Any]:
         """Crafts a complete distribution package with captions and tags"""
         title = production_data.get("title", "Universal Viral Variant")
-        
+
         # 1. Platform-Specific Metadata Generation (LLM-Driven)
         print(f"✍️  Generating Metadata for {title}...")
-        
+
         metadata = {}
         for platform in self.platforms:
             prompt = f"Create a high-CTR {platform} caption and 10 hashtags for a video about: {title}. Focus on curiosity and virality."
             content = await base_script_service.complete(prompt, system_prompt="You are a Viral Marketing Expert.")
-            
+
             metadata[platform] = {
                 "variant_id": production_data.get("variant_id", "gen_target"),
                 "caption": content.split("#")[0].strip(),
                 "hashtags": ["#" + tag.strip() for tag in content.split("#")[1:] if tag.strip()],
                 "video_path": production_data.get("video_path")
             }
-            
+
         return {
             "title": title,
             "platforms": metadata,
@@ -53,7 +53,7 @@ class DeploymentGateway:
             # Simulate API Latency
             await asyncio.sleep(0.5)
             logger.info(f"✅ [Gateway] Post Live on {platform}: {data['caption'][:30]}...")
-            
+
         return {"status": "deployed", "platforms_reached": self.platforms}
 
 # Singleton Instance

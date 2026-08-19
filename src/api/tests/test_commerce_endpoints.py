@@ -90,7 +90,7 @@ class TestMonetizationReportEndpoint:
 
         headers = {"Authorization": f"Bearer {token}"}
         response = client.get("/api/v1/monetization/report", headers=headers)
-        
+
         # Should succeed or return empty report
         assert response.status_code in [200, 500]
         if response.status_code == 200:

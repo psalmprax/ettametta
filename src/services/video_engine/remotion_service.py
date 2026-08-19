@@ -52,11 +52,11 @@ class RemotionService:
         self.studio_path = os.path.abspath(studio_path or settings.REMOTION_STUDIO_PATH)
         self.output_dir = os.path.join(self.studio_path, "out")
         os.makedirs(self.output_dir, exist_ok=True)
-        
+
         limit = concurrency_limit if concurrency_limit is not None else settings.REMOTION_CONCURRENCY_LIMIT
         # Concurrency guarding to prevent event loop starvation and server crashes
         self.render_semaphore = asyncio.Semaphore(limit)
-        
+
         # Cache baseline context logger to avoid duplicate adapter instantiation overhead in initialization
         self._default_log = self._get_logger()
         self._default_log.info(f"[RemotionService] Initialized with concurrency limit: {limit}")
@@ -65,12 +65,12 @@ class RemotionService:
         self.browser_path = os.getenv("CHROMIUM_PATH") or \
                            shutil.which("chromium") or \
                            shutil.which("chromium-browser")
-        
+
         if self.browser_path:
             self._default_log.info(f"[RemotionService] Using browser at: {self.browser_path}")
         else:
             self._default_log.warning("[RemotionService] No browser found in PATH. Remotion will attempt auto-download.")
-        
+
         self.breaker = CircuitBreaker(name="RemotionRender", failure_threshold=2, recovery_timeout=300)
 
         # Strict allowed staging roots jail to prevent Local File Inclusion (LFI)
@@ -86,7 +86,7 @@ class RemotionService:
             self._normalize_and_resolve_path("/app/local_downloads"),
             self._normalize_and_resolve_path("local_downloads"),
         ]
-        
+
         # Initialize Prometheus circuit breaker state
         self._update_breaker_metrics()
 
@@ -130,18 +130,18 @@ class RemotionService:
         """Recursively estimates memory size of input objects synchronously to prevent DOS payload attacks, with cyclic reference tracking."""
         if seen is None:
             seen = set()
-            
+
         oid = id(obj)
         if oid in seen:
             return current_size
-            
+
         seen.add(oid)
-        
+
         size = sys.getsizeof(obj)
         total = current_size + size
         if total > limit:
             raise RemotionFatalError(f"Props memory footprint exceeded maximum allowed limit of {limit} bytes")
-        
+
         if isinstance(obj, dict):
             for k, v in obj.items():
                 total = self._get_approx_memory_size(k, total, limit, seen)
@@ -158,13 +158,13 @@ class RemotionService:
         """
         if not composition_id or not isinstance(composition_id, str):
             raise RemotionFatalError("composition_id must be a valid non-empty string.")
-            
+
         if not isinstance(props, dict):
             raise RemotionFatalError("Props must be a dictionary.")
 
         # Enforce synchronous, non-blocking recursive memory footprint guard (50MB ceiling) to block memory injection DOS
         self._get_approx_memory_size(props)
-        
+
         if "duration_in_frames" in props:
             try:
                 frames = int(props["duration_in_frames"])
@@ -250,7 +250,7 @@ class RemotionService:
                         with open(dest_path, "wb") as f_out:
                             shutil.copyfileobj(f_in, f_out)
                     log.info(f"Prepared physical asset: {filename} in sandbox {job_id}")
-                
+
                 return f"assets/{job_id}/{filename}"
             finally:
                 os.close(fd)
@@ -264,13 +264,13 @@ class RemotionService:
         """
         if isinstance(obj, dict):
             return {k: self._recursive_prep_assets(v, job_assets_dir, job_id, log) for k, v in obj.items()}
-        
+
         if isinstance(obj, list):
             return [self._recursive_prep_assets(i, job_assets_dir, job_id, log) for i in obj]
-        
+
         if isinstance(obj, str):
             return self._stage_string_asset(obj, job_assets_dir, job_id, log)
-            
+
         return obj
 
     def _stage_string_asset(self, val: str, job_assets_dir: str, job_id: str, log: logging.LoggerAdapter) -> str:
@@ -280,7 +280,7 @@ class RemotionService:
         """
         if not val or val.startswith("http") or val.startswith("assets/"):
             return val
-        
+
         # Quick pre-filter to avoid resolving strings that clearly aren't paths
         if "/" not in val and "\\" not in val and not os.path.isabs(val):
             return val
@@ -304,7 +304,7 @@ class RemotionService:
             f.write(serialized_bytes)
             f.flush()
             os.fsync(f.fileno())
-        
+
         os.replace(tmp_path, path)
 
     def _safe_remove_tmp_file(self, tmp_path: str) -> None:
@@ -322,7 +322,7 @@ class RemotionService:
             serialized_bytes = serialized_props.encode("utf-8")
         except (TypeError, ValueError) as e:
             raise RemotionFatalError(f"Props must be JSON serializable: {e}")
-            
+
         byte_size = len(serialized_bytes)
         if byte_size > 10 * 1024 * 1024:
             raise RemotionFatalError(f"Props serialized size is too large: {byte_size} bytes (max allowed is 10MB)")
@@ -330,7 +330,7 @@ class RemotionService:
         tmp_path = f"{path}.tmp"
         parent_dir = os.path.dirname(os.path.abspath(path))
         required_space = max(20 * 1024 * 1024, byte_size * 2)  # 20MB or 2x payload bytes
-        
+
         self._check_disk_space(parent_dir, required_space, log)
 
         # Write with local retries (2 attempts) to handle transient file lock conditions without stacked latency amplification
@@ -364,7 +364,7 @@ class RemotionService:
         """Extract frame duration arguments safely from props."""
         if "duration_in_frames" not in props:
             return []
-        
+
         try:
             frames_val = int(props["duration_in_frames"])
             return ["--frames", f"0-{frames_val}"]
@@ -401,7 +401,7 @@ class RemotionService:
     def _get_dynamic_max_old_space_size(self) -> int:
         """Gets memory limit in MB dynamically, scaling to host/container constraints."""
         limit_bytes = self._get_cgroup_memory_limit()
-        
+
         # Fallback to system memory (/proc/meminfo) if cgroups info is missing or unlimited
         if not limit_bytes or limit_bytes <= 0:
             try:
@@ -460,7 +460,7 @@ class RemotionService:
             "--disable-dev-shm-usage",
             f"--js-flags='--max-old-space-size={limit_mb}'"
         ]
-        
+
         # Use lower scale for faster renders.  Priority:
         # 1. Explicit override in props.job_metadata.remotion_scale
         #    (set by orchestrator preview_mode for fast draft renders)
@@ -475,7 +475,7 @@ class RemotionService:
             scale_val = "0.5"
         else:
             scale_val = getattr(settings, "REMOTION_RENDER_SCALE", "0.75")
-        
+
         args.extend([
             "--chromium-flags", " ".join(chrome_flags),
             "--public-dir=public",
@@ -544,7 +544,7 @@ class RemotionService:
         """
         trimmed_args = [a[:100] + "..." if len(a) > 100 else a for a in args]
         log.info(f"Executing: {program} {' '.join(trimmed_args)}")
-        
+
         process = await asyncio.create_subprocess_exec(
             program,
             *args,
@@ -567,13 +567,13 @@ class RemotionService:
             # Request cancellation of the stdout/stderr stream readers
             stdout_task.cancel()
             stderr_task.cancel()
-            
+
             # Await stream tasks with return_exceptions=True to clean them up and suppress warnings
             await asyncio.gather(stdout_task, stderr_task, return_exceptions=True)
-            
+
             # Unconditionally terminate the process to guarantee zero process leakage
             await self._terminate_process(process, log)
-            
+
             if isinstance(e, asyncio.TimeoutError):
                 log.error(f"Subprocess render timed out after {timeout} seconds.")
                 raise RemotionTransientError(f"Remotion CLI render timed out after {timeout} seconds.") from e
@@ -617,7 +617,7 @@ class RemotionService:
         if not os.path.exists(output_path):
             log.error(f"Render output file is missing: {output_path}")
             raise RemotionTransientError(f"Render completed but output file is missing: {output_path}")
-        
+
         file_size = os.path.getsize(output_path)
         if file_size == 0:
             log.error(f"Render output file is empty: {output_path}")
@@ -640,17 +640,17 @@ class RemotionService:
             raise e
 
     @retry(
-        stop=stop_after_attempt(2), 
+        stop=stop_after_attempt(2),
         wait=wait_exponential(multiplier=2, min=10, max=60),
         retry=retry_if_exception_type(RemotionTransientError),
         reraise=True
     )
     async def render_video(self, composition_id: str, props: dict[str, Any], output_name: str = None) -> str | None:
         """
-        Main entrypoint orchestrating pre-validation, sandboxed asset preparation, 
-        non-blocking config generation, event-loop-safe subprocess supervisor, 
+        Main entrypoint orchestrating pre-validation, sandboxed asset preparation,
+        non-blocking config generation, event-loop-safe subprocess supervisor,
         and full garbage collection.
-        
+
         Protected by self.render_semaphore to guarantee hardware concurrency safety,
         and `@retry` only on transient (non-deterministic) network/timeout failures.
         """
@@ -661,7 +661,7 @@ class RemotionService:
 
         if not output_name:
             output_name = f"render_{job_id}.mp4"
-        
+
         output_path = os.path.join(self.output_dir, output_name)
         input_props_path = os.path.join(self.studio_path, f"props_{job_id}.json")
         job_assets_dir = None
@@ -670,7 +670,7 @@ class RemotionService:
         async with self.render_semaphore:
             log.info(f"Acquired render slot for job {job_id} ({composition_id})")
             start_time = asyncio.get_running_loop().time()
-            
+
             try:
                 # Safe isolated asset preparation (no file race conditions)
                 remotion_ready_props, job_assets_dir = self._prepare_job_assets(props, job_id, log)
@@ -685,16 +685,16 @@ class RemotionService:
 
                 # Execute non-blocking process monitor with internal timeout guarding and stream cleanup
                 await self._execute_render(program, args, log)
-                
+
                 # Post-Render Output Validation
                 self._verify_render_output(output_path, log)
-                
+
                 duration = asyncio.get_running_loop().time() - start_time
                 log.info(f"[Telemetry] Render job completed successfully in {duration:.2f} seconds. Size: {os.path.getsize(output_path)} bytes")
-                
+
                 # Record metrics
                 self._record_render_metrics(composition_id, "success", duration)
-                
+
                 # Consolidate circuit breaker success mutator
                 self._breaker_record_success()
                 return output_path

@@ -20,7 +20,7 @@ class InternalJobClient:
         urls = [url]
         if self.base_url in url:
             urls.append(url.replace(self.base_url, self.fallback_url))
-        
+
         last_exception = None
         for u in urls:
             try:
@@ -30,7 +30,7 @@ class InternalJobClient:
             except Exception as e:
                 last_exception = e
                 logger.warning(f"Internal request failed for {u}: {e}")
-        
+
         logger.error(f"Internal request failed all attempts. Last error: {last_exception}")
         return None
 
@@ -43,7 +43,7 @@ class InternalJobClient:
             "metadata": metadata or {}
         }
         headers = {"X-Internal-Token": self.token}
-        
+
         resp = await self._request("post", url, json=payload, headers=headers)
         if resp and resp.status_code == 200:
             return True
@@ -56,9 +56,9 @@ class InternalJobClient:
         if progress is not None: payload["progress"] = progress
         if output_path: payload["output_path"] = output_path
         if error_message: payload["error_message"] = error_message
-        
+
         headers = {"X-Internal-Token": self.token}
-        
+
         resp = await self._request("patch", url, json=payload, headers=headers)
         if resp and resp.status_code == 200:
             return True

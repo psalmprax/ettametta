@@ -149,7 +149,7 @@ class XPublisher(SocialPublisher):
                         error = processing_info.get("error", {})
                         logger.error(f"[XPublisher] Processing failed: {error}")
                         return None
-                
+
                 if state in ("pending", "in_progress"):
                     logger.error("[XPublisher] Media processing timed out after 30 polls")
                     return None

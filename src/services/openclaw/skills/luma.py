@@ -32,7 +32,7 @@ class LumaSkill(OpenClawBaseSkill):
         p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
         if not p:
             return "⚠️ Luma failed: Missing prompt"
-            
+
         res = await self.generate_video(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
         if res.get("status") == "success":
             return f"🎬 **Luma Video Generated!**\nURL: {res['video_uri']}"

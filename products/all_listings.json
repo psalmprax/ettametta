@@ -1,0 +1,39 @@
+[
+  {
+    "platform": "gumroad",
+    "product_name": "50 AI Prompts for Business Owners",
+    "price": 9.99,
+    "status": "ready_to_list",
+    "guide": "docs/GUMROAD_GUIDE.md"
+  },
+  {
+    "platform": "gumroad",
+    "product_name": "100 Social Media Prompts for Business",
+    "price": 12.99,
+    "status": "ready_to_list"
+  },
+  {
+    "platform": "gumroad",
+    "product_name": "75 Email Marketing Prompts",
+    "price": 9.99,
+    "status": "ready_to_list"
+  },
+  {
+    "platform": "gumroad",
+    "product_name": "100 Content Creator Prompts",
+    "price": 14.99,
+    "status": "ready_to_list"
+  },
+  {
+    "platform": "lemonsqueezy",
+    "product_name": "50 AI Prompts for Business Owners",
+    "price": 9.99,
+    "status": "ready_to_list"
+  },
+  {
+    "platform": "payhip",
+    "product_name": "50 AI Prompts for Business Owners",
+    "price": 9.99,
+    "status": "ready_to_list"
+  }
+]

@@ -74,7 +74,7 @@ export default function CommandCenterLayout({
                                 <ChevronLeft className="h-4 w-4" />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
                             {leftPanel || (
                                 <div className="space-y-2 opacity-50 text-center py-20 italic text-zinc-600 text-xs">
                                     ENGINE_SLOT_EMPTY
@@ -140,7 +140,7 @@ export default function CommandCenterLayout({
                 </header>
 
                 {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 overflow-hidden relative">
                     {children}
                 </div>
 
@@ -184,7 +184,7 @@ export default function CommandCenterLayout({
                             </button>
                             <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Contextual Intelligence</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
                             {rightPanel || (
                                 <div className="space-y-4 opacity-50 text-center py-20 italic text-zinc-600 text-xs">
                                     CONTEXT_UNIT_IDLE
@@ -216,7 +216,7 @@ export default function CommandCenterLayout({
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
-                            className="w-full max-w-2xl bg-[#0F0F11] border border-white/10 rounded-[32px] p-8 shadow-2xl"
+                            className="w-full max-w-2xl bg-[#0F0F11] border border-white/10 rounded-lg p-6 shadow-2xl"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex items-center gap-4 mb-8">
@@ -253,7 +253,7 @@ export default function CommandCenterLayout({
                         <motion.div 
                             initial={{ scale: 0.9, x: 20 }}
                             animate={{ scale: 1, x: 0 }}
-                            className="w-full max-w-xl bg-[#0F0F11] border border-white/10 rounded-[32px] p-10 shadow-2xl"
+                            className="w-full max-w-xl bg-[#0F0F11] border border-white/10 rounded-lg p-6 shadow-2xl"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-10">

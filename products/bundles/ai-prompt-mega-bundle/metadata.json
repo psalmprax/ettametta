@@ -1,0 +1,32 @@
+{
+  "name": "AI Prompt Mega Bundle - All 4 Packs",
+  "slug": "ai-prompt-mega-bundle",
+  "price": 29.99,
+  "original_price": 47.96,
+  "discount": "37% OFF",
+  "currency": "USD",
+  "description": "Complete collection: 325 AI prompts for business, social media, email marketing, and content creation. Save $18 vs buying separately.",
+  "tags": [
+    "ai prompts",
+    "bundle",
+    "business",
+    "marketing",
+    "social media",
+    "email",
+    "content creation",
+    "chatgpt",
+    "productivity"
+  ],
+  "category": "Digital Product",
+  "files": [
+    "50-ai-prompts-for-business-v2.md",
+    "100-social-media-prompts.md",
+    "75-email-marketing-prompts.md",
+    "100-content-creator-prompts.md"
+  ],
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

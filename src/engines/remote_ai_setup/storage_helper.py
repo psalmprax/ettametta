@@ -8,17 +8,17 @@ def find_best_storage():
     """
     # Common mount points for specialized GPU storage (RunPod, Lambda, AutoDL, etc.)
     candidates = [
-        "/workspace", 
-        "/mnt/data", 
-        "/data", 
+        "/workspace",
+        "/mnt/data",
+        "/data",
         "/mnt/workspace",
         "/storage",
         os.path.expanduser("~") # Home directory as fallback
     ]
-    
+
     best_path = "/"
     max_free = 0
-    
+
     # Check candidates for max free space
     for path in candidates:
         if os.path.exists(path) and os.access(path, os.W_OK):
@@ -29,7 +29,7 @@ def find_best_storage():
                     best_path = path
             except Exception:
                 continue
-    
+
     # Standardize result: ensure absolute path and no trailing slash
     final_path = os.path.abspath(best_path).rstrip('/')
     return final_path

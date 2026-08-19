@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     ShieldCheck,
     UserCheck,
@@ -66,7 +66,7 @@ export default function AuditsPage() {
     const [biasReport, setBiasReport] = useState<BiasReport | null>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["GOVERNANCE_INITIALIZED", "SYNCHRONIZING_TRUST_MATRIX"]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         const token = await getAuthToken();
         if (!token) return;
@@ -83,11 +83,11 @@ export default function AuditsPage() {
             ]);
         }
         setIsLoading(false);
-    };
+    }, [activeTab]);
 
     useEffect(() => {
         fetchData();
-    }, [activeTab]);
+    }, [activeTab, fetchData]);
 
     const handleRunSecurityAudit = async () => {
         setIsLoading(true);

@@ -11,7 +11,7 @@ async def test_autonomous_flow_discovery_to_nexus(test_db):
     ScannerService finds content -> Analysis categorizes it -> Nexus Job triggered.
     """
     from src.api.utils.database import AsyncSessionLocal
-    
+
     import uuid
     content_id = f"yt_test_{uuid.uuid4().hex[:8]}"
 
@@ -36,26 +36,26 @@ async def test_autonomous_flow_discovery_to_nexus(test_db):
         published_at=None,
         metadata_json={}
     )
-    
+
     scanner_service = ScannerService()
-    
+
     # Mocking all scanners to return empty except youtube_shorts
     with patch.object(scanner_service.scanners["youtube_shorts"], "scan_trends", new_callable=AsyncMock) as mock_scan, \
          patch.object(scanner_service.scanners["youtube_long"], "scan_trends", new_callable=AsyncMock, return_value=[]), \
          patch.object(scanner_service.scanners["tiktok"], "scan_trends", new_callable=AsyncMock, return_value=[]), \
          patch.object(scanner_service.scanners["instagram"], "scan_trends", new_callable=AsyncMock, return_value=[]), \
          patch.object(scanner_service.scanners["x"], "scan_trends", new_callable=AsyncMock, return_value=[]):
-        
+
         mock_scan.return_value = [mock_candidate]
-        
+
         # 2. Run scan
         candidates = await scanner_service.scan_all_platforms("Technology")
         assert len(candidates) == 1
-        
+
         # 3. Save to database
         saved = await scanner_service.save_to_database(candidates)
         assert saved == 1
-        
+
     async with AsyncSessionLocal() as db:
         # Verify it's in the DB
         from sqlalchemy import select
@@ -64,18 +64,18 @@ async def test_autonomous_flow_discovery_to_nexus(test_db):
         content = result.scalar_one_or_none()
         assert content is not None
         assert content.title == "AI Revolution in 2024"
-        
+
         # 4. Trigger Analysis
         from src.services.discovery.analysis_service import extract_content_patterns
         analysis = await extract_content_patterns(content.id, db)
         assert "tech" in analysis["niches"]
         assert analysis["viral_potential"] == "high"
-        
+
         # 5. Verify Nexus Trigger Logic
         # We verify that if we were to trigger the AutoCreator, it would receive the correct parameters.
         with patch("src.services.nexus_engine.auto_creator.base_creator_service.create_cinema_video", new_callable=AsyncMock) as mock_nexus:
             mock_nexus.return_value = "/tmp/viral_video.mp4"
-            
+
             # Simulate the autonomous decision logic
             if analysis["viral_potential"] == "high":
                 job_id = "job_auto_123"
@@ -85,7 +85,7 @@ async def test_autonomous_flow_discovery_to_nexus(test_db):
                     niche=analysis["niches"][0],
                     style="CINEMATIC_DOC"
                 )
-            
+
             mock_nexus.assert_called_once_with(
                 job_id="job_auto_123",
                 topic="AI Revolution in 2024",

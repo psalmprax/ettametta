@@ -15,7 +15,7 @@ class DifyClient:
     Supports Chat, Completion, and Workflow execution.
     Hardened with Circuit Breaker and Exponential Backoff.
     """
-    
+
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
         self.api_key = api_key or settings.DIFY_API_KEY
         self.base_url = (base_url or settings.DIFY_API_URL).rstrip("/")
@@ -33,8 +33,8 @@ class DifyClient:
     @retry(
         stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
         wait=wait_exponential(
-            multiplier=settings.RETRY_MULTIPLIER, 
-            min=settings.RETRY_MIN_WAIT, 
+            multiplier=settings.RETRY_MULTIPLIER,
+            min=settings.RETRY_MIN_WAIT,
             max=settings.RETRY_MAX_WAIT
         ),
         retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),
@@ -88,8 +88,8 @@ class DifyClient:
     @retry(
         stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
         wait=wait_exponential(
-            multiplier=settings.RETRY_MULTIPLIER, 
-            min=settings.RETRY_MIN_WAIT, 
+            multiplier=settings.RETRY_MULTIPLIER,
+            min=settings.RETRY_MIN_WAIT,
             max=settings.RETRY_MAX_WAIT
         ),
         retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),
@@ -129,8 +129,8 @@ class DifyClient:
     @retry(
         stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
         wait=wait_exponential(
-            multiplier=settings.RETRY_MULTIPLIER, 
-            min=settings.RETRY_MIN_WAIT, 
+            multiplier=settings.RETRY_MULTIPLIER,
+            min=settings.RETRY_MIN_WAIT,
             max=settings.RETRY_MAX_WAIT
         ),
         retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 class HermesSkillService(BaseEttamettaAgent):
     """
     Elite Self-Improving Skill Engine.
-    Reflects on successful jobs to 'crystallize' winning patterns and 
+    Reflects on successful jobs to 'crystallize' winning patterns and
     triggers autonomous recursive spinoffs via Celery.
     """
 
@@ -25,10 +25,10 @@ class HermesSkillService(BaseEttamettaAgent):
         if not self.storage_path.is_absolute():
             # Use project root if relative
             self.storage_path = settings.BASE_DIR / "src" / storage_path
-            
+
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self.skills = self._load_skills()
-        
+
         # Viral Detection Thresholds
         self.success_views = 5000
         self.breakout_views = 50000
@@ -59,9 +59,9 @@ class HermesSkillService(BaseEttamettaAgent):
         """
         job_id = job_data.get("job_id", "unknown")
         source_niche = job_data.get("niche", "general")
-        
+
         await self._log(f"🧬 Spawning recursive variant for breakout success: {job_id}")
-        
+
         # Determine target niche (Scaling vs Transmutation)
         # 70% chance to double down on success, 30% to jump niche
         if random.random() < 0.7:
@@ -102,11 +102,11 @@ class HermesSkillService(BaseEttamettaAgent):
         """
         views = metrics.get("views", 0)
         retention = metrics.get("retention_p50", 0)
-        
+
         # 1. Breakthrough Detection
         is_breakout = views >= self.breakout_views or retention > 0.75
         is_successful = views >= self.success_views or retention > 0.6
-        
+
         if not is_successful:
             return None
 
@@ -119,10 +119,10 @@ class HermesSkillService(BaseEttamettaAgent):
         prompt = f"""
         You are the Hermes Reflection Engine. A video in the '{niche}' niche was successful.
         Extract the core 'Winning Pattern' for future replication.
-        
+
         SCRIPT: {json.dumps(script)[:1000]}...
         METRICS: {json.dumps(metrics)}
-        
+
         OUTPUT FORMAT (JSON):
         {{
             "skill_name": "...",
@@ -138,7 +138,7 @@ class HermesSkillService(BaseEttamettaAgent):
                 system_prompt="You are the Hermes Self-Improvement Engine.",
                 response_format="json_object"
             )
-            
+
             skill = json.loads(response_content)
             skill.update({
                 "job_id": job_id,
@@ -146,11 +146,11 @@ class HermesSkillService(BaseEttamettaAgent):
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "performance": metrics
             })
-            
+
             # Store Skill
             if niche not in self.skills["niches"]:
                 self.skills["niches"][niche] = []
-            
+
             # Avoid dupes
             if not any(s.get("job_id") == job_id for s in self.skills["niches"][niche]):
                 self.skills["niches"][niche].append(skill)
@@ -160,7 +160,7 @@ class HermesSkillService(BaseEttamettaAgent):
                 # 2. Trigger Spinoff if Breakout
                 if is_breakout:
                     await self._trigger_recursive_spinoff(job_data, metrics, skill["abstracted_pattern"])
-                
+
                 return skill
 
         except Exception as e:
@@ -174,14 +174,14 @@ class HermesSkillService(BaseEttamettaAgent):
         """
         niche_skills = self.skills["niches"].get(niche, [])
         global_skills = self.skills.get("global", [])
-        
+
         # Order by performance (views)
         all_skills = sorted(
-            niche_skills + global_skills, 
-            key=lambda x: x.get("performance", {}).get("views", 0), 
+            niche_skills + global_skills,
+            key=lambda x: x.get("performance", {}).get("views", 0),
             reverse=True
         )
-        
+
         return [s["abstracted_pattern"] for s in all_skills[:limit]]
 
     def get_intelligence_report(self) -> dict[str, Any]:

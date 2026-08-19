@@ -31,7 +31,7 @@ async def autonomous_video_remix(
 ) -> dict[str, Any]:
     """
     Fully autonomous video creation from discovered viral content.
-    
+
     Pipeline:
     1. Discovers viral videos matching topic/niche from 15+ platforms
     2. Downloads and analyzes videos for best segments
@@ -40,7 +40,7 @@ async def autonomous_video_remix(
     5. Adds AI voiceover synced to visuals
     6. Burns in captions
     7. Renders final polished video
-    
+
     No human intervention required - completely autonomous.
     """
     try:
@@ -67,10 +67,10 @@ async def get_remix_status(
     """
     try:
         status = await base_autonomous_remixer.get_job_status(job_id)
-        
+
         if not status:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
-        
+
         return success_response(data=status)
     except HTTPException:
         raise

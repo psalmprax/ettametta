@@ -24,7 +24,7 @@ async def mythos_reasoning(
     try:
         agent = MythosReasoningAgent(provider=body.provider)
         result = await agent.reason(prompt=body.prompt, depth=body.depth, provider=body.provider)
-        
+
         return success_response(
             data={
                 "answer": result["answer"],

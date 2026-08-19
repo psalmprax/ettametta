@@ -4,7 +4,7 @@ Discovery Service Package
 
 Contains services for discovering trending content across platforms:
 - CloakBrowser Scanner (stealth YouTube/TikTok scraping)
-- Content Analysis Service (AI-powered pattern detection) 
+- Content Analysis Service (AI-powered pattern detection)
 - Video Content Pipeline (end-to-end discovery → analysis → generation)
 - Various platform-specific scanners (Instagram, Twitter, etc.)
 """

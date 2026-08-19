@@ -28,7 +28,7 @@ class CommerceStrategy(BaseMonetizationStrategy):
         based on actual product data.
         """
         products = await self.get_assets(niche)
-        
+
         if products:
             chosen = products[0]  # Use first product
             product_url = chosen.get("url", "")
@@ -36,7 +36,7 @@ class CommerceStrategy(BaseMonetizationStrategy):
         else:
             product_url = ""
             product_name = f"{niche} product"
-        
+
         if product_url:
             return f"Shop {product_name}: {product_url}"
         return f"Check out {niche} products - link in bio!"

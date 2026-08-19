@@ -10,7 +10,7 @@ class KnowledgeService:
     """
     Production-grade Knowledge Service powered by Dify Datasets (RAG).
     """
-    
+
     def __init__(self):
         self.api_key = settings.DIFY_DATASET_API_KEY
         self.base_url = settings.DIFY_API_URL.rstrip("/")
@@ -61,7 +61,7 @@ class KnowledgeService:
             except Exception as e:
                 logger.exception(f"Dify ingestion failed: {e}")
                 return "error-id"
-    
+
     async def query(self, text: str, dataset_id: str, limit: int = 3) -> List[Dict[str, Any]]:
         """
         Query the knowledge base using Dify's search API.
@@ -85,7 +85,7 @@ class KnowledgeService:
                 response.raise_for_status()
                 data = response.json()
                 records = data.get("records", [])
-                
+
                 # Format records to ensure a flat structure with 'content' as expected by callers
                 formatted = []
                 for rec in records:
@@ -100,7 +100,7 @@ class KnowledgeService:
             except Exception as e:
                 logger.exception(f"Dify query failed: {e}")
                 return []
-    
+
     async def get_stats(self, dataset_id: str) -> Dict[str, Any]:
         """
         Get knowledge base statistics from Dify.

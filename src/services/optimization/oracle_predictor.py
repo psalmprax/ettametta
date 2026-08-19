@@ -2,7 +2,7 @@
 Neural Oracle: Temporal Retention Prediction (10/10)
 ====================================================
 
-Upgraded Neural Engine using PyTorch to predict multi-point 
+Upgraded Neural Engine using PyTorch to predict multi-point
 retention curves based on deep multimodal embeddings.
 """
 

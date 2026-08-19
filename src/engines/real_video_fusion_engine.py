@@ -40,7 +40,7 @@ class RealVideoFusionEngine:
     """
     The ettametta: Neural Production Engine (10.0/10)
     ===================================================
-    The final state of Ettametta. Parallel rendering, Neural Retention 
+    The final state of Ettametta. Parallel rendering, Neural Retention
     Curve prediction, and Multi-Point Cinematic Optimization.
     """
 
@@ -53,7 +53,7 @@ class RealVideoFusionEngine:
     ) -> dict[str, Any]:
         """
         High-Throughput PRODUCTION cycle with Neural Predictive Pruning.
-        
+
         Returns:
             dict: {
                 "success": bool,
@@ -74,17 +74,17 @@ class RealVideoFusionEngine:
         target_score = 90
         feedback = None
         blueprint = None
-        
+
         while attempts < max_attempts:
             blueprint = await base_narrative_planner_service.plan_story(
                 content_topic, "Entertainment", duration_sec, session_id=request_id, feedback=feedback
             )
             simulation = base_attention_simulator_service.simulate_retention(blueprint)
-            
+
             if simulation["narrative_score"] >= target_score:
                 print(f"✅ [NRM] Elite Narrative Achieved: {simulation['narrative_score']}% (Attempts: {attempts + 1})")
                 break
-            
+
             attempts += 1
             if attempts < max_attempts:
                 print(f"🔄 [NRM] Critique Pass {attempts}: Score {simulation['narrative_score']}% below target. Refining...")
@@ -94,10 +94,10 @@ class RealVideoFusionEngine:
                     f"Conflict: {'Yes' if blueprint.get('narrative_conflict') else 'Missing'}. "
                     f"Curiosity Gaps: {len(blueprint.get('curiosity_gaps', []))}/3."
                 )
-        
+
         if simulation["narrative_score"] < target_score:
             print(f"⚠️ [NRM] Could not reach elite target. Proceeding with best attempt: {simulation['narrative_score']}%")
-        
+
         # 2. Select and Download Primary Viral Leads
         eligible_clips = self._select_videos_for_download(discovered_videos, limit=10)
         downloaded_assets = await base_discovery_service.batch_download_videos(eligible_clips)
@@ -134,24 +134,24 @@ class RealVideoFusionEngine:
         total_duration = 0
         candidate_paths = [a["file_path"] for a in downloaded_assets if "file_path" in a]
         total_script_segments = len(script.get("segments", []))
-        
+
         # 🎵 RHYTHMIC ANCHORING
         bg_music_path = "src/templates/audio/background/cinematic_energetic.mp3"
         rhythm_data = base_rhythm_service.get_beat_markers(bg_music_path)
         beat_markers = rhythm_data.get("beats", [])
-        
+
         # 🧠 NARRATIVE INTUITION: Map Emotional Arc
         emotional_arc = blueprint.get("emotional_arc", []) if blueprint else []
 
         for i, seg in enumerate(script.get("segments", [])):
             line_text = seg.get("text", "")
-            
+
             # --- PROFESSIONAL ROLE & INTENSITY ASSIGNMENT ---
             # 1. Retrieve Narrative Emotion for this time slice
             current_emotion = "Neutral"
             intensity_score = 0.5
             narrative_action = "Body"
-            
+
             for arc_seg in emotional_arc:
                 if arc_seg["time_start"] <= total_duration < arc_seg["time_end"]:
                     current_emotion = arc_seg.get("emotion", "Neutral")
@@ -160,7 +160,7 @@ class RealVideoFusionEngine:
                     if current_emotion in ["Shock/Surprise", "Tension/Fear", "Conflict", "Excitement"]:
                         intensity_score = 0.9
                     break
-            
+
             if i == 0:
                 role = "HOOK"
                 base_dur = min(seg.get("duration", 3), 3.5)
@@ -177,11 +177,11 @@ class RealVideoFusionEngine:
             target_dur = max(target_dur, 2.0) if role != "HOOK" else max(target_dur, 1.0)
 
             top_k = base_vision_service.find_top_k_matches(line_text, k=5, candidate_paths=candidate_paths)
-            
+
             # 🏆 NEURAL TOURNAMENT: CINEMATIC SCORING
             # Enforce diversity by penalizing recently used assets
             used_in_this_video = [s["file_path"] for s in segments]
-            
+
             best_match = None
             if top_k:
                 scored_candidates = []
@@ -189,22 +189,22 @@ class RealVideoFusionEngine:
                     # Predictive pruning curve integration
                     num_features = [cand.get("motion_score", 0), 0.5, 0.5, 0.1, duration_sec, 120, 0.8, 1]
                     curve = base_oracle_service.predict_curve(num_features)
-                    
+
                     # BIAS: Cinematic Intuition (Motion matches narrative intensity)
                     motion_match = 1.0 - abs(cand.get("motion_score", 0) - intensity_score)
                     role_bias = 1.0
-                    
+
                     if role == "HOOK" or intensity_score > 0.8:
                         role_bias = 1.5 if cand.get("motion_score", 0) > 0.7 else 0.8
-                    
+
                     # DIVERSITY PENALTY: Reduce score if asset was already used
                     diversity_multiplier = 0.6 if cand.get("file_path") in used_in_this_video else 1.0
-                    
+
                     oracle_score = ((curve[0] * 0.4) + (motion_match * 0.4) + (role_bias * 0.2)) * diversity_multiplier
                     scored_candidates.append({**cand, "oracle_score": oracle_score, "predicted_curve": curve})
-                
+
                 best_match = max(scored_candidates, key=lambda x: x["oracle_score"])
-            
+
             # --- ASSET FALLBACK ---
             if not best_match:
                 if downloaded_assets:
@@ -257,10 +257,10 @@ class RealVideoFusionEngine:
         """Fusion Assembly with cinematic color grading and Rhythmic Audio Mixing"""
         temp_dir = self.output_dir / "temp_neural"
         temp_dir.mkdir(exist_ok=True)
-        
+
         bg_music_path = "src/templates/audio/background/cinematic_energetic.mp3"
         quality_mode = fusion_plan.get("quality", "ELITE")
-        
+
         # Parallel Orchestration: Use a semaphore to limit concurrent FFmpeg processes
         # Given 8 cores and 26GB RAM, we can safely process 2 segments in parallel for ELITE
         semaphore = asyncio.Semaphore(2 if quality_mode == "ELITE" else 4)
@@ -269,7 +269,7 @@ class RealVideoFusionEngine:
             async with semaphore:
                 raw_output = temp_dir / f"raw_seg_{i:03d}.mp4"
                 zoomed_output = temp_dir / f"seg_{i:03d}.mp4"
-                
+
                 # Step A: Apply cinematic look (originality)
                 success = await asyncio.to_thread(
                     base_ffmpeg_service.apply_originality,
@@ -279,7 +279,7 @@ class RealVideoFusionEngine:
                     lut_path="templates/luts/cinematic_pro.cube"
                 )
                 if not success: return None
-                
+
                 # Step B: Apply cinematic transformation (zoom or fast-track)
                 if quality_mode == "ELITE":
                     success = await asyncio.to_thread(
@@ -291,16 +291,16 @@ class RealVideoFusionEngine:
                         base_ffmpeg_service.apply_fast_transform,
                         str(raw_output), str(zoomed_output)
                     )
-                
+
                 return str(zoomed_output) if success else None
 
         # Execute parallel processing
         print(f"🌀 [ParallelFusion] Orchestrating {len(fusion_plan['segments'])} segments in waves...")
         tasks = [process_segment(i, seg) for i, seg in enumerate(fusion_plan["segments"])]
         results = await asyncio.gather(*tasks)
-        
+
         processed_clips = [r for r in results if r is not None]
-        
+
         if len(processed_clips) < len(fusion_plan["segments"]):
             logger.error("❌ Some segments failed to render in parallel.")
             # We continue if we have at least most clips, or fail if critical
@@ -313,31 +313,31 @@ class RealVideoFusionEngine:
         if not success:
             logger.error("❌ Elite visual concatenation failed.")
             return {"success": False, "error": "Elite Concat Failed"}
-        
+
         # 2. Rhythmic Audio Mix (Professional Intuition)
         final_draft = self.output_dir / f"draft_{ts}.mp4"
         success = base_ffmpeg_service.add_background_music(str(intermediate_video), bg_music_path, str(final_draft))
         if not success:
             logger.error("❌ Audio mixing failed.")
             return {"success": False, "error": "Audio Mix Failed"}
-        
+
         # 3. ELITE OVERLAYS: Signature Styling
         ass_path = temp_dir / "production.ass"
         base_ffmpeg_service.generate_styled_subtitles(fusion_plan["segments"], str(ass_path))
-        
+
         final_video = self.output_dir / f"neural_{random.randint(100, 9999)}.mp4"
         success = base_ffmpeg_service.apply_production_render(str(final_draft), str(ass_path), str(final_video), quality_mode=quality_mode)
-        
+
         return {
             "success": success,
             "video_path": str(final_video),
             "script": fusion_plan.get("script_metadata"), # Pass through for UI
             "fusion_plan": fusion_plan
         }
-        # In a full cycle, voiceover_path would be passed in. 
+        # In a full cycle, voiceover_path would be passed in.
         # For standalone hardening, we mix BG Music if no VO is provided.
         final_output = self.output_dir / f"neural_{int(asyncio.get_running_loop().time())}.mp4"
-        
+
         if os.path.exists(bg_music_path):
             success = base_ffmpeg_service.add_background_music(
                 str(intermediate_video), bg_music_path, str(final_output), music_volume=0.2
@@ -346,16 +346,16 @@ class RealVideoFusionEngine:
             final_output = intermediate_video # Fallback to silent/original audio
 
         shutil.rmtree(temp_dir, ignore_errors=True)
-        
+
         # 10/10 Final Step: Hand off to Deployment Gateway
         package = await base_gateway_service.generate_production_package({
             "title": fusion_plan["title"],
             "video_path": str(final_output),
             "variant_id": f"neural_{int(asyncio.get_running_loop().time())}"
         })
-        
+
         return {
-            "success": success, 
+            "success": success,
             "video_path": str(final_output),
             "distribution_package": package
         }
@@ -365,7 +365,7 @@ class RealVideoFusionEngine:
         for asset in downloaded_assets:
             path = asset.get("file_path")
             if not path or not os.path.exists(path): continue
-            
+
             cap = cv2.VideoCapture(path)
             for ts in [0.0, 3.0, 6.0]:
                 cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000)
@@ -378,7 +378,7 @@ class RealVideoFusionEngine:
     def _select_videos_for_download(self, candidates: list[dict], limit: int = 10) -> list[dict]:
         """Logic for picking the absolute best viral leads"""
         if not candidates: return []
-        
+
         # Rank by relevance and viral score, but ensure diversity by shuffling top results
         sorted_c = sorted(candidates, key=lambda x: (x.get("relevance", 0), x.get("viral_score", 0)), reverse=True)
         top_tier = sorted_c[:limit * 2]
@@ -391,7 +391,7 @@ async def create_the_ettametta_cycle(variants: int = 5):
     Absolute 10.0 Cycle: Proactive Trending, Strategic Framing, and Empire Deployment.
     """
     print("🌌 INITIATING THE ETTAMETTA: PROPHET TIER 10.0")
-    
+
     # 1. Proactive Trend Detection (The Prophet)
     opportunities = await base_trend_service.scan_for_opportunities()
     if opportunities:
@@ -400,17 +400,17 @@ async def create_the_ettametta_cycle(variants: int = 5):
         print(f"🔮 PROPHET: Attacking Emergent Trend '{topic}' (Velocity: {opportunity['velocity']})")
     else:
         topic = "The Rise of Autonomous Neural Systems"
-    
+
     # 2. A/B STRATEGY SPLIT (Champion vs Challenger)
     print("⚖️  [A/B Engine] Orchestrating Strategy Split: Champion vs Challenger...")
-    
+
     # Variant A: The Champion (Best guessed angle)
     strategy_a = await base_viral_strategist.select_best_angle(topic, niche="AI")
-    
+
     # Variant B: The Challenger (Randomly selected experimental angle)
     strategy_b = await base_viral_strategist.select_best_angle(topic, niche="AI")
     strategy_b["angle_name"] = "the_warning" # Forced experiment
-    
+
     configs = [
         {"id": "var_a_champion", "strategy": strategy_a},
         {"id": "var_b_challenger", "strategy": strategy_b}

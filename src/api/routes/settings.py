@@ -335,7 +335,7 @@ async def update_system_settings(
             db.add(setting)
 
     await db.commit()
-    
+
      # Broadcast reload signal to all components
     try:
         from src.api.utils.redis import get_async_redis

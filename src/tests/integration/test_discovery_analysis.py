@@ -36,7 +36,7 @@ async def test_extract_content_patterns_real_flow(test_db):
         # "amazing", "great", etc. not in text, but no negative words either -> neutral or positive if words found
         # Actually "exploding" is not in positive_words, so it might be neutral unless we add more.
         # Wait, I'll use a positive word to be sure.
-        
+
         assert results["viral_potential"] == "high" # view_count > 100k or viral_score >= 80
         assert "viral" in results["keywords"]
 

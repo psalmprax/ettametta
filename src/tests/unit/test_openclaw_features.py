@@ -51,9 +51,9 @@ def test_discovery_trends():
                     f"  {i + 1}. {item.get('title', 'N/A')[:50]}... ({item.get('platform', 'N/A')})"
                 )
         else:
-            assert False, f"Error: {response.status_code} - {response.text[:100]}"
+            raise AssertionError(f"Error: {response.status_code} - {response.text[:100]}")
     except Exception as e:
-        assert False, f"Connection error: {e}"
+        raise AssertionError(f"Connection error: {e}")
 
 
 @pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
@@ -72,9 +72,9 @@ def test_discovery_niches():
             print(f"✅ Found {len(niches)} niches")
             print(f"  Sample: {niches[:5]}")
         else:
-            assert False, f"Error: {response.status_code}"
+            raise AssertionError(f"Error: {response.status_code}")
     except Exception as e:
-        assert False, f"Connection error: {e}"
+        raise AssertionError(f"Connection error: {e}")
 
 
 @pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
@@ -93,9 +93,9 @@ def test_discovery_niche_trends():
             print("✅ Niche trends retrieved")
             print(f"  Keywords: {data.get('top_keywords', [])[:5]}")
         else:
-            assert False, f"Error: {response.status_code}"
+            raise AssertionError(f"Error: {response.status_code}")
     except Exception as e:
-        assert False, f"Connection error: {e}"
+        raise AssertionError(f"Connection error: {e}")
 
 
 @pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
@@ -123,9 +123,9 @@ def test_content_editor_providers():
             )
             print(f"  Remotion: {len(providers.get('remotion', []))} templates")
         else:
-            assert False, f"Error: {response.status_code}"
+            raise AssertionError(f"Error: {response.status_code}")
     except Exception as e:
-        assert False, f"Connection error: {e}"
+        raise AssertionError(f"Connection error: {e}")
 
 
 @pytest.mark.skipif(not _HAS_DOCKER_API, reason="requires Docker environment (api:8000)")
@@ -153,9 +153,9 @@ def test_content_editor_find():
             videos = data.get("videos", [])
             print(f"  Found {len(videos)} videos")
         else:
-            assert False, f"Error: {response.status_code} - {response.text[:100]}"
+            raise AssertionError(f"Error: {response.status_code} - {response.text[:100]}")
     except Exception as e:
-        assert False, f"Connection error: {e}"
+        raise AssertionError(f"Connection error: {e}")
 
 
 def test_video_providers_free():
@@ -178,7 +178,7 @@ def test_video_providers_free():
                     f"  - {name}: {config.get('free_credits', 'N/A')} free credits/day"
                 )
         else:
-            assert False, "Not found at /free-video/providers"
+            raise AssertionError("Not found at /free-video/providers")
     except Exception:
         print("❌ /free-video/providers not available (this is optional)")
         # This endpoint might not exist yet — treat as non-fatal

@@ -28,7 +28,7 @@ class PatternDeconstructor:
         Analyze this video for viral potential:
         Transcript: {transcript}
         Metadata: {json.dumps(metadata)}
-        
+
         Return JSON ONLY:
         {{
             "hook_score": 0.0-1.0,

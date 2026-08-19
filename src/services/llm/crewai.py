@@ -35,11 +35,11 @@ class CrewAIService:
     def hot_reload(self):
         """Re-initialize service from current environment/settings."""
         from src.api.config import settings
-        
+
         self.enabled = settings.ENABLE_CREWAI
         if not self.enabled:
             return
-            
+
         if not self._check_crewai_available():
             logger.error("[CrewAI] Service enabled but dependencies missing. Disabling.")
             self.enabled = False
@@ -103,9 +103,9 @@ class CrewAIService:
         prompt = f"""
         You are the Ettametta Strategy Architect.
         Generate a set of tasks for a content creation crew working on: '{topic}' for {platform}.
-        
+
         CREW ROLES: Researcher, Fact Checker, Writer, Editor.
-        
+
         OUTPUT FORMAT (JSON list of Task Objects):
         [
             {{
@@ -116,7 +116,7 @@ class CrewAIService:
             ...
         ]
         """
-        
+
         try:
             # For dynamic task generation, we use the initialized LLM
             response = self.llm.invoke(prompt)
@@ -126,7 +126,7 @@ class CrewAIService:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
-                
+
             return json.loads(content)
         except Exception as e:
             logger.warning(f"[CrewAI] Dynamic task generation failed, using fallback: {e}")
@@ -162,10 +162,10 @@ class CrewAIService:
 
         try:
             from crewai import Crew, Task
-            
+
             # 1. Generate dynamic tasks
             task_specs = await self._generate_dynamic_tasks(topic, platform)
-            
+
             # 2. Build Agent definitions (Elite patterns)
             agents_map = {
                 "Researcher": self._create_agent("Researcher", f"Find viral {topic} hooks", "Expert trend hunter", [self.search_tool] if self.search_tool else []),
@@ -173,7 +173,7 @@ class CrewAIService:
                 "Writer": self._create_agent("Writer", "Write high-retention scripts", "Viral scriptwriting master"),
                 "Editor": self._create_agent("Editor", "Polish for maximum engagement", "Elite platform editor")
             }
-            
+
             # 3. Assemble Tasks
             tasks = []
             for spec in task_specs:
@@ -184,19 +184,19 @@ class CrewAIService:
                         expected_output=spec["expected_output"],
                         agent=agents_map[role]
                     ))
-            
+
             # 4. Run Crew
             from crewai import Process
             crew = Crew(
-                agents=list(agents_map.values()), 
-                tasks=tasks, 
+                agents=list(agents_map.values()),
+                tasks=tasks,
                 verbose=True,
                 memory=True,
                 process=Process.hierarchical,
                 manager_llm=self.llm
             )
             result = crew.kickoff()
-            
+
             self.circuit_breaker.record_success()
             return {
                 "topic": topic,
@@ -204,7 +204,7 @@ class CrewAIService:
                 "result": str(result),
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-            
+
         except Exception as e:
             self.circuit_breaker.record_failure()
             logger.exception(f"[CrewAI] Workflow failed: {e}")

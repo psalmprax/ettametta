@@ -1,0 +1,15 @@
+{
+  "name": "Freelancer Contract Pack",
+  "slug": "freelancer-contracts",
+  "price": 19.00,
+  "currency": "USD",
+  "description": "5 professional contract templates for freelancers — service agreement, NDA, invoice, proposal, and scope of work.",
+  "tags": ["freelancer", "contracts", "templates", "business", "legal"],
+  "category": "Digital Product",
+  "file": "README.md",
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

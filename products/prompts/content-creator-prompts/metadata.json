@@ -1,0 +1,22 @@
+{
+  "name": "100 Content Creator Prompts",
+  "slug": "content-creator-prompts",
+  "price": 14.99,
+  "currency": "USD",
+  "description": "100 AI prompts for YouTube, blogs, podcasts, and newsletters. Create content 10x faster.",
+  "tags": [
+    "content creation",
+    "youtube",
+    "blogging",
+    "podcast",
+    "newsletter",
+    "ai prompts"
+  ],
+  "category": "Digital Product",
+  "file": "100-content-creator-prompts.md",
+  "platforms": {
+    "gumroad": {"status": "ready"},
+    "lemonsqueezy": {"status": "ready"},
+    "payhip": {"status": "ready"}
+  }
+}

@@ -17,10 +17,10 @@ def clean_json_response(text: str) -> str:
             return json.dumps(text)
         except Exception:
             return ""
-    
+
     # 1. Strip markdown code blocks
     text = re.sub(r'```(?:json)?\s*(.*?)\s*```', r'\1', text, flags=re.DOTALL)
-    
+
     # 2. Try to find JSON using json_repair
     try:
         from json_repair import repair_json
@@ -48,7 +48,7 @@ def clean_json_response(text: str) -> str:
                     return repaired
             except Exception:
                 return candidate
-    
+
     return text.strip()
 
 def repair_and_load_json(text: str) -> Any:
@@ -57,11 +57,11 @@ def repair_and_load_json(text: str) -> Any:
     """
     if not text:
         return None
-        
+
     cleaned = clean_json_response(text)
     if not cleaned or cleaned == "null":
         return None
-        
+
     try:
         return json.loads(cleaned)
     except Exception as e:

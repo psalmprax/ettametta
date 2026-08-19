@@ -583,12 +583,12 @@ async def clone_strategy(
         request.target_niche,
         request.auto_publish,
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=503, detail="Strategy cloning service unavailable"
         )
-    
+
     # 2. Autonomous Expansion: Launch first video for the new niche if requested
     job_id = None
     if request.auto_publish:

@@ -64,7 +64,7 @@ class TranscriptionService:
 
     async def transcribe(self, audio_path: str, language: str | None = None) -> Dict[str, Any]:
         """
-        Transcribes an audio file. Offloads to remote if RENDER_NODE_URL is set, 
+        Transcribes an audio file. Offloads to remote if RENDER_NODE_URL is set,
         otherwise runs locally.
         """
         if not os.path.exists(audio_path):
@@ -84,13 +84,13 @@ class TranscriptionService:
     async def _transcribe_remote(self, audio_path: str, language: str | None = None) -> Dict[str, Any]:
         """Sends audio to a remote render node for transcription."""
         logger.info(f"🌐 [TranscriptionService] Offloading transcription to {self.remote_url}")
-        
+
         async with httpx.AsyncClient(timeout=300) as client:
             with open(audio_path, "rb") as f:
                 files = {"file": (os.path.basename(audio_path), f, "audio/mpeg")}
                 data = {"language": language} if language else {}
                 resp = await client.post(self.remote_url, files=files, data=data)
-                
+
                 if resp.status_code == 200:
                     return resp.json()
                 else:
@@ -109,17 +109,17 @@ class TranscriptionService:
             return {"error": "Transcription model not available"}
 
         logger.info(f"🎙️ [TranscriptionService] Transcribing locally: {audio_path} (Timeout: {self.timeout}s)")
-        
+
         try:
             # Run in a thread with a hard timeout to prevent job stalls
             loop = asyncio.get_running_loop()
-            
+
             async def _do_transcribe():
                 return await loop.run_in_executor(
-                    None, 
+                    None,
                     lambda: list(model.transcribe(
-                        audio_path, 
-                        beam_size=5, 
+                        audio_path,
+                        beam_size=5,
                         language=language,
                         word_timestamps=True
                     ))
@@ -132,7 +132,7 @@ class TranscriptionService:
 
             full_text = ""
             words_data = []
-            
+
             for segment in segments:
                 full_text += segment.text + " "
                 if segment.words:

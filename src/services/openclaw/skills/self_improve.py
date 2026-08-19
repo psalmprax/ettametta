@@ -184,14 +184,14 @@ class SelfImprovementSkill(OpenClawBaseSkill):
         ):
             success_rate = stats["successes"] / max(stats["calls"], 1)
             avg_latency = sum(stats["latencies"]) / max(len(stats["latencies"]), 1)
-            
+
             if success_rate > 0.8:
                 status = "✅"
             elif success_rate > 0.5:
                 status = "⚠️"
             else:
                 status = "❌"
-                
+
             lines.append(
                 f"{status} **{tool}**: {stats['calls']} calls, {success_rate:.0%} success, {avg_latency:.0f}ms avg"
             )
@@ -312,7 +312,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
                 icon = "💡"
             else:
                 icon = "❌"
-                
+
             lines.append(f"{icon} [{ts}] `{tool}` ({status}): {issue}")
         return "\n".join(lines)
 

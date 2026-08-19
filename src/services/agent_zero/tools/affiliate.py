@@ -19,12 +19,12 @@ class AffiliateTool:
         try:
             payload = {"niche": niche, "script_text": script_text}
             response = requests.post(f"{self.api_url}/recommend-links", json=payload, timeout=20)
-            
+
             if response.status_code == 200:
                 return response.json()
             else:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
-                
+
         except Exception as e:
             logger.exception(f"AffiliateTool Recommend Error: {e}")
             return {"error": str(e)}
@@ -41,12 +41,12 @@ class AffiliateTool:
                 "cta_text": cta_text
             }
             response = requests.post(f"{self.api_url}/links", json=payload, timeout=15)
-            
+
             if response.status_code == 200:
                 return response.json()
             else:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
-                
+
         except Exception as e:
             logger.exception(f"AffiliateTool Create Error: {e}")
             return {"error": str(e)}

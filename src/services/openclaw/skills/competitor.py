@@ -24,7 +24,7 @@ class CompetitorSkill(OpenClawBaseSkill):
         mode = action or kwargs.get("mode", "analyze")
         ch = channel_name or kwargs.get("channel_name", "")
         plt = platform or kwargs.get("platform", "YouTube")
-        
+
         if mode == "compare" and (competitors or kwargs.get("competitors")):
             return self.compare_competitors(competitors or kwargs.get("competitors"))
         return self.analyze_competitor(ch, plt)

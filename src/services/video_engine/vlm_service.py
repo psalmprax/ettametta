@@ -14,7 +14,7 @@ class VLMService:
         self.google_key = get_secret("google_api_key")
         self.groq_key = get_secret("groq_api_key")
         self.model_name = settings.DEFAULT_VLM_MODEL
-        
+
         # Initialize Gemini if key exists
         if self.google_key:
             self.gemini_client = genai.Client(api_key=self.google_key)
@@ -77,7 +77,7 @@ class VLMService:
         # Cleanup
         for p in frame_paths:
             if os.path.exists(p): os.remove(p)
-            
+
         # Tier 4: Heuristic Fallback (Standard 3.42)
         logging.info("[VLMService] Tier 4: Using Heuristic Heuristic Fallback...")
         return {
@@ -123,7 +123,7 @@ class VLMService:
         try:
             with open(frame_paths[0], "rb") as f:
                 b64_img = base64.b64encode(f.read()).decode('utf-8')
-            
+
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
                     f"{render_node_url.rstrip('/')}/vlm/analyze",
@@ -148,7 +148,7 @@ class VLMService:
             images = [Image.open(p) for p in frame_paths]
             prompt = "Analyze these video frames. Output JSON with: visual_mood, detected_subjects, lighting_quality, dominant_colors, edit_direction, aesthetic_rating (1-10)."
             response = self.gemini_client.models.generate_content(model=self.model_name, contents=[prompt] + images)
-            
+
             text = response.text
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0].strip()

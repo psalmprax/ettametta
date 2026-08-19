@@ -14,9 +14,9 @@ class ReputationManagerSkill(OpenClawBaseSkill):
         """
         plt = platform or kwargs.get("platform")
         target = target_identifier or kwargs.get("target_identifier")
-        
+
         self.logger.info(f"[Reputation Manager] Executing reputation {action} for {plt}:{target}")
-        
+
         try:
             if action == "scan":
                 # Simulated heuristic scan for sentiment & leaks
@@ -36,7 +36,7 @@ class ReputationManagerSkill(OpenClawBaseSkill):
                 )
             else:
                 return f"⚠️ Invalid action '{action}'. Use 'scan' or 'draft'."
-                
+
         except Exception as e:
             self.logger.error(f"Reputation Manager Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"

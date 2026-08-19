@@ -28,7 +28,7 @@ export const CinematicLidar: React.FC<z.infer<typeof cinematicLidarSchema>> = ({
     show_cta_overlay, 
     cta_type, 
     cta_text,
-    primary_color = '#00FF00' // Hacker green default
+    primary_color: primaryColor = '#00FF00' // Hacker green default
 }) => {
     const frame = useCurrentFrame();
     const { durationInFrames, fps, width, height } = useVideoConfig();
@@ -65,7 +65,7 @@ export const CinematicLidar: React.FC<z.infer<typeof cinematicLidarSchema>> = ({
                 
                 {/* 3D Lidar Point Cloud Layer */}
                 <ThreeCanvas width={width} height={height} camera={{ fov: 60, position: [0, 0, 10] }}>
-                    <LidarPointCloud primaryColor={primary_color} />
+                    <LidarPointCloud primaryColor={primaryColor} />
                     <EffectComposer enableNormalPass={false}>
                         <Bloom 
                             luminanceThreshold={0.2} 
@@ -95,19 +95,19 @@ export const CinematicLidar: React.FC<z.infer<typeof cinematicLidarSchema>> = ({
                         margin: 0,
                         textTransform: 'uppercase',
                         textAlign: 'center',
-                        textShadow: `0 0 20px ${primary_color}`
+                        textShadow: `0 0 20px ${primaryColor}`
                     }}>
                         {title}
                     </h1>
                     <p style={{
-                        color: primary_color,
-                        fontSize: '40px',
-                        fontWeight: 400,
-                        fontFamily: 'monospace',
-                        letterSpacing: '10px',
-                        margin: '20px 0 0 0',
-                        textTransform: 'uppercase',
-                        textShadow: `0 0 10px ${primary_color}`
+color: primaryColor,
+                    fontSize: '40px',
+                    fontWeight: 400,
+                    fontFamily: 'monospace',
+                    letterSpacing: '10px',
+                    margin: '20px 0 0 0',
+                    textTransform: 'uppercase',
+                    textShadow: `0 0 10px ${primaryColor}`
                     }}>
                         {subtitle}
                     </p>

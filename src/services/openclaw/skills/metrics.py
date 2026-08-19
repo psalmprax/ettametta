@@ -24,7 +24,7 @@ class SocialMetricsSkill(OpenClawBaseSkill):
         """
         plt = (platform or kwargs.get("platform", "")).lower()
         hdl = handle or kwargs.get("handle", "")
-        
+
         if plt == "x":
             return self.get_x_followers(hdl)
         elif plt == "reddit":
@@ -33,12 +33,12 @@ class SocialMetricsSkill(OpenClawBaseSkill):
             return self.get_github_stats(hdl)
         elif plt == "instagram":
             return self.get_instagram_profile(hdl)
-        
+
         # Multi-platform fallback
         handles = kwargs.get("handles", {})
         if handles:
             return self.get_multi_platform(handles)
-            
+
         return f"⚠️ Unsupported platform: {plt}"
 
     def get_x_followers(self, username: str) -> str:

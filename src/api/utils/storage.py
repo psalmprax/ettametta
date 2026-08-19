@@ -20,7 +20,7 @@ class StorageService:
         if not self.bucket_name:
             logger.warning("[StorageService] No bucket name provided, skipping upload.")
             return f"local://{local_path}"
-            
+
         try:
             self.s3_client.upload_file(local_path, self.bucket_name, remote_name)
             url = f"https://{self.bucket_name}.s3.amazonaws.com/{remote_name}"

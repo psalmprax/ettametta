@@ -12,7 +12,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
     """
     Patreon/Membership strategy - Recurring revenue through supporter tiers
     """
-    
+
     async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches membership tiers from database configuration.
@@ -24,7 +24,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                 stmt = select(MembershipPlanDB).where(MembershipPlanDB.niche == niche)
                 result = await db.execute(stmt)
                 plans = result.scalars().all()
-                
+
                 if plans:
                     return [{
                         "id": str(plan.id),
@@ -42,11 +42,11 @@ class MembershipStrategy(BaseMonetizationStrategy):
                 setting_result = await db.execute(setting_stmt)
                 setting = setting_result.scalar_one_or_none()
                 platform_uri = setting.value if setting else None
-                
+
                 if not platform_uri:
                     logger.warning("[MembershipStrategy] No membership platform configured.")
                     return []
-                
+
                 return [
                     {
                         "id": "gen_tier_1",
@@ -65,12 +65,12 @@ class MembershipStrategy(BaseMonetizationStrategy):
         Generates a call to action for membership/support.
         """
         assets = await self.get_assets(niche)
-        
+
         if not assets:
             return ""
-        
+
         platform_uri = assets[0].get("url", "")
-        
+
         options = [
             f"Support my work! Join the inner circle: \n🔗 {platform_uri}",
             f"Want exclusive content and early access? Become a supporter: \n🔗 {platform_uri}",

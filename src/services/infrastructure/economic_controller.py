@@ -11,7 +11,7 @@ class EconomicController:
     10/10 Production: The Imperial Treasury.
     Tracks virtual credits and enforces economic constraints on production.
     """
-    
+
     def __init__(self, daily_budget: float = 1000.0, data_path: str = "data/infrastructure/treasury.json"):
         self.daily_budget = daily_budget
         self.data_path = data_path
@@ -39,7 +39,7 @@ class EconomicController:
         if self.state["credits_spent"] + amount > self.daily_budget:
             logger.warning(f"💸 [Treasury] Budget Exceeded! Refusing to authorize '{action}' (Cost: {amount})")
             return False
-            
+
         self.state["credits_spent"] += amount
         self._save_state()
         logger.info(f"💰 [Treasury] Authorized '{action}' (Cost: {amount}). Total Spent: {self.state['credits_spent']}/{self.daily_budget}")

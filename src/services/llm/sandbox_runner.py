@@ -19,7 +19,7 @@ from typing import Any
 BLOCKED_MODULES = {
     "os", "subprocess", "sys", "shutil", "socket", "requests", "urllib",
     "http", "ftplib", "telnetlib", "pty", "tty", "termios", "fcntl",
-    "resource", "pwd", "grp", "crypt", "spwd", "posix", "threading", 
+    "resource", "pwd", "grp", "crypt", "spwd", "posix", "threading",
     "multiprocessing", "importlib", "builtins"
 }
 
@@ -72,7 +72,7 @@ def validate_code(code: str) -> tuple[bool, str]:
         tree = ast.parse(code)
         transformer = SecurityTransformer()
         transformer.visit(tree)
-        
+
         if transformer.errors:
             return False, "; ".join(transformer.errors)
         return True, ""
@@ -105,7 +105,7 @@ def run_subprocess(code: str, timeout: int = 30) -> dict[str, Any]:
             env=env,
             cwd="/tmp"
         )
-        
+
         os.unlink(temp_path)
         return {
             "success": result.returncode == 0,
@@ -122,7 +122,7 @@ def run_subprocess(code: str, timeout: int = 30) -> dict[str, Any]:
 def run_docker(code: str, timeout: int = 30) -> dict[str, Any]:
     """Preferred Docker-based sandbox isolation."""
     DOCKER_IMAGE = "ettametta-sandbox"
-    
+
     if not shutil.which("docker"):
         return {"success": False, "error": "Docker not available", "fallback": True}
 
@@ -159,12 +159,12 @@ def run_docker(code: str, timeout: int = 30) -> dict[str, Any]:
 def run_sandboxed(code: str, timeout: int = 30) -> dict[str, Any]:
     """Main entry point for secure code execution."""
     docker_enabled = os.getenv("SANDBOX_DOCKER", "true").lower() == "true"
-    
+
     if docker_enabled:
         result = run_docker(code, timeout)
         if not result.get("fallback"):
             return result
-            
+
     return run_subprocess(code, timeout)
 
 if __name__ == "__main__":
@@ -174,5 +174,5 @@ if __name__ == "__main__":
 
     code_input = sys.argv[1]
     timeout_input = int(sys.argv[2]) if len(sys.argv) > 2 else 30
-    
+
     print(json.dumps(run_sandboxed(code_input, timeout_input)))

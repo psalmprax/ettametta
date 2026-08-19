@@ -611,13 +611,13 @@ async def get_job_preview(
     )
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
-    
+
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    
+
     metadata = job.job_metadata or {}
     scenes = metadata.get("preview_scenes", [])
-    
+
     return success_response(data={
         "job_id": job_id,
         "status": job.status,
@@ -690,10 +690,10 @@ async def delete_nexus_job(
     )
     result = await db.execute(stmt)
     await db.commit()
-    
+
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Job not found or unauthorized")
-        
+
     return success_response(data={"status": "deleted", "id": job_id})
 
 

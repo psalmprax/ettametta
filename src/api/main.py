@@ -3,6 +3,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from src.api.utils.database import engine, Base  # noqa: F401 — imported to register models
 
+from prometheus_client import Counter, Histogram
+
+# Prometheus metrics
+REQUEST_COUNT = Counter(
+    "ettametta_requests_total",
+    "Total number of requests to the ettametta API",
+    ["method", "endpoint", "status"],
+)
+REQUEST_DURATION = Histogram(
+    "ettametta_request_duration_seconds",
+    "Request duration in seconds",
+    ["method", "endpoint"],
+)
+
 from src.api.config import settings
 import os
 import asyncio
@@ -126,6 +140,8 @@ from src.api.routes import (
     reasoning,
     notifications,
     engines,
+    posthog,
+    agent_gateway,
 )
 from src.api.routes import video_enhance
 from src.api.routes.publishing import router as publish_router
@@ -282,6 +298,8 @@ v1_router.include_router(tools.router, tags=["Free Tools"])
 v1_router.include_router(llm.router, tags=["LLM - Multi-Provider"])
 v1_router.include_router(reasoning.router)
 v1_router.include_router(knowledge_base.router, tags=["Knowledge Base"])
+v1_router.include_router(posthog.router, tags=["PostHog"])
+v1_router.include_router(agent_gateway.router, tags=["Agent-to-Agent (A2A) Gateway"])
 v1_router.include_router(ws.router, tags=["WebSockets"])
 v1_router.include_router(health.router, tags=["Health"])
 v1_router.include_router(proxy.router, tags=["Proxy"])
@@ -328,8 +346,22 @@ async def report_frontend_error(request: Request):
 # Keep /health for Docker healthcheck compatibility
 @app.get("/health")
 async def health_redirect():
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/api/v1/health")
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    """Prometheus metrics endpoint."""
+    from fastapi.responses import Response
+    content = (
+        "# HELP ettametta_http_requests_total Total number of requests to the ettametta API\n"
+        "# TYPE ettametta_http_requests_total counter\n"
+        f"{REQUEST_COUNT}\n"
+        "# HELP ettametta_http_request_duration_seconds Request duration in seconds\n"
+        "# TYPE ettametta_http_request_duration_seconds histogram\n"
+        f"{REQUEST_DURATION}\n"
+    )
+    return Response(content=content, media_type="text/plain")
 
 
 # Chaos Engineering endpoints (extracted to routes/chaos.py)

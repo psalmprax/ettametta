@@ -128,7 +128,7 @@ async def register(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)
     stmt = select(func.count()).select_from(UserDB)
     result = await db.execute(stmt)
     user_count = result.scalar()
-    
+
     role = UserRole.ADMIN if user_count == 0 else UserRole.USER
 
     # 5. Create user
@@ -139,7 +139,7 @@ async def register(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)
         hashed_password=hashed_pwd,
         role=role,
     )
-    
+
     try:
         db.add(new_user)
         await db.commit()
@@ -169,7 +169,7 @@ async def login(
 ):
     # Detect content type and parse accordingly
     content_type = request.headers.get("content-type", "")
-    
+
     if "application/json" in content_type:
         # JSON request from frontend
         try:
@@ -186,7 +186,7 @@ async def login(
         form_data = await request.form()
         identifier = form_data.get("username")
         password = form_data.get("password")
-    
+
     if not identifier or not password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -207,14 +207,14 @@ async def login(
             detail="Incorrect username/email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     logger.info(f"[LOGIN] Verifying password for user: {user.email}")
     try:
         password_valid = verify_password(password, user.hashed_password)
     except Exception as e:
         logger.exception(f"[LOGIN] Password verification error: {type(e).__name__}: {e}")
         raise
-    
+
     if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -343,7 +343,7 @@ async def google_auth_callback(
 
 # Internal endpoint for OpenClaw to fetch users with Telegram bots
 @router.get(
-    "/internal/users-with-bots", 
+    "/internal/users-with-bots",
     tags=["Internal"],
     responses={401: {"description": "Unauthorized (missing or invalid internal token)"}}
 )

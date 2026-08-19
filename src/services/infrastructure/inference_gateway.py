@@ -30,19 +30,19 @@ class InferenceGateway:
             "model_version": self.registry.get_champion_path().split("/")[-1],
             "feature_dim": len(numerical_features)
         })
-        
+
         return self.oracle.predict_curve(numerical_features, clip_embedding)
 
     async def hot_swap_model(self, version_id: str):
         """Orchestrates a cluster-wide model update."""
         logger.warning(f"🚨 [Gateway] Orchestrating cluster-wide swap to {version_id}")
-        
+
         # 1. Update local registry champion
         self.registry.promote_to_champion(version_id)
-        
+
         # 2. Reload local oracle
         self.oracle.reload_champion()
-        
+
         # 3. Broadcast to cluster
         await self.bus.emit("VF_HOT_SWAP_SIGNAL", {
             "new_version": version_id,
@@ -53,9 +53,9 @@ class InferenceGateway:
         """Returns the vitals of the distributed intelligence layer."""
         with open(self.registry.registry_file, "r") as f:
             data = json.load(f)
-            
+
         champion_data = data["versions"][data["champion"]]
-        
+
         return {
             "model_version": data["champion"],
             "model_mae": champion_data["mae"],

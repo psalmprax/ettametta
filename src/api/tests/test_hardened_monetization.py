@@ -21,16 +21,16 @@ class TestHardenedAutoMerch:
         """Test that AutoMerch sends the correct payload to Printful."""
         service = AutoMerchService()
         mock_api_key = "test_printful_key"
-        
+
         with patch.object(settings, "PRINTFUL_API_KEY", mock_api_key):
             with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
                 mock_post.return_value = MagicMock(
-                    status_code=201, 
+                    status_code=201,
                     json=lambda: {"result": {"id": 12345, "name": "Test T-Shirt"}}
                 )
-                
+
                 result = await service._publish_to_pod("Test T-Shirt", "https://example.com/design.png")
-                
+
                 assert result is not None
                 assert result["id"] == "12345"
                 assert result["status"] == "published"
@@ -94,13 +94,13 @@ class TestHardenedAffiliate:
         # Ensure service is enabled and has a key
         service.enabled = True
         service.impact_api_key = "test_secret"
-        
+
         with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = MagicMock(
                 status_code=200,
                 json=lambda: {"Ads": [{"Id": "impact_123", "Name": "Impact Laptop"}]}
             )
-            
+
             with patch.object(settings, "IMPACT_ACCOUNT_SID", "test_sid"):
                 result = await service.get_impact_products("campaign_1", "laptop")
                 assert len(result) > 0
@@ -111,7 +111,7 @@ class TestHardenedCrypto:
     async def test_wallet_validation(self):
         """Test BTC and ETH wallet validation logic."""
         strategy = CryptoStrategy()
-        
+
         # Valid BTC
         assert await strategy.validate_address("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", "BTC") is True
         # Valid ETH
@@ -125,15 +125,15 @@ class TestHardenedLeadGen:
         """Test Mailchimp subscription request structure."""
         strategy = LeadGenStrategy()
         mock_email = "test@example.com"
-        
+
         with patch.object(settings, "MAILCHIMP_API_KEY", "test-us19"):
             with patch.object(settings, "MAILCHIMP_LIST_ID", "list_123"):
                 with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
                     mock_post.return_value = MagicMock(status_code=200)
-                    
+
                     success = await strategy.subscribe_lead(mock_email, "AI")
                     assert success is True
-                    
+
                     # Verify URL contains datacenter
                     args, kwargs = mock_post.call_args
                     assert "us19.api.mailchimp.com" in args[0]

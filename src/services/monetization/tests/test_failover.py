@@ -19,26 +19,26 @@ class MockWorkingStrategy(BaseMonetizationStrategy):
 async def test_orchestrator_failover():
     """Verify that the orchestrator fails over to a working strategy when the primary fails."""
     orchestrator = MonetizationOrchestrator()
-    
+
     # Setup strategies
     failing = MockFailingStrategy()
     failing.circuit_breaker.failure_threshold = 1
     working = MockWorkingStrategy()
-    
+
     orchestrator.strategies = {
         "primary": failing,
         "secondary": working
     }
-    
+
     # Mock get_active_strategy to return the failing one
     orchestrator.get_active_strategy = AsyncMock(return_value=failing)
-    
+
     # Mock should_monetize to avoid DB connection
     orchestrator.should_monetize = AsyncMock(return_value=True)
-    
+
     # Execute call
     cta = await orchestrator.get_monetization_cta("tech", "context")
-    
+
     # Should have failed over to 'working'
     assert cta == "Buy Now!"
     assert failing.circuit_breaker.state == "OPEN"

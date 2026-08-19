@@ -426,7 +426,7 @@ class MemorySkill(OpenClawBaseSkill):
             for k, v in facts.items():
                 lines.append(f"• {k}: {v}")
             return "\n".join(lines)
-        return f"🧠 {len(self.semantic.facts)} facts stored across {len(set(f['category'] for f in self.semantic.facts.values()))} categories"
+        return f"🧠 {len(self.semantic.facts)} facts stored across {len({f['category'] for f in self.semantic.facts.values()})} categories"
 
     def get_related_memories(self, node_id: str, relation: str | None = None) -> str:
         related = self.graph.get_related(node_id, relation)

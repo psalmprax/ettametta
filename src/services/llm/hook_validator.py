@@ -13,14 +13,14 @@ class HookValidator:
         """
         prompt = f"""
         Analyze the following video hook for its viral potential in a faceless/no-face video format.
-        
+
         HOOK TEXT: "{hook_text}"
-        
+
         CRITERIA:
         - Pattern Interrupt: Does it grab attention in <1 second?
         - Curiosity Gap: Does it make the viewer want to see the resolution?
         - Clarity: Is it immediately understandable?
-        
+
         OUTPUT FORMAT (JSON ONLY):
         {{
             "score": 0-100,
@@ -33,7 +33,7 @@ class HookValidator:
             ]
         }}
         """
-        
+
         try:
             result = await base_intelligence_service.chat(
                 prompt=prompt,
@@ -41,7 +41,7 @@ class HookValidator:
                 json_mode=True,
                 complexity="medium"
             )
-            
+
             content = result["response"]
             return json.loads(content)
         except Exception as e:

@@ -52,7 +52,7 @@ class BrandingSkill(OpenClawBaseSkill):
                 Niche: {niche}
                 Task: Generate a 1-sentence visual prompt for an AI image generator to create a professional logo.
                 Also suggest a Brand Name (2 words max) and a Primary Hex Color.
-                
+
                 Return ONLY a JSON object:
                 {{
                     "brand_name": "string",

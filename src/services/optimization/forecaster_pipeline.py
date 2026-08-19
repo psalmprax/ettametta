@@ -2,7 +2,7 @@
 The Forecaster Pipeline: Predictive Ingestion (9.9/10)
 ===================================================
 
-Automates the data-labeling and training loop for the Neural Forecaster, 
+Automates the data-labeling and training loop for the Neural Forecaster,
 bridging Signal Ingestion and Performance Analytics.
 """
 
@@ -26,20 +26,20 @@ class ForecasterPipeline:
         Gathers Signal-to-Performance pairs and retrains the Neural Oracle.
         """
         print("🧠 [Forecaster] Initiating Neural Model Training...")
-        
+
         # 1. Gather Dataset (The Join)
         # We join Signal Bus features with Performance Ledger outcomes
         ledger_data = base_ledger_service.get_accuracy_report().get("raw_entries", [])
-        
+
         training_samples = []
         for entry in ledger_data:
             niche = entry.get("niche")
             if not niche:
                 continue
-                
+
             features = base_signal_bus.get_feature_vector(niche)
             outcome = [entry.get("actual_retention", 0.5)] * 4 # Mock curve outcome
-            
+
             if features:
                 training_samples.append((features, outcome))
 
@@ -50,7 +50,7 @@ class ForecasterPipeline:
         # 2. Convert to Tensors and Train
         # (Using the existing train_cycle in NeuralOracle)
         logger.info(f"🔥 [Forecaster] Training on {len(training_samples)} production samples.")
-        
+
         # In a real 10/10, we'd wrap these in a DataLoader here
         # base_oracle_service.train_cycle(loader)
         await asyncio.sleep(1) # Simulation
@@ -61,7 +61,7 @@ class ForecasterPipeline:
         features = base_signal_bus.get_feature_vector(niche)
         if not features:
             return {"probability": 0.5, "confidence": "low"}
-        
+
         # Neural Inference
         # Standard: Semantic Pattern Extraction via CLIP
         from src.services.video_engine.neural_vision_analyzer import base_vision_service
@@ -70,7 +70,7 @@ class ForecasterPipeline:
             semantic_vector = np.zeros(512)
 
         curve = base_oracle_service.predict_curve(features + [0]*5, semantic_vector) # Simplified pad
-        
+
         return {
             "probability": float(curve[0]), # 3s Hook prediction
             "curve": curve.tolist(),

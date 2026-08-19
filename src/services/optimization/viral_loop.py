@@ -78,13 +78,15 @@ class ViralLoopController:
 
 
     async def execute_compilation_cycle(
-        self, niche: str, platforms: list = ["youtube"], max_segments: int = 3
+        self, niche: str, platforms: list = None, max_segments: int = 3
     ):
         """
         Multi-Video Pipeline: Finds top leads -> Downloads & Normalizes -> Compiles with Transitions.
         """
+        if platforms is None:
+            platforms = ["youtube"]
         self.logger.info(f"[ViralLoop] Starting compilation cycle for {niche}...")
-        
+
         from src.services.video_engine.processor import VideoProcessor
         from src.services.video_engine.downloader import base_downloader_service
         from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
@@ -100,7 +102,7 @@ class ViralLoopController:
                     min_viral_score=5.0,
                     max_results=max_segments
                 )
-                
+
                 if not leads or len(leads) < 2:
                     self.logger.warning(f"[ViralLoop] Insufficient leads for compilation ({len(leads) if leads else 0}).")
                     return
@@ -108,12 +110,12 @@ class ViralLoopController:
                 # 2. Process Segments
                 processor = VideoProcessor()
                 processed_paths = []
-                
+
                 for lead in leads:
                     try:
                         raw_path = await base_downloader_service.download_video(lead.url)
                         if not raw_path: continue
-                        
+
                         norm_path = os.path.join(processor.output_dir, f"loop_norm_{uuid.uuid4().hex[:8]}.mp4")
                         success = base_ffmpeg_service.apply_originality(raw_path, norm_path, mirror=True, zoom=1.03)
                         if success:
@@ -151,7 +153,7 @@ class ViralLoopController:
                         source_uri=final_video,
                     )
                     self.logger.info(f"[ViralLoop] Compilation cycle successful: {final_video}")
-                
+
             except Exception as e:
                 self.logger.error(f"[ViralLoop] Compilation Cycle Failed: {e}")
                 await db.rollback()

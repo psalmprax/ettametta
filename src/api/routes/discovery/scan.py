@@ -77,7 +77,7 @@ async def get_trends(
         else:
             try:
                 trends = await base_discovery_service.get_global_trending(
-                    limit=limit * page, 
+                    limit=limit * page,
                     min_viral_score=float(min_viral_score),
                     region=region
                 )
@@ -158,7 +158,7 @@ async def trigger_scan(
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     scan_niches = request.niches or ([request.niche] if request.niche else ["AI"])
-                    
+
                     resp = await client.post(
                         f"{DISCOVERY_GO_URL}/scan",
                         json={

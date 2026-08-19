@@ -9,10 +9,10 @@ class RemotionTool:
     """
     Agent Zero tool for programmatic video generation via Remotion.
     """
-    
+
     def __init__(self):
         self.remotion_path = str(settings.REMOTION_APP_DIR)
-        
+
     def render(self, composition: str, text: str, theme: str = "dark") -> str:
         """
         Render a specific composition with text and theme props.
@@ -23,14 +23,14 @@ class RemotionTool:
             "theme": theme,
             "brand": "Ettametta"
         }
-        
+
         cmd = [
             "npx", "remotion", "render",
             composition,
             output_file,
             f"--props={json.dumps(props)}"
         ]
-        
+
         try:
             logger.info(f"Agent Zero executing Remotion: {' '.join(cmd)}")
             subprocess.run(cmd, cwd=self.remotion_path, check=True, capture_output=True)

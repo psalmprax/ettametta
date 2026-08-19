@@ -8,9 +8,9 @@ from src.services.audio.rhythm_engine import base_rhythm_service
 
 async def verify_cinematic_intuition():
     print("🎬 STARTING CINEMATIC INTUITION VERIFICATION")
-    
+
     engine = RealVideoFusionEngine()
-    
+
     # Mock Script
     script = {
         "title": "Autonomous Future",
@@ -20,7 +20,7 @@ async def verify_cinematic_intuition():
             {"text": "The ettametta", "duration": 3.0}
         ]
     }
-    
+
     # Mock NRM Blueprint
     blueprint = {
         "emotional_arc": [
@@ -28,21 +28,21 @@ async def verify_cinematic_intuition():
             {"time_start": 5, "time_end": 15, "emotion": "Shock/Surprise", "action": "Hook"}
         ]
     }
-    
+
     # Mock Assets (paths to avoid real video reading for this test)
     # We'll use a real asset if available, or just mock paths
     mock_assets = [
         {"file_path": "templates/safety/generic_space.mp4", "motion_score": 0.8}
     ]
-    
+
     print("\n🥁 STEP 1: RHYTHM ANALYSIS")
     bg_music = "src/templates/audio/background/cinematic_energetic.mp3"
     rhythm = base_rhythm_service.get_beat_markers(bg_music)
     print(f"BPM: {rhythm['bpm']}, Beats Detected: {len(rhythm['beats'])}")
-    
+
     print("\n🧪 STEP 2: NEURAL PLANNING (CINEMATIC MODE)")
     plan = await engine._create_fusion_plan_neural(mock_assets, script, duration_sec=15, blueprint=blueprint)
-    
+
     print("\n🧐 RESULTS:")
     for i, seg in enumerate(plan["segments"]):
         print(f"Segment {i}: {seg['role']} | Emotion: {seg['emotion']} | Dur: {round(seg['duration'], 3)}s")

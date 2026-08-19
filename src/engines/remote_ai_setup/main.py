@@ -93,7 +93,7 @@ def _patched_ltx2_forward(self, hidden_states, *args, **kwargs):
 
     # Map positional args from LTX-1 pipeline to LTX-2 19B slots
     arg_names = ["timestep", "encoder_hidden_states", "encoder_attention_mask"]
-    for val, name in zip(args, arg_names):
+    for val, name in zip(args, arg_names, strict=False):
         final_kwargs.setdefault(name, val)
 
     # Inject metadata (CRITICAL for 19B RoPE)
@@ -169,7 +169,7 @@ if DIFFUSERS_AVAILABLE:
     try:
         transformer_ltx2 = importlib.import_module("diffusers.models.transformers.transformer_ltx2")
         LTX2Real = transformer_ltx2.LTX2VideoTransformer3DModel
-        
+
         # Apply to all known names
         for cls in [
             LTX2VideoTransformer3DModel,
@@ -181,7 +181,7 @@ if DIFFUSERS_AVAILABLE:
                 print(
                     f"✅ Aggressive Patch applied to {cls.__name__} at {hex(id(cls))}", flush=True
                 )
-        
+
         if LTXPipeline is not None:
             _patch_pipeline_call(LTXPipeline)
         if LTXImageToVideoPipeline is not None:

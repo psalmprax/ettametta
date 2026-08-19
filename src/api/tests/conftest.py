@@ -41,7 +41,7 @@ def create_mock_module(name):
     return m
 
 mock_names = [
-    "faster_whisper", "diffusers", "diffusers.utils", "moviepy", "moviepy.editor", 
+    "faster_whisper", "diffusers", "diffusers.utils", "moviepy", "moviepy.editor",
     "moviepy.video.io", "moviepy.video.io.VideoFileClip", "moviepy.video.compositing",
     "moviepy.audio.AudioClip", "moviepy.audio.fx", "moviepy.audio.fx.all", "moviepy.afx",
     "moviepy.audio.AudioClip.CompositeAudioClip",
@@ -89,12 +89,12 @@ def test_db():
     """Create a test database."""
     from src.api.utils.database import Base, engine
     # Explicitly import models to register them with Base.metadata
-    
+
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
+
     yield
-    
+
     # Cleanup
     Base.metadata.drop_all(bind=engine)
 
@@ -104,12 +104,12 @@ def client(test_db):
     """Create a test client for the FastAPI app."""
     from src.api.main import app
     from src.api.utils.database import Base, engine, async_engine
-    
+
     # Wipe all table data via sync engine
     with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
-    
+
     # Force the async engine to drop its connection pool so new async
     # sessions see the clean state (SQLite uses separate connections
     # for sync vs async drivers).
@@ -118,7 +118,7 @@ def client(test_db):
         asyncio.run(async_engine.dispose())
     except RuntimeError:
         pass  # Already inside an event loop — disposal will happen naturally
-            
+
     with TestClient(app) as test_client:
         yield test_client
 
@@ -230,7 +230,7 @@ def auth_token(client):
         "password": "Password123!",
         "full_name": "Test User"
     })
-    
+
     response = client.post("/api/v1/auth/login", data={
         "username": "testuser",
         "password": "Password123!"

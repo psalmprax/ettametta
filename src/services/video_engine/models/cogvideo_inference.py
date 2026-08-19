@@ -89,7 +89,7 @@ def generate_cogvideo(
     with tracer.start_as_current_span("generate_cogvideo") as span:
         span.set_attribute("model", "cogvideo-2b")
         span.set_attribute("resolution", f"{width}x{height}")
-        
+
         logger.info(f"🎬 [CogVideoX] Synthesis started: '{prompt[:50]}...'")
         start_time = time.time()
 

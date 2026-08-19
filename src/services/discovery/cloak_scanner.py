@@ -244,6 +244,20 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             "linkedin": self._parse_linkedin,
             "reddit": self._parse_reddit,
             "twitch": self._parse_twitch,
+            "etsy": self._parse_etsy,
+            "pinterest": self._parse_pinterest,
+            "gumroad": self._parse_gumroad,
+            "product hunt": self._parse_producthunt,
+            "deviantart": self._parse_deviantart,
+            "behance": self._parse_behance,
+            "dribbble": self._parse_dribbble,
+            "unsplash": self._parse_unsplash,
+            "pexels": self._parse_pexels,
+            "hacker news": self._parse_hackernews,
+            "indie hackers": self._parse_indiehackers,
+            "github trending": self._parse_github,
+            "amazon": self._parse_amazon,
+            "ebay": self._parse_ebay,
         }
         return parsers.get(platform_name, self._parse_generic)
 
@@ -527,6 +541,477 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             )
         return candidates
 
+    def _parse_etsy(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            listing_id = item.get("id", "")
+            if not listing_id:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            price = self._safe_float(item.get("price", 0))
+            sales = self._safe_int(item.get("sales", 0))
+            rating = self._safe_float(item.get("rating", 0))
+            shop = item.get("shop", "Unknown")
+            engagement = min(sales / 100, 1.0) if sales else 0.0
+            viral = min(max(int(sales / 10), 1), 95) if sales else 0
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{listing_id}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=shop,
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=sales,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=engagement,
+                    viral_score=viral,
+                    region=region or "US",
+                    category="commerce",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={
+                        "scraper": "cloakbrowser",
+                        "source": "etsy_web",
+                        "price": price,
+                        "sales": sales,
+                        "rating": rating,
+                        "shop": shop,
+                    },
+                )
+            )
+        return candidates
+
+    def _parse_pinterest(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            pin_id = item.get("id", "")
+            if not pin_id:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{pin_id}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="visual",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={
+                        "scraper": "cloakbrowser",
+                        "source": "pinterest_web",
+                    },
+                )
+            )
+        return candidates
+
+    def _parse_gumroad(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            price = self._safe_float(item.get("price", 0))
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="commerce",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "gumroad_web", "price": price},
+                )
+            )
+        return candidates
+
+    def _parse_producthunt(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="launches",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "producthunt_web"},
+                )
+            )
+        return candidates
+
+    def _parse_deviantart(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="design",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "deviantart_web"},
+                )
+            )
+        return candidates
+
+    def _parse_behance(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="design",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "behance_web"},
+                )
+            )
+        return candidates
+
+    def _parse_dribbble(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="design",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "dribbble_web"},
+                )
+            )
+        return candidates
+
+    def _parse_unsplash(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="media",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "unsplash_web"},
+                )
+            )
+        return candidates
+
+    def _parse_pexels(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="media",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "pexels_web"},
+                )
+            )
+        return candidates
+
+    def _parse_hackernews(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            score = self._safe_int(item.get("views", 0))
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=score,
+                    like_count=score,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=min(max(score // 10, 0), 95),
+                    region=region or "US",
+                    category="tech",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "hackernews_web"},
+                )
+            )
+        return candidates
+
+    def _parse_indiehackers(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="community",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "indiehackers_web"},
+                )
+            )
+        return candidates
+
+    def _parse_github(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            stars = self._safe_int(item.get("views", 0))
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "Unknown"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=stars,
+                    like_count=stars,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=min(max(stars // 10, 0), 95),
+                    region=region or "US",
+                    category="tech",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "github_web", "language": item.get("language", ""), "description": item.get("description", "")},
+                )
+            )
+        return candidates
+
+    def _parse_amazon(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            price = self._safe_float(item.get("price", 0))
+            rating = self._safe_float(item.get("rating", 0))
+            reviews = self._safe_int(item.get("sales", 0))
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("shop", "Amazon"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=reviews,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=min(max(reviews // 100, 0), 95),
+                    region=region or "US",
+                    category="commerce",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "amazon_web", "price": price, "rating": rating, "reviews": reviews},
+                )
+            )
+        return candidates
+
+    def _parse_ebay(self, items, config, niche, region):
+        candidates = []
+        for item in items:
+            cid = item.get("id", "")
+            if not cid:
+                continue
+            title = item.get("title", "No Title")
+            url = item.get("url", "")
+            if _is_noise(title, url):
+                continue
+            price = self._safe_float(item.get("price", 0))
+            candidates.append(
+                ContentCandidate(
+                    id=f"{config.id_prefix}_{cid}",
+                    platform=config.platform_label,
+                    source_uri=url,
+                    creator_name=item.get("author", "eBay"),
+                    title=title[:200],
+                    thumbnail_uri=item.get("thumbnail", ""),
+                    view_count=0,
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
+                    engagement_score=0.0,
+                    viral_score=0,
+                    region=region or "US",
+                    category="commerce",
+                    tags=[niche] + config.tags_extra,
+                    metadata_json={"scraper": "cloakbrowser", "source": "ebay_web", "price": price},
+                )
+            )
+        return candidates
+
     def _parse_generic(self, items, config, niche, region):
         candidates = []
         for item in items:
@@ -578,6 +1063,12 @@ class CloakBrowserScanner(DiscoveryScannerBase):
             return int(val)
         except (ValueError, TypeError):
             return 0
+
+    def _safe_float(self, val) -> float:
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return 0.0
 
     async def close(self):
         """Clean up the HTTP client."""

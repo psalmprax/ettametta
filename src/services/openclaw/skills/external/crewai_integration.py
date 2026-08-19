@@ -23,7 +23,7 @@ class CrewAIService:
         if self.enabled:
             try:
                 from crewai import Agent, Task, Crew  # type: ignore
-                
+
                 tool_class = None
                 try:
                     from langchain_core.tools import Tool  # type: ignore

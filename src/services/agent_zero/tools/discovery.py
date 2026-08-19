@@ -19,12 +19,12 @@ class DiscoveryTool:
         try:
             payload = {"query": niche, "platform": "all", "limit": limit}
             response = requests.get(f"{self.api_url}/search", params=payload, timeout=15)
-            
+
             if response.status_code == 200:
                 return response.json()
             else:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
-                
+
         except Exception as e:
             logger.exception(f"DiscoveryTool Error: {e}")
             return {"error": str(e)}

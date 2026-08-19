@@ -8,14 +8,14 @@ class CourseStrategy(BaseMonetizationStrategy):
     """
     Course/Education strategy - Sell online courses and tutorials
     """
-    
+
     async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches course platform URL from database configuration.
         """
         from sqlalchemy import select
         from src.api.utils.database import async_session_factory
-        
+
         async with async_session_factory() as db:
             stmt = select(SystemSettings).filter(SystemSettings.key == "course_platform_uri")
             result = await db.execute(stmt)
@@ -57,14 +57,14 @@ class CourseStrategy(BaseMonetizationStrategy):
         Generates a call to action for course sales.
         """
         assets = await self.get_assets(niche)
-        
+
         if not assets:
             logging.warning("[CourseStrategy] No course platform configured. Set 'course_platform_uri' in settings.")
             return ""
-        
+
         platform_uri = assets[0].get("url", "")
         assets[0].get("name", f"{niche} course")
-        
+
         options = [
             f"Want to master {niche}? Check out my comprehensive course: \n🔗 {platform_uri}",
             f"Learn {niche} the right way! Full course available: \n🔗 {platform_uri}",

@@ -16,11 +16,11 @@ class CommerceService:
         stmt = select(SystemSettings).where(SystemSettings.key == "shopify_shop_url")
         result = await db.execute(stmt)
         shop_url = result.scalar_one_or_none()
-        
+
         stmt = select(SystemSettings).where(SystemSettings.key == "shopify_access_token")
         result = await db.execute(stmt)
         access_token = result.scalar_one_or_none()
-        
+
         return {
             "url": shop_url.value if shop_url else None,
             "token": access_token.value if access_token else None
@@ -32,7 +32,7 @@ class CommerceService:
         """
         async with async_session_factory() as db:
             creds = await self._get_shopify_creds(db)
-            
+
             if creds["url"] and creds["token"] and "shpat_" in creds["token"]:
                 self.logger.info(f"[Commerce] Fetching real products from Shopify: {creds['url']}")
                 products = await self._fetch_from_shopify(creds["url"], creds["token"], niche)
@@ -44,7 +44,7 @@ class CommerceService:
             stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.niche == niche)
             result = await db.execute(stmt)
             affiliates = result.scalars().all()
-            
+
             return [{
                 "id": f"aff_{a.id}",
                 "name": a.product_name,
@@ -59,11 +59,11 @@ class CommerceService:
         # Clean URL
         shop_url = shop_url.replace("https://", "").replace("http://", "").split("/")[0]
         api_url = f"https://{shop_url}/admin/api/2024-01/products.json?limit=10"
-        
+
         # In a real scenario, we'd add 'query' or 'tag' matching niche
         # For high-velocity discovery, we'll search by the niche name
         search_url = f"{api_url}&title={urllib.parse.quote(niche)}"
-        
+
         headers = {
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
@@ -97,7 +97,7 @@ class CommerceService:
 
     async def generate_checkout_link(self, product_id: str) -> str:
         """
-        Generates a direct checkout URL. 
+        Generates a direct checkout URL.
         Note: Shopify direct cart links usually prefer variant_id, but product_id handle works for routing.
         """
         # Optimized for Shopify redirection

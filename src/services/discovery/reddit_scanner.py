@@ -18,7 +18,7 @@ class RedditScanner:
         """
         logging.info(f"[Reddit] Scanning subreddits for niche context: {niche}")
         candidates = []
-        
+
         async with aiohttp.ClientSession(headers=self.headers) as session:
             for sub in self.subreddits:
                 try:
@@ -27,17 +27,17 @@ class RedditScanner:
                         if response.status != 200:
                             logging.warning(f"[Reddit] Failed to fetch /r/{sub}: {response.status}")
                             continue
-                        
+
                         data = await response.json()
                         posts = data.get("data", {}).get("children", [])
-                        
+
                         for post in posts:
                             post_data = post.get("data", {})
-                            
+
                             # We only care about video posts
                             is_video = post_data.get("is_video", False)
                             hint_url = post_data.get("url", "")
-                            
+
                             if not is_video and not any(ext in hint_url for ext in [".mp4", "youtube.com", "v.redd.it"]):
                                 continue
 
@@ -59,10 +59,10 @@ class RedditScanner:
                                 }
                             )
                             candidates.append(candidate)
-                            
+
                 except Exception as e:
                     logging.exception(f"[Reddit] Error scanning /r/{sub}: {e}")
-                    
+
         return candidates
 
 base_reddit_service = RedditScanner()

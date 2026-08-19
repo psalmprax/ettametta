@@ -36,7 +36,7 @@ class VideoLeadSkill(OpenClawBaseSkill):
                 res = await self._find_templates(kwargs)
             else:
                 return f"⚠️ Unknown action: {action}"
-                
+
             if isinstance(res, dict) and res.get("success"):
                 return res.get("message", "Success")
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
