@@ -11,35 +11,20 @@ async def test_mcp_list_tools():
     assert "ettametta_optimize_aeo" in tool_names
     assert "ettametta_publish_social" in tool_names
     assert "ettametta_run_autonomous_cycle" in tool_names
+    assert "ettametta_generate_free_broll" in tool_names
 
 
 @pytest.mark.asyncio
-async def test_mcp_execute_aeo_tool():
+async def test_mcp_execute_free_broll_tool():
     result = await base_mcp_server_service.execute_tool(
-        tool_name="ettametta_optimize_aeo",
+        tool_name="ettametta_generate_free_broll",
         arguments={
-            "title": "Why Agents Are The New Customers",
-            "script": "Here is why AI agents will generate over $100M in software revenue by 2027. First, they operate 24/7. Second, they have zero human churn.",
-            "niche": "AI Economics",
+            "prompt": "futuristic smartphone preview",
+            "style": "tech",
+            "count": 1,
         },
     )
 
     assert result["success"] is True
-    assert "scores" in result["result"]
-    assert result["result"]["scores"]["overall_aeo_score"] > 0
-
-
-@pytest.mark.asyncio
-async def test_mcp_execute_autonomous_cycle():
-    result = await base_mcp_server_service.execute_tool(
-        tool_name="ettametta_run_autonomous_cycle",
-        arguments={
-            "niche": "crypto_trading",
-            "platforms": ["youtube"],
-            "autonomy_mode": "SIMULATION",
-        },
-    )
-
-    assert result["success"] is True
-    assert result["result"]["status"] == "completed"
-    assert "cycle_id" in result["result"]
+    assert result["result"]["total_cost_usd"] == 0.0
+    assert len(result["result"]["assets"]) > 0

@@ -14,6 +14,7 @@ from src.services.optimization.aeo_service import base_aeo_service
 from src.services.distribution.postiz_service import base_postiz_service
 from src.services.hermes.service import base_hermes_service, HermesCycleConfig
 from src.services.discovery.agent_reach_scanner import base_agent_reach_service
+from src.services.video_engine.free_video_service import base_free_video_service
 
 logger = logging.getLogger("EttamettaMCPServer")
 
@@ -115,6 +116,22 @@ class EttamettaMCPServer:
             handler=self._handle_agent_reach_search,
         )
 
+        # Tool 6: 100% Free ($0 Cost) Video & B-Roll Generation
+        self.register_tool(
+            name="ettametta_generate_free_broll",
+            description="Generate AI visuals and studio B-roll at 100% $0 cost using Pollinations.ai free open API and free studio stock engines.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "Visual prompt or product concept"},
+                    "style": {"type": "string", "default": "cinematic", "enum": ["cinematic", "tech", "product", "luxury"]},
+                    "count": {"type": "integer", "default": 1},
+                },
+                "required": ["prompt"],
+            },
+            handler=self._handle_generate_free_broll,
+        )
+
     def register_tool(self, name: str, description: str, input_schema: dict[str, Any], handler: Callable):
         self.tools[name] = MCPToolDefinition(name=name, description=description, input_schema=input_schema)
         self.handlers[name] = handler
@@ -198,6 +215,20 @@ class EttamettaMCPServer:
             "query": query,
             "platform": platform,
             "candidates": [c.model_dump() for c in candidates],
+        }
+
+    async def _handle_generate_free_broll(
+        self,
+        prompt: str,
+        style: str = "cinematic",
+        count: int = 1,
+    ) -> dict[str, Any]:
+        assets = await base_free_video_service.fetch_free_broll_clip(keyword=prompt, count=count)
+        return {
+            "prompt": prompt,
+            "style": style,
+            "assets": [a.model_dump() for a in assets],
+            "total_cost_usd": 0.0,
         }
 
 
